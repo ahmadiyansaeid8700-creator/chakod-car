@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  margin: 0;
+  background: #faf9ff;
+  color: #090b2f;
+  font-family: Arial, Tahoma, sans-serif;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

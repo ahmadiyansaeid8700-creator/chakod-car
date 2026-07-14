@@ -1,5 +1,4 @@
-use client";
-
+"use client";
 import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = "https://api.chakod.com";

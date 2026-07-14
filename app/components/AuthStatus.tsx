@@ -1,8 +1,8 @@
-"use client";
+use client";
 
 import { useCallback, useEffect, useState } from "react";
 
-const API_BASE = "https://chakod.com";
+const API_BASE = "https://api.chakod.com";
 
 type ChakodUser = {
   id?: number;
@@ -37,8 +37,12 @@ function getToken() {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
+
   return token
-    ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
+    ? {
+        Authorization: `Bearer ${token}`,
+        "X-Session-Token": token,
+      }
     : {};
 }
 
@@ -70,7 +74,6 @@ export default function AuthStatus() {
   const [user, setUser] = useState<ChakodUser | null>(null);
   const [identity, setIdentity] = useState<IdentityCache>({});
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const loadUser = useCallback(async () => {
     const cachedUser = readSavedUser();
@@ -82,7 +85,10 @@ export default function AuthStatus() {
     try {
       const res = await fetch(`${API_BASE}/api/me.php`, {
         method: "GET",
-        headers: { Accept: "application/json", ...authHeaders() },
+        headers: {
+          Accept: "application/json",
+          ...authHeaders(),
+        },
         credentials: "include",
         cache: "no-store",
       });
@@ -101,8 +107,13 @@ export default function AuthStatus() {
 
         setUser(json.user);
         setIdentity(nextIdentity);
+
         localStorage.setItem("chakod_user", JSON.stringify(json.user));
-        localStorage.setItem("chakod_identity", JSON.stringify(nextIdentity));
+        localStorage.setItem(
+          "chakod_identity",
+          JSON.stringify(nextIdentity)
+        );
+
         return;
       }
 
@@ -134,31 +145,6 @@ export default function AuthStatus() {
       window.removeEventListener("chakod:auth-changed", handleAuthChange);
     };
   }, [loadUser]);
-
-  async function logout() {
-    if (loggingOut) return;
-    setLoggingOut(true);
-
-    try {
-      await fetch(`${API_BASE}/api/logout.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          ...authHeaders(),
-        },
-        credentials: "include",
-        body: JSON.stringify({ all_devices: false }),
-      });
-    } finally {
-      clearLocalAuth();
-      setUser(null);
-      setIdentity({});
-      setLoggingOut(false);
-      window.dispatchEvent(new CustomEvent("chakod:auth-changed"));
-      window.location.href = "/login";
-    }
-  }
 
   if (loading && !user) {
     return (
@@ -198,56 +184,11 @@ export default function AuthStatus() {
       : "/account";
 
   return (
-    <div className="chakodAuthStatusWrap">
-      <a className="authStatus authStatusUser" href={accountHref}>
-        <div className="authAvatar">👑</div>
-        <div>
-          <strong>سلام، {displayName}</strong>
-          <span>
-            {identity.role_title ||
-              user.mobile_masked ||
-              user.mobile ||
-              "حساب تأییدشده"}
-          </span>
-        </div>
-      </a>
-
-      <button
-        type="button"
-        className="chakodLogoutButton"
-        onClick={() => void logout()}
-        disabled={loggingOut}
-        title="خروج از حساب"
-      >
-        {loggingOut ? "..." : "خروج"}
-      </button>
-
-      <style>{`
-        .chakodAuthStatusWrap {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .chakodLogoutButton {
-          border: 1px solid #eadcff;
-          background: #fff;
-          color: #6d28d9;
-          border-radius: 999px;
-          padding: 9px 12px;
-          font-size: 12px;
-          font-weight: 800;
-          cursor: pointer;
-        }
-        .chakodLogoutButton:disabled {
-          opacity: 0.55;
-          cursor: wait;
-        }
-        @media (max-width: 640px) {
-          .chakodLogoutButton {
-            padding: 8px 10px;
-          }
-        }
-      `}</style>
-    </div>
+    <a className="authStatus authStatusUser" href={accountHref}>
+      <div className="authAvatar">👑</div>
+      <div>
+        <strong>سلام، {displayName}</strong>
+      </div>
+    </a>
   );
 }

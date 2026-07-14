@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
+const API_BASE = "https://chakod.com";
 
 type ChakodUser = {
   id?: number;
@@ -202,7 +202,13 @@ export default function AuthStatus() {
       <a className="authStatus authStatusUser" href={accountHref}>
         <div className="authAvatar">👑</div>
         <div>
-           <strong>سلام، {displayName}</strong>
+          <strong>سلام، {displayName}</strong>
+          <span>
+            {identity.role_title ||
+              user.mobile_masked ||
+              user.mobile ||
+              "حساب تأییدشده"}
+          </span>
         </div>
       </a>
 

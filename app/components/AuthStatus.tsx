@@ -202,13 +202,7 @@ export default function AuthStatus() {
       <a className="authStatus authStatusUser" href={accountHref}>
         <div className="authAvatar">👑</div>
         <div>
-          <strong>سلام، {displayName}</strong>
-          <span>
-            {identity.role_title ||
-              user.mobile_masked ||
-              user.mobile ||
-              "حساب تأییدشده"}
-          </span>
+           <strong>سلام، {displayName}</strong>
         </div>
       </a>
 

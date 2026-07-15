@@ -3,6 +3,8 @@ import HomeStories from "./components/HomeStories";
 import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeBannerSlot from "./components/HomeBannerSlot";
 import SaveListingButton from "./components/SaveListingButton";
+import HomeHorizontalRail from "./components/HomeHorizontalRail";
+import DealerShareActions from "./components/DealerShareActions";
 
 type Category = {
   id: number;
@@ -667,7 +669,11 @@ function ShowcaseSection({
         <p>{description}</p>
       </div>
 
-      <div className="masterListingGrid">
+      <HomeHorizontalRail
+        ariaLabel={title}
+        className={`homeRailShell--${tone}`}
+        showControls={listings.length > 3}
+      >
         {listings.map((listing) => (
           <ShowcaseCard
             key={listing.id}
@@ -676,7 +682,7 @@ function ShowcaseSection({
             tone={tone}
           />
         ))}
-      </div>
+      </HomeHorizontalRail>
     </section>
   );
 }
@@ -882,67 +888,92 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="masterDealerPanel">
           <div className="masterDealerIntro">
             <span>SHOWROOMS OF CHAKOD</span>
-            <h2>نمایشگاه‌های عضو؛ هویت حرفه‌ای، نه فقط یک حساب کاربری</h2>
+            <h2>ویترین حرفه‌ای نمایشگاه‌ها؛ آماده معرفی با افتخار</h2>
             <p>
-              صفحه اختصاصی، آگهی‌های مرتب، نشان عضویت و لینک قابل اشتراک‌گذاری
-              برای مشتریان.
+              خودروهای هر نمایشگاه در یک مسیر مرتب دیده می‌شوند و لینک آن با
+              واتساپ، تلگرام یا کپی مستقیم برای مشتری قابل ارسال است.
             </p>
-            <a href="/dealers">مشاهده نمایشگاه‌ها</a>
+            <div className="masterDealerIntroActions">
+              <a href="/dealers">مدیریت نمایشگاه</a>
+              <span>صفحه اختصاصی و QR Code در مرحله بعد فعال می‌شود</span>
+            </div>
           </div>
 
-          <div className="masterDealerGrid">
-            {dealers.length > 0 ? (
-              dealers.map((dealer) => (
-                <article className="masterDealerCard" key={dealer.name}>
-                  <div className="masterDealerImage">
-                    {dealer.coverImage ? (
-                      <img
-                        src={getImageUrl(dealer.coverImage)}
-                        alt={dealer.name}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span>{dealer.name.slice(0, 1)}</span>
-                    )}
-                  </div>
+          {dealers.length > 0 ? (
+            <HomeHorizontalRail
+              ariaLabel="نمایشگاه‌های منتخب چاکود"
+              className="homeRailShell--dealers"
+              showControls={dealers.length > 2}
+            >
+              {dealers.map((dealer) => {
+                const dealerHref = `/?q=${encodeURIComponent(dealer.name)}`;
 
-                  <div>
-                    <strong>{dealer.name}</strong>
-                    <small>{dealer.city}</small>
-                  </div>
+                return (
+                  <article className="masterDealerShowcaseCard" key={dealer.name}>
+                    <a
+                      className="masterDealerCover"
+                      href={dealerHref}
+                      aria-label={`مشاهده خودروهای ${dealer.name}`}
+                    >
+                      {dealer.coverImage ? (
+                        <img
+                          src={getImageUrl(dealer.coverImage)}
+                          alt={dealer.name}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span>{dealer.name.slice(0, 1)}</span>
+                      )}
 
-                  <span>
-                    {new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}
-                    <small> آگهی</small>
-                  </span>
-                </article>
-              ))
-            ) : (
-              <>
-                <article className="masterDealerCard">
-                  <div className="masterDealerImage">
-                    <span>چ</span>
-                  </div>
-                  <div>
-                    <strong>ویترین اختصاصی نمایشگاه</strong>
-                    <small>نام، شهر و هویت رسمی کسب‌وکار</small>
-                  </div>
-                  <span>✓</span>
-                </article>
+                      <em>تأیید هویت در چاکود</em>
+                    </a>
 
-                <article className="masterDealerCard">
-                  <div className="masterDealerImage">
-                    <span>◆</span>
-                  </div>
-                  <div>
-                    <strong>نشان عضویت چاکود</strong>
-                    <small>اعتماد بیشتر در معرفی به مشتری</small>
-                  </div>
-                  <span>✓</span>
-                </article>
-              </>
-            )}
-          </div>
+                    <div className="masterDealerCardBody">
+                      <div className="masterDealerIdentity">
+                        <span className="masterDealerMiniLogo">
+                          {dealer.name.slice(0, 1)}
+                        </span>
+                        <div>
+                          <strong>{dealer.name}</strong>
+                          <small>{dealer.city}</small>
+                        </div>
+                      </div>
+
+                      <div className="masterDealerStats">
+                        <span>
+                          <b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b>
+                          آگهی فعال
+                        </span>
+                        <span>
+                          <b>✓</b>
+                          عضو چاکود
+                        </span>
+                      </div>
+
+                      <div className="masterDealerCardActions">
+                        <a href={dealerHref}>مشاهده خودروها</a>
+                        <DealerShareActions
+                          dealerName={dealer.name}
+                          city={dealer.city}
+                          href={dealerHref}
+                        />
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </HomeHorizontalRail>
+          ) : (
+            <div className="masterDealerEmpty">
+              <span>چ</span>
+              <div>
+                <strong>اولین ویترین حرفه‌ای این بخش را بساز</strong>
+                <p>پس از ثبت نمایشگاه و انتشار آگهی، کارت قابل اشتراک اینجا نمایش داده می‌شود.</p>
+              </div>
+              <a href="/dealers">ثبت نمایشگاه</a>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1040,7 +1071,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           --shadow: 0 18px 52px rgba(35, 21, 55, 0.08);
           --shadow-strong: 0 28px 80px rgba(35, 21, 55, 0.14);
           min-height: 100vh;
-          overflow: hidden;
+          overflow-x: clip;
           color: var(--ink);
           font-family: Tahoma, Arial, sans-serif;
           background:
@@ -1393,6 +1424,74 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           font-weight: 900;
         }
 
+        .homeRailShell {
+          position: relative;
+          min-width: 0;
+        }
+
+        .homeRailTrack {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: clamp(292px, 28vw, 342px);
+          gap: 15px;
+          overflow-x: auto;
+          overscroll-behavior-inline: contain;
+          scroll-snap-type: inline mandatory;
+          scroll-padding-inline: 2px;
+          padding: 4px 2px 18px;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .homeRailTrack::-webkit-scrollbar {
+          display: none;
+        }
+
+        .homeRailTrack > * {
+          min-width: 0;
+          height: 100%;
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+        }
+
+        .homeRailControls {
+          position: absolute;
+          top: -58px;
+          left: 0;
+          z-index: 8;
+          display: flex;
+          gap: 7px;
+        }
+
+        .homeRailControl {
+          width: 38px;
+          height: 38px;
+          padding: 0;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          color: var(--purple-dark);
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 10px 28px rgba(35, 21, 55, 0.09);
+          cursor: pointer;
+          font-size: 23px;
+          line-height: 1;
+          transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .homeRailControl:hover {
+          transform: translateY(-2px);
+          border-color: #cbb7e5;
+        }
+
+        .homeRailHint {
+          display: none;
+          margin-top: -7px;
+          color: #8a7f93;
+          font-size: 8px;
+          font-weight: 700;
+          text-align: left;
+        }
+
         .masterListingGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1712,9 +1811,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .masterDealerPanel {
           padding: 30px;
           border-radius: 28px;
-          display: grid;
-          grid-template-columns: minmax(0, 0.8fr) minmax(380px, 1.2fr);
-          gap: 24px;
           color: #ffffff;
           background:
             radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.13), transparent 17rem),
@@ -1722,7 +1818,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           box-shadow: 0 26px 72px rgba(30, 18, 43, 0.19);
         }
 
+        .masterDealerIntro {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: end;
+          gap: 18px;
+          margin-bottom: 20px;
+        }
+
         .masterDealerIntro > span {
+          grid-column: 1 / -1;
           color: #d8c3ff;
           font-size: 9px;
           font-weight: 900;
@@ -1730,21 +1835,29 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         .masterDealerIntro h2 {
-          margin: 9px 0 10px;
+          margin: 0;
           font-size: 27px;
           line-height: 1.6;
         }
 
         .masterDealerIntro p {
-          margin: 0;
+          grid-column: 1;
+          margin: 8px 0 0;
           color: rgba(255, 255, 255, 0.68);
           font-size: 10px;
           line-height: 2;
         }
 
-        .masterDealerIntro > a {
+        .masterDealerIntroActions {
+          grid-column: 2;
+          grid-row: 2 / 4;
+          display: grid;
+          justify-items: end;
+          gap: 8px;
+        }
+
+        .masterDealerIntroActions > a {
           min-height: 41px;
-          margin-top: 16px;
           padding: 0 14px;
           border-radius: 12px;
           display: inline-grid;
@@ -1755,29 +1868,251 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           font-weight: 900;
         }
 
-        .masterDealerGrid {
+        .masterDealerIntroActions > span {
+          max-width: 220px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 8px;
+          line-height: 1.7;
+          text-align: left;
+        }
+
+        .homeRailShell--dealers .homeRailTrack {
+          grid-auto-columns: clamp(275px, 27vw, 330px);
+          padding-bottom: 7px;
+        }
+
+        .homeRailShell--dealers .homeRailControls {
+          top: -61px;
+          left: 0;
+        }
+
+        .homeRailShell--dealers .homeRailControl {
+          color: #ffffff;
+          border-color: rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.1);
+          box-shadow: none;
+        }
+
+        .masterDealerShowcaseCard {
+          overflow: visible;
+          border-radius: 21px;
+          color: var(--ink);
+          background: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          box-shadow: 0 18px 44px rgba(9, 4, 17, 0.2);
+        }
+
+        .masterDealerCover {
+          position: relative;
+          height: 145px;
+          overflow: hidden;
+          border-radius: 20px 20px 0 0;
           display: grid;
-          align-content: center;
+          place-items: center;
+          color: #ffffff;
+          background: linear-gradient(135deg, #2d163d, #6d28d9);
+          font-size: 38px;
+          font-weight: 900;
+        }
+
+        .masterDealerCover::after {
+          position: absolute;
+          inset: 0;
+          content: "";
+          background: linear-gradient(180deg, transparent 42%, rgba(13, 7, 20, 0.68));
+          pointer-events: none;
+        }
+
+        .masterDealerCover img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .masterDealerCover > span {
+          position: relative;
+          z-index: 1;
+        }
+
+        .masterDealerCover em {
+          position: absolute;
+          right: 11px;
+          bottom: 10px;
+          z-index: 2;
+          padding: 6px 9px;
+          border: 1px solid rgba(255, 255, 255, 0.32);
+          border-radius: 999px;
+          color: #ffffff;
+          background: rgba(17, 10, 27, 0.58);
+          backdrop-filter: blur(10px);
+          font-size: 8px;
+          font-style: normal;
+          font-weight: 900;
+        }
+
+        .masterDealerCardBody {
+          padding: 14px;
+        }
+
+        .masterDealerIdentity {
+          display: flex;
+          align-items: center;
           gap: 9px;
         }
 
-        .masterDealerCard {
-          min-height: 70px;
-          padding: 10px;
-          border-radius: 17px;
+        .masterDealerMiniLogo {
+          width: 39px;
+          height: 39px;
+          flex: 0 0 auto;
+          border-radius: 13px;
+          display: grid;
+          place-items: center;
+          color: #ffffff;
+          background: linear-gradient(135deg, #2d163d, #6d28d9);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .masterDealerIdentity > div {
+          min-width: 0;
+        }
+
+        .masterDealerIdentity strong,
+        .masterDealerIdentity small {
+          display: block;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+
+        .masterDealerIdentity strong {
+          color: var(--ink);
+          font-size: 12px;
+        }
+
+        .masterDealerIdentity small {
+          margin-top: 4px;
+          color: var(--muted);
+          font-size: 8px;
+        }
+
+        .masterDealerStats {
+          margin-top: 12px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 7px;
+        }
+
+        .masterDealerStats > span {
+          padding: 8px;
+          border-radius: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          color: #786d80;
+          background: #fbf9ff;
+          border: 1px solid #eee7f5;
+          font-size: 8px;
+          font-weight: 700;
+        }
+
+        .masterDealerStats b {
+          color: var(--purple-dark);
+          font-size: 10px;
+        }
+
+        .masterDealerCardActions {
+          position: relative;
+          margin-top: 12px;
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 7px;
+        }
+
+        .masterDealerCardActions > a,
+        .dealerShareTrigger {
+          min-height: 39px;
+          border-radius: 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 9px;
+          font-weight: 900;
+        }
+
+        .masterDealerCardActions > a {
+          color: #ffffff;
+          background: linear-gradient(135deg, #4c1d95, #7c3aed);
+        }
+
+        .dealerShareActions {
+          position: relative;
+        }
+
+        .dealerShareTrigger {
+          min-width: 84px;
+          padding: 0 10px;
+          gap: 6px;
+          color: var(--purple-dark);
+          border: 1px solid #dfd1ef;
+          background: #f7f1ff;
+          cursor: pointer;
+        }
+
+        .dealerShareTrigger svg {
+          width: 15px;
+          height: 15px;
+          fill: currentColor;
+        }
+
+        .dealerShareMenu {
+          position: absolute;
+          left: 0;
+          bottom: calc(100% + 8px);
+          z-index: 30;
+          width: 150px;
+          padding: 7px;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          display: grid;
+          gap: 4px;
+          background: #ffffff;
+          box-shadow: 0 18px 48px rgba(30, 18, 43, 0.2);
+        }
+
+        .dealerShareMenu a,
+        .dealerShareMenu button {
+          min-height: 34px;
+          padding: 0 9px;
+          border: 0;
+          border-radius: 9px;
+          display: flex;
+          align-items: center;
+          color: #45394e;
+          background: #faf7ff;
+          cursor: pointer;
+          font: inherit;
+          font-size: 9px;
+          font-weight: 800;
+          text-align: right;
+        }
+
+        .masterDealerEmpty {
+          padding: 16px;
+          border: 1px dashed rgba(255, 255, 255, 0.28);
+          border-radius: 18px;
           display: grid;
           grid-template-columns: auto 1fr auto;
           align-items: center;
-          gap: 10px;
-          background: rgba(255, 255, 255, 0.09);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          gap: 12px;
+          background: rgba(255, 255, 255, 0.08);
         }
 
-        .masterDealerImage {
-          width: 43px;
-          height: 43px;
-          overflow: hidden;
-          border-radius: 13px;
+        .masterDealerEmpty > span {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
           display: grid;
           place-items: center;
           color: var(--purple-dark);
@@ -1785,38 +2120,25 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           font-weight: 900;
         }
 
-        .masterDealerImage img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+        .masterDealerEmpty strong {
+          font-size: 11px;
         }
 
-        .masterDealerCard > div:nth-child(2) {
-          min-width: 0;
-        }
-
-        .masterDealerCard strong,
-        .masterDealerCard small {
-          display: block;
-        }
-
-        .masterDealerCard strong {
-          overflow: hidden;
-          color: #ffffff;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          font-size: 10px;
-        }
-
-        .masterDealerCard small {
-          margin-top: 4px;
-          color: rgba(255, 255, 255, 0.55);
+        .masterDealerEmpty p {
+          margin: 5px 0 0;
+          color: rgba(255, 255, 255, 0.6);
           font-size: 8px;
         }
 
-        .masterDealerCard > span {
-          color: #ffffff;
-          font-size: 12px;
+        .masterDealerEmpty > a {
+          min-height: 39px;
+          padding: 0 13px;
+          border-radius: 11px;
+          display: inline-grid;
+          place-items: center;
+          color: var(--purple-dark);
+          background: #ffffff;
+          font-size: 9px;
           font-weight: 900;
         }
 
@@ -1970,10 +2292,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             display: none;
           }
 
-          .masterListingGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
           .masterCategoryGrid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
@@ -1996,10 +2314,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           .masterHeroContent {
             grid-template-columns: 1fr;
             gap: 16px;
-          }
-
-          .masterDealerPanel {
-            grid-template-columns: 1fr;
           }
 
           .masterFinalCta {
@@ -2167,12 +2481,27 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             gap: 13px;
           }
 
+          .homeRailTrack {
+            grid-auto-columns: min(83vw, 318px);
+            gap: 11px;
+            margin-inline: -1px;
+            padding: 3px 1px 15px;
+          }
+
+          .homeRailControls {
+            display: none;
+          }
+
+          .homeRailHint {
+            display: block;
+          }
+
           .masterListingCard {
             border-radius: 20px;
           }
 
           .masterListingImage {
-            height: 225px;
+            height: 205px;
           }
 
           .masterListingContent {
@@ -2213,28 +2542,67 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterDealerPanel {
-            padding: 20px 15px;
+            padding: 19px 14px;
             border-radius: 22px;
-            gap: 18px;
+          }
+
+          .masterDealerIntro {
+            display: block;
+            margin-bottom: 15px;
           }
 
           .masterDealerIntro h2 {
+            margin-top: 7px;
             font-size: 20px;
           }
 
           .masterDealerIntro p {
+            margin-top: 7px;
             font-size: 8px;
           }
 
-          .masterDealerCard {
-            min-height: 62px;
-            border-radius: 14px;
+          .masterDealerIntroActions {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 9px;
           }
 
-          .masterDealerImage {
-            width: 38px;
-            height: 38px;
-            border-radius: 11px;
+          .masterDealerIntroActions > a {
+            flex: 0 0 auto;
+            min-height: 37px;
+            font-size: 8px;
+          }
+
+          .masterDealerIntroActions > span {
+            max-width: 180px;
+            font-size: 7px;
+            text-align: right;
+          }
+
+          .homeRailShell--dealers .homeRailTrack {
+            grid-auto-columns: min(80vw, 302px);
+          }
+
+          .masterDealerCover {
+            height: 132px;
+          }
+
+          .masterDealerCardBody {
+            padding: 12px;
+          }
+
+          .dealerShareTrigger {
+            min-width: 74px;
+          }
+
+          .masterDealerEmpty {
+            grid-template-columns: auto 1fr;
+          }
+
+          .masterDealerEmpty > a {
+            grid-column: 1 / -1;
           }
 
           .masterTrustGrid {
@@ -2308,6 +2676,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           .masterCategoryGrid,
           .masterTrustGrid {
             grid-template-columns: 1fr;
+          }
+
+          .homeRailTrack {
+            grid-auto-columns: min(86vw, 300px);
+          }
+
+          .dealerShareTrigger span {
+            display: none;
+          }
+
+          .dealerShareTrigger {
+            min-width: 42px;
+            width: 42px;
+            padding: 0;
           }
         }
       `}</style>

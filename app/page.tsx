@@ -1,6 +1,7 @@
 import AuthStatus from "./components/AuthStatus";
 import HomeStories from "./components/HomeStories";
 import HomeLocationSelector from "./components/HomeLocationSelector";
+import HomeBannerSlot from "./components/HomeBannerSlot";
 import SaveListingButton from "./components/SaveListingButton";
 
 type Category = {
@@ -734,6 +735,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <div className="masterStoriesWrap">
         <HomeStories />
       </div>
+
+      <HomeBannerSlot />
 
       <section className="masterHero">
         <div className="masterHeroContent">

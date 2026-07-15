@@ -740,22 +740,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <section className="masterHero">
         <div className="masterHeroContent">
-          <div className="masterHeroIntro">
-            <span className="masterEyebrow">
-              جست‌وجوی هوشمند خودرو در چاکود
-            </span>
-
-            <h1>
-              خودرویی که ارزش دیده‌شدن دارد،
-              <span> در چاکود متفاوت دیده می‌شود</span>
-            </h1>
-
-            <p>
-              برند، مدل، شهر یا نمایشگاه را بنویس؛ نتایج مرتبط و ساختاریافته را
-              سریع‌تر پیدا کن.
-            </p>
-          </div>
-
           <div className="masterHeroSearchArea">
             <form className="masterSearch" action="/" method="get">
               <label className="masterSrOnly" htmlFor="master-search">
@@ -1233,29 +1217,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .masterHero {
           width: min(1240px, calc(100% - 32px));
           margin: 0 auto;
-          padding: 14px 0 28px;
+          padding: 10px 0 22px;
         }
 
         .masterHeroContent {
-          padding: 25px 28px;
-          display: grid;
-          grid-template-columns: minmax(0, 0.9fr) minmax(430px, 1.1fr);
-          align-items: center;
-          gap: 30px;
+          padding: 14px;
           border: 1px solid var(--border);
-          border-radius: 26px;
-          background:
-            radial-gradient(circle at 100% 0%, rgba(109, 40, 217, 0.1), transparent 17rem),
-            #ffffff;
+          border-radius: 22px;
+          background: #ffffff;
           box-shadow: var(--shadow);
         }
 
-        .masterHeroIntro,
         .masterHeroSearchArea {
           min-width: 0;
         }
 
-        .masterEyebrow,
         .masterSectionHeader > div > span {
           display: inline-flex;
           width: fit-content;
@@ -1265,39 +1241,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           letter-spacing: 0.4px;
         }
 
-        .masterEyebrow {
-          padding: 7px 11px;
-          border-radius: 999px;
-          border: 1px solid #e6dcf8;
-          background: var(--purple-soft);
-        }
-
-        .masterHero h1 {
-          max-width: 620px;
-          margin: 11px 0 0;
-          color: var(--ink);
-          font-size: clamp(27px, 3vw, 40px);
-          line-height: 1.45;
-          letter-spacing: -1.1px;
-        }
-
-        .masterHero h1 span {
-          color: var(--purple);
-        }
-
-        .masterHeroIntro > p {
-          max-width: 610px;
-          margin: 9px 0 0;
-          color: var(--muted);
-          font-size: 12px;
-          line-height: 1.95;
-        }
-
         .masterHeroSearchArea {
-          padding: 18px;
-          border: 1px solid #ece4f7;
-          border-radius: 20px;
-          background: rgba(250, 247, 255, 0.72);
+          padding: 0;
         }
 
         .masterSearch {
@@ -2093,36 +2038,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterHero {
-            padding: 9px 0 22px;
+            padding: 7px 0 16px;
           }
 
           .masterHeroContent {
-            padding: 17px 14px;
-            gap: 13px;
-            border-radius: 22px;
+            padding: 9px;
+            border-radius: 18px;
           }
 
           .masterHeroSearchArea {
-            padding: 11px;
-            border-radius: 17px;
-          }
-
-          .masterEyebrow {
-            padding: 6px 9px;
-            font-size: 8px;
-          }
-
-          .masterHero h1 {
-            margin-top: 10px;
-            font-size: 25px;
-            line-height: 1.5;
-            letter-spacing: -0.8px;
-          }
-
-          .masterHeroIntro > p {
-            margin-top: 7px;
-            font-size: 9px;
-            line-height: 1.85;
+            padding: 0;
           }
 
           .masterSearch {

@@ -1,0 +1,23 @@
+{
+  "name": "چاکود | پلتفرم رشد کسب‌وکار",
+  "short_name": "چاکود",
+  "description": "بازار حرفه‌ای خودرو و نمایشگاه‌های چاکود",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6d28d9",
+  "icons": [
+    {
+      "src": "/brand/chakod-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/chakod-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

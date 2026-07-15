@@ -772,12 +772,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <header className="masterHeader">
         <nav className="masterNav" aria-label="ناوبری اصلی">
           <a className="masterBrand" href="/" aria-label="صفحه اصلی چاکود">
-            <span className="masterBrandMark">چ</span>
-
-            <span className="masterBrandText">
-              <strong>چاکود</strong>
-              <small>مرجع خودروهای لوکس و منطقه آزاد</small>
-            </span>
+            <img
+              className="masterBrandLogo masterBrandLogoDesktop"
+              src="/brand/chakod-logo-horizontal.png"
+              alt="چاکود"
+            />
+            <img
+              className="masterBrandLogo masterBrandLogoMobile"
+              src="/brand/chakod-symbol.png"
+              alt=""
+              aria-hidden="true"
+            />
+            <span className="masterSrOnly">چاکود؛ پلتفرم رشد کسب‌وکار</span>
           </a>
 
           <div className="masterNavLinks">
@@ -978,7 +984,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               showControls={dealers.length > 2}
             >
               {dealers.map((dealer) => {
-                const dealerHref = `/?q=${encodeURIComponent(dealer.name)}`;
+                const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
 
                 return (
                   <article className="masterDealerShowcaseCard" key={dealer.name}>
@@ -1102,12 +1108,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <footer className="masterFooter">
         <div className="masterFooterMain">
-          <a className="masterBrand" href="/">
-            <span className="masterBrandMark">چ</span>
-            <span className="masterBrandText">
-              <strong>چاکود</strong>
-              <small>مرجع خودروهای لوکس و منطقه آزاد</small>
-            </span>
+          <a className="masterBrand masterFooterBrand" href="/" aria-label="صفحه اصلی چاکود">
+            <img
+              className="masterFooterLogo"
+              src="/brand/chakod-logo-full-light.png"
+              alt="چاکود؛ پلتفرم رشد کسب‌وکار"
+            />
           </a>
 
           <p>
@@ -1197,36 +1203,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .masterBrand {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
           min-width: max-content;
         }
 
-        .masterBrandMark {
-          width: 42px;
-          height: 42px;
-          border-radius: 14px;
-          display: grid;
-          place-items: center;
-          color: #ffffff;
-          font-size: 18px;
-          font-weight: 900;
-          background: linear-gradient(145deg, #2d163d, #6d28d9);
-          box-shadow: 0 12px 28px rgba(76, 29, 149, 0.22);
+        .masterBrandLogo {
+          display: block;
+          width: auto;
+          object-fit: contain;
         }
 
-        .masterBrandText {
-          display: grid;
-          gap: 2px;
+        .masterBrandLogoDesktop {
+          height: 39px;
         }
 
-        .masterBrandText strong {
-          color: var(--ink);
-          font-size: 17px;
-        }
-
-        .masterBrandText small {
-          color: var(--muted);
-          font-size: 9px;
+        .masterBrandLogoMobile {
+          display: none;
+          width: 34px;
+          height: 40px;
         }
 
         .masterNavLinks {
@@ -2397,12 +2390,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           gap: 28px;
         }
 
-        .masterFooter .masterBrandText strong {
-          color: #ffffff;
+        .masterFooterBrand {
+          align-self: center;
         }
 
-        .masterFooter .masterBrandText small {
-          color: rgba(255, 255, 255, 0.52);
+        .masterFooterLogo {
+          display: block;
+          width: 188px;
+          height: auto;
+          object-fit: contain;
         }
 
         .masterFooterMain > p {
@@ -2476,23 +2472,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             gap: 10px;
           }
 
-          .masterBrand {
-            gap: 7px;
-          }
-
-          .masterBrandMark {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            font-size: 16px;
-          }
-
-          .masterBrandText small {
+          .masterBrandLogoDesktop {
             display: none;
           }
 
-          .masterBrandText strong {
-            font-size: 14px;
+          .masterBrandLogoMobile {
+            display: block;
           }
 
           .masterNavActions {
@@ -2803,6 +2788,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             display: block;
           }
 
+          .masterFooterLogo {
+            width: 176px;
+          }
+
           .masterFooterMain > p {
             margin-top: 12px;
           }
@@ -2821,8 +2810,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         @media (max-width: 380px) {
-          .masterBrandText {
-            display: none;
+          .masterBrandLogoMobile {
+            width: 31px;
+            height: 37px;
           }
 
           .masterCategoryGrid,

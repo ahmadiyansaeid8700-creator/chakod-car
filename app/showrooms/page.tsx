@@ -125,9 +125,8 @@ export default async function PublicShowroomsPage({
   return (
     <main className="showroomsPage" dir="rtl">
       <header className="showroomsHeader">
-        <a className="showroomsBrand" href="/">
-          <span>چ</span>
-          <strong>چاکود</strong>
+        <a className="showroomsBrand" href="/" aria-label="صفحه اصلی چاکود">
+          <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
         </a>
         <nav>
           <a href="/">خانه</a>
@@ -175,7 +174,7 @@ export default async function PublicShowroomsPage({
 
         {filtered.length === 0 ? (
           <div className="showroomsEmpty">
-            <span>چ</span>
+            <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
             <strong>نمایشگاهی مطابق جست‌وجو پیدا نشد</strong>
             <p>فیلترها را تغییر بده یا اولین نمایشگاه این شهر را ثبت کن.</p>
             <a href="/dealers">ثبت نمایشگاه</a>
@@ -183,7 +182,7 @@ export default async function PublicShowroomsPage({
         ) : (
           <div className="showroomsGrid">
             {filtered.map((dealer) => {
-              const dealerHref = `/?q=${encodeURIComponent(dealer.name)}`;
+              const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
               return (
                 <article className="showroomCard" key={dealer.name}>
                   <a className="showroomCover" href={dealerHref}>
@@ -230,8 +229,8 @@ export default async function PublicShowroomsPage({
         .showroomsPage * { box-sizing:border-box; }
         .showroomsPage a { color:inherit; text-decoration:none; }
         .showroomsHeader { position:sticky; top:0; z-index:50; min-height:72px; padding:12px max(20px,calc((100vw - 1220px)/2)); display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid #ece3f5; background:rgba(255,255,255,.94); backdrop-filter:blur(16px); }
-        .showroomsBrand { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:900; }
-        .showroomsBrand > span { width:39px; height:39px; display:grid; place-items:center; color:#fff; border-radius:13px; background:linear-gradient(135deg,#2d163d,#6d28d9); }
+        .showroomsBrand { display:flex; align-items:center; }
+        .showroomsBrand img { display:block; width:auto; height:39px; object-fit:contain; }
         .showroomsHeader nav { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:900; }
         .showroomsHeader nav a { min-height:39px; padding:0 12px; display:inline-flex; align-items:center; border-radius:12px; }
         .showroomsManage { color:#fff !important; background:#6d28d9; }
@@ -270,13 +269,14 @@ export default async function PublicShowroomsPage({
         .dealerShareMenu { position:absolute; left:0; bottom:calc(100% + 7px); z-index:20; min-width:125px; padding:6px; display:grid; gap:4px; border:1px solid #e3d7ed; border-radius:13px; background:#fff; box-shadow:0 17px 45px rgba(30,14,43,.17); }
         .dealerShareMenu a,.dealerShareMenu button { min-height:34px; padding:0 9px; display:flex; align-items:center; border:0; border-radius:9px; color:#4e275f; background:#f8f4fb; font:inherit; font-size:8px; font-weight:900; cursor:pointer; }
         .showroomsEmpty { min-height:360px; padding:30px; display:grid; place-items:center; align-content:center; gap:9px; text-align:center; border:1px dashed #d8cae5; border-radius:24px; background:#fff; }
-        .showroomsEmpty > span { width:55px; height:55px; display:grid; place-items:center; color:#fff; border-radius:17px; background:#6d28d9; font-size:22px; font-weight:900; }
+        .showroomsEmpty > img { width:55px; height:68px; object-fit:contain; }
         .showroomsEmpty strong { font-size:17px; }
         .showroomsEmpty p { margin:0; color:#766a7f; font-size:10px; }
         .showroomsEmpty a { margin-top:7px; padding:10px 13px; color:#fff; border-radius:11px; background:#6d28d9; font-size:9px; font-weight:900; }
         @media (max-width:980px) { .showroomsGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .showroomsFilters { grid-template-columns:1fr 1fr; } .showroomsFilters label:first-child { grid-column:1/-1; } }
         @media (max-width:620px) {
           .showroomsHeader { min-height:60px; padding:9px 12px; }
+          .showroomsBrand img { width:35px; height:42px; object-fit:cover; object-position:left; }
           .showroomsHeader nav a:not(.showroomsManage) { display:none; }
           .showroomsHero { width:calc(100% - 20px); margin-top:14px; padding:20px 15px; align-items:flex-start; border-radius:22px; }
           .showroomsHero h1 { font-size:23px; }

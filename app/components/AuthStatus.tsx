@@ -80,6 +80,47 @@ function clearLocalAuth() {
   localStorage.removeItem("chakod_identity");
 }
 
+
+function UserAvatarIcon({ crowned = false }: { crowned?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      width="23"
+      height="23"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {crowned ? (
+        <path
+          d="M10.3 8.6 12.8 5l3.2 3.2L19.2 5l2.5 3.6-.9 3.2h-9.6l-.9-3.2Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      <circle
+        cx="16"
+        cy={crowned ? "16" : "12.8"}
+        r="4.2"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d={
+          crowned
+            ? "M8.7 27c.7-4.5 3.5-7 7.3-7s6.6 2.5 7.3 7"
+            : "M8.2 26c.7-5.1 3.7-8.2 7.8-8.2s7.1 3.1 7.8 8.2"
+        }
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function userHasAdminAccess(identity: IdentityCache) {
   if (identity.is_site_owner) return true;
 
@@ -222,7 +263,7 @@ export default function AuthStatus() {
   if (loading && !user) {
     return (
       <div className="authStatus authStatusLoading" aria-live="polite">
-        <div className="authAvatar">چ</div>
+        <div className="authAvatar"><UserAvatarIcon /></div>
         <div className="authStatusText">
           <strong>در حال بررسی...</strong>
           <span>وضعیت ورود</span>
@@ -235,7 +276,7 @@ export default function AuthStatus() {
     return (
       <a className="authStatus authStatusGuest" href="/login">
         <div className="authAvatar" aria-hidden="true">
-          ♕
+          <UserAvatarIcon />
         </div>
         <div className="authStatusText">
           <strong>ورود / ثبت‌نام</strong>
@@ -269,7 +310,7 @@ export default function AuthStatus() {
         aria-expanded={menuOpen}
       >
         <div className="authAvatar" aria-hidden="true">
-          👑
+          <UserAvatarIcon crowned />
         </div>
         <div className="authStatusText">
           <strong>{displayName}</strong>
@@ -326,6 +367,12 @@ export default function AuthStatus() {
 
         .authStatusShell button.authStatus {
           text-align: right;
+        }
+
+        .authStatusShell .authAvatar svg {
+          display: block;
+          width: 23px;
+          height: 23px;
         }
 
         .authMenuChevron {

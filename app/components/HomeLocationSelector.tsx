@@ -679,7 +679,8 @@ export default function HomeLocationSelector() {
 
         @media (max-width: 640px) {
           .homeLocationTrigger {
-            max-width: 190px;
+            width: min(160px, 100%);
+            max-width: 160px;
             min-height: 38px;
             padding: 4px 6px;
             border-radius: 12px;
@@ -740,6 +741,24 @@ export default function HomeLocationSelector() {
 
           .homeLocationActions button {
             flex: 1;
+          }
+        }
+
+
+        @media (max-width: 420px) {
+          .homeLocationTrigger {
+            width: min(145px, 100%);
+            max-width: 145px;
+          }
+
+          .homeLocationPin {
+            width: 27px;
+            height: 27px;
+            font-size: 15px;
+          }
+
+          .homeLocationTrigger strong {
+            font-size: 8px;
           }
         }
       `}</style>

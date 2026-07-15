@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./MobileBottomNav.module.css";
@@ -14,88 +15,67 @@ type NavItem = {
   isActive: (pathname: string) => boolean;
 };
 
+type CachedUser = {
+  account_type?: "personal" | "dealer" | "business";
+};
+
+type CachedIdentity = {
+  redirect_to?: string;
+  primary_role?: string;
+  roles?: string[];
+  is_site_owner?: boolean;
+};
+
+const ADMIN_ROLES = new Set([
+  "site_owner",
+  "super_admin",
+  "admin",
+  "moderator",
+  "support",
+  "finance",
+  "viewer",
+]);
+
 function HomeIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
       <path
         d="M3.5 10.7 12 3.8l8.5 6.9v8a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8v-8Z"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
-      <path
-        d="M9.2 20.5v-6.2h5.6v6.2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
+      <path d="M9.2 20.5v-6.2h5.6v6.2" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function MarketIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
       <path
         d="M4.2 10.2h15.6l-1.1-4.1a1.8 1.8 0 0 0-1.7-1.3H7a1.8 1.8 0 0 0-1.7 1.3l-1.1 4.1Z"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
-      <path
-        d="M5.3 10.2v7.2c0 1 .8 1.8 1.8 1.8h9.8c1 0 1.8-.8 1.8-1.8v-7.2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M8 19.2v-4.5h8v4.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
+      <path d="M5.3 10.2v7.2c0 1 .8 1.8 1.8 1.8h9.8c1 0 1.8-.8 1.8-1.8v-7.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 19.2v-4.5h8v4.5" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );
 }
 
 function SubmitIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="27"
-      height="27"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
 }
 
 function BookmarkIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="none"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
       <path
         d="M6.5 5.2c0-1 .8-1.7 1.7-1.7h7.6c1 0 1.7.8 1.7 1.7v15.3L12 17.1l-5.5 3.4V5.2Z"
         stroke="currentColor"
@@ -108,102 +88,136 @@ function BookmarkIcon() {
 
 function AccountIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width="24"
-      height="24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        cx="12"
-        cy="8"
-        r="3.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-const navItems: NavItem[] = [
-  {
-    id: "home",
-    title: "خانه",
-    href: "/",
-    icon: <HomeIcon />,
-    isActive: (pathname) => pathname === "/",
-  },
-  {
-    id: "market",
-    title: "بازار",
-    href: "/ads",
-    icon: <MarketIcon />,
-    isActive: (pathname) =>
-      pathname === "/ads" || pathname.startsWith("/ads/"),
-  },
-  {
-    id: "submit",
-    title: "ثبت آگهی",
-    href: "/submit",
-    icon: <SubmitIcon />,
-    primary: true,
-    isActive: (pathname) =>
-      pathname === "/submit" || pathname.startsWith("/submit/"),
-  },
-  {
-    id: "saved",
-    title: "نشان‌شده‌ها",
-    href: "/account/saved",
-    icon: <BookmarkIcon />,
-    isActive: (pathname) =>
-      pathname === "/account/saved" ||
-      pathname.startsWith("/account/saved/"),
-  },
-  {
-    id: "account",
-    title: "حساب",
-    href: "/account",
-    icon: <AccountIcon />,
-    isActive: (pathname) => {
-      const isAccountRoute =
-        pathname === "/account" || pathname.startsWith("/account/");
+function safePath(value?: string) {
+  return Boolean(value && value.startsWith("/") && !value.startsWith("//"));
+}
 
-      const isSavedRoute =
-        pathname === "/account/saved" ||
-        pathname.startsWith("/account/saved/");
+function readJson<T>(key: string): T | null {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? (JSON.parse(value) as T) : null;
+  } catch {
+    return null;
+  }
+}
 
-      return isAccountRoute && !isSavedRoute;
-    },
-  },
-];
+function resolveAccountDestination() {
+  const user = readJson<CachedUser>("chakod_user");
+  const identity = readJson<CachedIdentity>("chakod_identity") || {};
+  const loggedIn = Boolean(localStorage.getItem("chakod_session_token") && user);
+
+  if (!loggedIn) {
+    return { href: "/login", title: "ورود" };
+  }
+
+  const hasAdminAccess =
+    Boolean(identity.is_site_owner) ||
+    [identity.primary_role, ...(identity.roles || [])].some(
+      (role) => role && ADMIN_ROLES.has(role),
+    );
+
+  if (hasAdminAccess) {
+    return {
+      href: safePath(identity.redirect_to) ? identity.redirect_to! : "/admin",
+      title: "مدیریت",
+    };
+  }
+
+  if (user?.account_type === "dealer" || user?.account_type === "business") {
+    return { href: "/dashboard", title: "نمایشگاه" };
+  }
+
+  return { href: "/account", title: "حساب" };
+}
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
+  const [accountDestination, setAccountDestination] = useState({
+    href: "/login",
+    title: "ورود",
+  });
 
-  const shouldHide =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/super-admin");
+  useEffect(() => {
+    const syncDestination = () => setAccountDestination(resolveAccountDestination());
 
-  if (shouldHide) {
-    return null;
-  }
+    syncDestination();
+    window.addEventListener("storage", syncDestination);
+    window.addEventListener("chakod:auth-changed", syncDestination);
+
+    return () => {
+      window.removeEventListener("storage", syncDestination);
+      window.removeEventListener("chakod:auth-changed", syncDestination);
+    };
+  }, []);
+
+  const navItems = useMemo<NavItem[]>(
+    () => [
+      {
+        id: "home",
+        title: "خانه",
+        href: "/",
+        icon: <HomeIcon />,
+        isActive: (currentPath) => currentPath === "/",
+      },
+      {
+        id: "market",
+        title: "بازار",
+        href: "/ads",
+        icon: <MarketIcon />,
+        isActive: (currentPath) => currentPath === "/ads" || currentPath.startsWith("/ads/"),
+      },
+      {
+        id: "submit",
+        title: "ثبت آگهی",
+        href: "/submit",
+        icon: <SubmitIcon />,
+        primary: true,
+        isActive: (currentPath) => currentPath === "/submit" || currentPath.startsWith("/submit/"),
+      },
+      {
+        id: "saved",
+        title: "نشان‌شده‌ها",
+        href: "/account/saved",
+        icon: <BookmarkIcon />,
+        isActive: (currentPath) =>
+          currentPath === "/account/saved" || currentPath.startsWith("/account/saved/"),
+      },
+      {
+        id: "account",
+        title: accountDestination.title,
+        href: accountDestination.href,
+        icon: <AccountIcon />,
+        isActive: (currentPath) => {
+          if (accountDestination.href === "/admin") return currentPath.startsWith("/admin");
+          if (accountDestination.href === "/dashboard") return currentPath.startsWith("/dashboard");
+          if (accountDestination.href === "/login") return currentPath.startsWith("/login");
+
+          const isAccountRoute = currentPath === "/account" || currentPath.startsWith("/account/");
+          const isSavedRoute = currentPath === "/account/saved" || currentPath.startsWith("/account/saved/");
+          return isAccountRoute && !isSavedRoute;
+        },
+      },
+    ],
+    [accountDestination],
+  );
+
+  const shouldHide = pathname.startsWith("/admin") || pathname.startsWith("/super-admin");
+
+  if (shouldHide) return null;
 
   return (
     <>
       <div className={styles.pageSpacer} aria-hidden="true" />
 
       <div className={styles.navigationShell}>
-        <nav
-          className={styles.navigation}
-          aria-label="منوی اصلی نسخه موبایل"
-        >
+        <nav className={styles.navigation} aria-label="منوی اصلی نسخه موبایل">
           {navItems.map((item) => {
             const active = item.isActive(pathname);
 
@@ -221,32 +235,9 @@ export default function MobileBottomNav() {
                   .filter(Boolean)
                   .join(" ")}
               >
-                <span
-                  className={
-                    item.primary
-                      ? styles.primaryIcon
-                      : styles.navigationIcon
-                  }
-                >
-                  {item.icon}
-                </span>
-
-                <span
-                  className={
-                    item.primary
-                      ? styles.primaryTitle
-                      : styles.navigationTitle
-                  }
-                >
-                  {item.title}
-                </span>
-
-                {!item.primary && (
-                  <span
-                    className={styles.activeIndicator}
-                    aria-hidden="true"
-                  />
-                )}
+                <span className={item.primary ? styles.primaryIcon : styles.navigationIcon}>{item.icon}</span>
+                <span className={item.primary ? styles.primaryTitle : styles.navigationTitle}>{item.title}</span>
+                {!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}
               </Link>
             );
           })}

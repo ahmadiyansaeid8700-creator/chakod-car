@@ -718,15 +718,24 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           <div className="masterNavActions">
-            <HomeLocationSelector />
-            <AuthStatus />
+            <div className="masterLocationControl">
+              <HomeLocationSelector />
+            </div>
 
-            <a className="masterSavedLink" href="/account/saved">
-              نشان‌شده‌ها
+            <a
+              className="masterSavedLink"
+              href="/account/saved"
+              aria-label="آگهی‌های نشان‌شده"
+            >
+              <span aria-hidden="true">♡</span>
+              <b>نشان‌شده‌ها</b>
             </a>
 
+            <AuthStatus />
+
             <a className="masterSubmitButton" href="/submit">
-              ثبت آگهی
+              <span aria-hidden="true">＋</span>
+              <b>ثبت آگهی</b>
             </a>
           </div>
         </nav>
@@ -1079,7 +1088,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           margin: 0 auto;
           display: flex;
           align-items: center;
-          gap: 24px;
+          gap: 18px;
         }
 
         .masterBrand {
@@ -1134,20 +1143,41 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .masterNavActions {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 7px;
+          min-width: 0;
+        }
+
+        .masterLocationControl {
+          min-width: 0;
         }
 
         .masterSavedLink,
         .masterSubmitButton {
-          min-height: 41px;
-          padding: 0 13px;
+          min-height: 42px;
+          padding: 0 12px;
           border-radius: 13px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 6px;
           white-space: nowrap;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 900;
+          transition:
+            transform 160ms ease,
+            border-color 160ms ease,
+            box-shadow 160ms ease;
+        }
+
+        .masterSavedLink span,
+        .masterSubmitButton span {
+          font-size: 16px;
+          line-height: 1;
+        }
+
+        .masterSavedLink b,
+        .masterSubmitButton b {
+          font: inherit;
         }
 
         .masterSavedLink {
@@ -1156,23 +1186,38 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           background: #ffffff;
         }
 
+        .masterSavedLink:hover {
+          border-color: #c4b5fd;
+          transform: translateY(-1px);
+        }
+
         .masterSubmitButton {
           color: #ffffff;
           background: linear-gradient(135deg, #4c1d95, #7c3aed);
           box-shadow: 0 12px 26px rgba(76, 29, 149, 0.18);
         }
 
+        .masterSubmitButton:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 15px 30px rgba(76, 29, 149, 0.24);
+        }
+
+        .chakodMasterHome .authStatusShell {
+          min-width: 0;
+        }
+
         .chakodMasterHome .authStatus {
-          min-width: 156px;
-          min-height: 43px;
-          padding: 6px 8px;
-          border-radius: 14px;
+          min-width: 148px;
+          min-height: 42px;
+          padding: 5px 7px;
+          border-radius: 13px;
           display: flex;
           align-items: center;
           gap: 8px;
           color: var(--ink);
           border: 1px solid var(--border);
           background: #ffffff;
+          text-decoration: none;
         }
 
         .chakodMasterHome .authAvatar {
@@ -1970,7 +2015,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           .masterNav {
             width: calc(100% - 20px);
             min-height: 62px;
-            gap: 10px;
+            gap: 8px;
+          }
+
+          .masterBrand {
+            gap: 7px;
           }
 
           .masterBrandMark {
@@ -1985,30 +2034,41 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterBrandText strong {
-            font-size: 15px;
+            font-size: 14px;
           }
 
           .masterNavActions {
+            flex: 1;
+            justify-content: flex-end;
             margin-right: auto;
-            gap: 6px;
+            gap: 5px;
           }
 
-          .masterNavActions > .homeLocationSelector {
-            order: -1;
+          .masterLocationControl {
+            min-width: 0;
+          }
+
+          .masterSavedLink,
+          .masterSubmitButton {
+            display: none;
+          }
+
+          .chakodMasterHome .authStatusShell {
+            width: 38px;
+            flex: 0 0 38px;
           }
 
           .chakodMasterHome .authStatus {
             width: 38px;
             min-width: 38px;
             min-height: 38px;
-            padding: 2px;
+            padding: 1px;
             border: 0;
             background: transparent;
           }
 
-          .chakodMasterHome .authStatus > div,
-          .chakodMasterHome .authStatus strong,
-          .chakodMasterHome .authStatus span {
+          .chakodMasterHome .authStatusText,
+          .chakodMasterHome .authMenuChevron {
             display: none;
           }
 
@@ -2016,13 +2076,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             width: 36px;
             height: 36px;
             border-radius: 11px;
-          }
-
-          .masterSubmitButton {
-            min-height: 38px;
-            padding: 0 10px;
-            border-radius: 11px;
-            font-size: 9px;
           }
 
           .masterStoriesWrap,

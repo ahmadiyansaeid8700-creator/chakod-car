@@ -740,68 +740,48 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <section className="masterHero">
         <div className="masterHeroContent">
-          <span className="masterEyebrow">
-            مرجع خودروهای خاص، لوکس و منطقه آزاد
-          </span>
+          <div className="masterHeroIntro">
+            <span className="masterEyebrow">
+              جست‌وجوی هوشمند خودرو در چاکود
+            </span>
 
-          <h1>
-            خودرویی که ارزش دیده‌شدن دارد،
-            <span> در چاکود متفاوت دیده می‌شود</span>
-          </h1>
+            <h1>
+              خودرویی که ارزش دیده‌شدن دارد،
+              <span> در چاکود متفاوت دیده می‌شود</span>
+            </h1>
 
-          <p>
-            ویترین منتخب خودروهای لوکس، منطقه آزاد و فروشندگان حرفه‌ای؛ با
-            آگهی‌های ساختاریافته، هویت روشن و بررسی هوشمند.
-          </p>
+            <p>
+              برند، مدل، شهر یا نمایشگاه را بنویس؛ نتایج مرتبط و ساختاریافته را
+              سریع‌تر پیدا کن.
+            </p>
+          </div>
 
-          <form className="masterSearch" action="/" method="get">
-            <label className="masterSrOnly" htmlFor="master-search">
-              جست‌وجوی خودرو
-            </label>
+          <div className="masterHeroSearchArea">
+            <form className="masterSearch" action="/" method="get">
+              <label className="masterSrOnly" htmlFor="master-search">
+                جست‌وجوی خودرو
+              </label>
 
-            <span aria-hidden="true">⌕</span>
+              <span aria-hidden="true">⌕</span>
 
-            <input
-              id="master-search"
-              name="q"
-              defaultValue={query}
-              placeholder="برند، مدل، شهر یا نمایشگاه..."
-              autoComplete="off"
-            />
+              <input
+                id="master-search"
+                name="q"
+                defaultValue={query}
+                placeholder="برند، مدل، شهر یا نمایشگاه..."
+                autoComplete="off"
+              />
 
-            <button type="submit">جست‌وجو</button>
-          </form>
+              <button type="submit">جست‌وجو</button>
+            </form>
 
-          <div className="masterHeroLinks">
-            <a href="#luxury">منتخب لوکس</a>
-            <a href="#freezone">منطقه آزاد</a>
-            <a href="#economic">خودروهای اقتصادی</a>
+            <div className="masterHeroLinks">
+              <a href="#luxury">منتخب لوکس</a>
+              <a href="#freezone">منطقه آزاد</a>
+              <a href="#economic">خودروهای اقتصادی</a>
+            </div>
           </div>
         </div>
-
-        <aside className="masterHeroAside">
-          <span>CHAKOD SELECT</span>
-          <h2>ویترین حرفه‌ای برای خودروهای ممتاز</h2>
-          <p>
-            نمایش بهتر، اعتماد بیشتر و صفحه‌ای که فروشنده یا نمایشگاه بتواند
-            با افتخار آن را برای مشتری منتشر کند.
-          </p>
-
-          <div className="masterHeroStats">
-            <div>
-              <strong>لوکس</strong>
-              <small>اولویت صفحه اصلی</small>
-            </div>
-            <div>
-              <strong>منطقه آزاد</strong>
-              <small>بخش اختصاصی</small>
-            </div>
-            <div>
-              <strong>هوشمند</strong>
-              <small>انتخاب بر اساس امتیاز</small>
-            </div>
-          </div>
-        </aside>
       </section>
 
       {query ? (
@@ -1253,24 +1233,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .masterHero {
           width: min(1240px, calc(100% - 32px));
           margin: 0 auto;
-          padding: 16px 0 34px;
-          display: grid;
-          grid-template-columns: minmax(0, 1.35fr) minmax(310px, 0.65fr);
-          gap: 18px;
-        }
-
-        .masterHeroContent,
-        .masterHeroAside {
-          border: 1px solid var(--border);
-          box-shadow: var(--shadow);
+          padding: 14px 0 28px;
         }
 
         .masterHeroContent {
-          padding: 36px;
-          border-radius: 30px;
+          padding: 25px 28px;
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(430px, 1.1fr);
+          align-items: center;
+          gap: 30px;
+          border: 1px solid var(--border);
+          border-radius: 26px;
           background:
-            radial-gradient(circle at 0% 0%, rgba(109, 40, 217, 0.11), transparent 18rem),
+            radial-gradient(circle at 100% 0%, rgba(109, 40, 217, 0.1), transparent 17rem),
             #ffffff;
+          box-shadow: var(--shadow);
+        }
+
+        .masterHeroIntro,
+        .masterHeroSearchArea {
+          min-width: 0;
         }
 
         .masterEyebrow,
@@ -1291,24 +1273,31 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         .masterHero h1 {
-          max-width: 800px;
-          margin: 17px 0 0;
+          max-width: 620px;
+          margin: 11px 0 0;
           color: var(--ink);
-          font-size: clamp(36px, 4.7vw, 58px);
-          line-height: 1.35;
-          letter-spacing: -1.7px;
+          font-size: clamp(27px, 3vw, 40px);
+          line-height: 1.45;
+          letter-spacing: -1.1px;
         }
 
         .masterHero h1 span {
           color: var(--purple);
         }
 
-        .masterHeroContent > p {
-          max-width: 780px;
-          margin: 15px 0 22px;
+        .masterHeroIntro > p {
+          max-width: 610px;
+          margin: 9px 0 0;
           color: var(--muted);
-          font-size: 14px;
-          line-height: 2.05;
+          font-size: 12px;
+          line-height: 1.95;
+        }
+
+        .masterHeroSearchArea {
+          padding: 18px;
+          border: 1px solid #ece4f7;
+          border-radius: 20px;
+          background: rgba(250, 247, 255, 0.72);
         }
 
         .masterSearch {
@@ -1370,68 +1359,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           border: 1px solid #eee7f7;
           font-size: 9px;
           font-weight: 800;
-        }
-
-        .masterHeroAside {
-          padding: 27px;
-          border-radius: 28px;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          color: #ffffff;
-          background:
-            radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.16), transparent 14rem),
-            linear-gradient(145deg, #17111f, #3c1d55 55%, #6d28d9);
-        }
-
-        .masterHeroAside > span {
-          color: #d9c6ff;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 1px;
-        }
-
-        .masterHeroAside h2 {
-          margin: 12px 0 8px;
-          font-size: 24px;
-          line-height: 1.65;
-        }
-
-        .masterHeroAside p {
-          margin: 0;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 11px;
-          line-height: 2;
-        }
-
-        .masterHeroStats {
-          margin-top: 18px;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 7px;
-        }
-
-        .masterHeroStats div {
-          padding: 10px 7px;
-          border-radius: 13px;
-          text-align: center;
-          background: rgba(255, 255, 255, 0.09);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .masterHeroStats strong,
-        .masterHeroStats small {
-          display: block;
-        }
-
-        .masterHeroStats strong {
-          font-size: 10px;
-        }
-
-        .masterHeroStats small {
-          margin-top: 4px;
-          color: rgba(255, 255, 255, 0.55);
-          font-size: 7px;
         }
 
         .masterSection {
@@ -2075,8 +2002,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             min-width: 0;
           }
 
-          .masterHero {
+          .masterHeroContent {
             grid-template-columns: 1fr;
+            gap: 16px;
           }
 
           .masterDealerPanel {
@@ -2169,8 +2097,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterHeroContent {
-            padding: 20px 16px 18px;
+            padding: 17px 14px;
+            gap: 13px;
             border-radius: 22px;
+          }
+
+          .masterHeroSearchArea {
+            padding: 11px;
+            border-radius: 17px;
           }
 
           .masterEyebrow {
@@ -2179,16 +2113,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterHero h1 {
-            margin-top: 12px;
-            font-size: 29px;
-            line-height: 1.45;
-            letter-spacing: -1px;
+            margin-top: 10px;
+            font-size: 25px;
+            line-height: 1.5;
+            letter-spacing: -0.8px;
           }
 
-          .masterHeroContent > p {
-            margin: 10px 0 15px;
-            font-size: 10px;
-            line-height: 1.9;
+          .masterHeroIntro > p {
+            margin-top: 7px;
+            font-size: 9px;
+            line-height: 1.85;
           }
 
           .masterSearch {
@@ -2224,9 +2158,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             font-size: 7px;
           }
 
-          .masterHeroAside {
-            display: none;
-          }
 
           .masterSection {
             padding: 24px 0;

@@ -39,20 +39,26 @@ export default function HomeHorizontalRail({
         <div className="homeRailControls" aria-label={`پیمایش ${ariaLabel}`}>
           <button
             type="button"
+            dir="ltr"
             className="homeRailControl homeRailControl--right"
             onClick={() => scroll("previous")}
-            aria-label={`موارد قبلی ${ariaLabel}`}
+            aria-label={`حرکت به راست در ${ariaLabel}`}
           >
-            ›
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </button>
 
           <button
             type="button"
+            dir="ltr"
             className="homeRailControl homeRailControl--left"
             onClick={() => scroll("next")}
-            aria-label={`موارد بعدی ${ariaLabel}`}
+            aria-label={`حرکت به چپ در ${ariaLabel}`}
           >
-            ‹
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
         </div>
       ) : null}

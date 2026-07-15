@@ -628,6 +628,7 @@ function ShowcaseSection({
   badge,
   tone,
   emptyText,
+  allHref,
 }: {
   id: string;
   kicker: string;
@@ -637,16 +638,47 @@ function ShowcaseSection({
   badge: string;
   tone: "luxury" | "freezone" | "economic";
   emptyText: string;
+  allHref: string;
 }) {
   if (listings.length === 0) {
     return (
       <section className="masterSection" id={id}>
         <div className="masterSectionHeader">
-          <div>
+          <div className="masterSectionTitleBlock">
+
             <span>{kicker}</span>
-            <h2>{title}</h2>
+
+            <div className="masterSectionTitleRow">
+
+              <h2>{title}</h2>
+
+              <a
+
+                className="masterShowAllLink"
+
+                href={allHref}
+
+                aria-label={`نمایش همه ${title}`}
+
+              >
+
+                نمایش همه
+
+                <span aria-hidden="true">←</span>
+
+              </a>
+
+            </div>
+
           </div>
-          <p>{description}</p>
+
+          <div className="masterSectionHeaderSide">
+
+
+            <p>{description}</p>
+
+
+          </div>
         </div>
 
         <div className="masterEmptyShowcase">
@@ -659,14 +691,46 @@ function ShowcaseSection({
   }
 
   return (
-    <section className={`masterSection masterSection--${tone}`} id={id}>
+    <section
+      className={`masterSection masterSection--${tone} masterSectionWithAll`}
+      id={id}
+    >
       <div className="masterSectionHeader">
-        <div>
+        <div className="masterSectionTitleBlock">
+
           <span>{kicker}</span>
-          <h2>{title}</h2>
+
+          <div className="masterSectionTitleRow">
+
+            <h2>{title}</h2>
+
+            <a
+
+              className="masterShowAllLink"
+
+              href={allHref}
+
+              aria-label={`نمایش همه ${title}`}
+
+            >
+
+              نمایش همه
+
+              <span aria-hidden="true">←</span>
+
+            </a>
+
+          </div>
+
         </div>
 
-        <p>{description}</p>
+        <div className="masterSectionHeaderSide">
+
+
+          <p>{description}</p>
+
+
+        </div>
       </div>
 
       <HomeHorizontalRail
@@ -829,6 +893,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             badge="منتخب لوکس"
             tone="luxury"
             emptyText="هنوز خودروی لوکس مناسبی برای نمایش نداریم"
+            allHref="/ads/luxury"
           />
 
           <ShowcaseSection
@@ -840,6 +905,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             badge="منطقه آزاد"
             tone="freezone"
             emptyText="هنوز آگهی منطقه آزاد تأییدشده‌ای ثبت نشده"
+            allHref="/ads/freezone"
           />
 
           <ShowcaseSection
@@ -851,6 +917,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             badge="ارزش خرید"
             tone="economic"
             emptyText="هنوز گزینه اقتصادی مناسبی برای نمایش نداریم"
+            allHref="/ads/economic"
           />
         </>
       )}
@@ -894,7 +961,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               واتساپ، تلگرام یا کپی مستقیم برای مشتری قابل ارسال است.
             </p>
             <div className="masterDealerIntroActions">
-              <a href="/dealers">مدیریت نمایشگاه</a>
+              <div className="masterDealerIntroButtons">
+                <a className="masterDealerShowAll" href="/showrooms">
+                  نمایش همه نمایشگاه‌ها
+                </a>
+                <a href="/dealers">مدیریت نمایشگاه</a>
+              </div>
               <span>صفحه اختصاصی و QR Code در مرحله بعد فعال می‌شود</span>
             </div>
           </div>
@@ -1396,19 +1468,64 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           gap: 22px;
         }
 
+        .masterSectionTitleBlock {
+          min-width: 0;
+        }
+
+        .masterSectionTitleRow {
+          margin-top: 5px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
         .masterSectionHeader h2 {
-          margin: 5px 0 0;
+          margin: 0;
           color: var(--ink);
           font-size: 27px;
           line-height: 1.45;
         }
 
-        .masterSectionHeader > p {
-          max-width: 520px;
+        .masterSectionHeaderSide {
+          max-width: 560px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: flex-end;
+          gap: 13px;
+        }
+
+        .masterSectionHeaderSide > p {
+          max-width: 470px;
           margin: 0;
           color: var(--muted);
           font-size: 11px;
           line-height: 2;
+        }
+
+        .masterShowAllLink {
+          min-height: 39px;
+          flex: 0 0 auto;
+          padding: 0 13px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--purple-dark);
+          background: #ffffff;
+          box-shadow: 0 10px 28px rgba(35, 21, 55, 0.07);
+          font-size: 9px;
+          font-weight: 900;
+          transition: transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .masterShowAllLink:hover {
+          transform: translateY(-2px);
+          border-color: #cdb8ed;
+        }
+
+        .masterSectionWithAll .homeRailControls {
+          left: 0;
         }
 
         .masterClearSearch {
@@ -1481,6 +1598,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         .homeRailControl:hover {
           transform: translateY(-2px);
           border-color: #cbb7e5;
+        }
+
+        .homeRailControl svg {
+          width: 20px;
+          height: 20px;
+          display: block;
+          margin: auto;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2.2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
         }
 
         .homeRailHint {
@@ -1856,7 +1985,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           gap: 8px;
         }
 
-        .masterDealerIntroActions > a {
+        .masterDealerIntroButtons {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 7px;
+        }
+
+        .masterDealerIntroButtons > a {
           min-height: 41px;
           padding: 0 14px;
           border-radius: 12px;
@@ -1866,6 +2002,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           background: #ffffff;
           font-size: 10px;
           font-weight: 900;
+        }
+
+        .masterDealerIntroButtons > .masterDealerShowAll {
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.26);
+          background: rgba(255, 255, 255, 0.12);
         }
 
         .masterDealerIntroActions > span {
@@ -2448,15 +2590,36 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             display: block;
           }
 
-          .masterSectionHeader h2 {
+          .masterSectionTitleRow {
             margin-top: 4px;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .masterSectionHeader h2 {
+            margin: 0;
             font-size: 20px;
           }
 
-          .masterSectionHeader > p {
+          .masterSectionHeaderSide {
+            width: 100%;
+            max-width: none;
             margin-top: 7px;
+            display: block;
+          }
+
+          .masterSectionHeaderSide > p {
+            margin: 0;
             font-size: 9px;
             line-height: 1.85;
+          }
+
+          .masterShowAllLink {
+            min-height: 34px;
+            padding: 0 10px;
+            border-radius: 10px;
+            font-size: 8px;
+            white-space: nowrap;
           }
 
           .masterListingGrid {
@@ -2552,9 +2715,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             gap: 9px;
           }
 
-          .masterDealerIntroActions > a {
-            flex: 0 0 auto;
+          .masterDealerIntroButtons {
+            width: 100%;
+            justify-content: flex-start;
+          }
+
+          .masterDealerIntroButtons > a {
+            flex: 1;
             min-height: 37px;
+            padding-inline: 9px;
             font-size: 8px;
           }
 

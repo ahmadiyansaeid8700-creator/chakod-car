@@ -1984,8 +1984,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         @media (max-width: 850px) {
-          .masterSavedLink {
-            display: none;
+          .masterSavedLink,
+          .masterSubmitButton {
+            display: none !important;
           }
 
           .chakodMasterHome .authStatus {
@@ -2015,7 +2016,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           .masterNav {
             width: calc(100% - 20px);
             min-height: 62px;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 10px;
           }
 
           .masterBrand {
@@ -2038,19 +2040,22 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterNavActions {
-            flex: 1;
-            justify-content: flex-end;
-            margin-right: auto;
+            flex: 0 1 auto;
+            justify-content: flex-start;
+            margin-right: 0;
+            margin-left: 0;
             gap: 5px;
           }
 
           .masterLocationControl {
             min-width: 0;
+            max-width: min(46vw, 155px);
           }
 
           .masterSavedLink,
-          .masterSubmitButton {
-            display: none;
+          .masterSubmitButton,
+          .chakodMasterHome .authStatusShell {
+            display: none !important;
           }
 
           .chakodMasterHome .authStatusShell {

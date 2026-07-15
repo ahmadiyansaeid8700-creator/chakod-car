@@ -2355,46 +2355,29 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           .masterNavActions {
             flex: 0 1 auto;
+            max-width: 58vw;
             justify-content: flex-start;
-            margin-right: 0;
+            margin-right: auto;
             margin-left: 0;
-            gap: 5px;
+            gap: 0;
           }
 
           .masterLocationControl {
+            width: min(58vw, 190px);
             min-width: 0;
-            max-width: min(46vw, 155px);
+            max-width: min(58vw, 190px);
+          }
+
+          .masterLocationControl .homeLocationTrigger {
+            width: 100%;
+            max-width: 100%;
           }
 
           .masterSavedLink,
           .masterSubmitButton,
-          .chakodMasterHome .authStatusShell {
+          .chakodMasterHome .authStatusShell,
+          .chakodMasterHome .masterNavActions > .authStatus {
             display: none !important;
-          }
-
-          .chakodMasterHome .authStatusShell {
-            width: 38px;
-            flex: 0 0 38px;
-          }
-
-          .chakodMasterHome .authStatus {
-            width: 38px;
-            min-width: 38px;
-            min-height: 38px;
-            padding: 1px;
-            border: 0;
-            background: transparent;
-          }
-
-          .chakodMasterHome .authStatusText,
-          .chakodMasterHome .authMenuChevron {
-            display: none;
-          }
-
-          .chakodMasterHome .authAvatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 11px;
           }
 
           .masterStoriesWrap,

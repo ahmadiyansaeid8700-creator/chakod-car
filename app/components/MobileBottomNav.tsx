@@ -208,7 +208,10 @@ export default function MobileBottomNav() {
     [accountDestination],
   );
 
-  const shouldHide = pathname.startsWith("/admin") || pathname.startsWith("/super-admin");
+  const shouldHide =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/super-admin") ||
+    pathname.startsWith("/showrooms");
 
   if (shouldHide) return null;
 

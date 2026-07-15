@@ -4,7 +4,6 @@ const API_BASE = "https://api.chakod.com";
 
 type Listing = {
   id: number;
-  title: string;
   city: string;
   province: string;
   dealer_name: string | null;
@@ -33,6 +32,7 @@ async function getListings() {
     const response = await fetch(`${API_BASE}/api/listings.php?limit=100&sort=vip`, {
       cache: "no-store",
     });
+
     if (!response.ok) return [];
     const json: ListingsResponse = await response.json();
     return json.success && Array.isArray(json.data) ? json.data : [];
@@ -126,36 +126,40 @@ export default async function PublicShowroomsPage({
     <main className="showroomsPage" dir="rtl">
       <header className="showroomsHeader">
         <a className="showroomsBrand" href="/" aria-label="صفحه اصلی چاکود">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
         </a>
+
         <nav>
           <a href="/">خانه</a>
-          <a href="/ads/luxury">خودروها</a>
-          <a className="showroomsManage" href="/dealers">مدیریت نمایشگاه</a>
+          <a href="/ads">همه خودروها</a>
+          <a className="manageLink" href="/dealers">مدیریت نمایشگاه</a>
         </nav>
       </header>
 
-      <section className="showroomsHero">
+      <section className="showroomsIntro">
         <div>
-          <span>SHOWROOMS OF CHAKOD</span>
-          <h1>نمایشگاه‌های چاکود</h1>
-          <p>فهرست عمودی نمایشگاه‌ها برای بررسی راحت‌تر، جست‌وجو و اشتراک‌گذاری با مشتری.</p>
+          <span>نمایشگاه‌های چاکود</span>
+          <h1>ویترین رسمی نمایشگاه‌ها</h1>
+          <p>نمایشگاه را پیدا کن، خودروهای فعالش را ببین و لینک صفحه را برای مشتری بفرست.</p>
         </div>
         <strong>{new Intl.NumberFormat("fa-IR").format(filtered.length)} نمایشگاه</strong>
       </section>
 
-      <section className="showroomsBody">
+      <section className="showroomsContent">
         <form className="showroomsFilters" method="get" action="/showrooms">
-          <label>
-            <span>نام نمایشگاه یا شهر</span>
-            <input name="q" defaultValue={query} placeholder="جست‌وجو..." />
+          <label className="wideField">
+            <span>جست‌وجو</span>
+            <input name="q" defaultValue={query} placeholder="نام نمایشگاه یا شهر..." />
           </label>
 
           <label>
             <span>شهر</span>
             <select name="city" defaultValue={city}>
               <option value="">همه شهرها</option>
-              {cities.map((item) => <option key={item} value={item}>{item}</option>)}
+              {cities.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
             </select>
           </label>
 
@@ -168,53 +172,50 @@ export default async function PublicShowroomsPage({
             </select>
           </label>
 
-          <button type="submit">نمایش نتایج</button>
-          <a href="/showrooms">پاک‌کردن</a>
+          <button type="submit">اعمال</button>
+          <a className="clearFilters" href="/showrooms">پاک‌کردن</a>
         </form>
 
         {filtered.length === 0 ? (
           <div className="showroomsEmpty">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
-            <strong>نمایشگاهی مطابق جست‌وجو پیدا نشد</strong>
-            <p>فیلترها را تغییر بده یا اولین نمایشگاه این شهر را ثبت کن.</p>
-            <a href="/dealers">ثبت نمایشگاه</a>
+            <strong>نمایشگاهی پیدا نشد</strong>
+            <p>عبارت جست‌وجو یا شهر را تغییر بده.</p>
           </div>
         ) : (
           <div className="showroomsGrid">
             {filtered.map((dealer) => {
               const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
+
               return (
                 <article className="showroomCard" key={dealer.name}>
                   <a className="showroomCover" href={dealerHref}>
                     {dealer.coverImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={getImageUrl(dealer.coverImage)} alt={dealer.name} loading="lazy" />
                     ) : (
                       <span>{dealer.name.slice(0, 1)}</span>
                     )}
-                    <em>هویت نمایشگاه در چاکود</em>
                   </a>
 
-                  <div className="showroomCardBody">
-                    <div className="showroomIdentity">
-                      <span>{dealer.name.slice(0, 1)}</span>
+                  <div className="showroomBody">
+                    <div className="showroomTitle">
+                      <div className="showroomAvatar" aria-hidden="true">{dealer.name.slice(0, 1)}</div>
                       <div>
                         <h2>{dealer.name}</h2>
                         <p>{[dealer.city, dealer.province].filter(Boolean).join("، ")}</p>
                       </div>
                     </div>
 
-                    <div className="showroomStats">
-                      <span><b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b> آگهی فعال</span>
+                    <div className="showroomMeta">
+                      <span><b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b> خودرو فعال</span>
                       <span><b>✓</b> عضو چاکود</span>
                     </div>
 
                     <div className="showroomActions">
-                      <a href={dealerHref}>مشاهده خودروها</a>
-                      <DealerShareActions
-                        dealerName={dealer.name}
-                        city={dealer.city}
-                        href={dealerHref}
-                      />
+                      <a className="viewShowroom" href={dealerHref}>مشاهده نمایشگاه</a>
+                      <DealerShareActions dealerName={dealer.name} city={dealer.city} href={dealerHref} />
                     </div>
                   </div>
                 </article>
@@ -225,69 +226,70 @@ export default async function PublicShowroomsPage({
       </section>
 
       <style>{`
-        .showroomsPage { min-height:100vh; overflow-x:clip; color:#1c1324; font-family:Tahoma,Arial,sans-serif; background:radial-gradient(circle at 90% 0%,rgba(109,40,217,.13),transparent 27rem),linear-gradient(180deg,#fff,#faf7ff 52%,#fff); }
-        .showroomsPage * { box-sizing:border-box; }
-        .showroomsPage a { color:inherit; text-decoration:none; }
-        .showroomsHeader { position:sticky; top:0; z-index:50; min-height:72px; padding:12px max(20px,calc((100vw - 1220px)/2)); display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid #ece3f5; background:rgba(255,255,255,.94); backdrop-filter:blur(16px); }
-        .showroomsBrand { display:flex; align-items:center; }
-        .showroomsBrand img { display:block; width:auto; height:39px; object-fit:contain; }
-        .showroomsHeader nav { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:900; }
-        .showroomsHeader nav a { min-height:39px; padding:0 12px; display:inline-flex; align-items:center; border-radius:12px; }
-        .showroomsManage { color:#fff !important; background:#6d28d9; }
-        .showroomsHero { width:min(1220px,calc(100% - 32px)); margin:28px auto 18px; padding:30px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; color:#fff; border-radius:29px; background:radial-gradient(circle at 10% 100%,rgba(168,85,247,.38),transparent 34%),linear-gradient(135deg,#251330,#55208e 68%,#6d28d9); box-shadow:0 28px 75px rgba(43,22,61,.2); }
-        .showroomsHero span { color:#d8c0ff; font-size:9px; font-weight:900; letter-spacing:.08em; }
-        .showroomsHero h1 { margin:8px 0 5px; font-size:32px; }
-        .showroomsHero p { margin:0; color:rgba(255,255,255,.72); font-size:11px; line-height:2; }
-        .showroomsHero > strong { flex:0 0 auto; padding:10px 13px; border:1px solid rgba(255,255,255,.18); border-radius:999px; background:rgba(255,255,255,.09); font-size:10px; }
-        .showroomsBody { width:min(1220px,calc(100% - 32px)); margin:0 auto 60px; }
-        .showroomsFilters { margin-bottom:18px; padding:14px; display:grid; grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(160px,1fr)) auto auto; gap:9px; align-items:end; border:1px solid #e8def2; border-radius:20px; background:#fff; box-shadow:0 16px 48px rgba(44,24,68,.06); }
-        .showroomsFilters label { display:grid; gap:6px; }
-        .showroomsFilters label > span { color:#73667c; font-size:8px; font-weight:900; }
-        .showroomsFilters input,.showroomsFilters select { width:100%; min-height:43px; padding:0 11px; border:1px solid #e6dced; border-radius:12px; color:#25192e; background:#fff; outline:none; font:inherit; font-size:9px; }
-        .showroomsFilters button,.showroomsFilters > a { min-height:43px; padding:0 13px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; font:inherit; font-size:9px; font-weight:900; cursor:pointer; }
-        .showroomsFilters button { border:0; color:#fff; background:#6d28d9; }
-        .showroomsFilters > a { color:#6d28d9; border:1px solid #e2d5ef; background:#fff; }
-        .showroomsGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
-        .showroomCard { min-width:0; overflow:visible; border:1px solid #e7dcef; border-radius:23px; background:#fff; box-shadow:0 19px 52px rgba(44,24,68,.08); }
-        .showroomCover { position:relative; height:185px; overflow:hidden; border-radius:22px 22px 0 0; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#271634,#6d28d9); font-size:42px; font-weight:900; }
-        .showroomCover img { width:100%; height:100%; display:block; object-fit:cover; }
-        .showroomCover::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,transparent 48%,rgba(18,9,26,.62)); pointer-events:none; }
-        .showroomCover em { position:absolute; right:12px; bottom:11px; z-index:2; padding:6px 9px; border:1px solid rgba(255,255,255,.3); border-radius:999px; background:rgba(18,9,26,.52); font-size:8px; font-style:normal; }
-        .showroomCardBody { padding:15px; }
-        .showroomIdentity { display:flex; align-items:center; gap:10px; }
-        .showroomIdentity > span { width:43px; height:43px; flex:0 0 auto; display:grid; place-items:center; color:#fff; border-radius:14px; background:linear-gradient(135deg,#2d163d,#6d28d9); font-size:14px; font-weight:900; }
-        .showroomIdentity h2 { margin:0; font-size:14px; line-height:1.7; }
-        .showroomIdentity p { margin:2px 0 0; color:#786c81; font-size:9px; }
-        .showroomStats { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-        .showroomStats span { padding:9px; display:grid; gap:4px; text-align:center; color:#766a7f; border-radius:12px; background:#f8f4fb; font-size:8px; }
-        .showroomStats b { color:#5b258f; font-size:12px; }
-        .showroomActions { position:relative; margin-top:14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
-        .showroomActions > a { min-height:42px; display:grid; place-items:center; color:#fff; border-radius:12px; background:#6d28d9; font-size:9px; font-weight:900; }
-        .dealerShareActions { position:relative; }
-        .dealerShareTrigger { min-width:88px; min-height:42px; padding:0 11px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid #dfd2eb; border-radius:12px; color:#5e2a91; background:#fff; font:inherit; font-size:9px; font-weight:900; cursor:pointer; }
-        .dealerShareTrigger svg { width:16px; height:16px; fill:currentColor; }
-        .dealerShareMenu { position:absolute; left:0; bottom:calc(100% + 7px); z-index:20; min-width:125px; padding:6px; display:grid; gap:4px; border:1px solid #e3d7ed; border-radius:13px; background:#fff; box-shadow:0 17px 45px rgba(30,14,43,.17); }
-        .dealerShareMenu a,.dealerShareMenu button { min-height:34px; padding:0 9px; display:flex; align-items:center; border:0; border-radius:9px; color:#4e275f; background:#f8f4fb; font:inherit; font-size:8px; font-weight:900; cursor:pointer; }
-        .showroomsEmpty { min-height:360px; padding:30px; display:grid; place-items:center; align-content:center; gap:9px; text-align:center; border:1px dashed #d8cae5; border-radius:24px; background:#fff; }
-        .showroomsEmpty > img { width:55px; height:68px; object-fit:contain; }
-        .showroomsEmpty strong { font-size:17px; }
-        .showroomsEmpty p { margin:0; color:#766a7f; font-size:10px; }
-        .showroomsEmpty a { margin-top:7px; padding:10px 13px; color:#fff; border-radius:11px; background:#6d28d9; font-size:9px; font-weight:900; }
-        @media (max-width:980px) { .showroomsGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } .showroomsFilters { grid-template-columns:1fr 1fr; } .showroomsFilters label:first-child { grid-column:1/-1; } }
-        @media (max-width:620px) {
-          .showroomsHeader { min-height:60px; padding:9px 12px; }
-          .showroomsBrand img { width:35px; height:42px; object-fit:cover; object-position:left; }
-          .showroomsHeader nav a:not(.showroomsManage) { display:none; }
-          .showroomsHero { width:calc(100% - 20px); margin-top:14px; padding:20px 15px; align-items:flex-start; border-radius:22px; }
-          .showroomsHero h1 { font-size:23px; }
-          .showroomsHero p { font-size:8px; }
-          .showroomsHero > strong { font-size:8px; }
-          .showroomsBody { width:calc(100% - 20px); }
-          .showroomsFilters { grid-template-columns:1fr; padding:12px; }
-          .showroomsFilters label:first-child { grid-column:auto; }
-          .showroomsFilters > a { min-height:38px; }
-          .showroomsGrid { grid-template-columns:1fr; gap:12px; }
-          .showroomCover { height:170px; }
+        .showroomsPage{min-height:100vh;overflow-x:clip;color:#1c1324;font-family:Tahoma,Arial,sans-serif;background:#fbf9fd}
+        .showroomsPage *{box-sizing:border-box}
+        .showroomsPage a{color:inherit;text-decoration:none}
+        .showroomsHeader{position:sticky;top:0;z-index:50;min-height:66px;padding:10px max(18px,calc((100vw - 1160px)/2));display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid #ece5f2;background:rgba(255,255,255,.96);backdrop-filter:blur(14px)}
+        .showroomsBrand img{display:block;width:auto;height:36px}
+        .showroomsHeader nav{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:900}
+        .showroomsHeader nav a{min-height:38px;padding:0 11px;display:inline-flex;align-items:center;border-radius:11px}
+        .manageLink{color:#fff!important;background:#6d28d9}
+        .showroomsIntro{width:min(1160px,calc(100% - 28px));margin:22px auto 14px;padding:20px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #e7ddf0;border-radius:22px;background:#fff;box-shadow:0 14px 40px rgba(54,28,78,.06)}
+        .showroomsIntro span{color:#6d28d9;font-size:9px;font-weight:900}
+        .showroomsIntro h1{margin:5px 0 4px;font-size:25px}
+        .showroomsIntro p{margin:0;color:#756a7e;font-size:10px;line-height:1.9}
+        .showroomsIntro>strong{flex:0 0 auto;padding:9px 12px;color:#5b21b6;border-radius:999px;background:#f3eaff;font-size:10px}
+        .showroomsContent{width:min(1160px,calc(100% - 28px));margin:0 auto 48px}
+        .showroomsFilters{margin-bottom:14px;padding:12px;display:grid;grid-template-columns:minmax(220px,1.6fr) repeat(2,minmax(150px,1fr)) auto auto;gap:8px;align-items:end;border:1px solid #e7ddf0;border-radius:18px;background:#fff}
+        .showroomsFilters label{display:grid;gap:5px}
+        .showroomsFilters label span{color:#756a7e;font-size:8px;font-weight:900}
+        .showroomsFilters input,.showroomsFilters select{width:100%;min-height:42px;padding:0 11px;border:1px solid #e5dbea;border-radius:11px;color:#21172a;font-family:inherit;background:#fff;outline:none}
+        .showroomsFilters input:focus,.showroomsFilters select:focus{border-color:#9b6de7;box-shadow:0 0 0 3px rgba(109,40,217,.08)}
+        .showroomsFilters button,.clearFilters{min-height:42px;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:11px;font-family:inherit;font-size:9px;font-weight:900;cursor:pointer}
+        .showroomsFilters button{color:#fff;background:#6d28d9}
+        .clearFilters{color:#6d28d9;background:#f3eaff}
+        .showroomsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+        .showroomCard{overflow:visible;border:1px solid #e7ddf0;border-radius:21px;background:#fff;box-shadow:0 14px 38px rgba(51,28,70,.06)}
+        .showroomCover{height:150px;display:block;overflow:hidden;border-radius:20px 20px 0 0;background:linear-gradient(135deg,#24112f,#6d28d9)}
+        .showroomCover img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .2s ease}
+        .showroomCover:hover img{transform:scale(1.025)}
+        .showroomCover>span{width:100%;height:100%;display:grid;place-items:center;color:#fff;font-size:42px;font-weight:900}
+        .showroomBody{padding:13px}
+        .showroomTitle{display:flex;align-items:center;gap:10px}
+        .showroomAvatar{width:42px;height:42px;display:grid;place-items:center;flex:0 0 auto;color:#fff;border-radius:13px;background:linear-gradient(135deg,#4c1d95,#8b5cf6);font-weight:900}
+        .showroomTitle h2{margin:0 0 3px;font-size:14px}
+        .showroomTitle p{margin:0;color:#7a6d83;font-size:9px}
+        .showroomMeta{margin:12px 0;display:flex;flex-wrap:wrap;gap:7px}
+        .showroomMeta span{padding:7px 9px;color:#695b73;border-radius:999px;background:#f7f2fb;font-size:8px}
+        .showroomMeta b{color:#6d28d9}
+        .showroomActions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+        .viewShowroom{min-height:39px;display:flex;align-items:center;justify-content:center;color:#fff!important;border-radius:11px;background:#6d28d9;font-size:9px;font-weight:900}
+        .dealerShareActions{position:relative}
+        .dealerShareTrigger{min-width:78px;min-height:39px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:#6d28d9;border:1px solid #dfcff0;border-radius:11px;background:#fff;font-family:inherit;font-size:8px;font-weight:900;cursor:pointer}
+        .dealerShareTrigger svg{width:15px;height:15px;fill:currentColor}
+        .dealerShareMenu{position:absolute;left:0;bottom:calc(100% + 6px);z-index:20;width:115px;padding:6px;display:grid;gap:4px;border:1px solid #e4d8ed;border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(40,20,55,.14)}
+        .dealerShareMenu a,.dealerShareMenu button{min-height:31px;padding:0 8px;display:flex;align-items:center;border:0;border-radius:8px;color:#44344f;background:#f8f4fb;font-family:inherit;font-size:8px;cursor:pointer}
+        .showroomsEmpty{min-height:280px;display:grid;place-items:center;align-content:center;gap:8px;text-align:center;border:1px dashed #d9c9e8;border-radius:22px;background:#fff}
+        .showroomsEmpty img{width:56px;height:56px;object-fit:contain}
+        .showroomsEmpty strong{font-size:15px}
+        .showroomsEmpty p{margin:0;color:#776a80;font-size:10px}
+        @media(max-width:900px){
+          .showroomsHeader{min-height:58px;padding:9px 12px}
+          .showroomsBrand img{height:31px}
+          .showroomsHeader nav a:not(.manageLink){display:none}
+          .showroomsIntro{margin-top:12px;padding:16px;align-items:flex-start;flex-direction:column}
+          .showroomsIntro h1{font-size:21px}
+          .showroomsFilters{grid-template-columns:1fr 1fr}
+          .wideField{grid-column:1/-1}
+          .showroomsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        }
+        @media(max-width:620px){
+          .showroomsContent,.showroomsIntro{width:min(100% - 20px,1160px)}
+          .showroomsFilters{grid-template-columns:1fr}
+          .wideField{grid-column:auto}
+          .showroomsGrid{grid-template-columns:1fr;gap:11px}
+          .showroomCover{height:138px}
+          .showroomActions{grid-template-columns:minmax(0,1fr) 82px}
         }
       `}</style>
     </main>

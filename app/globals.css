@@ -1,11 +1,16 @@
 @import "tailwindcss";
 
+:root {
+  --chakod-mobile-nav-safe-space: 112px;
+}
+
 * {
   box-sizing: border-box;
 }
 
 html {
   direction: rtl;
+  scroll-padding-bottom: 16px;
 }
 
 body {
@@ -25,4 +30,27 @@ input,
 select,
 textarea {
   font-family: inherit;
+}
+
+@media (max-width: 768px) {
+  html {
+    scroll-padding-bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  [tabindex] {
+    scroll-margin-bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + env(safe-area-inset-bottom, 0px)
+    );
+  }
 }

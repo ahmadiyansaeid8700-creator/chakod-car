@@ -265,6 +265,12 @@ export default function HomeStories() {
     else showNext();
   }
 
+  // در صفحه عمومی، استوری فقط وقتی محتوای واقعی دارد نمایش داده می‌شود.
+  // پیام یا کادر خالی باعث شلوغی و فاصلهٔ اضافی در صفحه اصلی نمی‌شود.
+  if (!loading && stories.length === 0) {
+    return null;
+  }
+
   return (
     <section
       className="homeStories"
@@ -288,14 +294,6 @@ export default function HomeStories() {
               <span />
             </div>
           ))}
-        </div>
-      ) : stories.length === 0 ? (
-        <div className="storyEmpty">
-          <span aria-hidden="true">✦</span>
-          <div>
-            <strong>در این محدوده استوری فعالی نیست</strong>
-            <small>با تغییر محدوده، استوری‌های شهرهای دیگر را ببین.</small>
-          </div>
         </div>
       ) : (
         <div className="storyScroller">

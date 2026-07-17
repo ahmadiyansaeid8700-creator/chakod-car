@@ -1,10 +1,12 @@
+import Link from "next/link";
 import AuthStatus from "./components/AuthStatus";
 import HomeStories from "./components/HomeStories";
 import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeBannerSlot from "./components/HomeBannerSlot";
-import SaveListingButton from "./components/SaveListingButton";
+import ListingCard from "./components/ListingCard";
 import HomeHorizontalRail from "./components/HomeHorizontalRail";
 import DealerShareActions from "./components/DealerShareActions";
+import HomePublicListingsClient from "./components/HomePublicListingsClient";
 
 type Category = {
   id: number;
@@ -428,34 +430,6 @@ function listingMatchesQuery(listing: Listing, query: string) {
   return searchableText.includes(normalizeText(query));
 }
 
-function formatPrice(price: number | null) {
-  if (!price) {
-    return "قیمت توافقی";
-  }
-
-  if (price >= 1_000_000_000) {
-    return `${(price / 1_000_000_000).toLocaleString("fa-IR", {
-      maximumFractionDigits: 1,
-    })} میلیارد تومان`;
-  }
-
-  if (price >= 1_000_000) {
-    return `${(price / 1_000_000).toLocaleString("fa-IR", {
-      maximumFractionDigits: 0,
-    })} میلیون تومان`;
-  }
-
-  return `${new Intl.NumberFormat("fa-IR").format(price)} تومان`;
-}
-
-function formatMileage(mileage: number | null) {
-  if (mileage === null || mileage === undefined) {
-    return "کارکرد نامشخص";
-  }
-
-  return `${new Intl.NumberFormat("fa-IR").format(mileage)} کیلومتر`;
-}
-
 function getImageUrl(path: string | null) {
   if (!path) {
     return "https://placehold.co/1200x800/17111f/f4eaff?text=CHAKOD";
@@ -466,21 +440,6 @@ function getImageUrl(path: string | null) {
   }
 
   return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-}
-
-function getSellerLabel(listing: Listing) {
-  if (listing.dealer_name) {
-    return listing.dealer_name;
-  }
-
-  const labels: Record<string, string> = {
-    personal: "فروشنده شخصی",
-    dealer: "نمایشگاه خودرو",
-    importer: "واردکننده",
-    freezone_operator: "فعال منطقه آزاد",
-  };
-
-  return labels[listing.seller_type] || "فروشنده";
 }
 
 function getDealerPreviews(listings: Listing[]): DealerPreview[] {
@@ -532,6 +491,19 @@ function getCategoryIcon(code: string) {
   return icons[code] || "○";
 }
 
+function getQuickCategoryHref(category: Category) {
+  const routeByCode: Record<string, string> = {
+    luxury: "/ads/luxury",
+    freezone: "/ads/freezone",
+    economic: "/ads/economic",
+    zero: "/?q=%D8%B5%D9%81%D8%B1",
+    used: "/?q=%DA%A9%D8%A7%D8%B1%DA%A9%D8%B1%D8%AF%D9%87",
+    classic: "/?q=%DA%A9%D9%84%D8%A7%D8%B3%DB%8C%DA%A9",
+  };
+
+  return routeByCode[category.code] || `/?q=${encodeURIComponent(category.name)}`;
+}
+
 function ShowcaseCard({
   listing,
   badge,
@@ -542,80 +514,12 @@ function ShowcaseCard({
   tone: "luxury" | "freezone" | "economic";
 }) {
   return (
-    <article className={`masterListingCard masterListingCard--${tone}`}>
-      <div className="masterListingImage">
-        <a href={`/listing/${listing.id}`} aria-label={listing.title}>
-          <img
-            src={getImageUrl(listing.cover_image)}
-            alt={listing.title}
-            loading="lazy"
-            decoding="async"
-          />
-        </a>
-
-        <span className="masterListingBadge">{badge}</span>
-
-        {listing.category_name ? (
-          <span className="masterListingCategory">
-            {listing.category_name}
-          </span>
-        ) : null}
-
-        <SaveListingButton
-          listingId={listing.id}
-          compact
-          className="masterSaveButton"
-        />
-      </div>
-
-      <div className="masterListingContent">
-        <a href={`/listing/${listing.id}`} className="masterListingMainLink">
-          <div className="masterListingTopLine">
-            <h3>{listing.title}</h3>
-            <span>{listing.production_year || "سال نامشخص"}</span>
-          </div>
-
-          <div className="masterListingMeta">
-            <span>{listing.brand}</span>
-            <span>{listing.model}</span>
-            {listing.transmission ? <span>{listing.transmission}</span> : null}
-          </div>
-
-          <div className="masterListingFacts">
-            <span>{formatMileage(listing.mileage_km)}</span>
-            <span>{listing.body_status || "بدنه نامشخص"}</span>
-          </div>
-
-          <div className="masterListingLocation">
-            <span aria-hidden="true">⌖</span>
-            <span>
-              {[listing.city, listing.neighborhood]
-                .filter(Boolean)
-                .join("، ") || "موقعیت نامشخص"}
-            </span>
-          </div>
-
-          <div className="masterListingPrice">
-            {formatPrice(listing.price_toman)}
-          </div>
-        </a>
-
-        <div className="masterListingFooter">
-          <div className="masterSeller">
-            <span className="masterSellerAvatar">
-              {getSellerLabel(listing).slice(0, 1)}
-            </span>
-
-            <span>
-              <strong>{getSellerLabel(listing)}</strong>
-              <small>عضو چاکود</small>
-            </span>
-          </div>
-
-          <a href={`/listing/${listing.id}`}>مشاهده آگهی</a>
-        </div>
-      </div>
-    </article>
+    <ListingCard
+      listing={listing}
+      badge={badge}
+      tone={tone}
+      variant="rail"
+    />
   );
 }
 
@@ -627,7 +531,6 @@ function ShowcaseSection({
   listings,
   badge,
   tone,
-  emptyText,
   allHref,
 }: {
   id: string;
@@ -637,57 +540,10 @@ function ShowcaseSection({
   listings: ShowcaseListing[];
   badge: string;
   tone: "luxury" | "freezone" | "economic";
-  emptyText: string;
   allHref: string;
 }) {
   if (listings.length === 0) {
-    return (
-      <section className="masterSection" id={id}>
-        <div className="masterSectionHeader">
-          <div className="masterSectionTitleBlock">
-
-            <span>{kicker}</span>
-
-            <div className="masterSectionTitleRow">
-
-              <h2>{title}</h2>
-
-              <a
-
-                className="masterShowAllLink"
-
-                href={allHref}
-
-                aria-label={`نمایش همه ${title}`}
-
-              >
-
-                نمایش همه
-
-                <span aria-hidden="true">←</span>
-
-              </a>
-
-            </div>
-
-          </div>
-
-          <div className="masterSectionHeaderSide">
-
-
-            <p>{description}</p>
-
-
-          </div>
-        </div>
-
-        <div className="masterEmptyShowcase">
-          <span>✦</span>
-          <strong>{emptyText}</strong>
-          <p>آگهی‌های مناسب پس از بررسی در این بخش نمایش داده می‌شوند.</p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -771,7 +627,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <main className="chakodMasterHome" dir="rtl">
       <header className="masterHeader">
         <nav className="masterNav" aria-label="ناوبری اصلی">
-          <a className="masterBrand" href="/" aria-label="صفحه اصلی چاکود">
+          <Link className="masterBrand" href="/" aria-label="صفحه اصلی چاکود">
             <img
               className="masterBrandLogo masterBrandLogoDesktop"
               src="/brand/chakod-logo-horizontal.png"
@@ -784,20 +640,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               aria-hidden="true"
             />
             <span className="masterSrOnly">چاکود؛ پلتفرم رشد کسب‌وکار</span>
-          </a>
+          </Link>
 
           <div className="masterNavLinks">
-            <a href="#luxury">خودروهای لوکس</a>
-            <a href="#freezone">منطقه آزاد</a>
-            <a href="#economic">اقتصادی</a>
-            <a href="#dealers">نمایشگاه‌ها</a>
+            <Link href="/ads/luxury">خودروهای لوکس</Link>
+            <Link href="/ads/freezone">منطقه آزاد</Link>
+            <Link href="/ads/economic">اقتصادی</Link>
+            <Link href="/showrooms">نمایشگاه‌ها</Link>
           </div>
 
           <div className="masterNavActions">
-            <div className="masterLocationControl">
-              <HomeLocationSelector />
-            </div>
-
             <a
               className="masterSavedLink"
               href="/account/saved"
@@ -815,23 +667,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </a>
           </div>
         </nav>
-      </header>
 
-      <div className="masterStoriesWrap">
-        <HomeStories />
-      </div>
+        <div className="masterHeaderToolsWrap">
+          <div className="masterHeaderTools">
+            <Link
+              className="masterHeaderToolsBrand"
+              href="/"
+              aria-label="صفحه اصلی چاکود"
+            >
+              <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
+            </Link>
 
-      <HomeBannerSlot />
+            <div className="masterLocationControl">
+              <HomeLocationSelector />
+            </div>
 
-      <section className="masterHero">
-        <div className="masterHeroContent">
-          <div className="masterHeroSearchArea">
-            <form className="masterSearch" action="/" method="get">
+            <form
+              className="masterSearch masterHeaderSearch"
+              action="/"
+              method="get"
+              role="search"
+            >
               <label className="masterSrOnly" htmlFor="master-search">
                 جست‌وجوی خودرو
               </label>
 
-              <span aria-hidden="true">⌕</span>
+              <span className="masterSearchLeadingIcon" aria-hidden="true">
+                ⌕
+              </span>
 
               <input
                 id="master-search"
@@ -839,221 +702,218 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 defaultValue={query}
                 placeholder="برند، مدل، شهر یا نمایشگاه..."
                 autoComplete="off"
+                enterKeyHint="search"
               />
 
-              <button type="submit">جست‌وجو</button>
+              <button type="submit" aria-label="جست‌وجو">
+                <span className="masterSearchButtonText">جست‌وجو</span>
+                <span className="masterSearchButtonIcon" aria-hidden="true">
+                  ⌕
+                </span>
+              </button>
             </form>
-
-            <div className="masterHeroLinks">
-              <a href="#luxury">منتخب لوکس</a>
-              <a href="#freezone">منطقه آزاد</a>
-              <a href="#economic">خودروهای اقتصادی</a>
-            </div>
           </div>
         </div>
-      </section>
+      </header>
 
-      {query ? (
-        <section className="masterSection masterSearchResults">
-          <div className="masterSectionHeader">
-            <div>
-              <span>نتیجه جست‌وجو</span>
-              <h2>نتایج برای «{query}»</h2>
-            </div>
-
-            <a className="masterClearSearch" href="/">
-              پاک‌کردن جست‌وجو
-            </a>
-          </div>
-
-          {searchResults.length === 0 ? (
-            <div className="masterEmptyShowcase">
-              <span>⌕</span>
-              <strong>نتیجه‌ای پیدا نشد</strong>
-              <p>نام برند، مدل، شهر یا نمایشگاه را با عبارت دیگری جست‌وجو کن.</p>
-            </div>
-          ) : (
-            <div className="masterListingGrid">
-              {searchResults.slice(0, 12).map((listing) => (
-                <ShowcaseCard
-                  key={listing.id}
-                  listing={{
-                    ...listing,
-                    computedScore: Number(listing.homepage_score || 0),
-                  }}
-                  badge="نتیجه جست‌وجو"
-                  tone="luxury"
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      ) : (
-        <>
-          <ShowcaseSection
-            id="luxury"
-            kicker="CHAKOD LUXURY"
-            title="منتخب خودروهای لوکس"
-            description="خودروهای ممتاز بر اساس برند، قیمت، کیفیت آگهی و امتیاز هوشمند در اولویت نمایش قرار می‌گیرند."
-            listings={luxury}
-            badge="منتخب لوکس"
-            tone="luxury"
-            emptyText="هنوز خودروی لوکس مناسبی برای نمایش نداریم"
-            allHref="/ads/luxury"
-          />
-
-          <ShowcaseSection
-            id="freezone"
-            kicker="FREE ZONE"
-            title="تازه‌های منطقه آزاد"
-            description="ویترین اختصاصی خودروهای منطقه آزاد؛ جدا از بازار عمومی و با اولویت بالا در صفحه اصلی."
-            listings={freezone}
-            badge="منطقه آزاد"
-            tone="freezone"
-            emptyText="هنوز آگهی منطقه آزاد تأییدشده‌ای ثبت نشده"
-            allHref="/ads/freezone"
-          />
-
-          <ShowcaseSection
-            id="economic"
-            kicker="SMART VALUE"
-            title="انتخاب‌های اقتصادی چاکود"
-            description="تعداد محدودی خودروی اقتصادی و ارزشمند که از نظر قیمت، سال و کیفیت آگهی انتخاب شده‌اند."
-            listings={economic}
-            badge="ارزش خرید"
-            tone="economic"
-            emptyText="هنوز گزینه اقتصادی مناسبی برای نمایش نداریم"
-            allHref="/ads/economic"
-          />
-        </>
-      )}
-
-      <section className="masterSection" id="categories">
-        <div className="masterSectionHeader">
-          <div>
-            <span>ورود سریع</span>
-            <h2>تمام بازار خودرو در دسترس است</h2>
-          </div>
-
-          <p>
-            خودروهای معمولی از صفحه اصلی حذف نشده‌اند؛ از جست‌وجو و دسته‌بندی
-            به همه آگهی‌ها دسترسی داری.
-          </p>
-        </div>
-
-        <div className="masterCategoryGrid">
-          {categories.slice(0, 6).map((category) => (
+      <section className="masterQuickAccess" aria-label="دسترسی سریع به بازار خودرو">
+        <div className="masterQuickTrack">
+          {categories.slice(0, 5).map((category) => (
             <a
+              className="masterQuickItem"
+              href={getQuickCategoryHref(category)}
               key={category.id}
-              className="masterCategoryCard"
-              href={`/submit?category=${encodeURIComponent(category.code)}`}
             >
-              <span>{getCategoryIcon(category.code)}</span>
+              <span aria-hidden="true">{getCategoryIcon(category.code)}</span>
               <strong>{category.name}</strong>
-              <p>{category.description}</p>
-              <small>ورود به این مسیر ←</small>
             </a>
           ))}
+
+          <Link className="masterQuickItem masterQuickItem--showrooms" href="/showrooms">
+            <span aria-hidden="true">▣</span>
+            <strong>نمایشگاه‌ها</strong>
+          </Link>
         </div>
       </section>
 
-      <section className="masterSection" id="dealers">
-        <div className="masterDealerPanel">
-          <div className="masterDealerIntro">
-            <span>SHOWROOMS OF CHAKOD</span>
-            <h2>ویترین حرفه‌ای نمایشگاه‌ها؛ آماده معرفی با افتخار</h2>
-            <p>
-              خودروهای هر نمایشگاه در یک مسیر مرتب دیده می‌شوند و لینک آن با
-              واتساپ، تلگرام یا کپی مستقیم برای مشتری قابل ارسال است.
-            </p>
-            <div className="masterDealerIntroActions">
-              <div className="masterDealerIntroButtons">
-                <a className="masterDealerShowAll" href="/showrooms">
-                  نمایش همه نمایشگاه‌ها
-                </a>
-                <a href="/dealers">مدیریت نمایشگاه</a>
+      <div className="masterStoriesWrap">
+        <HomeStories />
+      </div>
+
+      <HomeBannerSlot />
+
+      {allListings.length === 0 ? (
+        <HomePublicListingsClient query={query} />
+      ) : (
+        <>
+          {query ? (
+            <section className="masterSection masterSearchResults">
+              <div className="masterSectionHeader">
+                <div>
+                  <span>نتیجه جست‌وجو</span>
+                  <h2>نتایج برای «{query}»</h2>
+                </div>
+
+                <Link className="masterClearSearch" href="/">
+                  پاک‌کردن جست‌وجو
+                </Link>
               </div>
-              <span>صفحه اختصاصی و QR Code در مرحله بعد فعال می‌شود</span>
-            </div>
-          </div>
+
+              {searchResults.length === 0 ? (
+                <div className="masterEmptyShowcase">
+                  <span>⌕</span>
+                  <strong>نتیجه‌ای پیدا نشد</strong>
+                  <p>نام برند، مدل، شهر یا نمایشگاه را با عبارت دیگری جست‌وجو کن.</p>
+                </div>
+              ) : (
+                <div className="masterListingGrid">
+                  {searchResults.slice(0, 12).map((listing) => (
+                    <ShowcaseCard
+                      key={listing.id}
+                      listing={{
+                        ...listing,
+                        computedScore: Number(listing.homepage_score || 0),
+                      }}
+                      badge="نتیجه جست‌وجو"
+                      tone="luxury"
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : (
+            <>
+              <ShowcaseSection
+                id="luxury"
+                kicker="CHAKOD LUXURY"
+                title="منتخب خودروهای لوکس"
+                description="خودروهای ممتاز بر اساس برند، قیمت، کیفیت آگهی و امتیاز هوشمند در اولویت نمایش قرار می‌گیرند."
+                listings={luxury}
+                badge="منتخب لوکس"
+                tone="luxury"
+                allHref="/ads/luxury"
+              />
+
+              <ShowcaseSection
+                id="freezone"
+                kicker="FREE ZONE"
+                title="تازه‌های منطقه آزاد"
+                description="ویترین اختصاصی خودروهای منطقه آزاد؛ جدا از بازار عمومی و با اولویت بالا در صفحه اصلی."
+                listings={freezone}
+                badge="منطقه آزاد"
+                tone="freezone"
+                allHref="/ads/freezone"
+              />
+
+              <ShowcaseSection
+                id="economic"
+                kicker="SMART VALUE"
+                title="انتخاب‌های اقتصادی چاکود"
+                description="تعداد محدودی خودروی اقتصادی و ارزشمند که از نظر قیمت، سال و کیفیت آگهی انتخاب شده‌اند."
+                listings={economic}
+                badge="ارزش خرید"
+                tone="economic"
+                allHref="/ads/economic"
+              />
+            </>
+          )}
 
           {dealers.length > 0 ? (
-            <HomeHorizontalRail
-              ariaLabel="نمایشگاه‌های منتخب چاکود"
-              className="homeRailShell--dealers"
-              showControls={dealers.length > 2}
-            >
-              {dealers.map((dealer) => {
-                const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
-
-                return (
-                  <article className="masterDealerShowcaseCard" key={dealer.name}>
-                    <a
-                      className="masterDealerCover"
-                      href={dealerHref}
-                      aria-label={`مشاهده خودروهای ${dealer.name}`}
+            <section className="masterSection masterDealerSection" id="dealers">
+              <div className="masterSectionHeader masterDealerHeader">
+                <div className="masterSectionTitleBlock">
+                  <span>SHOWROOMS OF CHAKOD</span>
+                  <div className="masterSectionTitleRow">
+                    <h2>نمایشگاه‌های منتخب</h2>
+                    <Link
+                      className="masterShowAllLink masterDealerShowAll"
+                      href="/showrooms"
+                      aria-label="نمایش همه نمایشگاه‌ها"
                     >
-                      {dealer.coverImage ? (
-                        <img
-                          src={getImageUrl(dealer.coverImage)}
-                          alt={dealer.name}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <span>{dealer.name.slice(0, 1)}</span>
-                      )}
+                      نمایش همه
+                      <span aria-hidden="true">←</span>
+                    </Link>
+                  </div>
+                </div>
 
-                      <em>تأیید هویت در چاکود</em>
-                    </a>
-
-                    <div className="masterDealerCardBody">
-                      <div className="masterDealerIdentity">
-                        <span className="masterDealerMiniLogo">
-                          {dealer.name.slice(0, 1)}
-                        </span>
-                        <div>
-                          <strong>{dealer.name}</strong>
-                          <small>{dealer.city}</small>
-                        </div>
-                      </div>
-
-                      <div className="masterDealerStats">
-                        <span>
-                          <b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b>
-                          آگهی فعال
-                        </span>
-                        <span>
-                          <b>✓</b>
-                          عضو چاکود
-                        </span>
-                      </div>
-
-                      <div className="masterDealerCardActions">
-                        <a href={dealerHref}>مشاهده خودروها</a>
-                        <DealerShareActions
-                          dealerName={dealer.name}
-                          city={dealer.city}
-                          href={dealerHref}
-                        />
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </HomeHorizontalRail>
-          ) : (
-            <div className="masterDealerEmpty">
-              <span>چ</span>
-              <div>
-                <strong>اولین ویترین حرفه‌ای این بخش را بساز</strong>
-                <p>پس از ثبت نمایشگاه و انتشار آگهی، کارت قابل اشتراک اینجا نمایش داده می‌شود.</p>
+                <div className="masterSectionHeaderSide">
+                  <p>
+                    نمایشگاه‌های فعال با خودروهای واقعی؛ برای دیدن موجودی، اطلاعات
+                    شعبه و اشتراک مستقیم وارد ویترین هر نمایشگاه شو.
+                  </p>
+                </div>
               </div>
-              <a href="/dealers">ثبت نمایشگاه</a>
-            </div>
-          )}
-        </div>
-      </section>
+
+              <div className="masterDealerRailFrame">
+                <HomeHorizontalRail
+                  ariaLabel="نمایشگاه‌های منتخب چاکود"
+                  className="homeRailShell--dealers"
+                  showControls={dealers.length > 2}
+                >
+                  {dealers.map((dealer) => {
+                    const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
+
+                    return (
+                      <article className="masterDealerShowcaseCard" key={dealer.name}>
+                        <a
+                          className="masterDealerCover"
+                          href={dealerHref}
+                          aria-label={`مشاهده خودروهای ${dealer.name}`}
+                        >
+                          {dealer.coverImage ? (
+                            <img
+                              src={getImageUrl(dealer.coverImage)}
+                              alt={dealer.name}
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span>{dealer.name.slice(0, 1)}</span>
+                          )}
+
+                          <em>نمایشگاه تأییدشده</em>
+                        </a>
+
+                        <div className="masterDealerCardBody">
+                          <div className="masterDealerIdentity">
+                            <span className="masterDealerMiniLogo">
+                              {dealer.name.slice(0, 1)}
+                            </span>
+                            <div>
+                              <strong>{dealer.name}</strong>
+                              <small>{dealer.city}</small>
+                            </div>
+                          </div>
+
+                          <div className="masterDealerStats">
+                            <span>
+                              <b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b>
+                              خودرو
+                            </span>
+                            <span>
+                              <b>✓</b>
+                              هویت تأییدشده
+                            </span>
+                          </div>
+
+                          <div className="masterDealerCardActions">
+                            <a href={dealerHref}>مشاهده نمایشگاه</a>
+                            <DealerShareActions
+                              dealerName={dealer.name}
+                              city={dealer.city}
+                              href={dealerHref}
+                            />
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </HomeHorizontalRail>
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
 
       <section className="masterSection masterTrustSection">
         <div className="masterSectionHeader masterCenteredHeader">
@@ -1100,31 +960,31 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <a className="masterFinalPrimary" href="/submit">
             ثبت آگهی خودرو
           </a>
-          <a className="masterFinalSecondary" href="/dealers">
+          <Link className="masterFinalSecondary" href="/showrooms">
             نمایشگاه‌های چاکود
-          </a>
+          </Link>
         </div>
       </section>
 
       <footer className="masterFooter">
         <div className="masterFooterMain">
-          <a className="masterBrand masterFooterBrand" href="/" aria-label="صفحه اصلی چاکود">
+          <Link className="masterBrand masterFooterBrand" href="/" aria-label="صفحه اصلی چاکود">
             <img
               className="masterFooterLogo"
               src="/brand/chakod-logo-full-light.png"
               alt="چاکود؛ پلتفرم رشد کسب‌وکار"
             />
-          </a>
+          </Link>
 
           <p>
             ویترین تخصصی خودروهای ارزشمند، منطقه آزاد و فروشندگان حرفه‌ای.
           </p>
 
           <div>
-            <a href="#luxury">لوکس</a>
-            <a href="#freezone">منطقه آزاد</a>
-            <a href="#economic">اقتصادی</a>
-            <a href="/rules">قوانین</a>
+            <Link href="/ads/luxury">لوکس</Link>
+            <Link href="/ads/freezone">منطقه آزاد</Link>
+            <Link href="/ads/economic">اقتصادی</Link>
+            <Link href="/rules">قوانین</Link>
           </div>
         </div>
 
@@ -1186,18 +1046,37 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           position: sticky;
           top: 0;
           z-index: 70;
-          border-bottom: 1px solid rgba(232, 223, 244, 0.92);
-          background: rgba(255, 255, 255, 0.9);
+          border-bottom: 1px solid rgba(232, 223, 244, 0.96);
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 10px 30px rgba(42, 26, 68, 0.06);
           backdrop-filter: blur(18px);
         }
 
         .masterNav {
           width: min(1240px, calc(100% - 32px));
-          min-height: 72px;
+          min-height: 64px;
           margin: 0 auto;
           display: flex;
           align-items: center;
           gap: 18px;
+        }
+
+        .masterHeaderToolsWrap {
+          border-top: 1px solid rgba(238, 231, 247, 0.88);
+        }
+
+        .masterHeaderTools {
+          width: min(1240px, calc(100% - 32px));
+          margin: 0 auto;
+          padding: 8px 0 10px;
+          display: grid;
+          grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
+          align-items: center;
+          gap: 10px;
+        }
+
+        .masterHeaderToolsBrand {
+          display: none;
         }
 
         .masterBrand {
@@ -1244,7 +1123,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         .masterLocationControl {
+          width: 100%;
           min-width: 0;
+        }
+
+        .masterLocationControl .homeLocationTrigger {
+          width: 100%;
+          max-width: none;
         }
 
         .masterSavedLink,
@@ -1349,28 +1234,118 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           background: var(--purple-soft);
         }
 
+        .masterQuickAccess {
+          width: min(1240px, calc(100% - 32px));
+          margin: 0 auto;
+          padding: 16px 0 2px;
+        }
+
+        .masterQuickTrack {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .masterQuickItem {
+          min-width: 0;
+          min-height: 82px;
+          padding: 12px 8px;
+          border: 1px solid #ebe3f5;
+          border-radius: 19px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 8px;
+          color: #362544;
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 12px 30px rgba(35, 21, 55, 0.055);
+          transition:
+            transform 160ms ease,
+            border-color 160ms ease,
+            box-shadow 160ms ease;
+        }
+
+        .masterQuickItem:hover {
+          transform: translateY(-2px);
+          border-color: #cdbbea;
+          box-shadow: 0 16px 34px rgba(35, 21, 55, 0.09);
+        }
+
+        .masterQuickItem > span {
+          width: 38px;
+          height: 38px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: #6d28d9;
+          background: #f3edff;
+          font-size: 18px;
+          font-weight: 900;
+        }
+
+        .masterQuickItem > strong {
+          width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-align: center;
+          text-overflow: ellipsis;
+          font-size: 10px;
+        }
+
+        .masterQuickItem:nth-child(1) {
+          border-color: #e3d5ff;
+          background: linear-gradient(145deg, #ffffff, #f4eeff);
+        }
+
+        .masterQuickItem:nth-child(2) {
+          border-color: #ccecf0;
+          background: linear-gradient(145deg, #ffffff, #eefbfc);
+        }
+
+        .masterQuickItem:nth-child(3) {
+          border-color: #ffe0ba;
+          background: linear-gradient(145deg, #ffffff, #fff7ec);
+        }
+
+        .masterQuickItem:nth-child(4) {
+          border-color: #d9e4ff;
+          background: linear-gradient(145deg, #ffffff, #f1f5ff);
+        }
+
+        .masterQuickItem:nth-child(5) {
+          border-color: #f4d5e8;
+          background: linear-gradient(145deg, #ffffff, #fff2f8);
+        }
+
+        .masterQuickItem--showrooms {
+          border-color: #ccebe2;
+          background: linear-gradient(145deg, #ffffff, #effbf7);
+        }
+
+        .masterQuickItem:nth-child(2) > span { color: #0f766e; background: #e4f8f5; }
+        .masterQuickItem:nth-child(3) > span { color: #b45309; background: #fff0db; }
+        .masterQuickItem:nth-child(4) > span { color: #2563eb; background: #eaf0ff; }
+        .masterQuickItem:nth-child(5) > span { color: #be185d; background: #ffe7f3; }
+
+        .masterQuickItem--showrooms > span {
+          color: #0f766e;
+          background: #e1f8f0;
+        }
+
         .masterStoriesWrap {
           width: min(1240px, calc(100% - 32px));
           margin: 0 auto;
-          padding: 22px 0 4px;
+          padding: 14px 0 2px;
         }
 
-        .masterHero {
-          width: min(1240px, calc(100% - 32px));
-          margin: 0 auto;
-          padding: 10px 0 22px;
+        .masterStoriesWrap:empty {
+          display: none;
         }
 
-        .masterHeroContent {
-          padding: 14px;
-          border: 1px solid var(--border);
-          border-radius: 22px;
-          background: #ffffff;
-          box-shadow: var(--shadow);
-        }
-
-        .masterHeroSearchArea {
-          min-width: 0;
+        .masterTrustSection {
+          padding-top: 22px;
+          padding-bottom: 20px;
         }
 
         .masterSectionHeader > div > span {
@@ -1382,30 +1357,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           letter-spacing: 0.4px;
         }
 
-        .masterHeroSearchArea {
-          padding: 0;
-        }
-
         .masterSearch {
-          min-height: 58px;
+          min-height: 46px;
           display: grid;
-          grid-template-columns: auto 1fr auto;
+          grid-template-columns: auto minmax(0, 1fr) auto;
           align-items: center;
-          gap: 8px;
-          padding: 7px;
-          border-radius: 18px;
+          gap: 7px;
+          padding: 5px;
+          border-radius: 15px;
           border: 1px solid #dfd4ef;
           background: #ffffff;
-          box-shadow: 0 13px 34px rgba(35, 21, 55, 0.07);
+          box-shadow: 0 10px 26px rgba(35, 21, 55, 0.06);
         }
 
-        .masterSearch > span {
-          width: 38px;
-          height: 38px;
+        .masterSearch > .masterSearchLeadingIcon {
+          width: 34px;
+          height: 34px;
           display: grid;
           place-items: center;
           color: var(--purple);
-          font-size: 23px;
+          font-size: 20px;
         }
 
         .masterSearch input {
@@ -1415,36 +1386,28 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           outline: 0;
           color: var(--ink);
           background: transparent;
-          font-size: 13px;
+          font-size: 12px;
         }
 
         .masterSearch button {
-          min-height: 44px;
-          padding: 0 22px;
+          min-height: 36px;
+          padding: 0 17px;
           border: 0;
-          border-radius: 13px;
+          border-radius: 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           color: #ffffff;
           background: linear-gradient(135deg, #4c1d95, #7c3aed);
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 900;
           cursor: pointer;
         }
 
-        .masterHeroLinks {
-          margin-top: 13px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
-        }
-
-        .masterHeroLinks a {
-          padding: 7px 10px;
-          border-radius: 999px;
-          color: #5f526a;
-          background: #fbf9ff;
-          border: 1px solid #eee7f7;
-          font-size: 9px;
-          font-weight: 800;
+        .masterSearchButtonIcon {
+          display: none;
+          font-size: 18px;
+          line-height: 1;
         }
 
         .masterSection {
@@ -1452,6 +1415,40 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           margin: 0 auto;
           padding: 34px 0;
         }
+
+        .masterSection--luxury,
+        .masterSection--freezone,
+        .masterSection--economic {
+          margin-top: 18px;
+          padding: 28px;
+          border-radius: 30px;
+          box-shadow: 0 22px 62px rgba(35, 21, 55, 0.07);
+        }
+
+        .masterSection--luxury {
+          border: 1px solid #e4d7ff;
+          background:
+            radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.14), transparent 22rem),
+            linear-gradient(145deg, #ffffff, #f8f3ff);
+        }
+
+        .masterSection--freezone {
+          border: 1px solid #cbeee9;
+          background:
+            radial-gradient(circle at 100% 0%, rgba(13, 148, 136, 0.14), transparent 22rem),
+            linear-gradient(145deg, #ffffff, #f0fdfa);
+        }
+
+        .masterSection--economic {
+          border: 1px solid #fde6b2;
+          background:
+            radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.15), transparent 22rem),
+            linear-gradient(145deg, #ffffff, #fffaf0);
+        }
+
+        .masterSection--luxury .masterSectionTitleBlock > span { color: #7c3aed; }
+        .masterSection--freezone .masterSectionTitleBlock > span { color: #0f766e; }
+        .masterSection--economic .masterSectionTitleBlock > span { color: #b45309; }
 
         .masterSectionHeader {
           margin-bottom: 18px;
@@ -1930,85 +1927,36 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           font-weight: 900;
         }
 
-        .masterDealerPanel {
-          padding: 30px;
-          border-radius: 28px;
-          color: #ffffff;
+        .masterDealerSection {
+          position: relative;
+          margin-top: 18px;
+          padding: 28px;
+          overflow: hidden;
+          border: 1px solid #d9ecff;
+          border-radius: 30px;
           background:
-            radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.13), transparent 17rem),
-            linear-gradient(140deg, #17111f, #2f173f 50%, #5b21b6);
-          box-shadow: 0 26px 72px rgba(30, 18, 43, 0.19);
+            radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.15), transparent 22rem),
+            radial-gradient(circle at 0% 100%, rgba(124, 58, 237, 0.11), transparent 24rem),
+            linear-gradient(145deg, #fafdff, #f8f5ff);
+          box-shadow: 0 24px 65px rgba(35, 21, 55, 0.08);
         }
 
-        .masterDealerIntro {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          align-items: end;
-          gap: 18px;
-          margin-bottom: 20px;
+        .masterDealerHeader { margin-bottom: 16px; }
+        .masterDealerHeader .masterSectionTitleBlock > span { color: #2563eb; }
+
+        .masterDealerShowAll {
+          color: #1d4ed8;
+          border-color: #cfe2ff;
+          box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
         }
 
-        .masterDealerIntro > span {
-          grid-column: 1 / -1;
-          color: #d8c3ff;
-          font-size: 9px;
-          font-weight: 900;
-          letter-spacing: 1px;
-        }
-
-        .masterDealerIntro h2 {
-          margin: 0;
-          font-size: 27px;
-          line-height: 1.6;
-        }
-
-        .masterDealerIntro p {
-          grid-column: 1;
-          margin: 8px 0 0;
-          color: rgba(255, 255, 255, 0.68);
-          font-size: 10px;
-          line-height: 2;
-        }
-
-        .masterDealerIntroActions {
-          grid-column: 2;
-          grid-row: 2 / 4;
-          display: grid;
-          justify-items: end;
-          gap: 8px;
-        }
-
-        .masterDealerIntroButtons {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 7px;
-        }
-
-        .masterDealerIntroButtons > a {
-          min-height: 41px;
-          padding: 0 14px;
-          border-radius: 12px;
-          display: inline-grid;
-          place-items: center;
-          color: var(--purple-dark);
-          background: #ffffff;
-          font-size: 10px;
-          font-weight: 900;
-        }
-
-        .masterDealerIntroButtons > .masterDealerShowAll {
-          color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.26);
-          background: rgba(255, 255, 255, 0.12);
-        }
-
-        .masterDealerIntroActions > span {
-          max-width: 220px;
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 8px;
-          line-height: 1.7;
-          text-align: left;
+        .masterDealerRailFrame {
+          padding: 13px;
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.62);
+          box-shadow: inset 0 0 0 1px rgba(207, 226, 255, 0.42);
+          backdrop-filter: blur(10px);
         }
 
         .homeRailShell--dealers .homeRailTrack {
@@ -2016,16 +1964,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           padding-bottom: 7px;
         }
 
-        .homeRailShell--dealers .homeRailControls {
-          top: -61px;
-          left: 0;
-        }
+        .homeRailShell--dealers .homeRailControls { top: -71px; left: 0; }
 
         .homeRailShell--dealers .homeRailControl {
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.18);
-          background: rgba(255, 255, 255, 0.1);
-          box-shadow: none;
+          color: #1d4ed8;
+          border-color: #cfe2ff;
+          background: rgba(255, 255, 255, 0.96);
+          box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
         }
 
         .masterDealerShowcaseCard {
@@ -2033,8 +1978,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           border-radius: 21px;
           color: var(--ink);
           background: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.28);
-          box-shadow: 0 18px 44px rgba(9, 4, 17, 0.2);
+          border: 1px solid #dbeafe;
+          box-shadow: 0 18px 44px rgba(41, 70, 118, 0.12);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .masterDealerShowcaseCard:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 24px 54px rgba(41, 70, 118, 0.17);
         }
 
         .masterDealerCover {
@@ -2045,7 +1996,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           display: grid;
           place-items: center;
           color: #ffffff;
-          background: linear-gradient(135deg, #2d163d, #6d28d9);
+          background:
+            radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.2), transparent 8rem),
+            linear-gradient(135deg, #1d4ed8, #6d28d9 60%, #db2777);
           font-size: 38px;
           font-weight: 900;
         }
@@ -2058,16 +2011,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           pointer-events: none;
         }
 
-        .masterDealerCover img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .masterDealerCover > span {
-          position: relative;
-          z-index: 1;
-        }
+        .masterDealerCover img { width: 100%; height: 100%; object-fit: cover; }
+        .masterDealerCover > span { position: relative; z-index: 1; }
 
         .masterDealerCover em {
           position: absolute;
@@ -2085,15 +2030,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           font-weight: 900;
         }
 
-        .masterDealerCardBody {
-          padding: 14px;
-        }
-
-        .masterDealerIdentity {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-        }
+        .masterDealerCardBody { padding: 14px; }
+        .masterDealerIdentity { display: flex; align-items: center; gap: 9px; }
 
         .masterDealerMiniLogo {
           width: 39px;
@@ -2103,14 +2041,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           display: grid;
           place-items: center;
           color: #ffffff;
-          background: linear-gradient(135deg, #2d163d, #6d28d9);
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          box-shadow: 0 9px 24px rgba(37, 99, 235, 0.2);
           font-size: 13px;
           font-weight: 900;
         }
 
-        .masterDealerIdentity > div {
-          min-width: 0;
-        }
+        .masterDealerIdentity > div { min-width: 0; }
 
         .masterDealerIdentity strong,
         .masterDealerIdentity small {
@@ -2120,16 +2057,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           text-overflow: ellipsis;
         }
 
-        .masterDealerIdentity strong {
-          color: var(--ink);
-          font-size: 12px;
-        }
-
-        .masterDealerIdentity small {
-          margin-top: 4px;
-          color: var(--muted);
-          font-size: 8px;
-        }
+        .masterDealerIdentity strong { color: var(--ink); font-size: 12px; }
+        .masterDealerIdentity small { margin-top: 4px; color: var(--muted); font-size: 8px; }
 
         .masterDealerStats {
           margin-top: 12px;
@@ -2145,17 +2074,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           align-items: center;
           justify-content: center;
           gap: 5px;
-          color: #786d80;
-          background: #fbf9ff;
-          border: 1px solid #eee7f5;
+          color: #5d6675;
+          background: #f4f8ff;
+          border: 1px solid #dbeafe;
           font-size: 8px;
           font-weight: 700;
         }
 
-        .masterDealerStats b {
-          color: var(--purple-dark);
-          font-size: 10px;
+        .masterDealerStats > span:last-child {
+          color: #047857;
+          border-color: #c9f0dd;
+          background: #effcf6;
         }
+
+        .masterDealerStats b { color: #1d4ed8; font-size: 10px; }
+        .masterDealerStats > span:last-child b { color: #059669; }
 
         .masterDealerCardActions {
           position: relative;
@@ -2178,28 +2111,22 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         .masterDealerCardActions > a {
           color: #ffffff;
-          background: linear-gradient(135deg, #4c1d95, #7c3aed);
+          background: linear-gradient(135deg, #1d4ed8, #6d28d9);
         }
 
-        .dealerShareActions {
-          position: relative;
-        }
+        .dealerShareActions { position: relative; }
 
         .dealerShareTrigger {
           min-width: 84px;
           padding: 0 10px;
           gap: 6px;
-          color: var(--purple-dark);
-          border: 1px solid #dfd1ef;
-          background: #f7f1ff;
+          color: #1d4ed8;
+          border: 1px solid #cfe2ff;
+          background: #f3f7ff;
           cursor: pointer;
         }
 
-        .dealerShareTrigger svg {
-          width: 15px;
-          height: 15px;
-          fill: currentColor;
-        }
+        .dealerShareTrigger svg { width: 15px; height: 15px; fill: currentColor; }
 
         .dealerShareMenu {
           position: absolute;
@@ -2233,50 +2160,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           text-align: right;
         }
 
-        .masterDealerEmpty {
-          padding: 16px;
-          border: 1px dashed rgba(255, 255, 255, 0.28);
-          border-radius: 18px;
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 12px;
-          background: rgba(255, 255, 255, 0.08);
-        }
-
-        .masterDealerEmpty > span {
-          width: 46px;
-          height: 46px;
-          border-radius: 14px;
-          display: grid;
-          place-items: center;
-          color: var(--purple-dark);
-          background: #ffffff;
-          font-weight: 900;
-        }
-
-        .masterDealerEmpty strong {
-          font-size: 11px;
-        }
-
-        .masterDealerEmpty p {
-          margin: 5px 0 0;
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 8px;
-        }
-
-        .masterDealerEmpty > a {
-          min-height: 39px;
-          padding: 0 13px;
-          border-radius: 11px;
-          display: inline-grid;
-          place-items: center;
-          color: var(--purple-dark);
-          background: #ffffff;
-          font-size: 9px;
-          font-weight: 900;
-        }
-
         .masterCenteredHeader {
           display: block;
           max-width: 760px;
@@ -2297,6 +2180,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           border: 1px solid var(--border);
           box-shadow: var(--shadow);
         }
+
+        .masterTrustGrid article:nth-child(1) { background: linear-gradient(145deg, #ffffff, #f5f1ff); border-color: #e4d7ff; }
+        .masterTrustGrid article:nth-child(2) { background: linear-gradient(145deg, #ffffff, #eefbf8); border-color: #cbeee9; }
+        .masterTrustGrid article:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff8e9); border-color: #fde6b2; }
+        .masterTrustGrid article:nth-child(4) { background: linear-gradient(145deg, #ffffff, #eff6ff); border-color: #d6e8ff; }
 
         .masterTrustGrid article > span {
           color: var(--purple);
@@ -2449,10 +2337,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             min-width: 0;
           }
 
-          .masterHeroContent {
-            grid-template-columns: 1fr;
-            gap: 16px;
-          }
 
           .masterFinalCta {
             align-items: flex-start;
@@ -2462,14 +2346,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         @media (max-width: 640px) {
           .chakodMasterHome {
-            padding-bottom: 86px;
+            padding-bottom: 0;
           }
 
           .masterNav {
-            width: calc(100% - 20px);
-            min-height: 62px;
-            justify-content: space-between;
-            gap: 10px;
+            display: none;
           }
 
           .masterBrandLogoDesktop {
@@ -2478,26 +2359,47 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           .masterBrandLogoMobile {
             display: block;
+            width: 31px;
+            height: 36px;
           }
 
           .masterNavActions {
-            flex: 0 1 auto;
-            max-width: 58vw;
-            justify-content: flex-start;
-            margin-right: auto;
-            margin-left: 0;
-            gap: 0;
+            display: none;
+          }
+
+          .masterHeaderToolsWrap {
+            border-top-color: rgba(238, 231, 247, 0.72);
+          }
+
+          .masterHeaderTools {
+            width: calc(100% - 20px);
+            padding: 7px 0 8px;
+            grid-template-columns: 34px minmax(96px, 31vw) minmax(0, 1fr);
+            gap: 6px;
+          }
+
+          .masterHeaderToolsBrand {
+            width: 34px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+          }
+
+          .masterHeaderToolsBrand img {
+            width: 29px;
+            height: 34px;
+            object-fit: contain;
           }
 
           .masterLocationControl {
-            width: min(58vw, 190px);
-            min-width: 0;
-            max-width: min(58vw, 190px);
+            width: 100%;
+            max-width: none;
           }
 
           .masterLocationControl .homeLocationTrigger {
             width: 100%;
             max-width: 100%;
+            min-height: 40px;
           }
 
           .masterSavedLink,
@@ -2507,8 +2409,49 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             display: none !important;
           }
 
+          .masterQuickAccess {
+            width: calc(100% - 20px);
+            padding: 10px 0 0;
+          }
+
+          .masterQuickTrack {
+            grid-template-columns: none;
+            grid-auto-flow: column;
+            grid-auto-columns: 86px;
+            gap: 8px;
+            overflow-x: auto;
+            overscroll-behavior-inline: contain;
+            scroll-snap-type: inline mandatory;
+            padding: 1px 1px 7px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .masterQuickTrack::-webkit-scrollbar {
+            display: none;
+          }
+
+          .masterQuickItem {
+            min-height: 76px;
+            padding: 9px 6px;
+            border-radius: 17px;
+            gap: 6px;
+            scroll-snap-align: start;
+            box-shadow: 0 8px 22px rgba(35, 21, 55, 0.045);
+          }
+
+          .masterQuickItem > span {
+            width: 39px;
+            height: 39px;
+            border-radius: 14px;
+            font-size: 17px;
+          }
+
+          .masterQuickItem > strong {
+            font-size: 8px;
+          }
+
           .masterStoriesWrap,
-          .masterHero,
           .masterSection,
           .masterFooterMain,
           .masterFooterBottom {
@@ -2516,32 +2459,33 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterStoriesWrap {
-            padding: 14px 0 1px;
+            padding: 7px 0 0;
           }
 
-          .masterHero {
-            padding: 7px 0 16px;
+          .masterStoriesWrap:empty {
+            display: none;
           }
 
-          .masterHeroContent {
-            padding: 9px;
-            border-radius: 18px;
+          .masterTrustSection {
+            padding-top: 14px;
+            padding-bottom: 12px;
           }
 
-          .masterHeroSearchArea {
-            padding: 0;
+          .masterCenteredHeader {
+            margin-bottom: 12px;
           }
 
           .masterSearch {
-            min-height: 50px;
-            border-radius: 15px;
-            padding: 5px;
+            min-height: 40px;
+            border-radius: 12px;
+            padding: 3px;
+            gap: 3px;
           }
 
-          .masterSearch > span {
-            width: 31px;
-            height: 31px;
-            font-size: 19px;
+          .masterSearch > .masterSearchLeadingIcon {
+            width: 27px;
+            height: 27px;
+            font-size: 17px;
           }
 
           .masterSearch input {
@@ -2549,25 +2493,37 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .masterSearch button {
-            min-height: 38px;
-            padding: 0 11px;
+            width: 34px;
+            min-width: 34px;
+            min-height: 34px;
+            padding: 0;
             border-radius: 10px;
-            font-size: 9px;
           }
 
-          .masterHeroLinks {
-            margin-top: 10px;
-            gap: 6px;
+          .masterSearchButtonText {
+            display: none;
           }
 
-          .masterHeroLinks a {
-            padding: 6px 8px;
-            font-size: 7px;
+          .masterSearchButtonIcon {
+            display: inline;
           }
-
 
           .masterSection {
             padding: 24px 0;
+          }
+
+          .masterSection--luxury,
+          .masterSection--freezone,
+          .masterSection--economic,
+          .masterDealerSection {
+            padding: 18px 14px;
+            border-radius: 22px;
+          }
+
+          .masterDealerRailFrame {
+            margin-inline: -5px;
+            padding: 8px;
+            border-radius: 18px;
           }
 
           .masterSectionHeader {
@@ -2672,52 +2628,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             font-size: 8px;
           }
 
-          .masterDealerPanel {
-            padding: 19px 14px;
-            border-radius: 22px;
-          }
-
-          .masterDealerIntro {
-            display: block;
-            margin-bottom: 15px;
-          }
-
-          .masterDealerIntro h2 {
-            margin-top: 7px;
-            font-size: 20px;
-          }
-
-          .masterDealerIntro p {
-            margin-top: 7px;
-            font-size: 8px;
-          }
-
-          .masterDealerIntroActions {
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 9px;
-          }
-
-          .masterDealerIntroButtons {
-            width: 100%;
-            justify-content: flex-start;
-          }
-
-          .masterDealerIntroButtons > a {
-            flex: 1;
-            min-height: 37px;
-            padding-inline: 9px;
-            font-size: 8px;
-          }
-
-          .masterDealerIntroActions > span {
-            max-width: 180px;
-            font-size: 7px;
-            text-align: right;
-          }
-
           .homeRailShell--dealers .homeRailTrack {
             grid-auto-columns: min(80vw, 302px);
           }
@@ -2732,14 +2642,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           .dealerShareTrigger {
             min-width: 74px;
-          }
-
-          .masterDealerEmpty {
-            grid-template-columns: auto 1fr;
-          }
-
-          .masterDealerEmpty > a {
-            grid-column: 1 / -1;
           }
 
           .masterTrustGrid {
@@ -2762,24 +2664,35 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           .masterFinalCta {
             width: calc(100% - 20px);
-            margin-bottom: 24px;
-            padding: 19px 15px;
-            border-radius: 21px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            padding: 14px 13px;
+            gap: 11px;
+            border-radius: 19px;
+          }
+
+          .masterFinalCta > div:first-child > span {
+            font-size: 7px;
+            letter-spacing: 0.7px;
           }
 
           .masterFinalCta h2 {
-            font-size: 18px;
+            margin-top: 5px;
+            font-size: 15px;
+            line-height: 1.6;
           }
 
           .masterFinalCta > div:last-child {
             width: 100%;
+            gap: 6px;
           }
 
           .masterFinalPrimary,
           .masterFinalSecondary {
             flex: 1;
-            min-height: 39px;
-            padding: 0 8px;
+            min-height: 36px;
+            padding: 0 7px;
+            border-radius: 10px;
             font-size: 8px;
           }
 
@@ -2805,14 +2718,33 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           .masterFooterBottom {
             display: block;
+            padding-bottom: 10px;
             line-height: 1.9;
           }
         }
 
         @media (max-width: 380px) {
           .masterBrandLogoMobile {
+            width: 29px;
+            height: 34px;
+          }
+
+          .masterHeaderTools {
+            grid-template-columns: 31px minmax(92px, 30vw) minmax(0, 1fr);
+            gap: 5px;
+          }
+
+          .masterHeaderToolsBrand {
             width: 31px;
-            height: 37px;
+          }
+
+          .masterHeaderToolsBrand img {
+            width: 27px;
+            height: 32px;
+          }
+
+          .masterSearch input {
+            font-size: 9px;
           }
 
           .masterCategoryGrid,

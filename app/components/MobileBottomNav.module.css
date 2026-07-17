@@ -6,7 +6,7 @@
 @media (max-width: 768px) {
   .pageSpacer {
     display: block;
-    height: calc(92px + env(safe-area-inset-bottom, 0px));
+    height: calc(var(--chakod-mobile-nav-safe-space) + env(safe-area-inset-bottom, 0px));
     pointer-events: none;
   }
 
@@ -21,7 +21,7 @@
     justify-content: center;
 
     padding-right: 10px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
     padding-left: 10px;
 
     pointer-events: none;

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const API_BASE = "https://api.chakod.com";
 
@@ -15,6 +16,7 @@ type User = {
 
 type Dealer = {
   id: number;
+  dealer_id?: number;
   auth_user_id?: number;
   dealer_name?: string;
   dealer_phone?: string;
@@ -22,7 +24,12 @@ type Dealer = {
   city?: string;
   neighborhood?: string;
   address?: string;
-  is_active?: number;
+  role?: string;
+  role_title?: string;
+  scope?: string;
+  permissions?: string[];
+  branch_ids?: number[];
+  is_active?: number | boolean;
   created_at?: string;
   updated_at?: string;
 };
@@ -92,14 +99,28 @@ export default function DealersPage() {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "X-Session-Token": token,
+            }
+          : {}),
       },
+      credentials: "include",
+      cache: "no-store",
     });
 
     const json = await res.json();
 
     if (json.success && Array.isArray(json.data)) {
-      setDealers(json.data);
+      setDealers(
+        json.data
+          .map((item: Dealer) => ({
+            ...item,
+            id: Number(item.id ?? item.dealer_id ?? 0),
+          }))
+          .filter((item: Dealer) => item.id > 0)
+      );
     } else {
       setDealers([]);
     }
@@ -117,8 +138,15 @@ export default function DealersPage() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(token
+              ? {
+                  Authorization: `Bearer ${token}`,
+                  "X-Session-Token": token,
+                }
+              : {}),
           },
+          credentials: "include",
+          cache: "no-store",
         });
 
         const meJson = await meRes.json();
@@ -231,8 +259,14 @@ export default function DealersPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token
+            ? {
+                Authorization: `Bearer ${token}`,
+                "X-Session-Token": token,
+              }
+            : {}),
         },
+        credentials: "include",
         body: JSON.stringify({
           dealer_name: cleanName,
           dealer_phone: cleanPhone,
@@ -272,13 +306,13 @@ export default function DealersPage() {
     <main className="dealersPage" dir="rtl">
       <section className="shell">
         <div className="topbar">
-          <a href="/" className="brand">
+          <Link href="/" className="brand">
             <div className="logoMark">چ</div>
             <div>
               <strong>چاکود</strong>
               <span>پلتفرم رشد کسب‌وکار</span>
             </div>
-          </a>
+          </Link>
 
           <div className="navLinks">
             <a href="/submit">ثبت آگهی</a>
@@ -447,8 +481,11 @@ export default function DealersPage() {
                         </div>
 
                         <div className="dealerMeta">
-                          <small>{dealer.dealer_phone || "بدون شماره تماس"}</small>
-                          <b>فعال</b>
+                          <small>{dealer.dealer_phone || "شماره تماس در صفحه عمومی ثبت نشده"}</small>
+                          <b>{dealer.is_active === false || dealer.is_active === 0 ? "غیرفعال" : "فعال"}</b>
+                          <a className="manageDealerLink" href={`/dealers/${dealer.id}`}>
+                            مدیریت شعبه‌ها و اعضا
+                          </a>
                         </div>
                       </div>
                     ))}
@@ -670,6 +707,21 @@ export default function DealersPage() {
 
         .primaryLink,
         .primaryBtn,
+        .manageDealerLink {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 36px;
+          padding: 8px 12px;
+          border-radius: 12px;
+          background: #6d28d9;
+          color: #fff;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
         .secondaryLink {
           width: 100%;
           border: 0;

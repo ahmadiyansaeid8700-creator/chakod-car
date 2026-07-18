@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import DealerShareActions from "./DealerShareActions";
 import HomeHorizontalRail from "./HomeHorizontalRail";
 import ListingCard, { type ListingCardData } from "./ListingCard";
+import ShowroomCard, { type ShowroomCardData } from "./ShowroomCard";
 
 const API_URL = "https://api.chakod.com/api/listings.php?limit=100&sort=vip";
-const SITE_BASE = "https://chakod.com";
 
 type Listing = ListingCardData & {
   brand: string;
@@ -23,17 +22,19 @@ type Listing = ListingCardData & {
   is_highlighted?: boolean | number;
   plan_code?: string;
   market_segment?: "luxury" | "freezone" | "economic" | "regular" | null;
+  dealer_id?: number | string | null;
+  dealer_logo_url?: string | null;
+  dealer_logo?: string | null;
+  logo_url?: string | null;
+  dealer_verified?: boolean | number | null;
+  is_dealer_verified?: boolean | number | null;
+  dealer_is_verified?: boolean | number | null;
 };
 
 type ApiResponse = { success?: boolean; data?: Listing[] };
 type Tone = "luxury" | "freezone" | "economic";
 
-type DealerPreview = {
-  name: string;
-  city: string;
-  listingCount: number;
-  coverImage: string | null;
-};
+type DealerPreview = ShowroomCardData;
 
 const luxuryBrands = [
   "porsche", "پورشه", "mercedesbenz", "مرسدسبنز", "bmw", "بیامو",
@@ -103,31 +104,74 @@ function matchesQuery(listing: Listing, query: string) {
   return normalizeText(text).includes(normalizeText(query));
 }
 
-function getImageUrl(path: string | null) {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${SITE_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-}
 
 function getDealers(listings: Listing[]): DealerPreview[] {
-  const map = new Map<string, DealerPreview>();
+  const map = new Map<string, DealerPreview & { latestAt: number }>();
+
   for (const listing of listings) {
     const name = listing.dealer_name?.trim();
     if (!name) continue;
-    const current = map.get(name);
+
+    const stableKey = listing.dealer_id
+      ? `id:${listing.dealer_id}`
+      : `name:${normalizeText(name)}`;
+    const verified = Boolean(
+      listing.dealer_verified ||
+        listing.is_dealer_verified ||
+        listing.dealer_is_verified,
+    );
+    const logoUrl =
+      listing.dealer_logo_url || listing.dealer_logo || listing.logo_url || null;
+    const latestAt = new Date(listing.created_at).getTime() || 0;
+    const current = map.get(stableKey);
+
     if (current) {
       current.listingCount += 1;
-      if (!current.coverImage && listing.cover_image) current.coverImage = listing.cover_image;
-    } else {
-      map.set(name, {
-        name,
-        city: listing.city || "شهر نامشخص",
-        listingCount: 1,
-        coverImage: listing.cover_image || null,
-      });
+      current.verified = current.verified || verified;
+      current.latestAt = Math.max(current.latestAt, latestAt);
+      if (!current.logoUrl && logoUrl) current.logoUrl = logoUrl;
+      if (!current.coverImage && listing.cover_image) {
+        current.coverImage = listing.cover_image;
+      }
+      if ((!current.city || current.city === "شهر نامشخص") && listing.city) {
+        current.city = listing.city;
+      }
+      if (!current.province && listing.province) current.province = listing.province;
+      continue;
     }
+
+    map.set(stableKey, {
+      key: stableKey,
+      name,
+      city: listing.city || "شهر نامشخص",
+      province: listing.province || "",
+      listingCount: 1,
+      logoUrl,
+      coverImage: listing.cover_image || null,
+      verified,
+      latestAt,
+    });
   }
-  return Array.from(map.values()).sort((a, b) => b.listingCount - a.listingCount).slice(0, 6);
+
+  return Array.from(map.values())
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||
+        b.listingCount - a.listingCount ||
+        b.latestAt - a.latestAt ||
+        a.name.localeCompare(b.name, "fa"),
+    )
+    .slice(0, 8)
+    .map((dealer) => ({
+      key: dealer.key,
+      name: dealer.name,
+      city: dealer.city,
+      province: dealer.province,
+      listingCount: dealer.listingCount,
+      logoUrl: dealer.logoUrl,
+      coverImage: dealer.coverImage,
+      verified: dealer.verified,
+    }));
 }
 
 function ShowcaseSection({
@@ -172,6 +216,7 @@ function ShowcaseSection({
 
 function DealerSection({ dealers }: { dealers: DealerPreview[] }) {
   if (dealers.length === 0) return null;
+
   return (
     <section className="masterSection masterDealerSection" id="dealers">
       <div className="masterSectionHeader masterDealerHeader">
@@ -185,40 +230,22 @@ function DealerSection({ dealers }: { dealers: DealerPreview[] }) {
           </div>
         </div>
         <div className="masterSectionHeaderSide">
-          <p>نمایشگاه‌های فعال با خودروهای واقعی؛ برای دیدن موجودی و اطلاعات شعبه وارد ویترین نمایشگاه شو.</p>
+          <p>
+            نمایشگاه‌های فعال با موجودی واقعی؛ برای دیدن خودروها و ویترین عمومی،
+            کارت نمایشگاه را باز کن.
+          </p>
         </div>
       </div>
-      <div className="masterDealerRailFrame">
-        <HomeHorizontalRail ariaLabel="نمایشگاه‌های منتخب چاکود" className="homeRailShell--dealers" showControls={dealers.length > 2}>
-          {dealers.map((dealer) => {
-            const dealerHref = `/showrooms/${encodeURIComponent(dealer.name)}`;
-            return (
-              <article className="masterDealerShowcaseCard" key={dealer.name}>
-                <a className="masterDealerCover" href={dealerHref} aria-label={`مشاهده خودروهای ${dealer.name}`}>
-                  {dealer.coverImage ? (
-                    <img src={getImageUrl(dealer.coverImage)} alt={dealer.name} loading="lazy" decoding="async" />
-                  ) : <span>{dealer.name.slice(0, 1)}</span>}
-                  <em>نمایشگاه تأییدشده</em>
-                </a>
-                <div className="masterDealerCardBody">
-                  <div className="masterDealerIdentity">
-                    <span className="masterDealerMiniLogo">{dealer.name.slice(0, 1)}</span>
-                    <div><strong>{dealer.name}</strong><small>{dealer.city}</small></div>
-                  </div>
-                  <div className="masterDealerStats">
-                    <span><b>{new Intl.NumberFormat("fa-IR").format(dealer.listingCount)}</b> خودرو</span>
-                    <span><b>✓</b> هویت تأییدشده</span>
-                  </div>
-                  <div className="masterDealerCardActions">
-                    <a href={dealerHref}>مشاهده نمایشگاه</a>
-                    <DealerShareActions dealerName={dealer.name} city={dealer.city} href={dealerHref} />
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </HomeHorizontalRail>
-      </div>
+
+      <HomeHorizontalRail
+        ariaLabel="نمایشگاه‌های منتخب چاکود"
+        className="homeRailShell--dealers"
+        showControls={dealers.length > 2}
+      >
+        {dealers.map((dealer) => (
+          <ShowroomCard key={dealer.key} showroom={dealer} />
+        ))}
+      </HomeHorizontalRail>
     </section>
   );
 }

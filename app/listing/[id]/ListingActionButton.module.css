@@ -1,0 +1,129 @@
+.wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.button,
+.compactButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  color: #342a40;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffffff, #fbf9fd);
+  border: 1px solid #e7deed;
+  box-shadow: 0 6px 16px rgba(33, 22, 48, 0.07);
+  transition: transform 160ms ease, border-color 160ms ease,
+    color 160ms ease, box-shadow 160ms ease;
+}
+
+.button {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 10px;
+  border-radius: 14px;
+}
+
+.compactButton {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.button:hover,
+.compactButton:hover {
+  color: #5b21b6;
+  border-color: #cdb9e4;
+  box-shadow: 0 10px 24px rgba(91, 33, 182, 0.12);
+}
+
+.button:active,
+.compactButton:active {
+  transform: scale(0.97);
+}
+
+.button span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  padding: 0;
+  cursor: default;
+  background: rgba(16, 10, 23, 0.28);
+  border: 0;
+  backdrop-filter: blur(2px);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 1600;
+  display: grid;
+  gap: 7px;
+  width: 220px;
+  max-width: calc(100vw - 30px);
+  padding: 12px;
+  color: #31263b;
+  border: 1px solid #e9e1ee;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 65px rgba(30, 18, 44, 0.22);
+}
+
+.menu strong {
+  padding: 4px 5px 7px;
+  font-size: 12px;
+}
+
+.menu a,
+.menu button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: #33293e;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+  background: #f8f5fb;
+  border: 0;
+  border-radius: 11px;
+}
+
+.menu a:hover,
+.menu button:hover {
+  color: #5b21b6;
+  background: #f1eafb;
+}
+
+@media (max-width: 700px) {
+  .menu {
+    position: fixed;
+    right: 14px;
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+    left: 14px;
+    width: auto;
+    max-width: none;
+  }
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SaveListingButton from "./SaveListingButton";
+import ListingCardImage from "./ListingCardImage";
 import styles from "./ListingCard.module.css";
 
 const API_BASE = "https://api.chakod.com";
@@ -83,21 +84,6 @@ function getSellerLabel(listing: ListingCardData) {
   return labels[listing.seller_type || ""] || "فروشنده چاکود";
 }
 
-function CarPlaceholder() {
-  return (
-    <div className={styles.placeholder} aria-label="تصویر خودرو ثبت نشده است">
-      <svg viewBox="0 0 160 80" aria-hidden="true">
-        <path d="M24 53h112l-8-21c-2-5-7-8-12-8H55c-5 0-10 3-13 8L24 53Z" />
-        <path d="M17 54h126v10H17z" />
-        <circle cx="48" cy="65" r="10" />
-        <circle cx="116" cy="65" r="10" />
-        <path d="M52 30h55l10 23H38l14-23Z" />
-      </svg>
-      <span>تصویر خودرو در حال تکمیل است</span>
-    </div>
-  );
-}
-
 export default function ListingCard({
   listing,
   tone = "neutral",
@@ -126,17 +112,8 @@ export default function ListingCard({
       className={`${styles.card} ${styles[tone]} ${styles[variant]}`}
     >
       <div className={styles.media}>
-        <Link href={href} aria-label={`مشاهده آگهی ${listing.title}`}>
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={listing.title}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <CarPlaceholder />
-          )}
+        <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${listing.title}`}>
+          <ListingCardImage src={imageUrl} alt={listing.title} />
         </Link>
 
         <span className={styles.badge}>{displayBadge}</span>
@@ -149,7 +126,7 @@ export default function ListingCard({
       </div>
 
       <div className={styles.body}>
-        <Link href={href} className={styles.mainLink}>
+        <Link href={href} prefetch={false} className={styles.mainLink}>
           <div className={styles.titleRow}>
             <h3>{listing.title}</h3>
             {listing.production_year ? (
@@ -202,7 +179,7 @@ export default function ListingCard({
             ) : null}
           </div>
 
-          <Link href={href} className={styles.viewLink}>
+          <Link href={href} prefetch={false} className={styles.viewLink}>
             مشاهده
             <span aria-hidden="true">←</span>
           </Link>

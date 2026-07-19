@@ -1,0 +1,90 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  color: #342a40;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffffff, #fbf9fd);
+  border: 1px solid #e7deed;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(33, 22, 48, 0.07);
+  transition: transform 160ms ease, border-color 160ms ease,
+    background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.button:hover {
+  color: #5b21b6;
+  border-color: #cdb9e4;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(91, 33, 182, 0.12);
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+.button:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
+.full {
+  width: 100%;
+}
+
+.compact {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  flex: 0 0 44px;
+  border-radius: 50%;
+}
+
+.saved {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #251534, #5b21b6);
+  box-shadow: 0 10px 24px rgba(60, 26, 103, 0.22);
+}
+
+.saved:hover {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #1e112b, #6d28d9);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loadingMark {
+  font-size: 17px;
+  line-height: 1;
+}
+
+@media (max-width: 420px) {
+  .button:not(.compact) {
+    padding-inline: 9px;
+    font-size: 10px;
+  }
+}

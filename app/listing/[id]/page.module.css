@@ -1185,3 +1185,432 @@
     transition: none;
   }
 }
+/* Listing detail v2: resilient gallery, loading state and action alignment */
+.vehicleSubtitle {
+  margin: 7px 0 0;
+  color: #766c80;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.8;
+}
+
+.galleryStage {
+  min-height: 100%;
+  background: #eeeaf2;
+}
+
+.galleryMain {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 80% 14%, rgba(124, 58, 237, 0.22), transparent 35%),
+    linear-gradient(145deg, #21152b, #4c1d75);
+}
+
+.galleryMain > img {
+  display: block;
+  width: 100%;
+  height: clamp(330px, 49vw, 590px);
+  object-fit: cover;
+  animation: listingImageIn 220ms ease both;
+}
+
+.galleryControls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+}
+
+.galleryControls button {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #2c1d39;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 25px rgba(15, 8, 22, 0.22);
+  backdrop-filter: blur(12px);
+  font-size: 25px;
+  line-height: 1;
+}
+
+.galleryControls button:active {
+  transform: scale(0.94);
+}
+
+.thumbnail {
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.thumbnail:hover,
+.thumbnail:focus-visible,
+.thumbnailActive {
+  opacity: 1;
+  border-color: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.imagePlaceholder svg {
+  width: min(42%, 190px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.62;
+}
+
+.imagePlaceholder p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.compactPlaceholder {
+  min-height: 160px;
+}
+
+.secondaryActions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.secondaryActions > *,
+.secondaryActions :global(.chakodStoryVipRoot),
+.secondaryActions :global(.chakodStoryVipTrigger) {
+  min-width: 0;
+  width: 100%;
+}
+
+.showroomLink {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 9px;
+  color: #5b21b6;
+  border: 1px solid #ded0fb;
+  border-radius: 14px;
+  background: #f8f3ff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.errorActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.retryButton {
+  min-height: 47px;
+  padding: 0 19px;
+  color: #5b21b6;
+  cursor: pointer;
+  border: 1px solid #d9c9f4;
+  border-radius: 14px;
+  background: #f6f0ff;
+  font-family: inherit;
+  font-weight: 900;
+}
+
+.loadingBreadcrumb {
+  width: 220px;
+  height: 18px;
+  margin: 5px 0 18px;
+  border-radius: 999px;
+  background: #eee8f4;
+  animation: listingPulse 1.25s ease-in-out infinite;
+}
+
+.loadingHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.75fr);
+  gap: 22px;
+}
+
+.loadingBlock,
+.loadingSpecs span {
+  border: 1px solid rgba(79, 51, 112, 0.08);
+  background: linear-gradient(100deg, #f0ebf5 20%, #faf8fc 42%, #f0ebf5 64%);
+  background-size: 220% 100%;
+  animation: listingShimmer 1.35s linear infinite;
+}
+
+.loadingGallery {
+  min-height: 560px;
+  border-radius: 28px;
+}
+
+.loadingSummary {
+  display: flex;
+  min-height: 560px;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+}
+
+.loadingSummary span {
+  display: block;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.loadingSummary span:nth-child(2) { width: 82%; height: 42px; }
+.loadingSummary span:nth-child(3) { width: 100%; height: 100px; margin-top: 20px; }
+.loadingSummary span:nth-child(4) { width: 100%; height: 52px; margin-top: auto; }
+
+.loadingSpecs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px;
+  margin-top: 22px;
+}
+
+.loadingSpecs span {
+  height: 78px;
+  border-radius: 20px;
+}
+
+@keyframes listingShimmer {
+  to { background-position: -220% 0; }
+}
+
+@keyframes listingPulse {
+  50% { opacity: 0.5; }
+}
+
+@keyframes listingImageIn {
+  from { opacity: 0.45; transform: scale(1.012); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 960px) {
+  .loadingHero {
+    grid-template-columns: 1fr;
+  }
+
+  .loadingGallery,
+  .loadingSummary {
+    min-height: 390px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding-bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + 86px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .galleryMain {
+    min-height: min(72vw, 430px);
+  }
+
+  .galleryMain > img {
+    height: min(72vw, 430px);
+  }
+
+  .galleryControls {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .galleryControls button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .secondaryActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mobileActionBar {
+    bottom: calc(
+      var(--chakod-mobile-nav-safe-space) - 18px + env(safe-area-inset-bottom, 0px)
+    );
+    grid-template-columns: 44px 44px 44px minmax(0, 1fr);
+  }
+
+  .mobileActionBar > *,
+  .mobileActionBar :global(.chakodStoryVipRoot),
+  .mobileActionBar :global(.chakodStoryVipTrigger) {
+    min-width: 0;
+  }
+
+  .mobileActionBar :global(.chakodStoryVipTrigger.compact) {
+    width: 44px;
+    height: 44px;
+  }
+
+  .shareMenu {
+    bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + 52px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .loadingHero {
+    gap: 12px;
+  }
+
+  .loadingGallery {
+    min-height: 280px;
+    border-radius: 21px;
+  }
+
+  .loadingSummary {
+    min-height: 340px;
+    padding: 20px;
+    border-radius: 21px;
+  }
+
+  .loadingSpecs {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .loadingSpecs span {
+    height: 70px;
+    border-radius: 17px;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobileActionBar {
+    right: 6px;
+    left: 6px;
+    width: calc(100% - 12px);
+    grid-template-columns: 42px 42px 42px minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .mobileActionBar :global(.chakodStoryVipTrigger.compact),
+  .mobileSaveButton,
+  .compactShareButton {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .mobileCallButton {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .errorActions {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Mobile detail polish: keep buyer actions clear of the global navigation. */
+@media (max-width: 768px) {
+  .page {
+    padding-bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + 104px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .imagePlaceholder {
+    min-height: min(70vw, 290px);
+  }
+
+  .chakodTrustCard {
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .trustLogo {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+    font-size: 23px;
+  }
+
+  .trustItems {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .trustItems span {
+    min-width: 0;
+    padding: 8px 9px;
+    text-align: center;
+    line-height: 1.6;
+    white-space: normal;
+  }
+
+  .trustItems span:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .mobileActionBar {
+    right: 10px;
+    bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + 6px + env(safe-area-inset-bottom, 0px)
+    );
+    left: 10px;
+    z-index: 1190;
+    grid-template-columns: 44px 44px minmax(0, 1fr);
+    gap: 7px;
+    width: min(520px, calc(100% - 20px));
+    padding: 7px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow:
+      0 16px 38px rgba(35, 20, 52, 0.18),
+      0 2px 9px rgba(35, 20, 52, 0.07);
+  }
+
+  .mobileCallButton {
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 10px;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shareMenu {
+    bottom: calc(
+      var(--chakod-mobile-nav-safe-space) + 70px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+@media (max-width: 390px) {
+  .mobileActionBar {
+    right: 6px;
+    left: 6px;
+    width: calc(100% - 12px);
+    grid-template-columns: 42px 42px minmax(0, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .trustItems {
+    grid-template-columns: 1fr;
+  }
+
+  .trustItems span:last-child {
+    grid-column: auto;
+  }
+}

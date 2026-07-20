@@ -1,5 +1,3 @@
-// CHAKOD_SUBMIT_DEALER_ID_NORMALIZE_FIX_V1
-// CHAKOD_SUBMIT_PENDING_REDIRECT_FIX_V1
 "use client";
 
 // CHAKOD_SUBMIT_COVER_PICKER_V5_ONE_CLICK
@@ -18,7 +16,6 @@ type User = {
 
 type Dealer = {
   id: number;
-  dealer_id?: number | string;
   auth_user_id?: number;
   dealer_name?: string;
   dealer_phone?: string;
@@ -26,9 +23,7 @@ type Dealer = {
   city?: string;
   neighborhood?: string;
   address?: string;
-  role?: string;
-  is_verified?: boolean | number;
-  is_active?: boolean | number;
+  is_active?: number;
 };
 
 type VehicleBrand = {
@@ -848,28 +843,7 @@ export default function SubmitListingPage() {
       const json = await res.json();
 
       if (json.success && Array.isArray(json.data)) {
-        const rawDealers = json.data as Record<string, unknown>[];
-        const normalizedDealers: Dealer[] = rawDealers
-          .map((item): Dealer => {
-            const id = Number(item.id ?? item.dealer_id ?? 0);
-            const dealerName = String(
-              item.dealer_name ?? item.name ?? item.title ?? "",
-            ).trim();
-
-            return {
-              ...item,
-              id,
-              dealer_id: item.dealer_id as number | string | undefined,
-              dealer_name: dealerName || undefined,
-            } as Dealer;
-          })
-          .filter((dealer) => Number.isInteger(dealer.id) && dealer.id > 0)
-          .filter(
-            (dealer) =>
-              dealer.is_active !== false && Number(dealer.is_active) !== 0,
-          );
-
-        setDealers(normalizedDealers);
+        setDealers(json.data);
       } else {
         setDealers([]);
       }
@@ -1711,13 +1685,7 @@ export default function SubmitListingPage() {
           try {
             const finalReview = await finalizeListing(listingId);
 
-            const isPublished =
-              finalReview.published === true ||
-              finalReview.published === 1 ||
-              finalReview.published === "1" ||
-              finalReview.published === "true";
-
-            if (isPublished) {
+            if (finalReview.published) {
               setMessage(
                 "آگهی توسط موتور هوشمند چاکود تأیید و منتشر شد.",
               );
@@ -1728,9 +1696,8 @@ export default function SubmitListingPage() {
             }
 
             setTimeout(() => {
-              window.location.href = isPublished
-                ? `/listing/${listingId}`
-                : `/dashboard/listings/${listingId}`;
+              window.location.href =
+                finalReview.public_url || "/";
             }, 1800);
           } catch (finalizeError) {
             setMessage(
@@ -1775,22 +1742,14 @@ export default function SubmitListingPage() {
     try {
       const finalReview = await finalizeListing(createdListingId);
 
-      const isPublished =
-        finalReview.published === true ||
-        finalReview.published === 1 ||
-        finalReview.published === "1" ||
-        finalReview.published === "true";
-
       setMessage(
-        isPublished
+        finalReview.published
           ? "آگهی توسط موتور هوشمند چاکود تأیید و منتشر شد."
           : "آگهی برای بررسی دقیق‌تر به مدیر چاکود ارسال شد.",
       );
 
       setTimeout(() => {
-        window.location.href = isPublished
-          ? `/listing/${createdListingId}`
-          : `/dashboard/listings/${createdListingId}`;
+        window.location.href = finalReview.public_url || "/";
       }, 1800);
     } catch (finalizeError) {
       setImageError(

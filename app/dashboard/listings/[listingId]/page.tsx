@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 
 const API_BASE = "https://api.chakod.com";
@@ -118,6 +119,183 @@ function statusClass(code?: string) {
   }
 }
 
+
+type ManageAction =
+  | "mark_sold"
+  | "disable_listing"
+  | "reactivate_listing"
+  | "delete_listing";
+
+type LoadOptions = {
+  preserveFeedback?: boolean;
+};
+
+const MAIN_SITE = "https://chakod.com";
+
+function buildImageCandidates(value?: string | null) {
+  const raw = String(value || "").trim().replace(/\\/g, "/");
+  const candidates: string[] = [];
+
+  const push = (candidate?: string | null) => {
+    const clean = String(candidate || "").trim();
+    if (clean && !candidates.includes(clean)) candidates.push(clean);
+  };
+
+  if (raw) {
+    if (raw.startsWith("//")) {
+      push(`https:${raw}`);
+    } else if (/^https?:\/\//i.test(raw) || raw.startsWith("data:") || raw.startsWith("blob:")) {
+      push(raw);
+
+      try {
+        const parsed = new URL(raw);
+        const path = `${parsed.pathname}${parsed.search}`;
+
+        if (parsed.hostname === "api.chakod.com") push(`${MAIN_SITE}${path}`);
+        if (parsed.hostname === "chakod.com" || parsed.hostname === "www.chakod.com") {
+          push(`${API_BASE}${path}`);
+        }
+      } catch {
+        // The original URL remains the first candidate.
+      }
+    } else {
+      const cleanPath = raw.replace(/^\.\//, "");
+      const path = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+      push(`${API_BASE}${path}`);
+      push(`${MAIN_SITE}${path}`);
+    }
+  }
+
+  push("/brand/chakod-logo-full.png");
+  return candidates;
+}
+
+function ListingImage({
+  src,
+  alt,
+  className = "",
+}: {
+  src?: string | null;
+  alt: string;
+  className?: string;
+}) {
+  const candidates = buildImageCandidates(src);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  const safeIndex = Math.min(candidateIndex, candidates.length - 1);
+  const currentSrc = candidates[safeIndex] || "/brand/chakod-logo-full.png";
+  const isFallback = currentSrc.includes("/brand/chakod-logo-full.png");
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      className={`${className} ${isFallback ? "imageFallback" : ""}`.trim()}
+      onError={() => {
+        setCandidateIndex((current) => Math.min(current + 1, candidates.length - 1));
+      }}
+    />
+  );
+}
+
+function statusDescription(code?: string) {
+  switch (String(code || "").toLowerCase()) {
+    case "active":
+      return "آگهی در سایت منتشر است و کاربران می‌توانند آن را ببینند.";
+    case "pending":
+      return "آگهی ثبت شده و در صف بررسی کارشناسی قرار دارد.";
+    case "rejected":
+      return "آگهی نیاز به اصلاح دارد؛ بعد از اصلاح دوباره ارسالش کنید.";
+    case "sold":
+      return "آگهی به‌عنوان فروخته‌شده از چرخه فروش خارج شده است.";
+    case "inactive":
+    case "expired":
+      return "نمایش آگهی متوقف است و با بازفعال‌سازی دوباره بررسی می‌شود.";
+    case "deleted":
+      return "آگهی بایگانی شده و در سایت نمایش داده نمی‌شود.";
+    default:
+      return "وضعیت آگهی از همین صفحه قابل پیگیری است.";
+  }
+}
+
+function isActionAvailable(status: string, action: ManageAction) {
+  const code = String(status || "pending").toLowerCase();
+
+  if (code === "active") {
+    return action === "mark_sold" || action === "disable_listing" || action === "delete_listing";
+  }
+
+  if (code === "pending") {
+    return action === "disable_listing" || action === "delete_listing";
+  }
+
+  if (code === "rejected" || code === "inactive" || code === "expired") {
+    return action === "reactivate_listing" || action === "delete_listing";
+  }
+
+  if (code === "sold" || code === "deleted") {
+    return action === "reactivate_listing";
+  }
+
+  return action === "reactivate_listing" || action === "delete_listing";
+}
+
+function actionCopy(action: ManageAction, status: string) {
+  const code = String(status || "pending").toLowerCase();
+
+  if (action === "mark_sold") {
+    return { icon: "✓", title: "فروخته شد", text: "آگهی از نتایج فروش خارج می‌شود." };
+  }
+
+  if (action === "disable_listing") {
+    return { icon: "Ⅱ", title: "توقف موقت", text: "نمایش آگهی بدون حذف اطلاعات متوقف می‌شود." };
+  }
+
+  if (action === "delete_listing") {
+    return { icon: "×", title: "حذف / بایگانی", text: "آگهی از چرخه نمایش و مدیریت روزمره خارج می‌شود." };
+  }
+
+  if (code === "sold") {
+    return { icon: "↻", title: "بازگرداندن به فروش", text: "آگهی دوباره برای بررسی و انتشار ارسال می‌شود." };
+  }
+
+  if (code === "deleted") {
+    return { icon: "↻", title: "بازیابی آگهی", text: "آگهی از بایگانی خارج و دوباره بررسی می‌شود." };
+  }
+
+  if (code === "rejected") {
+    return { icon: "↻", title: "ارسال دوباره", text: "آگهی اصلاح‌شده دوباره برای بررسی ارسال می‌شود." };
+  }
+
+  return { icon: "↻", title: "بازفعال‌سازی", text: "آگهی دوباره برای بررسی و انتشار ارسال می‌شود." };
+}
+
+function actionConfirmation(action: ManageAction) {
+  switch (action) {
+    case "mark_sold":
+      return "آگهی به‌عنوان فروخته‌شده ثبت شود؟";
+    case "disable_listing":
+      return "نمایش این آگهی موقتاً متوقف شود؟";
+    case "delete_listing":
+      return "این آگهی حذف و بایگانی شود؟ اطلاعات آن از صفحه عمومی خارج می‌شود.";
+    default:
+      return "";
+  }
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "ثبت نشده";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
 function makeLocalId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -127,7 +305,7 @@ function uploadImageWithProgress(
   item: UploadItem,
   token: string,
   onProgress: (progress: number) => void
-): Promise<any> {
+): Promise<{ success?: boolean; message?: string; [key: string]: unknown }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
@@ -185,7 +363,7 @@ export default function ListingManagePage() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploadError, setUploadError] = useState("");
 
-  async function loadListing() {
+  async function loadListing(options: LoadOptions = {}) {
     if (!listingId) {
       setError("شناسه آگهی معتبر نیست.");
       setLoading(false);
@@ -193,8 +371,11 @@ export default function ListingManagePage() {
     }
 
     setLoading(true);
-    setError("");
-    setMessage("");
+
+    if (!options.preserveFeedback) {
+      setError("");
+      setMessage("");
+    }
 
     try {
       const token = getToken();
@@ -207,6 +388,7 @@ export default function ListingManagePage() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
+          cache: "no-store",
         }
       );
 
@@ -237,8 +419,18 @@ export default function ListingManagePage() {
     loadListing();
   }, [listingId]);
 
-  async function runAction(action: string) {
-    if (!listingId || !canManage) return;
+  async function runAction(action: ManageAction) {
+    if (!listingId || !canManage || !listing) return;
+
+    const currentStatus = String(listing.status?.code || "pending").toLowerCase();
+
+    if (!isActionAvailable(currentStatus, action)) {
+      setError("این عملیات برای وضعیت فعلی آگهی قابل انجام نیست.");
+      return;
+    }
+
+    const confirmation = actionConfirmation(action);
+    if (confirmation && !window.confirm(confirmation)) return;
 
     setActionLoading(action);
     setMessage("");
@@ -267,7 +459,7 @@ export default function ListingManagePage() {
       }
 
       setMessage(json.message || "عملیات با موفقیت انجام شد.");
-      await loadListing();
+      await loadListing({ preserveFeedback: true });
     } catch {
       setError("ارتباط با سرور برای انجام عملیات برقرار نشد.");
     } finally {
@@ -305,7 +497,7 @@ export default function ListingManagePage() {
       }
 
       setUploadMessage("عکس اصلی آگهی تغییر کرد.");
-      await loadListing();
+      await loadListing({ preserveFeedback: true });
     } catch {
       setUploadError("ارتباط با سرور برای تغییر عکس اصلی برقرار نشد.");
     } finally {
@@ -446,29 +638,45 @@ export default function ListingManagePage() {
 
     if (uploaded > 0) {
       setUploadMessage(`${uploaded} تصویر با موفقیت آپلود شد.`);
-      await loadListing();
+      await loadListing({ preserveFeedback: true });
     }
   }
 
   const coverImage = images.find((item) => item.is_cover) || images[0] || null;
 
+  const currentStatus = String(listing?.status?.code || "pending").toLowerCase();
+  const actions: ManageAction[] = [
+    "mark_sold",
+    "disable_listing",
+    "reactivate_listing",
+    "delete_listing",
+  ];
+  const locationText =
+    listing?.location_label ||
+    [listing?.province, listing?.city, listing?.neighborhood].filter(Boolean).join("، ") ||
+    "موقعیت ثبت نشده";
+
   return (
     <main className="managePage" dir="rtl">
       <section className="shell">
-        <header className="topbar">
-          <a href="/dashboard" className="brand">
-            <div className="logoMark">چ</div>
-            <div>
-              <strong>چاکود</strong>
-              <span>مدیریت آگهی</span>
-            </div>
+        <header className="pageBar">
+          <a href="/dashboard" className="backLink" aria-label="بازگشت به داشبورد">
+            <span aria-hidden="true">‹</span>
+            <b>داشبورد</b>
           </a>
 
-          <nav className="navLinks">
+          <Link href="/" className="pageBrand" aria-label="صفحه اصلی چاکود">
+            <img src="/brand/chakod-symbol.png" alt="چاکود" />
+            <div>
+              <strong>مدیریت آگهی</strong>
+              <small>چاکود</small>
+            </div>
+          </Link>
+
+          <nav className="pageLinks" aria-label="دسترسی‌های مدیریت">
+            <a href="/submit">ثبت آگهی جدید</a>
+            <a href="/dashboard#recentListings">آگهی‌های من</a>
             <a href="/account">حساب</a>
-            <a href="/dashboard">داشبورد</a>
-            <a href="/submit">ثبت آگهی</a>
-            <a href="/dealers">نمایشگاه</a>
           </nav>
         </header>
 
@@ -489,7 +697,7 @@ export default function ListingManagePage() {
               <a className="primaryLink" href="/dashboard">
                 بازگشت به داشبورد
               </a>
-              <button className="secondaryBtn" onClick={loadListing}>
+              <button className="secondaryBtn" onClick={() => loadListing()}>
                 تلاش دوباره
               </button>
             </div>
@@ -498,1208 +706,706 @@ export default function ListingManagePage() {
 
         {!loading && listing && (
           <>
-            <section className="hero">
-              <div className="heroImage">
-                {coverImage?.image_url ? (
-                  <img src={coverImage.image_url} alt={listing.title} />
-                ) : (
-                  <span>بدون عکس اصلی</span>
-                )}
+            <section className="heroCard">
+              <div className="heroMedia">
+                <ListingImage key={coverImage?.image_url || "hero-fallback"} src={coverImage?.image_url} alt={listing.title || "تصویر آگهی"} />
+                <div className="heroMediaShade" />
+                <span className="imageCount">{formatNumber(images.length)} تصویر</span>
+                {coverImage && <span className="mainImageTag">عکس اصلی</span>}
               </div>
 
-              <div className="heroInfo">
-                <span className="miniLabel">آگهی شماره {formatNumber(listing.id)}</span>
+              <div className="heroContent">
+                <div className="heroEyebrow">
+                  <span>آگهی شماره {formatNumber(listing.id)}</span>
+                  <b className={`statusBadge ${statusClass(currentStatus)}`}>
+                    {listing.status?.title || "در انتظار بررسی"}
+                  </b>
+                </div>
+
                 <h1>{listing.title || "آگهی بدون عنوان"}</h1>
-                <p>
+                <p className="vehicleLine">
                   {[listing.brand, listing.model, listing.year].filter(Boolean).join("، ") ||
                     "مشخصات خودرو ثبت نشده"}
                 </p>
 
-                <div className="heroMeta">
-                  <span>{formatPrice(listing.price_toman)}</span>
-                  <span>{formatNumber(listing.mileage_km)} کیلومتر</span>
-                  <span>
-                    {[listing.province, listing.city, listing.neighborhood].filter(Boolean).join("، ") ||
-                      "موقعیت ثبت نشده"}
-                  </span>
+                <div className="factGrid">
+                  <div>
+                    <span>قیمت</span>
+                    <strong>{formatPrice(listing.price_toman)}</strong>
+                  </div>
+                  <div>
+                    <span>کارکرد</span>
+                    <strong>{formatNumber(listing.mileage_km)} کیلومتر</strong>
+                  </div>
+                  <div className="locationFact">
+                    <span>موقعیت</span>
+                    <strong>{locationText}</strong>
+                  </div>
                 </div>
 
-                <div className="ownerBox">
-                  <b>{listing.listing_owner_type === "dealer" ? "آگهی نمایشگاهی" : "آگهی شخصی"}</b>
-                  <span>{listing.seller_display_name || "چاکود"}</span>
+                <div className="sellerRow">
+                  <div className="sellerAvatar">{listing.listing_owner_type === "dealer" ? "ن" : "ش"}</div>
+                  <div>
+                    <span>{listing.listing_owner_type === "dealer" ? "آگهی نمایشگاهی" : "آگهی شخصی"}</span>
+                    <b>{listing.seller_display_name || "کاربر چاکود"}</b>
+                  </div>
                 </div>
               </div>
 
-              <div className="statusPanel">
-                <span>وضعیت فعلی</span>
-                <strong className={`statusBadge ${statusClass(listing.status?.code)}`}>
-                  {listing.status?.title || "در انتظار بررسی"}
-                </strong>
-                <small>
-                  {canManage
-                    ? "شما اجازه مدیریت این آگهی را دارید."
-                    : "شما فقط اجازه مشاهده این آگهی را دارید."}
-                </small>
-              </div>
+              <aside className="statusCard">
+                <div className="statusCardTop">
+                  <span>وضعیت فعلی</span>
+                  <strong className={`statusBadge ${statusClass(currentStatus)}`}>
+                    {listing.status?.title || "در انتظار بررسی"}
+                  </strong>
+                </div>
+                <p>{statusDescription(currentStatus)}</p>
+                <div className={`permissionTag ${canManage ? "allowed" : "readonly"}`}>
+                  {canManage ? "دسترسی کامل مدیریت" : "فقط امکان مشاهده"}
+                </div>
+                {currentStatus === "active" ? (
+                  <a className="publicLink" href={`/listing/${listing.id}`} target="_blank" rel="noreferrer">
+                    مشاهده آگهی عمومی
+                  </a>
+                ) : (
+                  <div className="publicLink disabled">نسخه عمومی پس از انتشار فعال می‌شود</div>
+                )}
+              </aside>
             </section>
 
-            <section className="statsGrid">
-              <div className="statCard main">
+            <section className="statsGrid" aria-label="خلاصه آگهی">
+              <article className="statCard accent">
                 <span>تصاویر</span>
                 <strong>{formatNumber(images.length)}</strong>
-                <small>تعداد عکس‌های ثبت‌شده</small>
-              </div>
-
-              <div className="statCard">
+                <small>عکس ثبت‌شده</small>
+              </article>
+              <article className="statCard">
                 <span>نوع آگهی</span>
                 <strong>{listing.listing_owner_type === "dealer" ? "نمایشگاهی" : "شخصی"}</strong>
-                <small>مالکیت نمایشی آگهی</small>
-              </div>
-
-              <div className="statCard">
+                <small>مالکیت آگهی</small>
+              </article>
+              <article className="statCard">
                 <span>وضعیت</span>
                 <strong>{listing.status?.title || "در انتظار"}</strong>
-                <small>وضعیت انتشار آگهی</small>
-              </div>
-
-              <div className="statCard">
-                <span>شناسه</span>
-                <strong>{formatNumber(listing.id)}</strong>
-                <small>شناسه داخلی آگهی</small>
-              </div>
+                <small>وضعیت انتشار</small>
+              </article>
+              <article className="statCard">
+                <span>آخرین بروزرسانی</span>
+                <strong>{formatDate(listing.updated_at || listing.created_at)}</strong>
+                <small>شناسه {formatNumber(listing.id)}</small>
+              </article>
             </section>
 
             <section className="layoutGrid">
               <section className="mainColumn">
-                <div className="panel">
+                <section className="panel actionPanel">
                   <div className="panelHead">
                     <div>
                       <span>عملیات مدیریتی</span>
                       <h2>کنترل وضعیت آگهی</h2>
+                      <p>فقط عملیات مناسب وضعیت فعلی فعال است.</p>
                     </div>
+                    <b className={`statusBadge ${statusClass(currentStatus)}`}>
+                      {listing.status?.title || "در انتظار"}
+                    </b>
                   </div>
 
                   {!canManage && (
-                    <div className="message hint">
-                      شما اجازه تغییر وضعیت این آگهی را ندارید.
-                    </div>
+                    <div className="message hint">شما اجازه تغییر وضعیت این آگهی را ندارید.</div>
                   )}
+
+                  <div className="feedbackStack" aria-live="polite">
+                    {actionLoading && <div className="message hint">در حال انجام عملیات...</div>}
+                    {message && <div className="message success">✓ {message}</div>}
+                    {error && <div className="message error">{error}</div>}
+                  </div>
 
                   {canManage && (
                     <div className="actionGrid">
-                      <button
-                        className="actionBtn sold"
-                        disabled={Boolean(actionLoading)}
-                        onClick={() => runAction("mark_sold")}
-                      >
-                        <strong>فروخته شد</strong>
-                        <span>آگهی را از حالت فروش خارج کن</span>
-                      </button>
+                      {actions.map((action) => {
+                        const copy = actionCopy(action, currentStatus);
+                        const available = isActionAvailable(currentStatus, action);
+                        const busy = actionLoading === action;
 
-                      <button
-                        className="actionBtn inactive"
-                        disabled={Boolean(actionLoading)}
-                        onClick={() => runAction("disable_listing")}
-                      >
-                        <strong>غیرفعال‌سازی</strong>
-                        <span>آگهی موقتاً از دسترس خارج شود</span>
-                      </button>
-
-                      <button
-                        className="actionBtn review"
-                        disabled={Boolean(actionLoading)}
-                        onClick={() => runAction("reactivate_listing")}
-                      >
-                        <strong>ارسال دوباره برای بررسی</strong>
-                        <span>آگهی بعد از اصلاح دوباره بررسی شود</span>
-                      </button>
-
-                      <button
-                        className="actionBtn danger"
-                        disabled={Boolean(actionLoading)}
-                        onClick={() => runAction("delete_listing")}
-                      >
-                        <strong>حذف / بایگانی</strong>
-                        <span>آگهی از چرخه نمایش خارج شود</span>
-                      </button>
+                        return (
+                          <button
+                            key={action}
+                            type="button"
+                            className={`actionBtn ${action} ${!available ? "unavailable" : ""}`}
+                            disabled={Boolean(actionLoading) || !available}
+                            onClick={() => runAction(action)}
+                            title={!available ? "این عملیات برای وضعیت فعلی آگهی فعال نیست." : copy.title}
+                            aria-busy={busy}
+                          >
+                            <span className="actionIcon" aria-hidden="true">{busy ? "…" : copy.icon}</span>
+                            <span className="actionText">
+                              <strong>{busy ? "در حال انجام..." : copy.title}</strong>
+                              <small>{copy.text}</small>
+                            </span>
+                            {!available && <em>غیرفعال</em>}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
+                </section>
 
-                  {actionLoading && <div className="message hint">در حال انجام عملیات...</div>}
-                  {message && <div className="message success">{message}</div>}
-                  {error && <div className="message error">{error}</div>}
-                </div>
-
-                <div className="panel">
-                  <div className="panelHead">
+                <section className="panel imagePanel">
+                  <div className="panelHead imagePanelHead">
                     <div>
                       <span>تصاویر آگهی</span>
-                      <h2>مدیریت عکس‌ها و عکس اصلی</h2>
+                      <h2>مدیریت عکس‌ها و تصویر اصلی</h2>
+                      <p>تصویر اصلی در کارت آگهی و صفحه جزئیات نمایش داده می‌شود.</p>
                     </div>
+                    <button className="refreshBtn" type="button" onClick={() => loadListing({ preserveFeedback: true })}>
+                      بازخوانی
+                    </button>
                   </div>
 
                   {images.length === 0 && (
-                    <div className="emptyBox">هنوز تصویری برای این آگهی ثبت نشده است.</div>
+                    <div className="emptyBox">
+                      <img src="/brand/chakod-symbol.png" alt="چاکود" />
+                      <strong>هنوز تصویری ثبت نشده است</strong>
+                      <span>از بخش پایین، تصاویر خودرو را اضافه کنید.</span>
+                    </div>
                   )}
 
                   {images.length > 0 && (
                     <div className="imageGrid">
-                      {images.map((image) => (
-                        <div className="imageCard" key={image.id}>
-                          <img src={image.image_url} alt="تصویر آگهی" />
+                      {images.map((image, index) => (
+                        <article className={`imageCard ${image.is_cover ? "isCover" : ""}`} key={image.id}>
+                          <div className="imageVisual">
+                            <ListingImage key={`${image.id}-${image.image_url}`} src={image.image_url} alt={`تصویر ${formatNumber(index + 1)} آگهی`} />
+                            <span className="imageOrder">{formatNumber(index + 1)}</span>
+                            {image.is_cover && <b className="coverBadge">عکس اصلی</b>}
+                          </div>
 
-                          {image.is_cover && <b className="coverBadge">عکس اصلی</b>}
-
-                          {canManage && !image.is_cover && (
-                            <button
-                              className="coverBtn"
-                              disabled={coverLoadingId === image.id}
-                              onClick={() => setCoverImage(image.id)}
-                            >
-                              {coverLoadingId === image.id ? "در حال تغییر..." : "انتخاب به عنوان اصلی"}
-                            </button>
-                          )}
-                        </div>
+                          <div className="imageCardFooter">
+                            {image.is_cover ? (
+                              <div className="coverCurrent">✓ تصویر اصلی آگهی</div>
+                            ) : canManage ? (
+                              <button
+                                type="button"
+                                className="coverBtn"
+                                disabled={coverLoadingId === image.id}
+                                onClick={() => setCoverImage(image.id)}
+                              >
+                                {coverLoadingId === image.id ? "در حال تغییر..." : "انتخاب به‌عنوان اصلی"}
+                              </button>
+                            ) : (
+                              <span className="readonlyImage">تصویر آگهی</span>
+                            )}
+                          </div>
+                        </article>
                       ))}
                     </div>
                   )}
 
                   {canManage && (
                     <div className="uploadBox">
+                      <div className="uploadIntro">
+                        <div>
+                          <span>افزودن عکس جدید</span>
+                          <strong>تصاویر واضح و افقی، بازدید بیشتری می‌گیرند</strong>
+                        </div>
+                        <small>JPG، PNG یا WEBP — حداکثر ۶ مگابایت</small>
+                      </div>
+
                       <label className="uploadPicker">
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
                           multiple
-                          onChange={(e) => {
-                            handleImageSelect(e.target.files);
-                            e.target.value = "";
+                          onChange={(event) => {
+                            handleImageSelect(event.target.files);
+                            event.target.value = "";
                           }}
                           disabled={uploading}
                         />
-                        <span>📸</span>
-                        <strong>افزودن تصویر جدید</strong>
-                        <small>JPG، PNG یا WEBP تا ۶ مگابایت</small>
+                        <span aria-hidden="true">＋</span>
+                        <div>
+                          <strong>انتخاب تصویر</strong>
+                          <small>برای انتخاب چند عکس کلیک کنید</small>
+                        </div>
                       </label>
 
                       {uploads.length > 0 && (
                         <div className="uploadPreviewGrid">
                           {uploads.map((item) => (
-                            <div className={`uploadPreview ${item.status}`} key={item.localId}>
+                            <article className={`uploadPreview ${item.status}`} key={item.localId}>
                               <img src={item.previewUrl} alt="تصویر انتخابی" />
-
                               {item.status === "selected" && (
-                                <button onClick={() => removeUpload(item.localId)}>حذف</button>
+                                <button type="button" onClick={() => removeUpload(item.localId)}>حذف</button>
                               )}
-
                               {item.status === "uploading" && (
                                 <div className="uploadOverlay">
                                   <span>{formatNumber(item.progress)}٪</span>
-                                  <em>
-                                    <i style={{ width: `${item.progress}%` }} />
-                                  </em>
+                                  <em><i style={{ width: `${item.progress}%` }} /></em>
                                 </div>
                               )}
-
                               {item.status === "uploaded" && <b>آپلود شد</b>}
                               {item.status === "error" && <b className="bad">خطا</b>}
-                            </div>
+                            </article>
                           ))}
                         </div>
                       )}
 
                       {uploads.length > 0 && (
-                        <button
-                          className="primaryBtn"
-                          disabled={uploading}
-                          onClick={uploadSelectedImages}
-                        >
-                          {uploading ? "در حال آپلود..." : "آپلود تصاویر انتخاب‌شده"}
+                        <button className="primaryBtn" type="button" disabled={uploading} onClick={uploadSelectedImages}>
+                          {uploading ? "در حال آپلود تصاویر..." : `آپلود ${formatNumber(uploads.filter((item) => item.status !== "uploaded").length)} تصویر انتخاب‌شده`}
                         </button>
                       )}
                     </div>
                   )}
 
-                  {uploadMessage && <div className="message success">{uploadMessage}</div>}
-                  {uploadError && <div className="message error">{uploadError}</div>}
-                </div>
+                  <div className="feedbackStack" aria-live="polite">
+                    {uploadMessage && <div className="message success">✓ {uploadMessage}</div>}
+                    {uploadError && <div className="message error">{uploadError}</div>}
+                  </div>
+                </section>
               </section>
 
               <aside className="sideColumn">
-                <div className="panel">
-                  <div className="panelHead">
+                <section className="panel detailPanel">
+                  <div className="panelHead compact">
                     <div>
                       <span>مشخصات آگهی</span>
                       <h2>جزئیات ثبت‌شده</h2>
                     </div>
                   </div>
-
                   <div className="detailList">
-                    <div>
-                      <span>برند</span>
-                      <b>{listing.brand || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>مدل</span>
-                      <b>{listing.model || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>سال</span>
-                      <b>{listing.year || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>رنگ</span>
-                      <b>{listing.color || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>بدنه</span>
-                      <b>{listing.body_status || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>گیربکس</span>
-                      <b>{listing.transmission || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>سوخت</span>
-                      <b>{listing.fuel_type || "ثبت نشده"}</b>
-                    </div>
-                    <div>
-                      <span>موقعیت</span>
-                      <b>
-                        {listing.location_label ||
-                          [listing.province, listing.city, listing.neighborhood].filter(Boolean).join("، ") ||
-                          "ثبت نشده"}
-                      </b>
-                    </div>
+                    <div><span>برند</span><b>{listing.brand || "ثبت نشده"}</b></div>
+                    <div><span>مدل</span><b>{listing.model || "ثبت نشده"}</b></div>
+                    <div><span>سال</span><b>{listing.year || "ثبت نشده"}</b></div>
+                    <div><span>رنگ</span><b>{listing.color || "ثبت نشده"}</b></div>
+                    <div><span>بدنه</span><b>{listing.body_status || "ثبت نشده"}</b></div>
+                    <div><span>گیربکس</span><b>{listing.transmission || "ثبت نشده"}</b></div>
+                    <div><span>سوخت</span><b>{listing.fuel_type || "ثبت نشده"}</b></div>
+                    <div><span>موقعیت</span><b>{locationText}</b></div>
                   </div>
-                </div>
+                </section>
 
-                <div className="panel">
-                  <div className="panelHead">
+                <section className="panel descriptionPanel">
+                  <div className="panelHead compact">
                     <div>
                       <span>توضیحات</span>
                       <h2>متن آگهی</h2>
                     </div>
                   </div>
+                  <p className="descriptionText">{listing.description || "توضیحاتی برای این آگهی ثبت نشده است."}</p>
+                </section>
 
-                  <p className="descriptionText">
-                    {listing.description || "توضیحاتی برای این آگهی ثبت نشده است."}
-                  </p>
-                </div>
-
-                <div className="panel">
-                  <div className="panelHead">
+                <section className="panel quickPanel">
+                  <div className="panelHead compact">
                     <div>
                       <span>دسترسی سریع</span>
                       <h2>مسیرهای مدیریتی</h2>
                     </div>
                   </div>
-
                   <div className="quickLinks">
-                    <a href="/dashboard">بازگشت به داشبورد</a>
-                    <a href="/dashboard#recentListings">آگهی‌های اخیر</a>
+                    <a href="/dashboard">داشبورد</a>
+                    <a href="/dashboard#recentListings">آگهی‌های من</a>
                     <a href="/submit">ثبت آگهی جدید</a>
-                    <a href="/dealers">نمایشگاه و تیم</a>
+                    <a href="/dealers">نمایشگاه‌ها</a>
                   </div>
-                </div>
+                </section>
               </aside>
             </section>
           </>
         )}
       </section>
 
-      <nav className="mobileBottomNav" aria-label="منوی موبایل مدیریت آگهی">
-        <a href="/dashboard">
-          <span>📊</span>
-          <b>داشبورد</b>
-        </a>
-        <a href="/submit">
-          <span>＋</span>
-          <b>ثبت آگهی</b>
-        </a>
-        <a href="/dealers">
-          <span>🏢</span>
-          <b>نمایشگاه</b>
-        </a>
-        <a href="/account">
-          <span>👤</span>
-          <b>حساب</b>
-        </a>
-      </nav>
-
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body {
-          margin: 0;
-          background: #faf7ff;
-        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f8f6fc; }
+        button, input { font: inherit; }
 
         .managePage {
+          --ink: #211335;
+          --muted: #77668d;
+          --purple: #6d28d9;
+          --purple2: #9333ea;
+          --line: #eadfff;
+          --panel: rgba(255, 255, 255, 0.96);
           min-height: 100vh;
+          color: var(--ink);
           font-family: Tahoma, Arial, sans-serif;
-          color: #211335;
+          padding: 20px 22px 64px;
           background:
-            radial-gradient(circle at 86% 8%, rgba(124, 58, 237, 0.18), transparent 34%),
-            radial-gradient(circle at 8% 46%, rgba(168, 85, 247, 0.12), transparent 30%),
-            linear-gradient(180deg, #ffffff 0%, #faf7ff 48%, #ffffff 100%);
-          padding: 24px;
+            radial-gradient(circle at 88% 6%, rgba(124, 58, 237, 0.15), transparent 28%),
+            radial-gradient(circle at 8% 46%, rgba(168, 85, 247, 0.10), transparent 28%),
+            linear-gradient(180deg, #fff 0%, #faf7ff 52%, #fff 100%);
         }
 
-        .shell {
-          width: min(1240px, 100%);
-          margin: 0 auto;
-        }
+        .shell { width: min(1280px, 100%); margin: 0 auto; }
 
-        .topbar {
-          display: flex;
-          justify-content: space-between;
+        .pageBar {
+          min-height: 64px;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
           align-items: center;
           gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          text-decoration: none;
-          color: #211335;
-        }
-
-        .logoMark {
-          width: 48px;
-          height: 48px;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          color: #fff;
-          display: grid;
-          place-items: center;
-          font-weight: 900;
-          box-shadow: 0 14px 30px rgba(109, 40, 217, 0.24);
-        }
-
-        .brand strong {
-          display: block;
-          font-size: 18px;
-        }
-
-        .brand span {
-          display: block;
-          margin-top: 3px;
-          color: #7b6a91;
-          font-size: 12px;
-        }
-
-        .navLinks {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .navLinks a {
-          color: #6d28d9;
+          margin-bottom: 16px;
+          padding: 10px 14px;
+          border: 1px solid rgba(228, 213, 255, 0.9);
+          border-radius: 22px;
           background: rgba(255, 255, 255, 0.88);
+          backdrop-filter: blur(18px);
+          box-shadow: 0 14px 40px rgba(76, 29, 149, 0.08);
+        }
+
+        .backLink, .pageBrand, .pageLinks a, .publicLink, .quickLinks a, .primaryLink {
+          text-decoration: none;
+        }
+
+        .backLink {
+          justify-self: start;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--ink);
+          padding: 8px 10px;
+          border-radius: 13px;
+          transition: background .2s ease;
+        }
+        .backLink:hover { background: #f4edff; }
+        .backLink span { font-size: 25px; line-height: 1; color: var(--purple); transform: rotate(180deg); }
+        .backLink b { font-size: 12px; }
+
+        .pageBrand { display: flex; align-items: center; gap: 9px; color: var(--ink); }
+        .pageBrand img { width: 38px; height: 38px; object-fit: contain; }
+        .pageBrand div { display: grid; gap: 1px; }
+        .pageBrand strong { font-size: 14px; }
+        .pageBrand small { color: var(--muted); font-size: 10px; }
+
+        .pageLinks { justify-self: end; display: flex; align-items: center; gap: 7px; }
+        .pageLinks a {
+          color: #5b3d7d;
+          background: #f7f1ff;
           border: 1px solid #eadcff;
           border-radius: 999px;
-          padding: 10px 14px;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: bold;
-        }
-
-        .centerCard,
-        .hero,
-        .panel,
-        .statCard {
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #eadcff;
-          box-shadow: 0 24px 70px rgba(76, 29, 149, 0.10);
-          backdrop-filter: blur(12px);
+          padding: 8px 11px;
+          font-size: 11px;
+          font-weight: 800;
         }
 
         .centerCard {
-          width: min(620px, 100%);
+          width: min(540px, 100%);
           margin: 80px auto 0;
-          text-align: center;
-          border-radius: 34px;
           padding: 34px;
+          text-align: center;
+          border: 1px solid var(--line);
+          border-radius: 28px;
+          background: var(--panel);
+          box-shadow: 0 24px 70px rgba(76, 29, 149, 0.12);
         }
+        .centerCard h1 { margin: 14px 0 8px; font-size: 24px; }
+        .centerCard p { margin: 0; color: var(--muted); line-height: 2; font-size: 13px; }
+        .centerActions { display: flex; justify-content: center; gap: 9px; margin-top: 20px; }
+        .primaryLink, .secondaryBtn {
+          border: 0; border-radius: 13px; padding: 11px 15px; font-size: 12px; font-weight: 900; cursor: pointer;
+        }
+        .primaryLink { color: #fff; background: linear-gradient(135deg, var(--purple), var(--purple2)); }
+        .secondaryBtn { color: var(--purple); background: #f2eaff; }
+        .loader { width: 38px; height: 38px; margin: 0 auto; border: 4px solid #eadcff; border-top-color: var(--purple); border-radius: 50%; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .hero {
-          border-radius: 34px;
-          padding: 24px;
+        .heroCard {
           display: grid;
-          grid-template-columns: 280px 1fr 240px;
+          grid-template-columns: 330px minmax(0, 1fr) 245px;
           gap: 22px;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .heroImage {
-          height: 210px;
-          border-radius: 26px;
-          overflow: hidden;
-          background: #f4ecff;
-          display: grid;
-          place-items: center;
-          color: #8b5cf6;
-        }
-
-        .heroImage img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        .miniLabel {
-          display: inline-block;
-          color: #6d28d9;
-          background: #f4ecff;
-          border: 1px solid #e4d4ff;
-          border-radius: 999px;
-          padding: 7px 11px;
-          font-size: 12px;
-          font-weight: bold;
-          margin-bottom: 14px;
-        }
-
-        h1 {
-          margin: 0;
-          font-size: 32px;
-          line-height: 1.45;
-        }
-
-        h2 {
-          margin: 0;
-          font-size: 20px;
-          line-height: 1.7;
-        }
-
-        p {
-          color: #6d5b83;
-          line-height: 2.1;
-          margin: 12px 0 0;
-        }
-
-        .heroMeta,
-        .ownerBox {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 14px;
-        }
-
-        .heroMeta span,
-        .ownerBox span,
-        .ownerBox b {
-          border: 1px solid #f0e7ff;
-          background: #fbf8ff;
-          color: #6d5b83;
-          border-radius: 999px;
-          padding: 7px 10px;
-          font-size: 12px;
-        }
-
-        .ownerBox b {
-          color: #6d28d9;
-        }
-
-        .statusPanel {
-          border-radius: 26px;
+          align-items: stretch;
           padding: 18px;
-          background: linear-gradient(135deg, #3b0764, #7c3aed);
-          color: #fff;
-          display: grid;
-          gap: 10px;
-        }
-
-        .statusPanel span {
-          color: rgba(255, 255, 255, 0.82);
-          font-size: 12px;
-        }
-
-        .statusPanel small {
-          color: rgba(255, 255, 255, 0.78);
-          line-height: 1.9;
-        }
-
-        .statusBadge {
-          border-radius: 999px;
-          padding: 8px 10px;
-          font-size: 12px;
-          font-style: normal;
-          display: inline-block;
-          width: fit-content;
-        }
-
-        .statusBadge.active {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .statusBadge.pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .statusBadge.rejected {
-          background: #ffe4e6;
-          color: #be123c;
-        }
-
-        .statusBadge.sold {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-
-        .statusBadge.inactive {
-          background: #f1f5f9;
-          color: #475569;
-        }
-
-        .statsGrid {
-          display: grid;
-          grid-template-columns: 1.2fr repeat(3, 1fr);
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
-        .statCard {
-          border-radius: 26px;
-          padding: 22px;
-        }
-
-        .statCard.main {
-          color: #fff;
-          border-color: transparent;
-          background:
-            radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.25), transparent 34%),
-            linear-gradient(135deg, #6d28d9, #9333ea);
-        }
-
-        .statCard span {
-          display: block;
-          color: #7b6a91;
-          font-size: 12px;
-          margin-bottom: 10px;
-        }
-
-        .statCard.main span,
-        .statCard.main small {
-          color: rgba(255, 255, 255, 0.82);
-        }
-
-        .statCard strong {
-          display: block;
-          font-size: 26px;
-          margin-bottom: 8px;
-          line-height: 1.5;
-        }
-
-        .statCard small {
-          color: #7b6a91;
-          line-height: 1.8;
-        }
-
-        .layoutGrid {
-          display: grid;
-          grid-template-columns: 1fr 360px;
-          gap: 20px;
-          align-items: start;
-        }
-
-        .mainColumn,
-        .sideColumn {
-          display: grid;
-          gap: 20px;
-        }
-
-        .panel {
+          margin-bottom: 14px;
+          border: 1px solid var(--line);
           border-radius: 30px;
-          padding: 26px;
-          min-width: 0;
+          background: var(--panel);
+          box-shadow: 0 22px 65px rgba(76, 29, 149, 0.11);
+          overflow: hidden;
         }
 
-        .panelHead {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 20px;
-        }
-
-        .panelHead span {
-          display: inline-block;
-          color: #6d28d9;
-          background: #f4ecff;
-          border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 11px;
-          font-weight: bold;
-          margin-bottom: 8px;
-        }
-
-        .actionGrid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
-        }
-
-        .actionBtn {
-          border: 1px solid #eadcff;
-          background: #fff;
+        .heroMedia {
+          position: relative;
+          min-height: 245px;
           border-radius: 22px;
-          padding: 16px;
-          text-align: right;
-          cursor: pointer;
-          font-family: inherit;
-          min-height: 116px;
-        }
-
-        .actionBtn strong {
-          display: block;
-          color: #211335;
-          margin-bottom: 8px;
-        }
-
-        .actionBtn span {
-          color: #7b6a91;
-          font-size: 12px;
-          line-height: 1.9;
-        }
-
-        .actionBtn.sold {
-          background: #eff6ff;
-          border-color: #bfdbfe;
-        }
-
-        .actionBtn.inactive {
-          background: #f8fafc;
-          border-color: #e2e8f0;
-        }
-
-        .actionBtn.review {
-          background: #fffbeb;
-          border-color: #fde68a;
-        }
-
-        .actionBtn.danger {
-          background: #fff1f2;
-          border-color: #fecdd3;
-        }
-
-        .actionBtn:disabled {
-          opacity: 0.6;
-          cursor: wait;
-        }
-
-        .imageGrid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
-        }
-
-        .imageCard {
-          position: relative;
-          border-radius: 20px;
           overflow: hidden;
-          border: 1px solid #eadcff;
-          background: #fff;
-          aspect-ratio: 1 / 1;
+          background: #f4edff;
         }
-
-        .imageCard img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
+        .heroMedia > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .heroMedia > img.imageFallback { object-fit: contain; padding: 28px; background: #f4edff; }
+        .heroMediaShade { position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(180deg, transparent, rgba(27, 11, 50, .46)); pointer-events: none; }
+        .imageCount, .mainImageTag {
+          position: absolute; z-index: 2; bottom: 12px; border-radius: 999px; padding: 7px 10px; font-size: 10px; font-weight: 900; backdrop-filter: blur(10px);
         }
+        .imageCount { right: 12px; color: #fff; background: rgba(33, 19, 53, .55); }
+        .mainImageTag { left: 12px; color: #176b38; background: rgba(230, 255, 238, .93); }
 
-        .coverBadge {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: rgba(22, 101, 52, 0.94);
-          color: #fff;
-          border-radius: 999px;
-          padding: 7px 10px;
-          font-size: 11px;
+        .heroContent { min-width: 0; padding: 8px 0; display: flex; flex-direction: column; justify-content: center; }
+        .heroEyebrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .heroEyebrow > span, .miniLabel {
+          display: inline-flex; width: fit-content; color: var(--purple); background: #f3ebff; border-radius: 999px; padding: 7px 10px; font-size: 10px; font-weight: 900;
         }
+        .heroContent h1 { margin: 0; font-size: clamp(25px, 3vw, 36px); line-height: 1.45; letter-spacing: -.5px; }
+        .vehicleLine { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.9; }
 
-        .coverBtn {
-          position: absolute;
-          right: 8px;
-          bottom: 8px;
-          left: 8px;
-          border: 0;
-          border-radius: 999px;
-          padding: 9px 10px;
-          background: rgba(109, 40, 217, 0.94);
-          color: #fff;
-          font-family: inherit;
-          cursor: pointer;
-          font-size: 11px;
-          font-weight: bold;
-        }
+        .factGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+        .factGrid > div { min-width: 0; padding: 11px 12px; border: 1px solid #ece2ff; border-radius: 15px; background: #fbf9ff; }
+        .factGrid .locationFact { grid-column: 1 / -1; }
+        .factGrid span { display: block; margin-bottom: 5px; color: #8a789f; font-size: 9px; }
+        .factGrid strong { display: block; color: #342047; font-size: 12px; line-height: 1.75; overflow-wrap: anywhere; }
 
-        .uploadBox {
-          margin-top: 18px;
-          border: 1px dashed #d7c2ff;
-          background: #fbf8ff;
-          border-radius: 24px;
-          padding: 16px;
-        }
+        .sellerRow { display: flex; align-items: center; gap: 9px; margin-top: 12px; }
+        .sellerAvatar { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 13px; color: #fff; font-weight: 900; background: linear-gradient(135deg, var(--purple), var(--purple2)); }
+        .sellerRow > div:last-child { display: grid; gap: 2px; }
+        .sellerRow span { color: var(--muted); font-size: 9px; }
+        .sellerRow b { font-size: 11px; }
 
-        .uploadPicker {
-          display: grid;
-          place-items: center;
-          text-align: center;
-          border: 1px solid #eadcff;
-          background: #fff;
-          border-radius: 20px;
-          padding: 22px;
-          cursor: pointer;
-        }
-
-        .uploadPicker input {
-          display: none;
-        }
-
-        .uploadPicker span {
-          font-size: 28px;
-          margin-bottom: 8px;
-        }
-
-        .uploadPicker strong {
-          color: #211335;
-          margin-bottom: 5px;
-        }
-
-        .uploadPicker small {
-          color: #7b6a91;
-        }
-
-        .uploadPreviewGrid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-          margin-top: 14px;
-        }
-
-        .uploadPreview {
-          position: relative;
-          border-radius: 16px;
-          overflow: hidden;
-          aspect-ratio: 1 / 1;
-          border: 1px solid #eadcff;
-        }
-
-        .uploadPreview img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
-
-        .uploadPreview button,
-        .uploadPreview b {
-          position: absolute;
-          right: 7px;
-          bottom: 7px;
-          border: 0;
-          border-radius: 999px;
-          padding: 6px 9px;
-          font-size: 10px;
-          background: rgba(190, 18, 60, 0.94);
-          color: #fff;
-          font-family: inherit;
-        }
-
-        .uploadPreview b {
-          background: rgba(22, 101, 52, 0.94);
-        }
-
-        .uploadPreview b.bad {
-          background: rgba(190, 18, 60, 0.94);
-        }
-
-        .uploadOverlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(36, 18, 61, 0.46);
-          display: grid;
-          place-items: center;
-          color: #fff;
-          padding: 10px;
-        }
-
-        .uploadOverlay em {
-          width: 80%;
-          height: 6px;
-          border-radius: 999px;
-          overflow: hidden;
-          background: rgba(255, 255, 255, 0.28);
-        }
-
-        .uploadOverlay i {
-          display: block;
-          height: 100%;
-          background: #fff;
-        }
-
-        .primaryBtn,
-        .primaryLink,
-        .secondaryBtn {
-          border: 0;
-          border-radius: 17px;
-          padding: 13px 16px;
-          font-weight: bold;
-          font-size: 14px;
-          cursor: pointer;
-          text-decoration: none;
-          display: inline-block;
-          text-align: center;
-          font-family: inherit;
-        }
-
-        .primaryBtn,
-        .primaryLink {
-          color: #fff;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-        }
-
-        .primaryBtn {
-          width: 100%;
-          margin-top: 14px;
-        }
-
-        .secondaryBtn {
-          color: #6d28d9;
-          background: #f4ecff;
-          border: 1px solid #e4d4ff;
-        }
-
-        .detailList {
-          display: grid;
-          gap: 11px;
-        }
-
-        .detailList div {
+        .statusCard {
+          padding: 17px;
+          border: 1px solid #e9dcff;
+          border-radius: 22px;
+          background: linear-gradient(160deg, #fbf7ff, #f4ecff);
           display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          border-bottom: 1px solid #f0e7ff;
-          padding-bottom: 10px;
-        }
-
-        .detailList span {
-          color: #7b6a91;
-          font-size: 12px;
-        }
-
-        .detailList b {
-          color: #211335;
-          font-size: 12px;
-          text-align: left;
-          line-height: 1.8;
-        }
-
-        .descriptionText {
-          color: #4c3b64;
-          font-size: 13px;
-          line-height: 2.2;
-        }
-
-        .quickLinks {
-          display: grid;
-          gap: 10px;
-        }
-
-        .quickLinks a {
-          color: #6d28d9;
-          background: #f4ecff;
-          border: 1px solid #e4d4ff;
-          border-radius: 999px;
-          padding: 12px 14px;
-          text-decoration: none;
-          text-align: center;
-          font-size: 13px;
-          font-weight: bold;
-        }
-
-        .centerActions {
-          display: flex;
-          gap: 12px;
+          flex-direction: column;
           justify-content: center;
-          margin-top: 18px;
-          flex-wrap: wrap;
+        }
+        .statusCardTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .statusCardTop > span { color: var(--muted); font-size: 10px; }
+        .statusCard p { margin: 13px 0; color: #6f5c84; font-size: 11px; line-height: 1.9; }
+        .statusBadge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 7px 10px; font-size: 10px; font-weight: 900; white-space: nowrap; }
+        .statusBadge.active { color: #176b38; background: #e7f9ed; }
+        .statusBadge.pending { color: #8a5a00; background: #fff2c9; }
+        .statusBadge.rejected { color: #a3212e; background: #ffe4e7; }
+        .statusBadge.sold { color: #1d4f91; background: #e5f0ff; }
+        .statusBadge.inactive { color: #665d72; background: #ece8f1; }
+        .permissionTag { border-radius: 12px; padding: 9px 10px; text-align: center; font-size: 10px; font-weight: 900; }
+        .permissionTag.allowed { color: #176b38; background: #e7f9ed; }
+        .permissionTag.readonly { color: #7b5b00; background: #fff3ce; }
+        .publicLink { margin-top: 9px; border-radius: 12px; padding: 10px; text-align: center; color: #fff; background: linear-gradient(135deg, var(--purple), var(--purple2)); font-size: 10px; font-weight: 900; }
+        .publicLink.disabled { color: #8a789f; background: rgba(255,255,255,.65); border: 1px dashed #ddcff7; }
+
+        .statsGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .statCard { min-width: 0; min-height: 112px; padding: 16px; border: 1px solid var(--line); border-radius: 21px; background: var(--panel); box-shadow: 0 12px 34px rgba(76, 29, 149, .07); }
+        .statCard.accent { color: #fff; border: 0; background: linear-gradient(135deg, var(--purple), var(--purple2)); }
+        .statCard span { display: block; margin-bottom: 9px; color: #8a789f; font-size: 9px; }
+        .statCard.accent span, .statCard.accent small { color: rgba(255,255,255,.78); }
+        .statCard strong { display: block; margin-bottom: 5px; font-size: 20px; line-height: 1.45; overflow-wrap: anywhere; }
+        .statCard small { color: var(--muted); font-size: 9px; line-height: 1.65; }
+
+        .layoutGrid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
+        .mainColumn, .sideColumn { display: grid; gap: 14px; min-width: 0; }
+        .sideColumn { position: sticky; top: 18px; }
+        .panel { min-width: 0; padding: 22px; border: 1px solid var(--line); border-radius: 26px; background: var(--panel); box-shadow: 0 16px 46px rgba(76, 29, 149, .08); }
+        .panelHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+        .panelHead > div { min-width: 0; }
+        .panelHead span { display: inline-flex; width: fit-content; margin-bottom: 7px; padding: 6px 9px; border-radius: 999px; color: var(--purple); background: #f3ebff; font-size: 9px; font-weight: 900; }
+        .panelHead h2 { margin: 0; font-size: 19px; line-height: 1.6; }
+        .panelHead p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.8; }
+        .panelHead.compact { margin-bottom: 12px; }
+        .panelHead.compact h2 { font-size: 16px; }
+
+        .feedbackStack { display: grid; gap: 7px; margin-bottom: 10px; }
+        .message { padding: 11px 13px; border-radius: 13px; font-size: 11px; line-height: 1.8; }
+        .message.success { color: #176b38; background: #e8faee; border: 1px solid #bfe7cb; }
+        .message.error { color: #a3212e; background: #fff0f1; border: 1px solid #f0c8cd; }
+        .message.hint { color: #6b4a88; background: #f5efff; border: 1px solid #e4d5ff; }
+
+        .actionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .actionBtn {
+          position: relative;
+          min-height: 110px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          text-align: right;
+          border: 1px solid #e5d8f7;
+          border-radius: 18px;
+          padding: 14px;
+          cursor: pointer;
+          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+          background: #fff;
+          color: var(--ink);
+        }
+        .actionBtn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(76, 29, 149, .10); }
+        .actionIcon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 14px; font-size: 20px; font-weight: 900; }
+        .actionText { min-width: 0; display: grid; gap: 5px; }
+        .actionText strong { font-size: 13px; line-height: 1.6; }
+        .actionText small { color: #746286; font-size: 10px; line-height: 1.7; }
+        .actionBtn em { position: absolute; left: 10px; top: 9px; font-style: normal; color: #8d8098; background: #eeeaf2; border-radius: 999px; padding: 4px 7px; font-size: 8px; }
+        .actionBtn.mark_sold { border-color: #cbe0ff; background: #f6faff; }
+        .actionBtn.mark_sold .actionIcon { color: #1d4f91; background: #e6f0ff; }
+        .actionBtn.disable_listing { border-color: #dcd6e6; background: #faf9fc; }
+        .actionBtn.disable_listing .actionIcon { color: #665d72; background: #eeeaf2; }
+        .actionBtn.reactivate_listing { border-color: #f1d58d; background: #fffaf0; }
+        .actionBtn.reactivate_listing .actionIcon { color: #8a5a00; background: #fff0c5; }
+        .actionBtn.delete_listing { border-color: #f2c8cd; background: #fff7f7; }
+        .actionBtn.delete_listing .actionIcon { color: #a3212e; background: #ffe5e8; }
+        .actionBtn:disabled { cursor: not-allowed; opacity: .58; transform: none; box-shadow: none; }
+        .actionBtn.unavailable { filter: grayscale(.15); }
+
+        .imagePanelHead { align-items: center; }
+        .refreshBtn { flex: 0 0 auto; border: 1px solid #dfd0f6; border-radius: 12px; padding: 9px 11px; color: var(--purple); background: #f7f1ff; font-size: 10px; font-weight: 900; cursor: pointer; }
+        .imageGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .imageCard { min-width: 0; padding: 6px; border: 1px solid #e6daf7; border-radius: 18px; background: #fbf9ff; }
+        .imageCard.isCover { border-color: #72d89b; box-shadow: 0 0 0 2px rgba(59, 190, 110, .12); background: #f5fff8; }
+        .imageVisual { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 13px; background: #f2eaff; }
+        .imageVisual img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        .imageVisual img.imageFallback { object-fit: contain; padding: 16px; background: #f3edff; }
+        .coverBadge, .imageOrder { position: absolute; top: 7px; z-index: 2; border-radius: 999px; padding: 5px 7px; font-size: 8px; font-weight: 900; backdrop-filter: blur(8px); }
+        .coverBadge { right: 7px; color: #fff; background: #217a45; }
+        .imageOrder { left: 7px; color: #fff; background: rgba(33, 19, 53, .58); }
+        .imageCardFooter { margin-top: 6px; }
+        .coverBtn, .coverCurrent, .readonlyImage { width: 100%; min-height: 36px; display: grid; place-items: center; border-radius: 11px; padding: 8px 6px; text-align: center; font-size: 9px; font-weight: 900; }
+        .coverBtn { border: 1px solid #dccaf6; color: var(--purple); background: #f4edff; cursor: pointer; }
+        .coverBtn:disabled { opacity: .65; cursor: wait; }
+        .coverCurrent { color: #176b38; background: #e6f9ed; border: 1px solid #bfe7cb; }
+        .readonlyImage { color: var(--muted); background: #f2eff5; }
+
+        .emptyBox { min-height: 190px; display: grid; place-items: center; align-content: center; gap: 8px; padding: 22px; text-align: center; border: 1px dashed #d8c8ee; border-radius: 19px; background: #fbf9ff; color: var(--muted); }
+        .emptyBox img { width: 54px; height: 54px; object-fit: contain; }
+        .emptyBox strong { color: var(--ink); font-size: 13px; }
+        .emptyBox span { font-size: 10px; }
+
+        .uploadBox { margin-top: 14px; padding: 14px; border: 1px dashed #d8c8ee; border-radius: 20px; background: linear-gradient(180deg, #fcfaff, #f8f3ff); }
+        .uploadIntro { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 11px; }
+        .uploadIntro > div { display: grid; gap: 3px; }
+        .uploadIntro span { color: var(--purple); font-size: 9px; font-weight: 900; }
+        .uploadIntro strong { font-size: 12px; line-height: 1.7; }
+        .uploadIntro > small { color: var(--muted); font-size: 9px; }
+        .uploadPicker { min-height: 86px; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid #e4d7f8; border-radius: 16px; background: #fff; cursor: pointer; }
+        .uploadPicker input { display: none; }
+        .uploadPicker > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--purple), var(--purple2)); font-size: 24px; }
+        .uploadPicker > div { display: grid; gap: 3px; }
+        .uploadPicker strong { font-size: 12px; }
+        .uploadPicker small { color: var(--muted); font-size: 9px; }
+        .uploadPreviewGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+        .uploadPreview { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 13px; background: #eee6fa; }
+        .uploadPreview img { width: 100%; height: 100%; object-fit: cover; }
+        .uploadPreview > button, .uploadPreview > b { position: absolute; bottom: 6px; right: 6px; border: 0; border-radius: 999px; padding: 5px 8px; color: #fff; background: #b42334; font-size: 8px; font-weight: 900; cursor: pointer; }
+        .uploadPreview > b { background: #217a45; }
+        .uploadPreview > b.bad { background: #b42334; }
+        .uploadOverlay { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 8px; color: #fff; background: rgba(33,19,53,.70); }
+        .uploadOverlay span { font-size: 12px; font-weight: 900; }
+        .uploadOverlay em { width: 74%; height: 5px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.25); }
+        .uploadOverlay i { display: block; height: 100%; border-radius: inherit; background: #fff; }
+        .primaryBtn { width: 100%; min-height: 46px; margin-top: 10px; border: 0; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--purple), var(--purple2)); font-size: 11px; font-weight: 900; cursor: pointer; }
+        .primaryBtn:disabled { opacity: .65; cursor: wait; }
+
+        .detailList { display: grid; gap: 0; }
+        .detailList > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px dashed #e8ddf4; }
+        .detailList > div:last-child { border-bottom: 0; padding-bottom: 0; }
+        .detailList span { color: #8b7a9e; font-size: 10px; }
+        .detailList b { max-width: 65%; text-align: left; color: #38264b; font-size: 10px; line-height: 1.75; overflow-wrap: anywhere; }
+        .descriptionText { margin: 0; color: #6f5d83; font-size: 11px; line-height: 2.05; white-space: pre-line; }
+        .quickLinks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+        .quickLinks a { padding: 10px 8px; border: 1px solid #e4d6f8; border-radius: 12px; text-align: center; color: var(--purple); background: #f6efff; font-size: 9px; font-weight: 900; }
+
+        @media (max-width: 1080px) {
+          .heroCard { grid-template-columns: 285px minmax(0, 1fr); }
+          .statusCard { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; }
+          .statusCardTop { display: contents; }
+          .statusCard p { margin: 0; }
+          .permissionTag, .publicLink { margin: 0; }
+          .layoutGrid { grid-template-columns: minmax(0, 1fr) 290px; }
+          .imageGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
-        .message {
-          margin-top: 16px;
-          border-radius: 16px;
-          padding: 13px;
-          font-size: 13px;
-          line-height: 1.9;
+        @media (max-width: 820px) {
+          .managePage { padding: 10px 10px calc(112px + env(safe-area-inset-bottom)); }
+          .pageBar { position: sticky; top: 6px; z-index: 40; min-height: 56px; grid-template-columns: auto 1fr; padding: 7px 9px; margin-bottom: 9px; border-radius: 17px; }
+          .pageBrand { justify-self: end; }
+          .pageBrand img { width: 34px; height: 34px; }
+          .pageBrand strong { font-size: 12px; }
+          .pageBrand small { font-size: 8px; }
+          .pageLinks { display: none; }
+          .backLink { padding: 7px 8px; }
+          .backLink b { font-size: 10px; }
+
+          .centerCard { margin-top: 36px; padding: 22px; border-radius: 21px; }
+          .centerActions { flex-direction: column; }
+
+          .heroCard { grid-template-columns: 1fr; gap: 12px; padding: 10px; border-radius: 22px; margin-bottom: 9px; }
+          .heroMedia { min-height: 0; aspect-ratio: 16 / 9; border-radius: 16px; }
+          .heroMedia > img.imageFallback { padding: 22px; }
+          .imageCount, .mainImageTag { bottom: 8px; padding: 5px 8px; font-size: 8px; }
+          .imageCount { right: 8px; }
+          .mainImageTag { left: 8px; }
+          .heroContent { padding: 2px 3px; }
+          .heroEyebrow { margin-bottom: 8px; }
+          .heroEyebrow > span { font-size: 8px; padding: 6px 8px; }
+          .heroContent h1 { font-size: 22px; line-height: 1.55; }
+          .vehicleLine { margin-top: 4px; font-size: 10px; }
+          .factGrid { gap: 6px; margin-top: 11px; }
+          .factGrid > div { padding: 9px; border-radius: 12px; }
+          .factGrid span { font-size: 8px; }
+          .factGrid strong { font-size: 10px; }
+          .sellerRow { margin-top: 9px; }
+          .sellerAvatar { width: 34px; height: 34px; flex-basis: 34px; border-radius: 11px; font-size: 11px; }
+          .sellerRow span { font-size: 8px; }
+          .sellerRow b { font-size: 10px; }
+
+          .statusCard { grid-column: auto; display: flex; padding: 12px; border-radius: 16px; }
+          .statusCardTop { display: flex; }
+          .statusCard p { margin: 9px 0; font-size: 9px; }
+          .permissionTag, .publicLink { margin-top: 0; font-size: 9px; padding: 8px; }
+
+          .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-bottom: 9px; }
+          .statCard { min-height: 94px; padding: 12px; border-radius: 17px; }
+          .statCard span { margin-bottom: 6px; font-size: 8px; }
+          .statCard strong { font-size: 16px; }
+          .statCard small { font-size: 8px; }
+
+          .layoutGrid { grid-template-columns: 1fr; gap: 9px; }
+          .mainColumn, .sideColumn { gap: 9px; }
+          .sideColumn { position: static; }
+          .panel { padding: 14px; border-radius: 20px; }
+          .panelHead { margin-bottom: 12px; gap: 8px; }
+          .panelHead span { margin-bottom: 5px; padding: 5px 7px; font-size: 8px; }
+          .panelHead h2 { font-size: 15px; }
+          .panelHead p { font-size: 9px; }
+          .panelHead > .statusBadge { display: none; }
+
+          .actionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+          .actionBtn { min-height: 112px; align-items: flex-start; flex-direction: column; gap: 8px; padding: 11px; border-radius: 15px; }
+          .actionIcon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 11px; font-size: 16px; }
+          .actionText { gap: 3px; }
+          .actionText strong { font-size: 11px; }
+          .actionText small { font-size: 8px; line-height: 1.65; }
+          .actionBtn em { left: 7px; top: 7px; font-size: 7px; }
+          .message { padding: 9px 10px; font-size: 9px; }
+
+          .imagePanelHead { align-items: flex-start; }
+          .refreshBtn { padding: 7px 9px; font-size: 8px; }
+          .imageGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+          .imageCard { padding: 4px; border-radius: 14px; }
+          .imageVisual { border-radius: 10px; }
+          .imageVisual img.imageFallback { padding: 12px; }
+          .coverBadge, .imageOrder { top: 5px; padding: 4px 6px; font-size: 7px; }
+          .coverBadge { right: 5px; }
+          .imageOrder { left: 5px; }
+          .coverBtn, .coverCurrent, .readonlyImage { min-height: 34px; padding: 7px 4px; border-radius: 9px; font-size: 8px; }
+
+          .uploadBox { margin-top: 10px; padding: 10px; border-radius: 16px; }
+          .uploadIntro { align-items: flex-start; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+          .uploadIntro strong { font-size: 10px; }
+          .uploadIntro > small { font-size: 8px; }
+          .uploadPicker { min-height: 72px; border-radius: 13px; }
+          .uploadPicker > span { width: 36px; height: 36px; border-radius: 11px; font-size: 20px; }
+          .uploadPicker strong { font-size: 10px; }
+          .uploadPicker small { font-size: 8px; }
+          .uploadPreviewGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+          .primaryBtn { min-height: 44px; font-size: 10px; }
+
+          .detailList > div { padding: 8px 0; }
+          .detailList span, .detailList b { font-size: 9px; }
+          .descriptionText { font-size: 10px; }
+          .quickLinks a { padding: 9px 6px; font-size: 8px; }
         }
 
-        .success {
-          background: #f0fdf4;
-          color: #166534;
-          border: 1px solid #bbf7d0;
-        }
-
-        .error {
-          background: #fff1f2;
-          color: #be123c;
-          border: 1px solid #fecdd3;
-        }
-
-        .hint {
-          background: #fffbeb;
-          color: #92400e;
-          border: 1px solid #fde68a;
-        }
-
-        .emptyBox {
-          border: 1px dashed #d7c2ff;
-          background: #fbf8ff;
-          color: #7b6a91;
-          border-radius: 22px;
-          padding: 22px;
-          text-align: center;
-          line-height: 2;
-          font-size: 13px;
-        }
-
-        .loader {
-          width: 42px;
-          height: 42px;
-          border-radius: 999px;
-          border: 4px solid #eadcff;
-          border-top-color: #6d28d9;
-          margin: 0 auto 18px;
-          animation: spin 0.85s linear infinite;
-        }
-
-        .mobileBottomNav {
-          display: none;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @media (max-width: 1120px) {
-          .hero,
-          .layoutGrid {
-            grid-template-columns: 1fr;
-          }
-
-          .statsGrid,
-          .actionGrid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .heroImage {
-            height: 320px;
-          }
-        }
-
-        @media (max-width: 760px) {
-          .managePage {
-            padding: 12px;
-            padding-bottom: 94px;
-          }
-
-          .shell {
-            width: 100%;
-          }
-
-          .topbar {
-            position: sticky;
-            top: 8px;
-            z-index: 30;
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.86);
-            backdrop-filter: blur(14px);
-            border: 1px solid #eadcff;
-            border-radius: 22px;
-            padding: 10px;
-            margin-bottom: 14px;
-            box-shadow: 0 14px 40px rgba(76, 29, 149, 0.10);
-          }
-
-          .brand .logoMark {
-            width: 42px;
-            height: 42px;
-            border-radius: 16px;
-          }
-
-          .brand strong {
-            font-size: 16px;
-          }
-
-          .brand span {
-            font-size: 11px;
-          }
-
-          .navLinks {
-            width: 100%;
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            padding-bottom: 2px;
-            scrollbar-width: none;
-          }
-
-          .navLinks::-webkit-scrollbar {
-            display: none;
-          }
-
-          .navLinks a {
-            white-space: nowrap;
-            padding: 9px 12px;
-            font-size: 12px;
-            min-height: 38px;
-            display: inline-flex;
-            align-items: center;
-          }
-
-          .centerCard,
-          .hero,
-          .panel,
-          .statCard {
-            border-radius: 24px;
-            padding: 20px;
-          }
-
-          .centerCard {
-            margin: 44px auto 0;
-          }
-
-          h1 {
-            font-size: 26px;
-          }
-
-          h2 {
-            font-size: 17px;
-          }
-
-          p {
-            font-size: 13px;
-            line-height: 2;
-          }
-
-          .hero {
-            gap: 14px;
-            margin-bottom: 14px;
-          }
-
-          .heroImage {
-            height: 210px;
-            border-radius: 22px;
-          }
-
-          .statusPanel {
-            border-radius: 22px;
-          }
-
-          .statsGrid {
-            display: flex;
-            overflow-x: auto;
-            gap: 10px;
-            padding: 2px 2px 8px;
-            margin-bottom: 14px;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-          }
-
-          .statsGrid::-webkit-scrollbar {
-            display: none;
-          }
-
-          .statCard {
-            min-width: 210px;
-            scroll-snap-align: start;
-          }
-
-          .layoutGrid,
-          .mainColumn,
-          .sideColumn {
-            gap: 14px;
-          }
-
-          .actionGrid {
-            grid-template-columns: 1fr;
-          }
-
-          .actionBtn {
-            min-height: auto;
-          }
-
-          .imageGrid,
-          .uploadPreviewGrid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .detailList div {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .mobileBottomNav {
-            position: fixed;
-            right: 12px;
-            left: 12px;
-            bottom: 12px;
-            z-index: 80;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 8px;
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid #eadcff;
-            box-shadow: 0 18px 50px rgba(76, 29, 149, 0.18);
-            backdrop-filter: blur(16px);
-          }
-
-          .mobileBottomNav a {
-            text-decoration: none;
-            color: #6d28d9;
-            display: grid;
-            place-items: center;
-            gap: 3px;
-            border-radius: 18px;
-            padding: 8px 4px;
-            min-height: 54px;
-            background: #fbf8ff;
-            border: 1px solid #f0e7ff;
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          .mobileBottomNav span {
-            font-size: 18px;
-            line-height: 1;
-          }
-
-          .mobileBottomNav b {
-            font-size: 10px;
-            line-height: 1.5;
-          }
+        @media (max-width: 370px) {
+          .actionGrid, .factGrid { grid-template-columns: 1fr; }
+          .factGrid .locationFact { grid-column: auto; }
+          .uploadPreviewGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       `}</style>
     </main>

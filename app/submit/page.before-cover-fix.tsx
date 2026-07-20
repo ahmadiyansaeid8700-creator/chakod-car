@@ -1,8 +1,5 @@
-// CHAKOD_SUBMIT_DEALER_ID_NORMALIZE_FIX_V1
-// CHAKOD_SUBMIT_PENDING_REDIRECT_FIX_V1
 "use client";
 
-// CHAKOD_SUBMIT_COVER_PICKER_V5_ONE_CLICK
 import { useEffect, useRef, useState } from "react";
 
 const API_BASE = "https://api.chakod.com";
@@ -18,7 +15,6 @@ type User = {
 
 type Dealer = {
   id: number;
-  dealer_id?: number | string;
   auth_user_id?: number;
   dealer_name?: string;
   dealer_phone?: string;
@@ -26,9 +22,7 @@ type Dealer = {
   city?: string;
   neighborhood?: string;
   address?: string;
-  role?: string;
-  is_verified?: boolean | number;
-  is_active?: boolean | number;
+  is_active?: number;
 };
 
 type VehicleBrand = {
@@ -802,7 +796,6 @@ export default function SubmitListingPage() {
   const [description, setDescription] = useState("");
 
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [selectedCoverLocalId, setSelectedCoverLocalId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -848,28 +841,7 @@ export default function SubmitListingPage() {
       const json = await res.json();
 
       if (json.success && Array.isArray(json.data)) {
-        const rawDealers = json.data as Record<string, unknown>[];
-        const normalizedDealers: Dealer[] = rawDealers
-          .map((item): Dealer => {
-            const id = Number(item.id ?? item.dealer_id ?? 0);
-            const dealerName = String(
-              item.dealer_name ?? item.name ?? item.title ?? "",
-            ).trim();
-
-            return {
-              ...item,
-              id,
-              dealer_id: item.dealer_id as number | string | undefined,
-              dealer_name: dealerName || undefined,
-            } as Dealer;
-          })
-          .filter((dealer) => Number.isInteger(dealer.id) && dealer.id > 0)
-          .filter(
-            (dealer) =>
-              dealer.is_active !== false && Number(dealer.is_active) !== 0,
-          );
-
-        setDealers(normalizedDealers);
+        setDealers(json.data);
       } else {
         setDealers([]);
       }
@@ -1197,9 +1169,8 @@ export default function SubmitListingPage() {
 
       if (validItems.length > 0) {
         setImages((prev) => [...prev, ...validItems]);
-        setSelectedCoverLocalId((current) => current || validItems[0].localId);
         setImageMessage(
-          `${validItems.length} تصویر به WEBP تبدیل و برای آپلود آماده شد. تصویر اول به‌عنوان عکس اصلی انتخاب شد.`,
+          `${validItems.length} تصویر به WEBP تبدیل و برای آپلود آماده شد.`,
         );
       } else {
         setImageMessage("");
@@ -1269,24 +1240,13 @@ export default function SubmitListingPage() {
 
     setImages((prev) => {
       const found = prev.find((item) => item.localId === localId);
-      const remaining = prev.filter((item) => item.localId !== localId);
 
       if (found) {
         URL.revokeObjectURL(found.previewUrl);
       }
 
-      if (selectedCoverLocalId === localId) {
-        setSelectedCoverLocalId(remaining[0]?.localId || null);
-      }
-
-      return remaining;
+      return prev.filter((item) => item.localId !== localId);
     });
-  }
-
-  function selectLocalCover(localId: string) {
-    setSelectedCoverLocalId(localId);
-    setImageError("");
-    setImageMessage("این تصویر به‌عنوان عکس اصلی انتخاب شد.");
   }
 
   async function uploadAllImages(listingId: number, onlyLocalIds?: string[]) {
@@ -1297,20 +1257,11 @@ export default function SubmitListingPage() {
       "cancelled",
     ];
 
-    const preferredCoverLocalId =
-      selectedCoverLocalId || images[0]?.localId || null;
-
-    const pendingImages = images
-      .filter(
-        (item) =>
-          retryableStatuses.includes(item.status) &&
-          (!onlyLocalIds || onlyLocalIds.includes(item.localId)),
-      )
-      .sort((a, b) => {
-        if (a.localId === preferredCoverLocalId) return -1;
-        if (b.localId === preferredCoverLocalId) return 1;
-        return 0;
-      });
+    const pendingImages = images.filter(
+      (item) =>
+        retryableStatuses.includes(item.status) &&
+        (!onlyLocalIds || onlyLocalIds.includes(item.localId)),
+    );
 
     if (pendingImages.length === 0) {
       return { uploaded: 0, failed: 0, cancelled: 0 };
@@ -1324,13 +1275,6 @@ export default function SubmitListingPage() {
     let uploaded = 0;
     let failed = 0;
     let cancelled = 0;
-    let preferredCoverImageId =
-      images.find(
-        (item) =>
-          item.localId === preferredCoverLocalId &&
-          item.status === "uploaded" &&
-          item.image_id,
-      )?.image_id || 0;
 
     try {
       for (const image of pendingImages) {
@@ -1371,15 +1315,6 @@ export default function SubmitListingPage() {
           if (json.success && json.image_url) {
             uploaded += 1;
 
-            const uploadedImageId = Number(json.image_id || 0) || undefined;
-
-            if (
-              image.localId === preferredCoverLocalId &&
-              uploadedImageId
-            ) {
-              preferredCoverImageId = uploadedImageId;
-            }
-
             setImages((prev) =>
               prev.map((item) =>
                 item.localId === image.localId
@@ -1387,11 +1322,9 @@ export default function SubmitListingPage() {
                       ...item,
                       status: "uploaded",
                       progress: 100,
-                      image_id: uploadedImageId,
+                      image_id: Number(json.image_id || 0) || undefined,
                       image_url: json.image_url,
-                      is_cover:
-                        Boolean(json.is_cover) ||
-                        item.localId === preferredCoverLocalId,
+                      is_cover: Boolean(json.is_cover),
                       error: "",
                     }
                   : item,
@@ -1458,21 +1391,6 @@ export default function SubmitListingPage() {
     } finally {
       setUploadingImages(false);
       stopAllUploadsRef.current = false;
-    }
-
-    if (preferredCoverImageId && preferredCoverLocalId) {
-      try {
-        await setCoverImageForListing(
-          listingId,
-          preferredCoverImageId,
-          preferredCoverLocalId,
-          false,
-        );
-      } catch {
-        setImageError(
-          "تصاویر آپلود شدند، اما انتخاب عکس اصلی روی سرور ذخیره نشد. دوباره روی دکمه «انتخاب عکس اصلی» بزنید.",
-        );
-      }
     }
 
     return { uploaded, failed, cancelled };
@@ -1556,19 +1474,6 @@ export default function SubmitListingPage() {
       }
 
       const nextCoverId = Number(json.new_cover_image_id || 0);
-      const remainingSnapshot = images.filter(
-        (image) => image.localId !== item.localId,
-      );
-      const nextSelectedCover =
-        remainingSnapshot.find((image) => image.image_id === nextCoverId)
-          ?.localId ||
-        (selectedCoverLocalId === item.localId
-          ? remainingSnapshot[0]?.localId
-          : selectedCoverLocalId) ||
-        remainingSnapshot[0]?.localId ||
-        null;
-
-      setSelectedCoverLocalId(nextSelectedCover);
 
       setImages((prev) => {
         const remaining = prev.filter(
@@ -1711,13 +1616,7 @@ export default function SubmitListingPage() {
           try {
             const finalReview = await finalizeListing(listingId);
 
-            const isPublished =
-              finalReview.published === true ||
-              finalReview.published === 1 ||
-              finalReview.published === "1" ||
-              finalReview.published === "true";
-
-            if (isPublished) {
+            if (finalReview.published) {
               setMessage(
                 "آگهی توسط موتور هوشمند چاکود تأیید و منتشر شد.",
               );
@@ -1728,9 +1627,8 @@ export default function SubmitListingPage() {
             }
 
             setTimeout(() => {
-              window.location.href = isPublished
-                ? `/listing/${listingId}`
-                : `/dashboard/listings/${listingId}`;
+              window.location.href =
+                finalReview.public_url || "/";
             }, 1800);
           } catch (finalizeError) {
             setMessage(
@@ -1775,22 +1673,14 @@ export default function SubmitListingPage() {
     try {
       const finalReview = await finalizeListing(createdListingId);
 
-      const isPublished =
-        finalReview.published === true ||
-        finalReview.published === 1 ||
-        finalReview.published === "1" ||
-        finalReview.published === "true";
-
       setMessage(
-        isPublished
+        finalReview.published
           ? "آگهی توسط موتور هوشمند چاکود تأیید و منتشر شد."
           : "آگهی برای بررسی دقیق‌تر به مدیر چاکود ارسال شد.",
       );
 
       setTimeout(() => {
-        window.location.href = isPublished
-          ? `/listing/${createdListingId}`
-          : `/dashboard/listings/${createdListingId}`;
+        window.location.href = finalReview.public_url || "/";
       }, 1800);
     } catch (finalizeError) {
       setImageError(
@@ -1801,74 +1691,45 @@ export default function SubmitListingPage() {
     }
   }
 
-  async function setCoverImageForListing(
-    listingId: number,
-    imageId: number,
-    localId: string,
-    announce = true,
-  ) {
-    const token = getToken();
+  async function setCoverImage(imageId?: number) {
+    if (!createdListingId || !imageId) return;
 
-    const res = await fetch(`${API_BASE}/api/set-listing-cover-image.php`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token
-          ? {
-              Authorization: `Bearer ${token}`,
-              "X-Session-Token": token,
-            }
-          : {}),
-      },
-      body: JSON.stringify({
-        listing_id: listingId,
-        image_id: imageId,
-      }),
-    });
-
-    const json = await res.json();
-
-    if (!json.success) {
-      throw new Error(json.message || "تغییر عکس اصلی انجام نشد.");
-    }
-
-    setSelectedCoverLocalId(localId);
-    setImages((prev) =>
-      prev.map((item) => ({
-        ...item,
-        is_cover: item.image_id === imageId,
-      })),
-    );
-
-    if (announce) {
-      setImageMessage("عکس اصلی آگهی تغییر کرد.");
-    }
-  }
-
-  async function chooseCoverImage(item: ImageItem) {
-    if (item.status === "uploading" || coverChangingId) return;
-
-    if (!createdListingId || item.status !== "uploaded" || !item.image_id) {
-      selectLocalCover(item.localId);
-      return;
-    }
-
-    setCoverChangingId(item.image_id);
+    setCoverChangingId(imageId);
     setImageMessage("");
     setImageError("");
 
     try {
-      await setCoverImageForListing(
-        createdListingId,
-        item.image_id,
-        item.localId,
+      const token = getToken();
+
+      const res = await fetch(`${API_BASE}/api/set-listing-cover-image.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          listing_id: createdListingId,
+          image_id: imageId,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!json.success) {
+        setImageError(json.message || "تغییر عکس اصلی انجام نشد.");
+        return;
+      }
+
+      setImages((prev) =>
+        prev.map((item) => ({
+          ...item,
+          is_cover: item.image_id === imageId,
+        })),
       );
-    } catch (err) {
-      setImageError(
-        err instanceof Error
-          ? err.message
-          : "ارتباط با سرور برای تغییر عکس اصلی برقرار نشد.",
-      );
+
+      setImageMessage("عکس اصلی آگهی تغییر کرد.");
+    } catch {
+      setImageError("ارتباط با سرور برای تغییر عکس اصلی برقرار نشد.");
     } finally {
       setCoverChangingId(null);
     }
@@ -2583,9 +2444,9 @@ export default function SubmitListingPage() {
                   <span>مرحله ۷</span>
                   <h2>تصاویر خودرو</h2>
                   <p>
-                    عکس‌ها را همین‌جا انتخاب کنید. سپس زیر عکس دلخواه روی
-                    «انتخاب عکس اصلی» بزنید. عکس انتخاب‌شده هنگام ثبت آگهی، به‌عنوان
-                    تصویر اصلی ذخیره می‌شود.
+                    عکس‌ها را همین‌جا انتخاب کنید. هنگام ثبت آگهی، تصاویر
+                    به‌صورت خودکار آپلود می‌شوند. اولین تصویر آپلودشده، عکس اصلی
+                    آگهی است و بعداً می‌توانید عکس اصلی را تغییر دهید.
                   </p>
                 </div>
 
@@ -2626,111 +2487,79 @@ export default function SubmitListingPage() {
                           ? 1
                           : item.status === "uploading"
                             ? 0.35 + item.progress / 160
-                            : 0.82;
+                            : 0.62;
 
                       const isDeleting =
                         Boolean(item.image_id) &&
                         deletingImageId === item.image_id;
-                      const isChosenCover =
-                        selectedCoverLocalId === item.localId ||
-                        (!selectedCoverLocalId && Boolean(item.is_cover));
-                      const isChangingCover =
-                        Boolean(item.image_id) &&
-                        coverChangingId === item.image_id;
 
                       return (
                         <div
-                          className={`imageItem ${item.status} ${
-                            isChosenCover ? "chosenCover" : ""
-                          }`}
+                          className={`imageItem ${item.status}`}
                           key={item.localId}
                         >
-                          <div
-                            className="imagePreview"
-                            role="button"
-                            tabIndex={item.status === "uploading" ? -1 : 0}
-                            title={
-                              isChosenCover
-                                ? "این تصویر عکس اصلی است"
-                                : "انتخاب به‌عنوان عکس اصلی"
-                            }
-                            onClick={() => {
-                              if (item.status !== "uploading") {
-                                void chooseCoverImage(item);
-                              }
-                            }}
-                            onKeyDown={(event) => {
-                              if (
-                                item.status !== "uploading" &&
-                                (event.key === "Enter" || event.key === " ")
-                              ) {
-                                event.preventDefault();
-                                void chooseCoverImage(item);
-                              }
-                            }}
-                          >
-                            <img
-                              src={item.image_url || item.previewUrl}
-                              alt="تصویر خودرو"
-                              style={{ opacity }}
-                            />
+                          <img
+                            src={item.image_url || item.previewUrl}
+                            alt="تصویر خودرو"
+                            style={{ opacity }}
+                          />
 
-                            <span className="imageSizeBadge">
-                              {formatFileSize(item.file.size)}
-                            </span>
+                          <span className="imageSizeBadge">
+                            {formatFileSize(item.file.size)}
+                          </span>
 
-                            {item.status === "uploading" && (
-                              <div className="uploadOverlay">
-                                <div className="miniSpinner" />
-                                <span>{item.progress}%</span>
-                                <div className="progressTrack">
-                                  <div
-                                    className="progressFill"
-                                    style={{ width: `${item.progress}%` }}
-                                  />
-                                </div>
-
-                                <button
-                                  type="button"
-                                  className="stopUploadBtn"
-                                  onClick={() => stopImageUpload(item.localId)}
-                                >
-                                  توقف آپلود
-                                </button>
+                          {item.status === "uploading" && (
+                            <div className="uploadOverlay">
+                              <div className="miniSpinner" />
+                              <span>{item.progress}%</span>
+                              <div className="progressTrack">
+                                <div
+                                  className="progressFill"
+                                  style={{ width: `${item.progress}%` }}
+                                />
                               </div>
-                            )}
 
-                            {isChosenCover && item.status !== "uploading" && (
-                              <span className="coverBadge">✓ عکس اصلی</span>
-                            )}
+                              <button
+                                type="button"
+                                className="stopUploadBtn"
+                                onClick={() => stopImageUpload(item.localId)}
+                              >
+                                توقف آپلود
+                              </button>
+                            </div>
+                          )}
 
-                            {item.status === "error" && (
-                              <span className="imageErrorBadge">آپلود نشد</span>
-                            )}
+                          {item.status === "uploaded" && item.is_cover && (
+                            <span className="coverBadge">عکس اصلی</span>
+                          )}
 
-                            {item.status === "cancelled" && (
-                              <span className="imageCancelledBadge">
-                                متوقف شد
-                              </span>
-                            )}
-                          </div>
+                          {item.status === "error" && (
+                            <span className="imageErrorBadge">آپلود نشد</span>
+                          )}
+
+                          {item.status === "cancelled" && (
+                            <span className="imageCancelledBadge">
+                              متوقف شد
+                            </span>
+                          )}
 
                           {item.status !== "uploading" && (
                             <div className="imageActions">
-                              <button
-                                type="button"
-                                className={`coverBtn ${
-                                  isChosenCover ? "active" : ""
-                                }`}
-                                onClick={() => void chooseCoverImage(item)}
-                                disabled={isChangingCover || isDeleting}
-                              >
-                                {isChangingCover
-                                  ? "در حال ثبت..."
-                                  : isChosenCover
-                                    ? "✓ عکس اصلی"
-                                    : "انتخاب عکس اصلی"}
-                              </button>
+                              {item.status === "uploaded" && !item.is_cover && (
+                                <button
+                                  type="button"
+                                  className="coverBtn"
+                                  onClick={() => setCoverImage(item.image_id)}
+                                  disabled={
+                                    coverChangingId === item.image_id ||
+                                    isDeleting
+                                  }
+                                >
+                                  {coverChangingId === item.image_id
+                                    ? "در حال تغییر..."
+                                    : "عکس اصلی"}
+                                </button>
+                              )}
 
                               {(item.status === "error" ||
                                 item.status === "cancelled") &&
@@ -3937,43 +3766,18 @@ export default function SubmitListingPage() {
 
         .imageGrid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(5, 1fr);
           gap: 12px;
           margin-top: 18px;
         }
 
         .imageItem {
           position: relative;
-          display: flex;
-          min-width: 0;
-          flex-direction: column;
           overflow: hidden;
           border-radius: 18px;
           border: 1px solid #eadcff;
           background: #fff;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .imageItem.chosenCover {
-          border-color: #22c55e;
-          box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.13);
-        }
-
-        .imagePreview {
-          position: relative;
-          aspect-ratio: 4 / 3;
-          overflow: hidden;
-          background: #f4effb;
-          cursor: pointer;
-        }
-
-        .imageItem.uploading .imagePreview {
-          cursor: default;
-        }
-
-        .imagePreview:focus-visible {
-          outline: 3px solid rgba(109, 40, 217, 0.35);
-          outline-offset: -3px;
+          aspect-ratio: 1 / 1;
         }
 
         .imageItem img {
@@ -4025,12 +3829,13 @@ export default function SubmitListingPage() {
         }
 
         .imageActions {
-          position: static;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 7px;
-          padding: 9px;
-          background: #fff;
+          position: absolute;
+          right: 8px;
+          left: 8px;
+          bottom: 8px;
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
           z-index: 4;
         }
 
@@ -4040,9 +3845,9 @@ export default function SubmitListingPage() {
         .stopUploadBtn,
         .stopAllBtn {
           border: 0;
-          border-radius: 12px;
+          border-radius: 999px;
           color: #fff;
-          padding: 9px 10px;
+          padding: 7px 10px;
           font-size: 11px;
           cursor: pointer;
           font-family: inherit;
@@ -4050,22 +3855,15 @@ export default function SubmitListingPage() {
         }
 
         .removeImageBtn {
-          min-width: 58px;
-          background: #be123c;
+          background: rgba(190, 18, 60, 0.94);
         }
 
         .coverBtn {
-          grid-column: 1 / -1;
-          width: 100%;
-          background: #6d28d9;
-        }
-
-        .coverBtn.active {
-          background: #15803d;
+          background: rgba(109, 40, 217, 0.94);
         }
 
         .retryImageBtn {
-          background: #0369a1;
+          background: rgba(3, 105, 161, 0.94);
         }
 
         .stopUploadBtn {
@@ -4093,12 +3891,11 @@ export default function SubmitListingPage() {
           right: 8px;
           top: 8px;
           border-radius: 999px;
-          background: rgba(21, 128, 61, 0.96);
+          background: rgba(22, 101, 52, 0.95);
           color: #fff;
           padding: 7px 10px;
           font-size: 11px;
           font-weight: bold;
-          z-index: 5;
         }
 
         .imageErrorBadge,
@@ -4269,13 +4066,9 @@ export default function SubmitListingPage() {
           .ownerGrid,
           .saleStatusGrid,
           .twoCols,
-          .threeCols {
-            grid-template-columns: 1fr;
-            gap: 10px;
-          }
-
+          .threeCols,
           .imageGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr;
             gap: 10px;
           }
 

@@ -1,157 +1,166 @@
 "use client";
 
+// CHAKOD_MARKET_FILTER_V1
+
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import ListingCard, { type ListingCardData } from "./ListingCard";
+import ListingCard from "./ListingCard";
 import CatalogFilterPanel from "../ads/[segment]/CatalogFilterPanel";
-
-const API_URL = "https://api.chakod.com/api/listings.php?limit=100&sort=vip";
-const PAGE_SIZE = 12;
-
-type Listing = ListingCardData & {
-  brand: string;
-  model: string;
-  title: string;
-  city: string;
-  province: string;
-  neighborhood: string;
-  category_code: string;
-  category_name: string;
-  created_at: string;
-  views_count: number;
-  market_segment?: "luxury" | "freezone" | "economic" | "regular" | null;
-};
-
-type ApiResponse = {
-  success?: boolean;
-  data?: Listing[];
-};
+import type {
+  CatalogFacets,
+  CatalogFilters,
+  CatalogResponse,
+  CatalogSegment,
+} from "../ads/[segment]/catalog-types";
+import styles from "../ads/[segment]/CatalogPage.module.css";
 
 type Props = {
-  segment: "luxury" | "freezone" | "economic";
+  apiUrl: string;
+  segment: CatalogSegment;
   badge: string;
-  query: string;
-  city: string;
-  brand: string;
-  minPrice: string;
-  maxPrice: string;
-  sort: string;
-  page: number;
+  filters: CatalogFilters;
+  initialResponse: CatalogResponse | null;
 };
 
-const luxuryBrands = [
-  "porsche", "پورشه", "mercedesbenz", "مرسدسبنز", "bmw", "بیامو",
-  "audi", "آئودی", "lexus", "لکسوس", "landrover", "لندرور",
-  "rangerover", "رنجروور", "jaguar", "جگوار", "volvo", "ولوو",
-  "maserati", "مازراتی", "ferrari", "فراری", "lamborghini", "لامبورگینی",
-  "bentley", "بنتلی", "rollsroyce", "رولزرویس", "astonmartin", "استونمارتین",
-  "mclaren", "مکلارن", "maybach", "مایباخ", "tesla", "تسلا",
-  "genesis", "جنسیس", "infiniti", "اینفینیتی", "cadillac", "کادیلاک",
-  "hongqi", "هونگچی", "tank", "تانک", "fownix", "فونیکس",
-  "extreme", "اکستریم", "lucano", "لوکانو",
-];
+const emptyFacets: CatalogFacets = {
+  provinces: [],
+  cities: [],
+  categories: [],
+  brands: [],
+  models: [],
+  body_statuses: [],
+  transmissions: [],
+  fuel_types: [],
+  range: {},
+};
 
-function normalizeText(value: string) {
-  return String(value || "")
-    .trim()
-    .toLocaleLowerCase("fa")
-    .replace(/[يى]/g, "ی")
-    .replace(/ك/g, "ک")
-    .replace(/[ۀة]/g, "ه")
-    .replace(/[ؤ]/g, "و")
-    .replace(/[إأ]/g, "ا")
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
-    .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
+const sortLabels: Record<string, string> = {
+  vip: "پیشنهاد چاکود",
+  newest: "جدیدترین آگهی",
+  cheap: "ارزان‌ترین",
+  expensive: "گران‌ترین",
+  low_mileage: "کم‌کارکردترین",
+  newest_year: "جدیدترین سال ساخت",
+  popular: "پربازدیدترین",
+};
+
+function normalizeResponse(payload: CatalogResponse): CatalogResponse {
+  return {
+    ...payload,
+    total: Number(payload.total || 0),
+    page: Number(payload.page || 1),
+    total_pages: Number(payload.total_pages || 0),
+    data: Array.isArray(payload.data) ? payload.data : [],
+    facets: {
+      ...emptyFacets,
+      ...(payload.facets || {}),
+      range: payload.facets?.range || {},
+    },
+  };
 }
 
-function includesAny(value: string, needles: string[]) {
-  const normalizedValue = normalizeText(value);
-  return needles.some((needle) => normalizedValue.includes(normalizeText(needle)));
+function formatCount(value: number) {
+  return new Intl.NumberFormat("fa-IR").format(value);
 }
 
-function isFreezone(listing: Listing) {
-  const text = [
-    listing.market_segment || "",
-    listing.category_code,
-    listing.category_name,
-    listing.title,
-    listing.province,
-    listing.city,
-  ].join(" ");
-
-  return (
-    listing.market_segment === "freezone" ||
-    includesAny(text, [
-      "freezone", "منطقه آزاد", "کیش", "قشم", "اروند", "انزلی",
-      "ارس", "ماکو", "چابهار",
-    ])
-  );
-}
-
-function isLuxury(listing: Listing) {
-  const combined = `${listing.brand} ${listing.model} ${listing.title}`;
-  return (
-    !isFreezone(listing) &&
-    (listing.market_segment === "luxury" ||
-      listing.category_code === "luxury" ||
-      includesAny(combined, luxuryBrands) ||
-      Number(listing.price_toman || 0) >= 2_000_000_000)
-  );
-}
-
-function isEconomic(listing: Listing) {
-  const price = Number(listing.price_toman || 0);
-  return (
-    listing.market_segment === "economic" ||
-    (price > 0 && price <= 1_500_000_000 && !isFreezone(listing) && !isLuxury(listing))
-  );
-}
-
-function parseNumber(value: string) {
-  const normalized = value
+function normalizeDigits(value: string) {
+  return value
     .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
     .replace(/[^0-9]/g, "");
-  return normalized ? Number(normalized) : 0;
 }
 
-function buildPageHref(props: Props, nextPage: number) {
+function formatNumberFilter(value: string, suffix: string) {
+  const digits = normalizeDigits(value);
+  if (!digits) return value;
+  return `${new Intl.NumberFormat("fa-IR").format(Number(digits))} ${suffix}`;
+}
+
+function queryValues(filters: CatalogFilters) {
+  return {
+    q: filters.q,
+    province: filters.province,
+    city: filters.city,
+    category: filters.category,
+    brand: filters.brand,
+    model: filters.model,
+    min_price: filters.minPrice,
+    max_price: filters.maxPrice,
+    min_year: filters.minYear,
+    max_year: filters.maxYear,
+    min_mileage: filters.minMileage,
+    max_mileage: filters.maxMileage,
+    body_status: filters.bodyStatus,
+    transmission: filters.transmission,
+    fuel_type: filters.fuelType,
+    seller_type: filters.sellerType,
+    sort: filters.sort === "vip" ? "" : filters.sort,
+  };
+}
+
+function buildHref(
+  segment: CatalogSegment,
+  filters: CatalogFilters,
+  options: { remove?: string; page?: number; sort?: string } = {},
+) {
   const params = new URLSearchParams();
-  for (const [key, value] of [
-    ["q", props.query],
-    ["city", props.city],
-    ["brand", props.brand],
-    ["min_price", props.minPrice],
-    ["max_price", props.maxPrice],
-    ["sort", props.sort],
-  ]) {
-    if (value) params.set(key, value);
+  const values = queryValues(filters);
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (!value || key === options.remove) return;
+    if (options.remove === "province" && key === "city") return;
+    if (options.remove === "brand" && key === "model") return;
+    if (key === "sort" && options.sort !== undefined) return;
+    params.set(key, value);
+  });
+
+  if (options.sort && options.sort !== "vip") {
+    params.set("sort", options.sort);
   }
-  params.set("page", String(nextPage));
-  return `/ads/${props.segment}?${params.toString()}`;
+
+  if (options.page && options.page > 1) {
+    params.set("page", String(options.page));
+  }
+
+  const search = params.toString();
+  return `/ads/${segment}${search ? `?${search}` : ""}`;
 }
 
-export default function CatalogListingsClient(props: Props) {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+export default function CatalogListingsClient({
+  apiUrl,
+  segment,
+  badge,
+  filters,
+  initialResponse,
+}: Props) {
+  const [response, setResponse] = useState<CatalogResponse | null>(
+    initialResponse ? normalizeResponse(initialResponse) : null,
+  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    initialResponse ? "ready" : "loading",
+  );
 
   useEffect(() => {
+    if (initialResponse) return;
+
     const controller = new AbortController();
 
     async function load() {
       try {
         setStatus("loading");
-        const response = await fetch(API_URL, {
+        const apiResponse = await fetch(apiUrl, {
           cache: "no-store",
           headers: { Accept: "application/json" },
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = (await response.json()) as ApiResponse;
-        if (!payload.success || !Array.isArray(payload.data)) {
-          throw new Error("Invalid API response");
+
+        if (!apiResponse.ok) throw new Error(`HTTP ${apiResponse.status}`);
+        const payload = (await apiResponse.json()) as CatalogResponse;
+        if (!payload?.success || !Array.isArray(payload.data)) {
+          throw new Error("Invalid response");
         }
-        setListings(payload.data);
+
+        setResponse(normalizeResponse(payload));
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") setStatus("error");
@@ -160,118 +169,232 @@ export default function CatalogListingsClient(props: Props) {
 
     load();
     return () => controller.abort();
-  }, []);
+  }, [apiUrl, initialResponse]);
 
-  const result = useMemo(() => {
-    const segmentListings = listings.filter((listing) => {
-      if (props.segment === "luxury") return isLuxury(listing);
-      if (props.segment === "freezone") return isFreezone(listing);
-      return isEconomic(listing);
-    });
+  const facets = response?.facets || emptyFacets;
+  const resultCount = response?.total || 0;
 
-    const cities = Array.from(
-      new Set(segmentListings.map((listing) => listing.city).filter(Boolean)),
-    ).sort((a, b) => a.localeCompare(b, "fa"));
-    const brands = Array.from(
-      new Set(segmentListings.map((listing) => listing.brand).filter(Boolean)),
-    ).sort((a, b) => a.localeCompare(b, "fa"));
+  const activeItems = useMemo(() => {
+    const brandName = facets.brands.find((item) => item.code === filters.brand)?.name;
+    const modelName = facets.models.find(
+      (item) => item.code === filters.model && (!filters.brand || item.brand_code === filters.brand),
+    )?.name;
 
-    const minPrice = parseNumber(props.minPrice);
-    const maxPrice = parseNumber(props.maxPrice);
-    const filtered = segmentListings.filter((listing) => {
-      const searchText = normalizeText(
-        [listing.title, listing.brand, listing.model, listing.city, listing.dealer_name || ""].join(" "),
-      );
-      const price = Number(listing.price_toman || 0);
+    return [
+      filters.q ? { key: "q", label: `جست‌وجو: ${filters.q}` } : null,
+      filters.province ? { key: "province", label: filters.province } : null,
+      filters.city ? { key: "city", label: filters.city } : null,
+      filters.category
+        ? {
+            key: "category",
+            label:
+              facets.categories.find((item) => item.code === filters.category)?.name ||
+              filters.category,
+          }
+        : null,
+      filters.brand
+        ? { key: "brand", label: String(brandName || filters.brand) }
+        : null,
+      filters.model
+        ? { key: "model", label: String(modelName || filters.model) }
+        : null,
+      filters.minPrice
+        ? {
+            key: "min_price",
+            label: `قیمت از ${formatNumberFilter(filters.minPrice, "تومان")}`,
+          }
+        : null,
+      filters.maxPrice
+        ? {
+            key: "max_price",
+            label: `قیمت تا ${formatNumberFilter(filters.maxPrice, "تومان")}`,
+          }
+        : null,
+      filters.minYear
+        ? { key: "min_year", label: `سال از ${filters.minYear}` }
+        : null,
+      filters.maxYear
+        ? { key: "max_year", label: `سال تا ${filters.maxYear}` }
+        : null,
+      filters.minMileage
+        ? {
+            key: "min_mileage",
+            label: `کارکرد از ${formatNumberFilter(filters.minMileage, "کیلومتر")}`,
+          }
+        : null,
+      filters.maxMileage
+        ? {
+            key: "max_mileage",
+            label: `کارکرد تا ${formatNumberFilter(filters.maxMileage, "کیلومتر")}`,
+          }
+        : null,
+      filters.bodyStatus
+        ? { key: "body_status", label: filters.bodyStatus }
+        : null,
+      filters.transmission
+        ? { key: "transmission", label: filters.transmission }
+        : null,
+      filters.fuelType ? { key: "fuel_type", label: filters.fuelType } : null,
+      filters.sellerType
+        ? {
+            key: "seller_type",
+            label:
+              filters.sellerType === "personal"
+                ? "فروشنده شخصی"
+                : filters.sellerType === "dealer"
+                  ? "نمایشگاه"
+                  : "فعال منطقه آزاد",
+          }
+        : null,
+      filters.sort !== "vip"
+        ? {
+            key: "sort",
+            label: `مرتب‌سازی: ${sortLabels[filters.sort] || filters.sort}`,
+          }
+        : null,
+    ].filter((item): item is { key: string; label: string } => Boolean(item));
+  }, [facets.brands, facets.categories, facets.models, filters]);
 
-      if (props.query && !searchText.includes(normalizeText(props.query))) return false;
-      if (props.city && listing.city !== props.city) return false;
-      if (props.brand && listing.brand !== props.brand) return false;
-      if (minPrice && price < minPrice) return false;
-      if (maxPrice && price > maxPrice) return false;
-      return true;
-    });
+  function changeSort(nextSort: string) {
+    window.location.href = buildHref(segment, filters, { sort: nextSort });
+  }
 
-    filtered.sort((a, b) => {
-      if (props.sort === "cheap") return Number(a.price_toman || Infinity) - Number(b.price_toman || Infinity);
-      if (props.sort === "expensive") return Number(b.price_toman || 0) - Number(a.price_toman || 0);
-      if (props.sort === "popular") return Number(b.views_count || 0) - Number(a.views_count || 0);
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const safePage = Math.min(Math.max(1, props.page), totalPages);
-    const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-    return { cities, brands, filtered, totalPages, safePage, visible };
-  }, [listings, props]);
+  const tone = segment === "all" ? "neutral" : segment;
 
   return (
-    <>
+    <div className={styles.marketGrid}>
       <CatalogFilterPanel
-        segment={props.segment}
-        resultCount={status === "ready" ? result.filtered.length : 0}
-        query={props.query}
-        city={props.city}
-        brand={props.brand}
-        minPrice={props.minPrice}
-        maxPrice={props.maxPrice}
-        sort={props.sort}
-        cities={result.cities}
-        brands={result.brands}
+        segment={segment}
+        filters={filters}
+        facets={facets}
+        resultCount={resultCount}
+        loading={status === "loading"}
       />
 
-      <section className="catalogResults" aria-live="polite">
+      <section className={styles.resultsColumn} aria-live="polite">
+        <div className={styles.resultsTop}>
+          <div className={styles.resultsCopy}>
+            <strong>
+              {status === "loading"
+                ? "در حال دریافت آگهی‌ها"
+                : `${formatCount(resultCount)} خودرو پیدا شد`}
+            </strong>
+            <span>
+              {filters.sort === "vip"
+                ? "آگهی‌های ویژه و تازه در اولویت نمایش‌اند."
+                : `مرتب‌شده بر اساس ${sortLabels[filters.sort] || "انتخاب شما"}`}
+            </span>
+          </div>
+
+          <select
+            className={styles.sortControl}
+            value={filters.sort}
+            onChange={(event) => changeSort(event.target.value)}
+            aria-label="مرتب‌سازی آگهی‌ها"
+          >
+            <option value="vip">پیشنهاد چاکود</option>
+            <option value="newest">جدیدترین آگهی</option>
+            <option value="cheap">ارزان‌ترین</option>
+            <option value="expensive">گران‌ترین</option>
+            <option value="low_mileage">کم‌کارکردترین</option>
+            <option value="newest_year">جدیدترین سال ساخت</option>
+            <option value="popular">پربازدیدترین</option>
+          </select>
+        </div>
+
+        {activeItems.length > 0 ? (
+          <div className={styles.activeFilters} aria-label="فیلترهای فعال">
+            {activeItems.map((item) => (
+              <Link
+                key={item.key}
+                href={buildHref(segment, filters, { remove: item.key })}
+              >
+                {item.label}
+                <span aria-hidden="true">×</span>
+              </Link>
+            ))}
+            <Link className={styles.clearAllChip} href={`/ads/${segment}`}>
+              پاک‌کردن همه
+            </Link>
+          </div>
+        ) : null}
+
         {status === "loading" ? (
-          <div className="catalogEmpty">
-            <span>◌</span>
-            <strong>در حال دریافت آگهی‌ها</strong>
-            <p>اطلاعات مستقیم از بازار چاکود بارگذاری می‌شود.</p>
+          <div className={styles.grid} aria-label="در حال بارگذاری">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div className={styles.skeleton} key={index}>
+                <div className={styles.skeletonMedia} />
+                <div className={styles.skeletonBody}>
+                  <span className={styles.skeletonLine} />
+                  <span className={styles.skeletonLine} />
+                  <span className={styles.skeletonLine} />
+                  <span className={styles.skeletonLine} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : status === "error" ? (
-          <div className="catalogEmpty">
-            <span>!</span>
-            <strong>ارتباط با فهرست آگهی‌ها برقرار نشد</strong>
-            <p>اتصال اینترنت یا دسترسی مرورگر به API را بررسی کن.</p>
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>!</span>
+            <strong>ارتباط با بازار خودرو برقرار نشد</strong>
+            <p>
+              اتصال مرورگر به API چاکود برقرار نیست. صفحه را دوباره بارگذاری کن.
+            </p>
             <button type="button" onClick={() => window.location.reload()}>
               تلاش دوباره
             </button>
           </div>
-        ) : result.visible.length === 0 ? (
-          <div className="catalogEmpty">
-            <span>⌕</span>
-            <strong>آگهی مطابق فیلترها پیدا نشد</strong>
-            <p>فیلترها را تغییر بده یا بدون فیلتر در چاکود بگرد.</p>
-            <a href={`/ads/${props.segment}`}>نمایش همه آگهی‌های این بخش</a>
-          </div>
-        ) : (
-          <div className="catalogGrid">
-            {result.visible.map((listing) => (
+        ) : response && response.data.length > 0 ? (
+          <div className={styles.grid}>
+            {response.data.map((listing) => (
               <ListingCard
                 key={listing.id}
                 listing={listing}
-                tone={props.segment}
-                badge={props.badge}
+                tone={tone}
+                badge={badge}
                 variant="grid"
               />
             ))}
           </div>
+        ) : (
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>⌕</span>
+            <strong>آگهی مطابق این فیلترها پیدا نشد</strong>
+            <p>
+              محدوده قیمت، موقعیت یا مشخصات خودرو را تغییر بده تا گزینه‌های بیشتری ببینی.
+            </p>
+            <Link href={`/ads/${segment}`}>نمایش همه آگهی‌های این بخش</Link>
+          </div>
         )}
 
-        {status === "ready" && result.totalPages > 1 ? (
-          <nav className="catalogPagination" aria-label="صفحه‌بندی آگهی‌ها">
-            {result.safePage > 1 ? (
-              <a href={buildPageHref(props, result.safePage - 1)}>صفحه قبل</a>
-            ) : <span />}
+        {status === "ready" && response && response.total_pages > 1 ? (
+          <nav className={styles.pagination} aria-label="صفحه‌بندی آگهی‌ها">
+            {response.page > 1 ? (
+              <Link
+                href={buildHref(segment, filters, { page: response.page - 1 })}
+              >
+                صفحه قبل
+              </Link>
+            ) : (
+              <span />
+            )}
+
             <strong>
-              صفحه {new Intl.NumberFormat("fa-IR").format(result.safePage)} از {new Intl.NumberFormat("fa-IR").format(result.totalPages)}
+              صفحه {formatCount(response.page)} از {formatCount(response.total_pages)}
             </strong>
-            {result.safePage < result.totalPages ? (
-              <a href={buildPageHref(props, result.safePage + 1)}>صفحه بعد</a>
-            ) : <span />}
+
+            {response.page < response.total_pages ? (
+              <Link
+                href={buildHref(segment, filters, { page: response.page + 1 })}
+              >
+                صفحه بعد
+              </Link>
+            ) : (
+              <span />
+            )}
           </nav>
         ) : null}
       </section>
-    </>
+    </div>
   );
 }

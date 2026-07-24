@@ -658,6 +658,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <main className="chakodMasterHome" dir="rtl">
       <header className="masterHeader">
+        <div className="masterMobileTopbar">
+          <Link className="masterMobileBrand" href="/" aria-label="صفحه اصلی چاکود">
+            <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
+
+          <div className="masterMobileTopActions" aria-label="دسترسی‌های سریع">
+            <Link href="/account/saved" aria-label="آگهی‌های نشان‌شده">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6.5 5.2c0-1 .8-1.7 1.7-1.7h7.6c1 0 1.7.8 1.7 1.7v15.3L12 17.1l-5.5 3.4V5.2Z" />
+              </svg>
+            </Link>
+            <Link href="/account" aria-label="حساب کاربری">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
         <nav className="masterNav" aria-label="ناوبری اصلی">
           <Link className="masterBrand" href="/" aria-label="صفحه اصلی چاکود">
             <img
@@ -719,6 +739,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </div>
       </header>
+
+      <nav className="masterMobileTabs" aria-label="بخش‌های اصلی چاکود">
+        <Link className="active" href="/">خانه</Link>
+        <Link href="/ads">بازار خودرو</Link>
+        <Link href="/showrooms">نمایشگاه‌ها</Link>
+        <Link href="/ads/luxury">لوکس</Link>
+        <Link href="/ads/freezone">منطقه آزاد</Link>
+      </nav>
 
       <section className="masterQuickAccess" aria-label="دسترسی سریع به بازار خودرو">
         <div className="masterQuickTrack">
@@ -961,6 +989,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         .chakodMasterHome img {
           max-width: 100%;
+        }
+
+        .masterMobileTopbar,
+        .masterMobileTabs {
+          display: none;
         }
 
         .masterSrOnly {
@@ -2651,6 +2684,335 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             display: block;
             padding-bottom: 10px;
             line-height: 1.9;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .chakodMasterHome {
+            --app-page: #f5f5f9;
+            background:
+              radial-gradient(circle at 92% -2%, rgba(109, 40, 217, 0.12), transparent 14rem),
+              linear-gradient(180deg, #ffffff 0 16rem, var(--app-page) 31rem, #ffffff 100%);
+          }
+
+          .masterHeader {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            border-bottom: 1px solid rgba(229, 225, 238, 0.82);
+            background: rgba(255, 255, 255, 0.93);
+            box-shadow: 0 8px 24px rgba(42, 26, 68, 0.055);
+            backdrop-filter: blur(20px);
+          }
+
+          .masterMobileTopbar {
+            width: calc(100% - 24px);
+            min-height: 58px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+          }
+
+          .masterMobileBrand {
+            display: inline-flex;
+            align-items: center;
+          }
+
+          .masterMobileBrand img {
+            width: 108px;
+            height: 34px;
+            object-fit: contain;
+            object-position: right center;
+          }
+
+          .masterMobileTopActions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .masterMobileTopActions a {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #ece8f2;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            color: #4f4657;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 7px 18px rgba(42, 26, 68, 0.055);
+          }
+
+          .masterMobileTopActions svg {
+            width: 21px;
+            height: 21px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+          }
+
+          .masterHeaderToolsWrap {
+            border-top: 0;
+          }
+
+          .masterHeaderTools {
+            width: calc(100% - 24px);
+            padding: 0 0 10px;
+            display: grid;
+            grid-template-columns: minmax(114px, 0.42fr) minmax(0, 1fr);
+            align-items: stretch;
+            gap: 8px;
+          }
+
+          .masterHeaderToolsBrand {
+            display: none;
+          }
+
+          .masterLocationControl .homeLocationTrigger {
+            min-height: 52px;
+            border-color: #ebe6f1;
+            border-radius: 15px;
+            background: #f7f6fa;
+            box-shadow: none;
+          }
+
+          .masterSearch {
+            min-height: 52px;
+            padding: 5px;
+            gap: 7px;
+            border: 1.5px solid rgba(109, 40, 217, 0.26);
+            border-radius: 19px;
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(91, 33, 182, 0.08);
+          }
+
+          .masterSearch > .masterSearchLeadingIcon {
+            width: 35px;
+            height: 35px;
+            border-radius: 12px;
+            color: #6d28d9;
+            background: #f2ecff;
+          }
+
+          .masterSearch input {
+            color: #241b2c;
+            font-size: 12px;
+            font-weight: 700;
+          }
+
+          .masterSearch input::placeholder {
+            color: #9a919f;
+          }
+
+          .masterSearch button {
+            width: 40px;
+            min-width: 40px;
+            min-height: 40px;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #7c3aed, #5b21b6);
+            box-shadow: 0 8px 18px rgba(91, 33, 182, 0.22);
+          }
+
+          .masterMobileTabs {
+            position: sticky;
+            top: 122px;
+            z-index: 68;
+            width: 100%;
+            min-height: 48px;
+            padding: 0 12px;
+            display: flex;
+            align-items: stretch;
+            gap: 22px;
+            overflow-x: auto;
+            border-bottom: 1px solid #ece8f0;
+            background: rgba(255, 255, 255, 0.96);
+            scrollbar-width: none;
+            backdrop-filter: blur(16px);
+          }
+
+          .masterMobileTabs::-webkit-scrollbar {
+            display: none;
+          }
+
+          .masterMobileTabs a {
+            position: relative;
+            min-width: max-content;
+            display: inline-flex;
+            align-items: center;
+            color: #786f80;
+            font-size: 11px;
+            font-weight: 850;
+          }
+
+          .masterMobileTabs a.active {
+            color: #21172a;
+          }
+
+          .masterMobileTabs a.active::after {
+            position: absolute;
+            right: 0;
+            bottom: -1px;
+            width: 100%;
+            height: 3px;
+            border-radius: 999px 999px 0 0;
+            content: "";
+            background: #6d28d9;
+          }
+
+          .masterQuickAccess {
+            width: 100%;
+            padding: 14px 0 2px;
+          }
+
+          .masterQuickTrack {
+            grid-auto-columns: 76px;
+            gap: 10px;
+            padding: 2px 12px 10px;
+          }
+
+          .masterQuickItem {
+            min-height: 88px;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            gap: 7px;
+            background: transparent !important;
+            box-shadow: none;
+          }
+
+          .masterQuickItem:hover {
+            transform: none;
+            border-color: transparent;
+            box-shadow: none;
+          }
+
+          .masterQuickItem > span {
+            width: 58px;
+            height: 58px;
+            border: 1px solid rgba(109, 40, 217, 0.16);
+            border-radius: 21px;
+            font-size: 23px;
+            box-shadow: 0 9px 22px rgba(40, 24, 58, 0.075);
+          }
+
+          .masterQuickItem > strong {
+            color: #3a303f;
+            font-size: 9px;
+            font-weight: 850;
+          }
+
+          .masterStoriesWrap {
+            width: 100%;
+            padding: 8px 12px 0;
+          }
+
+          .masterSection {
+            width: calc(100% - 20px);
+            margin-top: 12px;
+            padding: 19px 14px 16px;
+            border: 1px solid rgba(231, 225, 239, 0.86);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 14px 38px rgba(42, 26, 68, 0.065);
+          }
+
+          .masterSection--luxury {
+            border-color: #e2d4fa;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(139, 92, 246, 0.12), transparent 13rem),
+              linear-gradient(145deg, #ffffff, #faf7ff);
+          }
+
+          .masterSection--freezone {
+            border-color: #ccece7;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(20, 184, 166, 0.12), transparent 13rem),
+              linear-gradient(145deg, #ffffff, #f4fffd);
+          }
+
+          .masterSection--economic {
+            border-color: #f2dfb8;
+            background:
+              radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.13), transparent 13rem),
+              linear-gradient(145deg, #ffffff, #fffaf0);
+          }
+
+          .masterDealerSection {
+            background: #ffffff;
+          }
+
+          .masterSectionHeader {
+            margin-bottom: 12px;
+          }
+
+          .masterSectionHeader > div > span {
+            font-size: 8px;
+            letter-spacing: 0.65px;
+          }
+
+          .masterSectionHeader h2 {
+            font-size: 18px;
+            line-height: 1.55;
+          }
+
+          .masterSectionHeaderSide {
+            display: none;
+          }
+
+          .masterShowAllLink {
+            min-height: 32px;
+            padding: 0 10px;
+            border: 0;
+            color: #6d28d9;
+            background: transparent;
+            font-size: 9px;
+          }
+
+          .homeRailTrack {
+            grid-auto-columns: min(78vw, 294px);
+            gap: 12px;
+            padding-bottom: 13px;
+          }
+
+          .homeRailHint {
+            opacity: 0.72;
+          }
+
+          .masterTrustSection {
+            background: linear-gradient(145deg, #25162f, #4b1d70);
+            border-color: rgba(255, 255, 255, 0.08);
+          }
+
+          .masterTrustSection .masterSectionHeader h2,
+          .masterTrustSection .masterSectionHeader > div > span {
+            color: #ffffff;
+          }
+
+          .masterTrustGrid article {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.78);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: none;
+          }
+
+          .masterTrustGrid article > span {
+            color: #d8b4fe;
+          }
+
+          .masterTrustGrid h3 {
+            color: #ffffff;
+          }
+
+          .masterTrustGrid p {
+            color: rgba(255, 255, 255, 0.7);
+          }
+
+          .masterFooter {
+            display: none;
           }
         }
 

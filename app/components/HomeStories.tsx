@@ -950,32 +950,64 @@ export default function HomeStories() {
         }
 
         @media (max-width: 640px) {
+          .homeStories {
+            padding: 15px 12px 8px;
+            border: 1px solid rgba(231, 225, 239, 0.9);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 14px 36px rgba(42, 26, 68, 0.06);
+          }
+
+          .storyHeader {
+            margin-bottom: 9px;
+          }
+
+          .storyHeader > div > span {
+            font-size: 8px;
+            letter-spacing: 0.4px;
+          }
+
           .storyHeader h2 {
-            font-size: 14px;
+            margin-top: 4px;
+            font-size: 15px;
+            line-height: 1.5;
           }
 
           .storyHeader > a {
             min-height: 30px;
-            padding: 0 9px;
-            font-size: 7px;
+            padding: 0 7px;
+            border: 0;
+            color: #6d28d9;
+            background: transparent;
+            font-size: 8px;
           }
 
           .storyScroller {
-            width: calc(100% + 10px);
-            margin-left: -10px;
-            padding-left: 10px;
+            width: calc(100% + 12px);
+            margin-left: -12px;
+            gap: 10px;
+            padding: 3px 0 10px 12px;
           }
 
           .storyItem,
           .storySkeleton {
-            min-width: 78px;
-            max-width: 78px;
+            min-width: 74px;
+            max-width: 74px;
           }
 
           .storyRing,
           .storySkeleton div {
-            width: 65px;
-            height: 65px;
+            width: 62px;
+            height: 62px;
+          }
+
+          .storyRing {
+            padding: 2px;
+            box-shadow: 0 8px 18px rgba(109, 40, 217, 0.14);
+          }
+
+          .storyAvatar {
+            border-width: 2px;
           }
 
           .storyItem > strong {

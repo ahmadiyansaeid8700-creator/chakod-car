@@ -1,23 +1,43 @@
 {
-  "name": "چاکود | پلتفرم رشد کسب‌وکار",
+  "id": "/",
+  "name": "چاکود | بازار خودرو و خدمات خودرویی",
   "short_name": "چاکود",
-  "description": "بازار حرفه‌ای خودرو و نمایشگاه‌های چاکود",
-  "lang": "fa",
+  "description": "بازار خودرو، نمایشگاه‌ها و خدمات خودرویی چاکود",
+  "lang": "fa-IR",
   "dir": "rtl",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#6d28d9",
+  "categories": [
+    "automotive",
+    "shopping",
+    "business"
+  ],
   "icons": [
     {
       "src": "/brand/chakod-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/brand/chakod-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/chakod-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

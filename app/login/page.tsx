@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_BASE = "https://api.chakod.com";
 const RESEND_SECONDS = 90;
@@ -83,13 +83,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [resendCountdown, setResendCountdown] = useState(0);
 
-  const lastSubmittedCodeRef = useRef("");
-
   const normalizedMobile = normalizeMobile(mobile);
   const normalizedCode = normalizeCode(code);
 
   const canSend = /^09[0-9]{9}$/.test(normalizedMobile) && accepted;
-  const canVerify = /^[0-9]{5,6}$/.test(normalizedCode);
+  const canVerify = /^[0-9]{5}$/.test(normalizedCode);
   const canResend = canSend && resendCountdown === 0 && !loading;
 
   useEffect(() => {
@@ -105,19 +103,6 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [resendCountdown]);
 
-  useEffect(() => {
-    if (step !== "code") return;
-    if (!canVerify) return;
-    if (loading) return;
-    if (lastSubmittedCodeRef.current === normalizedCode) return;
-
-    const timer = window.setTimeout(() => {
-      verifyCode(true);
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [step, normalizedCode, canVerify, loading]);
-
   async function sendCode(isResend = false) {
     if (!canSend || loading) return;
     if (isResend && resendCountdown > 0) return;
@@ -125,11 +110,10 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     setMessage("");
-    lastSubmittedCodeRef.current = "";
-
     try {
       const res = await fetch(`${API_BASE}/api/send-login-code.php`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -160,31 +144,39 @@ export default function LoginPage() {
     }
   }
 
-  async function verifyCode(auto = false) {
+  async function verifyCode() {
     if (!canVerify || loading) return;
-
-    lastSubmittedCodeRef.current = normalizedCode;
 
     setLoading(true);
     setError("");
-    setMessage(auto ? "در حال تأیید خودکار کد..." : "");
+    setMessage("");
 
     try {
-      const res = await fetch(`${API_BASE}/api/verify-login-code.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mobile: normalizedMobile,
-          code: normalizedCode,
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+
+      let res: Response;
+
+      try {
+        res = await fetch("/api/auth/verify", {
+          method: "POST",
+          credentials: "include",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mobile: normalizedMobile,
+            code: normalizedCode,
+          }),
+        });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
 
       const json = await readApiResponse(res);
 
       if (!json.success) {
-        lastSubmittedCodeRef.current = "";
         setError(json.message || "کد تأیید صحیح نیست.");
         setMessage("");
         return;
@@ -211,9 +203,15 @@ export default function LoginPage() {
       window.setTimeout(() => {
         window.location.href = nextUrl;
       }, 700);
-    } catch {
-      lastSubmittedCodeRef.current = "";
-      setError("ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.");
+    } catch (error) {
+      const isTimeout =
+        error instanceof DOMException && error.name === "AbortError";
+
+      setError(
+        isTimeout
+          ? "پاسخ سرور طول کشید. دوباره روی تأیید و ورود بزنید."
+          : "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید."
+      );
       setMessage("");
     } finally {
       setLoading(false);
@@ -302,7 +300,7 @@ export default function LoginPage() {
 
               <p>
                 کد تأیید برای شماره {normalizedMobile} ارسال شد. بعد از وارد
-                کردن کامل کد، چاکود خودش آن را بررسی می‌کند.
+                کردن کامل کد، روی دکمه «تأیید و ورود» بزنید.
               </p>
 
               <label className="field">
@@ -325,7 +323,7 @@ export default function LoginPage() {
               <button
                 className="primaryBtn"
                 disabled={!canVerify || loading}
-                onClick={() => verifyCode(false)}
+                onClick={() => verifyCode()}
               >
                 {loading
                   ? "در حال تأیید..."
@@ -360,7 +358,6 @@ export default function LoginPage() {
                   setMessage("");
                   setError("");
                   setResendCountdown(0);
-                  lastSubmittedCodeRef.current = "";
                 }}
               >
                 تغییر شماره موبایل

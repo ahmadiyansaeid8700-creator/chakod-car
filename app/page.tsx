@@ -2,6 +2,7 @@ import Link from "next/link";
 import AuthStatus from "./components/AuthStatus";
 import HomeStories from "./components/HomeStories";
 import HomeLocationSelector from "./components/HomeLocationSelector";
+import HomeMarketSearch from "./components/HomeMarketSearch";
 import HomeBannerSlot from "./components/HomeBannerSlot";
 import ListingCard from "./components/ListingCard";
 import HomeHorizontalRail from "./components/HomeHorizontalRail";
@@ -526,12 +527,13 @@ function getQuickCategoryHref(category: Category) {
     luxury: "/ads/luxury",
     freezone: "/ads/freezone",
     economic: "/ads/economic",
-    zero: "/?q=%D8%B5%D9%81%D8%B1",
-    used: "/?q=%DA%A9%D8%A7%D8%B1%DA%A9%D8%B1%D8%AF%D9%87",
-    classic: "/?q=%DA%A9%D9%84%D8%A7%D8%B3%DB%8C%DA%A9",
+    zero: "/ads/all?category=zero",
+    used: "/ads/all?category=used",
+    classic: "/ads/all?category=classic",
   };
 
-  return routeByCode[category.code] || `/?q=${encodeURIComponent(category.name)}`;
+  return routeByCode[category.code] ||
+    `/ads/all?q=${encodeURIComponent(category.name)}`;
 }
 
 function ShowcaseCard({
@@ -673,6 +675,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </Link>
 
           <div className="masterNavLinks">
+            <Link href="/ads">بازار خودرو</Link>
             <Link href="/ads/luxury">خودروهای لوکس</Link>
             <Link href="/ads/freezone">منطقه آزاد</Link>
             <Link href="/ads/economic">اقتصادی</Link>
@@ -712,36 +715,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <HomeLocationSelector />
             </div>
 
-            <form
-              className="masterSearch masterHeaderSearch"
-              action="/"
-              method="get"
-              role="search"
-            >
-              <label className="masterSrOnly" htmlFor="master-search">
-                جست‌وجوی خودرو
-              </label>
-
-              <span className="masterSearchLeadingIcon" aria-hidden="true">
-                ⌕
-              </span>
-
-              <input
-                id="master-search"
-                name="q"
-                defaultValue={query}
-                placeholder="برند، مدل، شهر یا نمایشگاه..."
-                autoComplete="off"
-                enterKeyHint="search"
-              />
-
-              <button type="submit" aria-label="جست‌وجو">
-                <span className="masterSearchButtonText">جست‌وجو</span>
-                <span className="masterSearchButtonIcon" aria-hidden="true">
-                  ⌕
-                </span>
-              </button>
-            </form>
+            <HomeMarketSearch initialQuery={query} />
           </div>
         </div>
       </header>

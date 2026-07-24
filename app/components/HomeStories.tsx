@@ -10,9 +10,9 @@ import {
 import {
   DEFAULT_HOME_LOCATION,
   HOME_LOCATION_EVENT,
-  HomeLocationSelection,
-  buildHomeLocationQuery,
+  getHomeLocationScopes,
   loadHomeLocation,
+  type HomeLocationSelection,
 } from "./home-location";
 
 const API_BASE = "https://api.chakod.com";
@@ -133,23 +133,40 @@ export default function HomeStories() {
       setLoading(true);
 
       try {
-        const params = buildHomeLocationQuery(location);
-        params.set("limit", "12");
+        const scopes = getHomeLocationScopes(location);
+        const queries =
+          location.mode === "all" || scopes.length === 0
+            ? [new URLSearchParams({ scope: "all", limit: "12" })]
+            : scopes.map((scope) => {
+                const params = new URLSearchParams({
+                  province: scope.province,
+                  limit: "12",
+                });
 
-        const response = await fetch(
-          `${API_BASE}/api/home-stories.php?${params.toString()}`,
-          {
-            method: "GET",
-            cache: "no-store",
-          },
+                if (!scope.allCities) {
+                  scope.cities.forEach((city) => params.append("cities[]", city));
+                }
+
+                return params;
+              });
+
+        const responses = await Promise.all(
+          queries.map(async (params) => {
+            const response = await fetch(
+              `${API_BASE}/api/home-stories.php?${params.toString()}`,
+              { method: "GET", cache: "no-store" },
+            );
+
+            if (!response.ok) return [] as HomeStoryItem[];
+            const json: HomeStoriesResponse = await response.json();
+            return json.success && Array.isArray(json.data) ? json.data : [];
+          }),
         );
 
-        const json: HomeStoriesResponse = await response.json();
-
         if (!ignore) {
-          setStories(
-            json.success && Array.isArray(json.data) ? json.data : [],
-          );
+          const merged = new Map<number, HomeStoryItem>();
+          responses.flat().forEach((item) => merged.set(item.story_id, item));
+          setStories(Array.from(merged.values()).slice(0, 12));
         }
       } catch {
         if (!ignore) setStories([]);

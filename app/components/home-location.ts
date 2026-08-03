@@ -3,10 +3,23 @@
 export const HOME_LOCATION_STORAGE_KEY = "chakod_home_location_v1";
 export const HOME_LOCATION_EVENT = "chakod:home-location-changed";
 
+export type HomeLocationCityArea = {
+  city: string;
+  allNeighborhoods: boolean;
+  neighborhoods: string[];
+};
+
 export type HomeLocationScope = {
   province: string;
   allCities: boolean;
+  /**
+   * انتخاب کامل شهرها. برای سازگاری با نسخه‌های قبلی حفظ شده است.
+   */
   cities: string[];
+  /**
+   * انتخاب‌های محله‌ای درون هر شهر.
+   */
+  areas?: HomeLocationCityArea[];
 };
 
 export type HomeLocationSelection = {
@@ -30,16 +43,70 @@ export const DEFAULT_HOME_LOCATION: HomeLocationSelection = {
 };
 
 const MAX_PROVINCES = 6;
-const MAX_CITIES = 24;
+const MAX_SELECTED_ITEMS = 24;
 
 function cleanText(value: unknown) {
-  return String(value || "").trim();
+  return String(value || "")
+    .trim()
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/\s+/g, " ");
 }
 
 function uniqueTexts(values: unknown[]) {
-  return Array.from(
-    new Set(values.map(cleanText).filter(Boolean)),
-  );
+  return Array.from(new Set(values.map(cleanText).filter(Boolean)));
+}
+
+function normalizeAreas(rawAreas: unknown, selectedCities: string[]) {
+  if (!Array.isArray(rawAreas)) return [] as HomeLocationCityArea[];
+
+  const selectedCitySet = new Set(selectedCities);
+  const map = new Map<string, HomeLocationCityArea>();
+
+  for (const rawArea of rawAreas) {
+    if (!rawArea || typeof rawArea !== "object") continue;
+
+    const area = rawArea as Partial<HomeLocationCityArea>;
+    const city = cleanText(area.city);
+    if (!city || selectedCitySet.has(city)) continue;
+
+    const allNeighborhoods = Boolean(area.allNeighborhoods);
+    const neighborhoods = allNeighborhoods
+      ? []
+      : uniqueTexts(Array.isArray(area.neighborhoods) ? area.neighborhoods : []);
+
+    if (!allNeighborhoods && neighborhoods.length === 0) continue;
+
+    const current = map.get(city);
+    if (!current) {
+      map.set(city, {
+        city,
+        allNeighborhoods,
+        neighborhoods,
+      });
+      continue;
+    }
+
+    if (current.allNeighborhoods || allNeighborhoods) {
+      map.set(city, {
+        city,
+        allNeighborhoods: true,
+        neighborhoods: [],
+      });
+      continue;
+    }
+
+    map.set(city, {
+      city,
+      allNeighborhoods: false,
+      neighborhoods: uniqueTexts([
+        ...current.neighborhoods,
+        ...neighborhoods,
+      ]),
+    });
+  }
+
+  return Array.from(map.values());
 }
 
 function normalizeScopes(rawScopes: unknown): HomeLocationScope[] {
@@ -54,15 +121,21 @@ function normalizeScopes(rawScopes: unknown): HomeLocationScope[] {
     const province = cleanText(scope.province);
     if (!province) continue;
 
-    const cities = uniqueTexts(Array.isArray(scope.cities) ? scope.cities : []);
     const allCities = Boolean(scope.allCities);
-    const current = map.get(province);
+    const cities = allCities
+      ? []
+      : uniqueTexts(Array.isArray(scope.cities) ? scope.cities : []);
+    const areas = allCities ? [] : normalizeAreas(scope.areas, cities);
 
+    if (!allCities && cities.length === 0 && areas.length === 0) continue;
+
+    const current = map.get(province);
     if (!current) {
       map.set(province, {
         province,
         allCities,
-        cities: allCities ? [] : cities,
+        cities,
+        areas,
       });
       continue;
     }
@@ -72,44 +145,93 @@ function normalizeScopes(rawScopes: unknown): HomeLocationScope[] {
         province,
         allCities: true,
         cities: [],
+        areas: [],
       });
       continue;
     }
 
+    const mergedCities = uniqueTexts([...current.cities, ...cities]);
     map.set(province, {
       province,
       allCities: false,
-      cities: uniqueTexts([...current.cities, ...cities]),
+      cities: mergedCities,
+      areas: normalizeAreas(
+        [...(current.areas || []), ...areas],
+        mergedCities,
+      ),
     });
   }
 
   const limitedScopes = Array.from(map.values()).slice(0, MAX_PROVINCES);
-  let remainingCities = MAX_CITIES;
+  let remaining = MAX_SELECTED_ITEMS;
 
   return limitedScopes
     .map((scope) => {
-      if (scope.allCities) return scope;
+      if (scope.allCities) {
+        if (remaining <= 0) return null;
+        remaining -= 1;
+        return scope;
+      }
 
-      const cities = scope.cities.slice(0, Math.max(0, remainingCities));
-      remainingCities -= cities.length;
+      const cities = scope.cities.slice(0, Math.max(0, remaining));
+      remaining -= cities.length;
+
+      const areas: HomeLocationCityArea[] = [];
+      for (const area of scope.areas || []) {
+        if (remaining <= 0) break;
+
+        if (area.allNeighborhoods) {
+          areas.push(area);
+          remaining -= 1;
+          continue;
+        }
+
+        const neighborhoods = area.neighborhoods.slice(
+          0,
+          Math.max(0, remaining),
+        );
+        remaining -= neighborhoods.length;
+
+        if (neighborhoods.length) {
+          areas.push({
+            ...area,
+            neighborhoods,
+          });
+        }
+      }
+
+      if (cities.length === 0 && areas.length === 0) return null;
 
       return {
         ...scope,
         cities,
+        areas,
       };
     })
-    .filter((scope) => scope.allCities || scope.cities.length > 0);
+    .filter((scope): scope is HomeLocationScope => Boolean(scope));
+}
+
+function buildPlaces(scopes: HomeLocationScope[]) {
+  return scopes.flatMap((scope) => {
+    if (scope.allCities) return [`کل ${scope.province}`];
+
+    const cityPlaces = scope.cities.map((city) => city);
+    const neighborhoodPlaces = (scope.areas || []).flatMap((area) =>
+      area.allNeighborhoods
+        ? [area.city]
+        : area.neighborhoods.map(
+            (neighborhood) => `${neighborhood}، ${area.city}`,
+          ),
+    );
+
+    return [...cityPlaces, ...neighborhoodPlaces];
+  });
 }
 
 function buildLabel(scopes: HomeLocationScope[]) {
   if (scopes.length === 0) return "سراسر ایران";
 
-  const places = scopes.flatMap((scope) =>
-    scope.allCities
-      ? [`کل ${scope.province}`]
-      : scope.cities.map((city) => city),
-  );
-
+  const places = buildPlaces(scopes);
   if (places.length === 1) return places[0];
   if (places.length === 2) return places.join("، ");
 
@@ -122,9 +244,15 @@ function selectionFromScopes(scopes: HomeLocationScope[]): HomeLocationSelection
   if (safeScopes.length === 0) return DEFAULT_HOME_LOCATION;
 
   const first = safeScopes[0];
-  const allCities = safeScopes.flatMap((scope) => scope.cities);
+  const allCities = uniqueTexts(
+    safeScopes.flatMap((scope) => [
+      ...scope.cities,
+      ...(scope.areas || []).map((area) => area.city),
+    ]),
+  );
+  const placeCount = buildPlaces(safeScopes).length;
   const mode: HomeLocationSelection["mode"] =
-    safeScopes.length > 1
+    safeScopes.length > 1 || placeCount > 1
       ? "multi"
       : first.allCities
         ? "province"
@@ -163,6 +291,7 @@ export function sanitizeHomeLocation(
         province,
         allCities: true,
         cities: [],
+        areas: [],
       },
     ]);
   }
@@ -173,6 +302,7 @@ export function sanitizeHomeLocation(
         province,
         allCities: false,
         cities,
+        areas: [],
       },
     ]);
   }
@@ -216,8 +346,8 @@ export function saveHomeLocation(selection: HomeLocationSelection) {
 }
 
 /**
- * پارامتر سازگار با API فعلی. برای انتخاب چنداستانی، فراخواننده باید برای
- * هر scope جداگانه درخواست بزند؛ بنابراین این تابع فقط scope نخست را می‌سازد.
+ * پارامتر سازگار با API فعلی. انتخاب محله در API عمومی فعلی به سطح شهر
+ * نگاشت می‌شود تا فیلتر آگهی‌ها همچنان درست کار کند.
  */
 export function buildHomeLocationQuery(selection: HomeLocationSelection) {
   const safeSelection = sanitizeHomeLocation(selection);
@@ -234,7 +364,11 @@ export function buildHomeLocationQuery(selection: HomeLocationSelection) {
   params.set("province", scope.province);
 
   if (!scope.allCities) {
-    scope.cities.forEach((city) => params.append("cities[]", city));
+    const cities = uniqueTexts([
+      ...scope.cities,
+      ...(scope.areas || []).map((area) => area.city),
+    ]);
+    cities.forEach((city) => params.append("cities[]", city));
   }
 
   return params;

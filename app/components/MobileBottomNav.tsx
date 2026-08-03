@@ -73,15 +73,11 @@ function SubmitIcon() {
   );
 }
 
-function BookmarkIcon() {
+function ServicesIcon() {
   return (
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-      <path
-        d="M6.5 5.2c0-1 .8-1.7 1.7-1.7h7.6c1 0 1.7.8 1.7 1.7v15.3L12 17.1l-5.5 3.4V5.2Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
+      <path d="M7.2 4.5h9.6a2 2 0 0 1 2 2v2.1a2 2 0 0 1-2 2H7.2a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M7.2 13.9h3.1a2 2 0 0 1 2 2v1.6a2 2 0 0 1-2 2H7.2a2 2 0 0 1-2-2v-1.6a2 2 0 0 1 2-2ZM15.6 13.9h1.2a2 2 0 0 1 2 2v1.6a2 2 0 0 1-2 2h-1.2a2 2 0 0 1-2-2v-1.6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -182,12 +178,11 @@ export default function MobileBottomNav() {
         isActive: (currentPath) => currentPath === "/submit" || currentPath.startsWith("/submit/"),
       },
       {
-        id: "saved",
-        title: "نشان‌شده‌ها",
-        href: "/account/saved",
-        icon: <BookmarkIcon />,
-        isActive: (currentPath) =>
-          currentPath === "/account/saved" || currentPath.startsWith("/account/saved/"),
+        id: "services",
+        title: "خدمات",
+        href: "/businesses?type=car_service",
+        icon: <ServicesIcon />,
+        isActive: (currentPath) => currentPath.startsWith("/businesses"),
       },
       {
         id: "account",
@@ -199,9 +194,7 @@ export default function MobileBottomNav() {
           if (accountDestination.href === "/dashboard") return currentPath.startsWith("/dashboard");
           if (accountDestination.href === "/login") return currentPath.startsWith("/login");
 
-          const isAccountRoute = currentPath === "/account" || currentPath.startsWith("/account/");
-          const isSavedRoute = currentPath === "/account/saved" || currentPath.startsWith("/account/saved/");
-          return isAccountRoute && !isSavedRoute;
+          return currentPath === "/account" || currentPath.startsWith("/account/");
         },
       },
     ],
@@ -209,9 +202,7 @@ export default function MobileBottomNav() {
   );
 
   const shouldHide =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/super-admin") ||
-    pathname.startsWith("/showrooms");
+    pathname.startsWith("/admin") || pathname.startsWith("/super-admin");
 
   if (shouldHide) return null;
 

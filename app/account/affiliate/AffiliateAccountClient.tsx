@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import styles from "./AffiliateAccountClient.module.css";
+
+type DocumentItem = { id:number; document_key:string; title:string; summary?:string; body_text:string; content_hash:string };
+type Account = { id:number; affiliate_code:string; status:string; full_name?:string; province?:string; city?:string; kyc_status:string; iban?:string; iban_owner_name?:string; payout_block_reason?:string };
+type Stats = { clicks:number; unique_visitors:number; total_sales:number; qualified_sales:number; hold_amount:number; available_amount:number; paid_amount:number };
+type Commission = { id:number; order_id:number; service_key:string; gross_amount_toman:number; customer_discount_toman:number; net_collected_toman:number; commission_percent:number; commission_amount_toman:number; status:string; available_at?:string; created_at:string };
+type Payout = { id:number; period_key:string; scheduled_pay_at:string; amount_toman:number; status:string; reference_no?:string; paid_at?:string };
+type Payload = { success:boolean; message?:string; user?:{full_name?:string}; settings?:Record<string,any>; readiness?:{open:boolean;ready:boolean;missing:string[]}; documents?:DocumentItem[]; acceptances?:Array<{document_key:string;document_hash:string}>; account?:Account|null; stats?:Stats|null; commissions?:Commission[]; payouts?:Payout[] };
+
+const channels = [
+  ["instagram","اینستاگرام"],["telegram","تلگرام"],["whatsapp","واتساپ"],["website","وب‌سایت"],["in_person","معرفی حضوری"],["friends","دوستان و آشنایان"],["other","سایر"],
+] as const;
+const statusLabels:Record<string,string>={awaiting_payment:"در انتظار پرداخت",hold:"معلق",available:"قابل تسویه",scheduled:"در صف پرداخت",paid:"پرداخت‌شده",reversed:"لغوشده",active_tracking:"فعال",active:"فعال",suspended:"تعلیق",terminated:"خاتمه",not_submitted:"ثبت نشده",pending_review:"در انتظار بررسی",verified:"تأیید شده",rejected:"رد شده"};
+function fa(value:number){return Number(value||0).toLocaleString("fa-IR")}
+function tokenHeaders(){if(typeof window==="undefined")return {};const token=localStorage.getItem("chakod_session_token")||"";return token?{Authorization:`Bearer ${token}`,"X-Session-Token":token}:{};}
+
+export default function AffiliateAccountClient(){
+ const router=useRouter();
+ const [data,setData]=useState<Payload|null>(null);const [loading,setLoading]=useState(true);const [documentsLoading,setDocumentsLoading]=useState(false);const [activityLoading,setActivityLoading]=useState(false);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");const [error,setError]=useState("");
+ const [fullName,setFullName]=useState("");const [province,setProvince]=useState("");const [city,setCity]=useState("");const [selected,setSelected]=useState<string[]>([]);const [checked,setChecked]=useState<number[]>([]);
+ const [iban,setIban]=useState("");const [ibanOwner,setIbanOwner]=useState("");
+ async function loadDocuments(){setDocumentsLoading(true);try{const r=await fetch("/api/auth/affiliate?section=documents",{cache:"no-store",headers:tokenHeaders()});const p=await r.json() as Payload;if(!r.ok||!p.success)throw new Error(p.message||"دریافت قوانین انجام نشد.");setData(current=>current?{...current,documents:p.documents||[]}:p);}catch(e){setError(e instanceof Error?e.message:"دریافت قوانین انجام نشد.");}finally{setDocumentsLoading(false)}}
+ async function loadActivity(){setActivityLoading(true);try{const r=await fetch("/api/auth/affiliate?section=activity",{cache:"no-store",headers:tokenHeaders()});const p=await r.json() as Payload;if(!r.ok||!p.success)throw new Error(p.message||"دریافت گزارش مالی انجام نشد.");setData(current=>current?{...current,account:p.account??current.account,stats:p.stats||null,commissions:p.commissions||[],payouts:p.payouts||[]}:p);}catch(e){setError(e instanceof Error?e.message:"دریافت گزارش مالی انجام نشد.");}finally{setActivityLoading(false)}}
+ async function load(){setLoading(true);setError("");try{const r=await fetch("/api/auth/affiliate?section=base",{cache:"no-store",headers:tokenHeaders()});const p=await r.json() as Payload;if(!r.ok||!p.success)throw new Error(p.message||"دریافت اطلاعات انجام نشد.");setData(p);setFullName(p.account?.full_name||p.user?.full_name||"");setProvince(p.account?.province||"");setCity(p.account?.city||"");setIban(p.account?.iban||"");setIbanOwner(p.account?.iban_owner_name||"");setLoading(false);if(p.account){void loadActivity();}else{void loadDocuments();}}catch(e){setError(e instanceof Error?e.message:"ارتباط برقرار نشد.");setLoading(false)}}
+ useEffect(()=>{void load()},[]);
+ async function post(body:Record<string,unknown>){const r=await fetch("/api/auth/affiliate",{method:"POST",headers:{"Content-Type":"application/json",...tokenHeaders()},body:JSON.stringify(body)});const p=await r.json() as Payload;if(!r.ok||!p.success)throw new Error(p.message||"عملیات انجام نشد.");return p;}
+ async function register(){setBusy(true);setError("");setMessage("");try{const docs=data?.documents||[];if(checked.length!==docs.length)throw new Error("پذیرش همه قوانین الزامی است.");await post({action:"accept_documents",document_ids:checked});await post({action:"register",full_name:fullName,province,city,promotion_channels:selected});setMessage("حساب همکاری در فروش ساخته شد.");await load();}catch(e){setError(e instanceof Error?e.message:"ثبت انجام نشد.");}finally{setBusy(false)}}
+ async function savePayout(){setBusy(true);setError("");setMessage("");try{const p=await post({action:"update_payout_profile",iban,iban_owner_name:ibanOwner});setMessage(p.message||"اطلاعات ثبت شد.");await load();}catch(e){setError(e instanceof Error?e.message:"ثبت انجام نشد.");}finally{setBusy(false)}}
+ const referralLink=useMemo(()=>{if(typeof window==="undefined"||!data?.account?.affiliate_code)return "";return `${window.location.origin}/r/${data.account.affiliate_code}?to=/account/services`;},[data?.account?.affiliate_code]);
+ async function copyLink(){if(referralLink){await navigator.clipboard.writeText(referralLink);setMessage("لینک اختصاصی کپی شد.");}}
+ if(loading)return <main className={styles.page}><div className={styles.loading}>در حال دریافت پنل همکاری در فروش…</div></main>;
+ return <main className={styles.page}>
+  <header className={styles.header}><div><span>حساب کاربری چاکود</span><h1>همکاری در فروش</h1><p>معرفی، فروش، پورسانت و تسویه در یک پنل</p></div><div className={styles.headerActions}><button type="button" onClick={()=>window.history.length>1?router.back():router.push("/account")}>بازگشت</button><Link href="/account">حساب من</Link><Link href="/affiliate">راهنمای برنامه</Link><Link href="/">صفحه اصلی</Link></div></header>
+  {error?<div className={styles.error}>{error}</div>:null}{message?<div className={styles.success}>{message}</div>:null}
+  {!data?.account ? <section className={styles.joinLayout}>
+    <div className={styles.card}><h2>عضویت در همکاری در فروش</h2><p>عضویت پس از انتشار قوانین به‌صورت سیستمی انجام می‌شود و لینک اختصاصی همان لحظه فعال خواهد شد.</p>
+      <div className={styles.formGrid}><label><span>نام و نام خانوادگی</span><input value={fullName} onChange={e=>setFullName(e.target.value)}/></label><label><span>استان</span><input value={province} onChange={e=>setProvince(e.target.value)}/></label><label><span>شهر</span><input value={city} onChange={e=>setCity(e.target.value)}/></label></div>
+      <h3>کانال‌های معرفی</h3><div className={styles.checkGrid}>{channels.map(([key,label])=><label key={key}><input type="checkbox" checked={selected.includes(key)} onChange={e=>setSelected(e.target.checked?[...selected,key]:selected.filter(x=>x!==key))}/><span>{label}</span></label>)}</div>
+    </div>
+    <div className={styles.card}><h2>قوانین برنامه</h2>{documentsLoading?<div className={styles.loading}>در حال دریافت قوانین…</div>:null}{(data?.documents||[]).map(doc=><details key={doc.id} className={styles.document}><summary>{doc.title}</summary><p>{doc.body_text}</p><label><input type="checkbox" checked={checked.includes(doc.id)} onChange={e=>setChecked(e.target.checked?[...checked,doc.id]:checked.filter(x=>x!==doc.id))}/><span>این سند را مطالعه کردم و می‌پذیرم.</span></label></details>)}
+      {!data?.readiness?.open?<div className={styles.warn}>ثبت‌نام هنوز باز نشده است. مدیر باید مشخصات قانونی را تکمیل و قوانین را منتشر کند.</div>:null}
+      <button disabled={busy||documentsLoading||!data?.readiness?.open||(data?.documents||[]).length<3} onClick={register}>{busy?"در حال ثبت…":"ساخت حساب همکاری در فروش"}</button>
+    </div>
+  </section> : <>
+    {activityLoading?<div className={styles.loading}>در حال دریافت گزارش فروش و تسویه…</div>:null}
+    <section className={styles.stats}>{[["کلیک‌ها",data.stats?.clicks],["فروش واجد شرایط",data.stats?.qualified_sales],["درآمد معلق",data.stats?.hold_amount],["قابل تسویه",data.stats?.available_amount],["تسویه‌شده",data.stats?.paid_amount]].map(([label,value])=><div key={String(label)}><span>{label}</span><strong>{fa(Number(value||0))}{String(label).includes("درآمد")||String(label).includes("تسویه")?" تومان":""}</strong></div>)}</section>
+    <section className={styles.twoCols}><div className={styles.card}><div className={styles.cardHead}><div><h2>لینک اختصاصی شما</h2><p>کاربر معرفی‌شده از تخفیف خودکار بهره‌مند می‌شود.</p></div><span className={styles.badge}>{statusLabels[data.account.status]||data.account.status}</span></div><div className={styles.linkBox}><code>{referralLink}</code><button onClick={copyLink}>کپی لینک</button></div><div className={styles.shareRow}><a href={`https://wa.me/?text=${encodeURIComponent(`با لینک من وارد چاکود شو و تخفیف بگیر: ${referralLink}`)}`} target="_blank">واتساپ</a><a href={`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent("ثبت آگهی در چاکود با تخفیف لینک همکاری")}`} target="_blank">تلگرام</a></div><small>کد همکاری: {data.account.affiliate_code}</small></div>
+      <div className={styles.card}><h2>اطلاعات تسویه</h2><p>حساب‌ها روز ۳۰ ماه شمسی بسته و روز ۵ ماه بعد واریز می‌شوند.</p><label><span>شماره شبا</span><input dir="ltr" placeholder="IR000000000000000000000000" value={iban} onChange={e=>setIban(e.target.value)}/></label><label><span>نام صاحب حساب</span><input value={ibanOwner} onChange={e=>setIbanOwner(e.target.value)}/></label><div className={styles.kyc}>وضعیت: <b>{statusLabels[data.account.kyc_status]||data.account.kyc_status}</b>{data.account.payout_block_reason?<small>{data.account.payout_block_reason}</small>:null}</div><button disabled={busy} onClick={savePayout}>ثبت برای بررسی</button></div>
+    </section>
+    <section className={styles.card}><h2>فروش‌ها و پورسانت‌ها</h2><div className={styles.tableWrap}><table><thead><tr><th>سفارش</th><th>خدمت</th><th>مبلغ پرداختی</th><th>نرخ</th><th>پورسانت</th><th>وضعیت</th></tr></thead><tbody>{(data.commissions||[]).map(c=><tr key={c.id}><td>#{fa(c.order_id)}</td><td>{c.service_key}</td><td>{fa(c.net_collected_toman)}</td><td>{fa(c.commission_percent)}٪</td><td>{fa(c.commission_amount_toman)}</td><td><span className={styles.status}>{statusLabels[c.status]||c.status}</span></td></tr>)}{!data.commissions?.length?<tr><td colSpan={6} className={styles.empty}>هنوز فروش منتسبی ثبت نشده است.</td></tr>:null}</tbody></table></div></section>
+    <section className={styles.card}><h2>سوابق تسویه</h2><div className={styles.tableWrap}><table><thead><tr><th>دوره</th><th>مبلغ</th><th>زمان برنامه‌ریزی</th><th>وضعیت</th><th>کد پیگیری</th></tr></thead><tbody>{(data.payouts||[]).map(p=><tr key={p.id}><td>{p.period_key}</td><td>{fa(p.amount_toman)}</td><td>{p.scheduled_pay_at}</td><td>{statusLabels[p.status]||p.status}</td><td>{p.reference_no||"—"}</td></tr>)}{!data.payouts?.length?<tr><td colSpan={5} className={styles.empty}>هنوز تسویه‌ای ساخته نشده است.</td></tr>:null}</tbody></table></div></section>
+  </>}
+ </main>
+}

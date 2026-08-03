@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SaveListingButton from "./SaveListingButton";
 import ListingCardImage from "./ListingCardImage";
+import ListingCardActions from "./ListingCardActions";
 import styles from "./ListingCard.module.css";
 
 const API_BASE = "https://api.chakod.com";
@@ -34,6 +35,7 @@ type ListingCardProps = {
   tone?: "luxury" | "freezone" | "economic" | "neutral";
   badge?: string;
   variant?: "rail" | "grid";
+  showActions?: boolean;
 };
 
 function getImageUrl(path?: string | null) {
@@ -89,6 +91,7 @@ export default function ListingCard({
   tone = "neutral",
   badge,
   variant = "grid",
+  showActions = false,
 }: ListingCardProps) {
   const href = `/listing/${listing.id}`;
   const imageUrl = getImageUrl(listing.cover_image);
@@ -109,7 +112,9 @@ export default function ListingCard({
 
   return (
     <article
-      className={`${styles.card} ${styles[tone]} ${styles[variant]}`}
+      className={`${styles.card} ${styles[tone]} ${styles[variant]} ${
+        showActions ? styles.withActions : ""
+      }`}
     >
       <div className={styles.media}>
         <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${listing.title}`}>
@@ -179,11 +184,21 @@ export default function ListingCard({
             ) : null}
           </div>
 
-          <Link href={href} prefetch={false} className={styles.viewLink}>
-            مشاهده
-            <span aria-hidden="true">←</span>
-          </Link>
+          {!showActions ? (
+            <Link href={href} prefetch={false} className={styles.viewLink}>
+              مشاهده
+              <span aria-hidden="true">←</span>
+            </Link>
+          ) : null}
         </div>
+
+        {showActions ? (
+          <ListingCardActions
+            listingId={listing.id}
+            title={listing.title}
+            href={href}
+          />
+        ) : null}
       </div>
     </article>
   );

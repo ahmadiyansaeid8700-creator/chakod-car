@@ -15,7 +15,7 @@ import type {
 import styles from "../ads/[segment]/CatalogPage.module.css";
 
 type Props = {
-  apiUrl: string;
+  clientApiUrl: string;
   segment: CatalogSegment;
   badge: string;
   filters: CatalogFilters;
@@ -127,7 +127,7 @@ function buildHref(
 }
 
 export default function CatalogListingsClient({
-  apiUrl,
+  clientApiUrl,
   segment,
   badge,
   filters,
@@ -148,7 +148,7 @@ export default function CatalogListingsClient({
     async function load() {
       try {
         setStatus("loading");
-        const apiResponse = await fetch(apiUrl, {
+        const apiResponse = await fetch(clientApiUrl, {
           cache: "no-store",
           headers: { Accept: "application/json" },
           signal: controller.signal,
@@ -169,7 +169,7 @@ export default function CatalogListingsClient({
 
     load();
     return () => controller.abort();
-  }, [apiUrl, initialResponse]);
+  }, [clientApiUrl, initialResponse]);
 
   const facets = response?.facets || emptyFacets;
   const resultCount = response?.total || 0;
@@ -353,6 +353,7 @@ export default function CatalogListingsClient({
                 tone={tone}
                 badge={badge}
                 variant="grid"
+                showActions
               />
             ))}
           </div>

@@ -3,7 +3,7 @@ import ListingDetailClient from "./ListingDetailClient";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 
 type PageProps = {
-  params: { id: string } | Promise<{ id: string }>;
+  params: Promise<{ id: string }>;
 };
 
 async function getInitialListing(listingId: number): Promise<ListingApiResponse | null> {
@@ -20,7 +20,7 @@ async function getInitialListing(listingId: number): Promise<ListingApiResponse 
 }
 
 export default async function ListingDetailPage({ params }: PageProps) {
-  const resolvedParams = await Promise.resolve(params);
+  const resolvedParams = await params;
   const listingId = Number(resolvedParams.id);
 
   if (!Number.isFinite(listingId) || listingId <= 0) notFound();

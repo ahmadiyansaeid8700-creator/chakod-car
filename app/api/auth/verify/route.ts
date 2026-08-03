@@ -1,91 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const VERIFY_URL = "https://api.chakod.com/api/verify-login-code.php";
-const SESSION_COOKIE = "chakod_session";
-const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+import {
+  authApiUrl,
+  CHAKOD_SESSION_COOKIE,
+  CHAKOD_SESSION_MAX_AGE,
+  jsonResponse,
+  parseJsonResponse,
+  rejectCrossSiteMutation,
+  secureJsonHeaders,
+  sessionCookieOptions,
+} from "../../../../lib/chakod-auth-proxy";
 
-type VerifyPayload = {
-  success?: boolean;
-  message?: string;
-  session_token?: string;
-  [key: string]: unknown;
-};
+const MAX_REQUEST_BYTES = 2_000;
+const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 
-function safeJson(text: string): VerifyPayload | null {
-  try {
-    const parsed: unknown = JSON.parse(text);
-    return parsed && typeof parsed === "object"
-      ? (parsed as VerifyPayload)
-      : null;
-  } catch {
-    return null;
-  }
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.text();
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
 
-    const upstream = await fetch(VERIFY_URL, {
+  try {
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength > MAX_REQUEST_BYTES) {
+      return jsonResponse({ success: false, message: "حجم درخواست ورود معتبر نیست." }, 413);
+    }
+
+    const body = await request.text();
+    if (body.length > MAX_REQUEST_BYTES) {
+      return jsonResponse({ success: false, message: "حجم درخواست ورود معتبر نیست." }, 413);
+    }
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "Content-Type": request.headers.get("content-type") || "application/json",
+    };
+
+    const userAgent = request.headers.get("user-agent");
+    if (userAgent) headers["User-Agent"] = userAgent.slice(0, 500);
+
+    const cloudflareIp = request.headers.get("cf-connecting-ip");
+    if (cloudflareIp) headers["CF-Connecting-IP"] = cloudflareIp.slice(0, 64);
+
+    const upstream = await fetch(authApiUrl("/api/verify-login-code.php"), {
       method: "POST",
       cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": request.headers.get("content-type") || "application/json",
-      },
+      headers,
       body,
+      signal: AbortSignal.timeout(15_000),
     });
 
-    const text = await upstream.text();
-    const payload = safeJson(text);
-
+    const payload = await parseJsonResponse(upstream);
     if (!payload) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "پاسخ سرویس ورود معتبر نیست.",
-        },
-        {
-          status: 502,
-          headers: { "Cache-Control": "no-store" },
-        }
-      );
+      return jsonResponse({ success: false, message: "پاسخ سرویس ورود معتبر نیست." }, 502);
     }
 
     const response = NextResponse.json(payload, {
       status: upstream.status,
-      headers: { "Cache-Control": "no-store" },
+      headers: secureJsonHeaders(),
     });
 
-    if (
-      upstream.ok &&
-      payload.success === true &&
-      typeof payload.session_token === "string" &&
-      /^[a-f0-9]{64}$/i.test(payload.session_token)
-    ) {
+    const token = typeof payload.session_token === "string" ? payload.session_token : "";
+    if (upstream.ok && payload.success === true && TOKEN_PATTERN.test(token)) {
       response.cookies.set({
-        name: SESSION_COOKIE,
-        value: payload.session_token,
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-        domain: ".chakod.com",
-        maxAge: SESSION_MAX_AGE_SECONDS,
+        name: CHAKOD_SESSION_COOKIE,
+        value: token,
+        ...sessionCookieOptions(request, CHAKOD_SESSION_MAX_AGE),
       });
     }
 
     return response;
   } catch {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "ارتباط با سرویس ورود برقرار نشد.",
-      },
-      {
-        status: 502,
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
+    return jsonResponse({ success: false, message: "ارتباط با سرویس ورود برقرار نشد." }, 502);
   }
 }

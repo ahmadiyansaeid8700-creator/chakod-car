@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
-
 type DashboardUser = {
   id: number;
   mobile?: string;
@@ -167,34 +165,64 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
     setError("");
+    setAuthRequired(false);
+
+    const token = getToken();
+
+    if (!token) {
+      setAuthRequired(true);
+      setError("برای مشاهده داشبورد، ابتدا وارد حساب کاربری شوید.");
+      setData(null);
+      setLoading(false);
+      return;
+    }
 
     try {
-      const token = getToken();
-
-      const res = await fetch(`${API_BASE}/api/dashboard-summary.php`, {
+      const res = await fetch("/api/auth/dashboard-summary", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Session-Token": token,
         },
+        credentials: "same-origin",
+        cache: "no-store",
       });
 
-      const json: DashboardResponse = await res.json();
+      const text = await res.text();
+      let json: DashboardResponse | null = null;
 
-      if (!json.success) {
-        setError(json.message || "داشبورد دریافت نشد.");
+      try {
+        json = text ? (JSON.parse(text) as DashboardResponse) : null;
+      } catch {
+        json = null;
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        setAuthRequired(true);
+        setError(json?.message || "نشست شما معتبر نیست. دوباره وارد شوید.");
         setData(null);
+        return;
+      }
+
+      if (!res.ok || !json?.success) {
+        setError(
+          json?.message ||
+            "داشبورد موقتاً از سمت سرور در دسترس نیست. چند لحظه دیگر دوباره تلاش کنید."
+        );
         return;
       }
 
       setData(json);
     } catch {
-      setError("ارتباط با سرور برقرار نشد.");
-      setData(null);
+      setError(
+        "ارتباط با سرویس داشبورد برقرار نشد. ورود شما حفظ شده است؛ دوباره تلاش کنید."
+      );
     } finally {
       setLoading(false);
     }
@@ -275,12 +303,22 @@ export default function DashboardPage() {
         {!loading && error && (
           <div className="centerCard">
             <span className="miniLabel">داشبورد</span>
-            <h1>دسترسی به داشبورد ممکن نیست</h1>
+            <h1>
+              {authRequired
+                ? "برای مشاهده داشبورد وارد شوید"
+                : "داشبورد موقتاً در دسترس نیست"}
+            </h1>
             <p>{error}</p>
             <div className="centerActions">
-              <a href="/login" className="primaryLink">
-                ورود به حساب
-              </a>
+              {authRequired ? (
+                <a href="/login?returnTo=/dashboard" className="primaryLink">
+                  ورود به حساب
+                </a>
+              ) : (
+                <a href="/account" className="primaryLink">
+                  بازگشت به حساب
+                </a>
+              )}
               <button className="secondaryBtn" onClick={loadDashboard}>
                 تلاش دوباره
               </button>

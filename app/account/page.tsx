@@ -1,20 +1,18 @@
 "use client";
 
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
+import MobileBottomNav from "../components/MobileBottomNav";
+import ProfileEditor, { type AccountUser } from "./ProfileEditor";
+import ProfessionalProfileEditor from "./ProfessionalProfileEditor";
+import styles from "./page.module.css";
 
-type User = {
-  id?: number;
-  mobile?: string;
-  full_name?: string | null;
-  account_type?: "personal" | "dealer" | "business";
-  business_name?: string | null;
-  display_name?: string;
-  profile_completed?: boolean;
-  mobile_verified?: boolean;
-  accepted_terms?: boolean;
-};
+const LOCAL_DEV_SESSION_TOKEN = "chakod-local-dev-session";
+const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
+
+type User = AccountUser;
 
 type DashboardStats = {
   total: number;
@@ -30,19 +28,157 @@ type DashboardResponse = {
   message?: string;
   user?: User;
   stats?: Partial<DashboardStats>;
-  dealers?: any[];
-  recent_listings?: any[];
+  dealers?: unknown[];
 };
+
+type MeResponse = {
+  success?: boolean;
+  logged_in?: boolean;
+  message?: string;
+  user?: User | null;
+};
+
+type IconProps = { children: ReactNode };
+
+function IconFrame({ children }: IconProps) {
+  return <span className={styles.iconFrame}>{children}</span>;
+}
+
+function DashboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 4h6v7H4zM14 4h6v4h-6zM14 12h6v8h-6zM4 15h6v5H4z" />
+    </svg>
+  );
+}
+
+function ListingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z" />
+      <path d="M8.5 9h7M8.5 13h7M8.5 17h4" />
+    </svg>
+  );
+}
+
+function AddIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function BookmarkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14L12 16.3 5.5 20V6A1.5 1.5 0 0 1 7 4.5Z" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m14.5 6.5-5.5 5.5 5.5 5.5" />
+    </svg>
+  );
+}
 
 function getToken() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("chakod_session_token") || "";
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+        "X-Session-Token": token,
+      }
+    : {};
+}
+
+function clearLocalAuth() {
+  localStorage.removeItem("chakod_session_token");
+  localStorage.removeItem("chakod_user");
+  localStorage.removeItem("chakod_identity");
+}
+
+function readCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem("chakod_user");
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getLocalDevelopmentUser(): User {
+  const fallback: User = {
+    id: 0,
+    mobile: "09120000000",
+    full_name: null,
+    account_type: "personal",
+    business_name: null,
+    business_city: null,
+    business_location_mode: null,
+    business_location_label: null,
+    business_location_scopes: null,
+    display_name: "کاربر آزمایشی چاکود",
+    profile_completed: false,
+    phone_verified: true,
+    mobile_verified: true,
+    terms_accepted: true,
+    accepted_terms: true,
+  };
+
+  try {
+    const raw = localStorage.getItem("chakod_user");
+    if (!raw) return fallback;
+    return { ...fallback, ...(JSON.parse(raw) as User) };
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeUser(user: User): User {
+  const fullNameOk = Boolean(user.full_name?.trim().length && user.full_name.trim().length >= 2);
+  const type = user.account_type || "personal";
+  const businessOk =
+    type === "personal" ||
+    Boolean(user.business_name?.trim().length && user.business_name.trim().length >= 2);
+  const businessLocationOk =
+    type === "personal" ||
+    Boolean(
+      user.business_location_label?.trim().length ||
+      user.business_city?.trim().length,
+    );
+
+  return {
+    ...user,
+    phone_verified: user.phone_verified ?? user.mobile_verified ?? false,
+    mobile_verified: user.mobile_verified ?? user.phone_verified ?? false,
+    terms_accepted: user.terms_accepted ?? user.accepted_terms ?? false,
+    accepted_terms: user.accepted_terms ?? user.terms_accepted ?? false,
+    profile_completed:
+      type === "business" ? false : fullNameOk && businessOk && businessLocationOk,
+  };
+}
+
+async function readApiResponse<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 function formatNumber(value: number | string | null | undefined) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n)) return "۰";
-  return n.toLocaleString("fa-IR");
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number.toLocaleString("fa-IR") : "۰";
 }
 
 function maskMobile(mobile?: string) {
@@ -52,13 +188,18 @@ function maskMobile(mobile?: string) {
 }
 
 function accountTypeTitle(type?: string) {
-  if (type === "dealer" || type === "business") return "نمایشگاهی";
+  if (type === "dealer") return "نمایشگاه خودرو";
+  if (type === "parts_store") return "فروشگاه قطعات و لوازم خودرو";
+  if (type === "repair_shop") return "تعمیرگاه خودرو";
+  if (type === "car_service") return "مرکز خدمات خودرو";
+  if (type === "business") return "نیازمند تعیین نوع";
   return "شخصی";
 }
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [hasLocalSession, setHasLocalSession] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     total: 0,
@@ -69,991 +210,371 @@ export default function AccountPage() {
     sold: 0,
   });
   const [dealerCount, setDealerCount] = useState(0);
-  const [recentCount, setRecentCount] = useState(0);
   const [error, setError] = useState("");
+  const [forceProfileOpen, setForceProfileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   async function loadAccount() {
     setLoading(true);
     setError("");
 
+    const token = getToken();
+    const cachedUser = readCachedUser();
+    setHasLocalSession(Boolean(token));
+
+    if (!token) {
+      setLoggedIn(false);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    if (cachedUser) {
+      setLoggedIn(true);
+      setUser(normalizeUser(cachedUser));
+    }
+
+    if (IS_LOCAL_DEV && token === LOCAL_DEV_SESSION_TOKEN) {
+      const localUser = normalizeUser(getLocalDevelopmentUser());
+      setLoggedIn(true);
+      setUser(localUser);
+      setStats({ total: 4, active: 2, pending: 1, rejected: 0, inactive: 0, sold: 1 });
+      setDealerCount(localUser.account_type === "dealer" ? 1 : 0);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const token = getToken();
-
-      const meRes = await fetch(`${API_BASE}/api/me.php`, {
+      const meResponse = await fetch("/api/auth/me", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: "include",
+        cache: "no-store",
+        headers: { Accept: "application/json", ...authHeaders() },
       });
+      const meResult = await readApiResponse<MeResponse>(meResponse);
 
-      const meJson = await meRes.json();
+      if (!meResult) {
+        throw new Error("INVALID_RESPONSE");
+      }
 
-      if (!meJson.success || !meJson.logged_in || !meJson.user) {
+      const sessionRejected =
+        meResponse.status === 401 ||
+        meResponse.status === 403 ||
+        meResult.logged_in === false;
+
+      if (sessionRejected) {
+        clearLocalAuth();
+        setHasLocalSession(false);
         setLoggedIn(false);
         setUser(null);
+        setError(meResult.message || "نشست شما منقضی شده است. دوباره وارد شوید.");
         return;
       }
 
+      if (!meResponse.ok || !meResult.success || !meResult.user) {
+        setError(meResult.message || "بررسی نشست فعلاً انجام نشد. اطلاعات ذخیره‌شده نمایش داده می‌شود.");
+
+        if (!cachedUser) {
+          setLoggedIn(false);
+          setUser(null);
+        }
+        return;
+      }
+
+      const normalizedUser = normalizeUser(meResult.user);
       setLoggedIn(true);
-      setUser(meJson.user);
-      localStorage.setItem("chakod_user", JSON.stringify(meJson.user));
+      setUser(normalizedUser);
+      localStorage.setItem("chakod_user", JSON.stringify(normalizedUser));
 
       try {
-        const dashRes = await fetch(`${API_BASE}/api/dashboard-summary.php`, {
+        const dashboardResponse = await fetch("/api/auth/dashboard-summary", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json", ...authHeaders() },
         });
+        const dashboardResult = await readApiResponse<DashboardResponse>(dashboardResponse);
 
-        const dashJson: DashboardResponse = await dashRes.json();
-
-        if (dashJson.success) {
+        if (dashboardResponse.ok && dashboardResult?.success) {
           setStats({
-            total: Number(dashJson.stats?.total || 0),
-            active: Number(dashJson.stats?.active || 0),
-            pending: Number(dashJson.stats?.pending || 0),
-            rejected: Number(dashJson.stats?.rejected || 0),
-            inactive: Number(dashJson.stats?.inactive || 0),
-            sold: Number(dashJson.stats?.sold || 0),
+            total: Number(dashboardResult.stats?.total || 0),
+            active: Number(dashboardResult.stats?.active || 0),
+            pending: Number(dashboardResult.stats?.pending || 0),
+            rejected: Number(dashboardResult.stats?.rejected || 0),
+            inactive: Number(dashboardResult.stats?.inactive || 0),
+            sold: Number(dashboardResult.stats?.sold || 0),
           });
-
-          setDealerCount(Array.isArray(dashJson.dealers) ? dashJson.dealers.length : 0);
-          setRecentCount(Array.isArray(dashJson.recent_listings) ? dashJson.recent_listings.length : 0);
+          setDealerCount(Array.isArray(dashboardResult.dealers) ? dashboardResult.dealers.length : 0);
         }
       } catch {
-        // اگر داشبورد خطا داد، خود صفحه حساب باز بماند.
+        // خطای خلاصه داشبورد نباید صفحه حساب را از دسترس خارج کند.
       }
     } catch {
-      setError("ارتباط با سرور برقرار نشد.");
-      setLoggedIn(false);
-      setUser(null);
+      setError("ارتباط با سرور برقرار نشد. نشست محلی حفظ شده و می‌توانید دوباره تلاش کنید.");
+
+      if (!cachedUser) {
+        setLoggedIn(false);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  function logout() {
-    localStorage.removeItem("chakod_session_token");
-    localStorage.removeItem("chakod_user");
-    window.location.href = "/";
+  async function logout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    const token = getToken();
+
+    try {
+      if (!(IS_LOCAL_DEV && token === LOCAL_DEV_SESSION_TOKEN)) {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({}),
+        });
+      }
+    } catch {
+      // خروج محلی حتی در زمان قطع API انجام می‌شود.
+    } finally {
+      clearLocalAuth();
+      window.dispatchEvent(new Event("chakod:auth-changed"));
+      window.location.assign("/");
+    }
   }
 
   useEffect(() => {
-    loadAccount();
+    const params = new URLSearchParams(window.location.search);
+    setForceProfileOpen(params.get("complete") === "1" || params.get("setup") === "business");
+    void loadAccount();
   }, []);
 
   const displayName =
-    user?.display_name ||
-    user?.full_name ||
-    user?.business_name ||
-    user?.mobile ||
-    "کاربر چاکود";
+    user?.display_name || user?.full_name || user?.business_name || user?.mobile || "کاربر چاکود";
+  const hasStartedActivity = stats.total > 0 || dealerCount > 0;
+  const showOnboarding = Boolean(user && (!user.profile_completed || !hasStartedActivity));
+  const isPartsStore = user?.account_type === "parts_store";
+  const isRepairShop = user?.account_type === "repair_shop";
+  const isCarService = user?.account_type === "car_service";
+  const isBusinessDirectoryAccount = isPartsStore || isRepairShop || isCarService;
 
   return (
-    <main className="accountPage" dir="rtl">
-      <section className="shell">
-        <header className="topbar">
-          <a href="/" className="brand">
-            <div className="logoMark">چ</div>
-            <div>
-              <strong>چاکود</strong>
-              <span>ناحیه کاربری و مدیریت</span>
-            </div>
-          </a>
-
-          <nav className="navLinks">
-            <a href="/">خانه</a>
-            <a href="/dashboard">داشبورد</a>
-            <a href="/submit">ثبت آگهی</a>
-            <a href="/dealers">نمایشگاه</a>
-          </nav>
-        </header>
-
+    <main className={styles.page} dir="rtl">
+      <div className={styles.shell}>
         {loading && (
-          <div className="centerCard">
-            <div className="loader" />
-            <h1>در حال آماده‌سازی ناحیه کاربری...</h1>
-            <p>اطلاعات حساب، آگهی‌ها و نمایشگاه‌ها در حال دریافت است.</p>
-          </div>
+          <section className={styles.stateCard}>
+            <span className={styles.loader} />
+            <h1>در حال آماده‌سازی حساب</h1>
+            <p>اطلاعات حساب و آگهی‌های شما در حال دریافت است.</p>
+          </section>
         )}
 
         {!loading && !loggedIn && (
-          <div className="centerCard">
-            <span className="miniLabel">ناحیه کاربری</span>
-            <h1>برای مدیریت حساب وارد شوید</h1>
+          <section className={styles.stateCard}>
+            <span className={styles.eyebrow}>ناحیه کاربری</span>
+            <h1>{hasLocalSession ? "بررسی نشست انجام نشد" : "برای مدیریت حساب وارد شوید"}</h1>
             <p>
-              برای مشاهده داشبورد، آگهی‌های من، نمایشگاه‌ها و تیم نمایشگاه ابتدا وارد حساب کاربری شوید.
+              {hasLocalSession
+                ? "توکن ورود روی دستگاه وجود دارد، اما پاسخ سرور دریافت نشد. دوباره بررسی کنید."
+                : "آگهی‌ها، نشان‌شده‌ها و مشخصات حساب بعد از ورود در دسترس قرار می‌گیرند."}
             </p>
-            <a className="primaryLink" href="/login">
-              ورود با شماره موبایل
-            </a>
-            {error && <div className="message error">{error}</div>}
-          </div>
+            {!hasLocalSession && (
+              <a className={styles.primaryButton} href="/login">ورود با شماره موبایل</a>
+            )}
+            {error && <div className={styles.errorMessage}>{error}</div>}
+            {(error || hasLocalSession) && (
+              <button className={styles.secondaryButton} type="button" onClick={() => void loadAccount()}>
+                بررسی دوباره
+              </button>
+            )}
+          </section>
         )}
 
         {!loading && loggedIn && user && (
           <>
-            <section className="hero">
-              <div>
-                <span className="miniLabel">مرکز مدیریت حساب</span>
-                <h1>سلام، {displayName} 👑</h1>
-                <p>
-                  از اینجا می‌توانید وارد داشبورد مدیریتی شوید، آگهی‌های خود را ببینید، نمایشگاه بسازید،
-                  اعضای تیم را مدیریت کنید و آگهی جدید ثبت کنید.
-                </p>
+            {error && <div className={styles.errorMessage}>{error}</div>}
+            <section className={styles.overview}>
+              <div className={styles.welcomeBlock}>
+                <Link className={styles.brandLink} href="/" aria-label="صفحه اصلی چاکود">
+                  <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+                </Link>
+                <h1>سلام، {displayName}</h1>
+                <p>پروفایل، آگهی‌ها و فعالیت‌های حرفه‌ای خود را یک‌جا مدیریت کنید.</p>
+                <div className={styles.welcomeBadges}>
+                  <span>{accountTypeTitle(user.account_type)}</span>
+                  <span className={user.profile_completed ? styles.successBadge : styles.warningBadge}>
+                    {user.profile_completed ? "پروفایل کامل" : "پروفایل ناقص"}
+                  </span>
+                  {user.account_type !== "personal" &&
+                    (user.business_location_label || user.business_city) && (
+                    <span>{user.business_location_label || user.business_city}</span>
+                  )}
+                </div>
               </div>
 
-              <div className="profileCard">
-                <div className="avatarBox">👑</div>
-                <strong>{displayName}</strong>
-                <span>{maskMobile(user.mobile)}</span>
-
-                <div className="profileRows">
+              <div className={styles.profileSummary}>
+                <div className={styles.avatar}>چ</div>
+                <div className={styles.profileIdentity}>
+                  <strong>{displayName}</strong>
+                  <span>{maskMobile(user.mobile)}</span>
+                </div>
+                <div className={styles.profileMeta}>
                   <div>
-                    <small>نوع حساب</small>
-                    <b>{accountTypeTitle(user.account_type)}</b>
+                    <small>موبایل</small>
+                    <b>{user.phone_verified || user.mobile_verified ? "تأیید شده" : "تأیید نشده"}</b>
                   </div>
                   <div>
-                    <small>وضعیت موبایل</small>
-                    <b>{user.mobile_verified === false ? "نیازمند تأیید" : "تأیید شده"}</b>
-                  </div>
-                  <div>
-                    <small>نمایشگاه‌ها</small>
-                    <b>{formatNumber(dealerCount)}</b>
+                    <small>آگهی‌ها</small>
+                    <b>{formatNumber(stats.total)}</b>
                   </div>
                 </div>
-
-                <button className="dangerBtn" onClick={logout}>
-                  خروج از حساب
+                <button
+                  className={styles.logoutButton}
+                  type="button"
+                  disabled={loggingOut}
+                  onClick={() => void logout()}
+                >
+                  {loggingOut ? "در حال خروج" : "خروج"}
                 </button>
               </div>
             </section>
 
-            <section className="mainActions">
-              <a href="/dashboard" className="actionCard primaryAction">
-                <span>📊</span>
-                <div>
-                  <strong>داشبورد مدیریتی</strong>
-                  <p>آمار، نمودارها، وضعیت آگهی‌ها و عملکرد نمایشگاه</p>
-                </div>
-              </a>
+            <ProfileEditor
+              user={user}
+              forceOpen={forceProfileOpen || user.profile_completed === false}
+              onSaved={(nextUser) => {
+                const normalizedUser = normalizeUser(nextUser);
+                setUser(normalizedUser);
+                setForceProfileOpen(false);
+              }}
+            />
 
-              <a href="/dashboard#recentListings" className="actionCard">
-                <span>📋</span>
-                <div>
-                  <strong>آگهی‌های من</strong>
-                  <p>مشاهده و مدیریت آگهی‌های شخصی و نمایشگاهی</p>
-                </div>
-              </a>
+            {user.profile_completed && user.account_type !== "personal" && user.account_type !== "business" && (
+              <ProfessionalProfileEditor
+                user={user}
+                onUserUpdated={(nextUser) => {
+                  setUser(normalizeUser({ ...user, ...nextUser }));
+                }}
+              />
+            )}
 
-              <a href="/submit" className="actionCard">
-                <span>＋</span>
-                <div>
-                  <strong>ثبت آگهی جدید</strong>
-                  <p>ثبت آگهی شخصی یا آگهی به نام نمایشگاه</p>
-                </div>
+            <section className={styles.actionGrid} aria-label="دسترسی‌های سریع">
+              <a className={`${styles.actionCard} ${styles.actionCardPrimary}`} href="/dashboard">
+                <IconFrame><DashboardIcon /></IconFrame>
+                <div><strong>داشبورد مدیریتی</strong><span>آمار و وضعیت حساب</span></div>
+                <span className={styles.cardArrow}><ArrowIcon /></span>
               </a>
-
-              <a href="/dealers" className="actionCard">
-                <span>🏢</span>
-                <div>
-                  <strong>نمایشگاه و تیم</strong>
-                  <p>افزودن نمایشگاه، دعوت کارمند و مدیریت نقش‌ها</p>
-                </div>
+              <a className={styles.actionCard} href="/dashboard/listings">
+                <IconFrame><ListingsIcon /></IconFrame>
+                <div><strong>آگهی‌های من</strong><span>مشاهده و ویرایش</span></div>
+                <span className={styles.cardArrow}><ArrowIcon /></span>
+              </a>
+              {isBusinessDirectoryAccount ? (
+                <a className={styles.actionCard} href="/account?setup=business#professional-profile">
+                  <IconFrame><AddIcon /></IconFrame>
+                  <div>
+                    <strong>مدیریت صفحه کسب‌وکار</strong>
+                    <span>آدرس، خدمات، تصاویر و ساعت کاری</span>
+                  </div>
+                  <span className={styles.cardArrow}><ArrowIcon /></span>
+                </a>
+              ) : (
+                <a className={styles.actionCard} href="/submit">
+                  <IconFrame><AddIcon /></IconFrame>
+                  <div><strong>ثبت آگهی</strong><span>خودرو جدید</span></div>
+                  <span className={styles.cardArrow}><ArrowIcon /></span>
+                </a>
+              )}
+              <a className={styles.actionCard} href="/account/saved">
+                <IconFrame><BookmarkIcon /></IconFrame>
+                <div><strong>نشان‌شده‌ها</strong><span>ذخیره‌ها و مقایسه</span></div>
+                <span className={styles.cardArrow}><ArrowIcon /></span>
               </a>
             </section>
 
-            <section className="statsGrid">
-              <div className="statCard main">
-                <span>کل آگهی‌ها</span>
-                <strong>{formatNumber(stats.total)}</strong>
-                <small>شخصی + نمایشگاهی</small>
-              </div>
-
-              <div className="statCard">
-                <span>فعال</span>
-                <strong>{formatNumber(stats.active)}</strong>
-                <small>منتشر شده</small>
-              </div>
-
-              <div className="statCard">
-                <span>در انتظار بررسی</span>
-                <strong>{formatNumber(stats.pending)}</strong>
-                <small>نیازمند تأیید چاکود</small>
-              </div>
-
-              <div className="statCard">
-                <span>فروخته‌شده</span>
-                <strong>{formatNumber(stats.sold)}</strong>
-                <small>آگهی‌های موفق</small>
-              </div>
-            </section>
-
-            <section className="managementGrid">
-              <div className="panel">
-                <div className="panelHead">
-                  <div>
-                    <span>مسیر پیشنهادی</span>
-                    <h2>از کجا مدیریت را شروع کنم؟</h2>
-                  </div>
+            {user.profile_completed && (
+              <section className={styles.growthCard} aria-label="رشد و دیده‌شدن بیشتر">
+                <div className={styles.growthCopy}>
+                  <span>رشد در چاکود</span>
+                  <h2>
+                    {user.account_type === "personal"
+                      ? "آگهی‌تان را بیشتر در معرض دید قرار دهید"
+                      : `مجموعه‌تان را در ${user.business_location_label || user.business_city || "محدوده فعالیت"} بیشتر دیده کنید`}
+                  </h2>
+                  <p>
+                    تبلیغ منطقه‌ای و جایگاه‌های ویژه، دقیقاً به کاربرانی نمایش داده می‌شوند که همان محدوده را دنبال می‌کنند.
+                  </p>
                 </div>
-
-                <div className="guideList">
-                  <div>
-                    <b>۱</b>
-                    <div>
-                      <strong>داشبورد را باز کن</strong>
-                      <span>برای دیدن آمار، نمودارها و آگهی‌های اخیر.</span>
-                    </div>
-                    <a href="/dashboard">رفتن</a>
-                  </div>
-
-                  <div>
-                    <b>۲</b>
-                    <div>
-                      <strong>نمایشگاه را مدیریت کن</strong>
-                      <span>اگر نمایشگاه داری، اعضای تیم و نقش‌ها را تنظیم کن.</span>
-                    </div>
-                    <a href="/dealers">رفتن</a>
-                  </div>
-
-                  <div>
-                    <b>۳</b>
-                    <div>
-                      <strong>آگهی جدید ثبت کن</strong>
-                      <span>انتخاب کن آگهی شخصی باشد یا به نام نمایشگاه.</span>
-                    </div>
-                    <a href="/submit">ثبت</a>
-                  </div>
+                <div className={styles.growthActions}>
+                  <a className={styles.growthPrimary} href="/account/ads">رزرو تبلیغ منطقه‌ای</a>
+                  {stats.total > 0 && !isBusinessDirectoryAccount && (
+                    <a className={styles.growthSecondary} href="/dashboard/listings">ویژه‌کردن آگهی</a>
+                  )}
                 </div>
-              </div>
+              </section>
+            )}
 
-              <div className="panel">
-                <div className="panelHead">
-                  <div>
-                    <span>خلاصه فعالیت</span>
-                    <h2>وضعیت فعلی حساب</h2>
+            {showOnboarding && (
+              <section className={styles.bottomGrid}>
+                <article className={styles.panel}>
+                  <header className={styles.panelHeader}>
+                    <div><span>شروع سریع</span><h2>قدم بعدی شما</h2></div>
+                    <p>این راهنما پس از تکمیل پروفایل و شروع فعالیت، خودکار از صفحه حذف می‌شود.</p>
+                  </header>
+                  <div className={styles.steps}>
+                    <a
+                      href="/account?complete=1"
+                      className={user.profile_completed ? styles.stepCompleted : ""}
+                    >
+                      <b>{user.profile_completed ? "✓" : "۱"}</b>
+                      <span>
+                        <strong>{user.profile_completed ? "پروفایل تکمیل شده" : "پروفایل را کامل کنید"}</strong>
+                        <small>{user.account_type === "personal" ? "نام و نوع حساب را ثبت کنید." : "نام، نوع فعالیت و محدوده اصلی را ثبت کنید."}</small>
+                      </span>
+                      <i><ArrowIcon /></i>
+                    </a>
+                    <a href="/dashboard/listings">
+                      <b>۲</b>
+                      <span>
+                        <strong>آگهی‌ها را مدیریت کنید</strong>
+                        <small>وضعیت انتشار، بررسی و نیاز به اصلاح را ببینید.</small>
+                      </span>
+                      <i><ArrowIcon /></i>
+                    </a>
+                    {isBusinessDirectoryAccount ? (
+                      <a href="/account?setup=business#professional-profile">
+                        <b>۳</b>
+                        <span>
+                          <strong>صفحه عمومی کسب‌وکار را تکمیل کنید</strong>
+                          <small>آدرس، زمینه فعالیت، تلفن، نقشه، ساعات کاری و تصاویر را ثبت کنید.</small>
+                        </span>
+                        <i><ArrowIcon /></i>
+                      </a>
+                    ) : (
+                      <a href="/submit">
+                        <b>۳</b>
+                        <span>
+                          <strong>آگهی جدید ثبت کنید</strong>
+                          <small>خودرو جدید خود را برای بررسی ارسال کنید.</small>
+                        </span>
+                        <i><ArrowIcon /></i>
+                      </a>
+                    )}
                   </div>
-                </div>
-
-                <div className="activityBox">
-                  <div>
-                    <span>آگهی‌های اخیر داشبورد</span>
-                    <strong>{formatNumber(recentCount)}</strong>
-                  </div>
-                  <div>
-                    <span>نمایشگاه‌های قابل مدیریت</span>
-                    <strong>{formatNumber(dealerCount)}</strong>
-                  </div>
-                  <div>
-                    <span>آگهی‌های نیازمند توجه</span>
-                    <strong>{formatNumber(stats.pending + stats.rejected + stats.inactive)}</strong>
-                  </div>
-                </div>
-              </div>
-            </section>
+                </article>
+              </section>
+            )}
           </>
         )}
-      </section>
+      </div>
 
-      <nav className="mobileBottomNav" aria-label="منوی موبایل حساب">
-        <a href="/dashboard">
-          <span>📊</span>
-          <b>داشبورد</b>
-        </a>
-        <a href="/submit">
-          <span>＋</span>
-          <b>ثبت آگهی</b>
-        </a>
-        <a href="/dealers">
-          <span>🏢</span>
-          <b>نمایشگاه</b>
-        </a>
-        <a href="/account">
-          <span>👤</span>
-          <b>حساب</b>
-        </a>
-      </nav>
-
-      <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body {
-          margin: 0;
-          background: #faf7ff;
-        }
-
-        .accountPage {
-          min-height: 100vh;
-          font-family: Tahoma, Arial, sans-serif;
-          color: #211335;
-          background:
-            radial-gradient(circle at 86% 8%, rgba(124, 58, 237, 0.18), transparent 34%),
-            radial-gradient(circle at 8% 46%, rgba(168, 85, 247, 0.12), transparent 30%),
-            linear-gradient(180deg, #ffffff 0%, #faf7ff 48%, #ffffff 100%);
-          padding: 24px;
-        }
-
-        .shell {
-          width: min(1180px, 100%);
-          margin: 0 auto;
-        }
-
-        .topbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          text-decoration: none;
-          color: #211335;
-        }
-
-        .logoMark {
-          width: 48px;
-          height: 48px;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          color: #fff;
-          display: grid;
-          place-items: center;
-          font-weight: 900;
-          box-shadow: 0 14px 30px rgba(109, 40, 217, 0.24);
-        }
-
-        .brand strong {
-          display: block;
-          font-size: 18px;
-        }
-
-        .brand span {
-          display: block;
-          margin-top: 3px;
-          color: #7b6a91;
-          font-size: 12px;
-        }
-
-        .navLinks {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-
-        .navLinks a {
-          color: #6d28d9;
-          background: rgba(255, 255, 255, 0.88);
-          border: 1px solid #eadcff;
-          border-radius: 999px;
-          padding: 10px 14px;
-          text-decoration: none;
-          font-size: 13px;
-          font-weight: bold;
-        }
-
-        .centerCard,
-        .hero,
-        .profileCard,
-        .actionCard,
-        .statCard,
-        .panel {
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #eadcff;
-          box-shadow: 0 24px 70px rgba(76, 29, 149, 0.10);
-          backdrop-filter: blur(12px);
-        }
-
-        .centerCard {
-          width: min(620px, 100%);
-          margin: 80px auto 0;
-          text-align: center;
-          border-radius: 34px;
-          padding: 34px;
-        }
-
-        .hero {
-          border-radius: 34px;
-          padding: 34px;
-          display: grid;
-          grid-template-columns: 1fr 330px;
-          gap: 24px;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .miniLabel {
-          display: inline-block;
-          color: #6d28d9;
-          background: #f4ecff;
-          border: 1px solid #e4d4ff;
-          border-radius: 999px;
-          padding: 7px 11px;
-          font-size: 12px;
-          font-weight: bold;
-          margin-bottom: 14px;
-        }
-
-        h1 {
-          margin: 0;
-          font-size: 34px;
-          line-height: 1.45;
-        }
-
-        h2 {
-          margin: 0;
-          font-size: 20px;
-          line-height: 1.7;
-        }
-
-        p {
-          color: #6d5b83;
-          line-height: 2.1;
-          margin: 12px 0 0;
-        }
-
-        .profileCard {
-          border-radius: 30px;
-          padding: 24px;
-          text-align: center;
-        }
-
-        .avatarBox {
-          width: 66px;
-          height: 66px;
-          margin: 0 auto 14px;
-          border-radius: 24px;
-          display: grid;
-          place-items: center;
-          font-size: 28px;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          color: #fff;
-        }
-
-        .profileCard strong {
-          display: block;
-          font-size: 20px;
-          margin-bottom: 8px;
-        }
-
-        .profileCard > span {
-          color: #7b6a91;
-          display: block;
-          margin-bottom: 18px;
-        }
-
-        .profileRows {
-          display: grid;
-          gap: 10px;
-          margin-bottom: 16px;
-        }
-
-        .profileRows div {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          border-bottom: 1px solid #f0e7ff;
-          padding-bottom: 10px;
-        }
-
-        .profileRows small {
-          color: #7b6a91;
-        }
-
-        .profileRows b {
-          color: #211335;
-        }
-
-        .mainActions {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
-        .actionCard {
-          border-radius: 26px;
-          padding: 18px;
-          text-decoration: none;
-          color: #211335;
-          display: flex;
-          gap: 12px;
-          align-items: flex-start;
-          transition: 0.2s ease;
-        }
-
-        .actionCard:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 26px 70px rgba(76, 29, 149, 0.14);
-        }
-
-        .actionCard > span {
-          width: 46px;
-          height: 46px;
-          border-radius: 18px;
-          display: grid;
-          place-items: center;
-          background: #f4ecff;
-          color: #6d28d9;
-          font-size: 22px;
-          flex: 0 0 auto;
-        }
-
-        .actionCard strong {
-          display: block;
-          font-size: 14px;
-          margin-bottom: 6px;
-        }
-
-        .actionCard p {
-          margin: 0;
-          color: #7b6a91;
-          font-size: 12px;
-          line-height: 1.9;
-        }
-
-        .primaryAction {
-          color: #fff;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          border-color: transparent;
-        }
-
-        .primaryAction > span {
-          color: #fff;
-          background: rgba(255, 255, 255, 0.18);
-        }
-
-        .primaryAction p {
-          color: rgba(255, 255, 255, 0.84);
-        }
-
-        .statsGrid {
-          display: grid;
-          grid-template-columns: 1.25fr repeat(3, 1fr);
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
-        .statCard {
-          border-radius: 26px;
-          padding: 22px;
-        }
-
-        .statCard.main {
-          color: #fff;
-          border-color: transparent;
-          background:
-            radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.25), transparent 34%),
-            linear-gradient(135deg, #3b0764, #7c3aed);
-        }
-
-        .statCard span {
-          display: block;
-          color: #7b6a91;
-          font-size: 12px;
-          margin-bottom: 10px;
-        }
-
-        .statCard.main span,
-        .statCard.main small {
-          color: rgba(255, 255, 255, 0.82);
-        }
-
-        .statCard strong {
-          display: block;
-          font-size: 32px;
-          margin-bottom: 8px;
-        }
-
-        .statCard small {
-          color: #7b6a91;
-          line-height: 1.8;
-        }
-
-        .managementGrid {
-          display: grid;
-          grid-template-columns: 1.2fr 0.8fr;
-          gap: 20px;
-          align-items: start;
-        }
-
-        .panel {
-          border-radius: 30px;
-          padding: 26px;
-        }
-
-        .panelHead {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 16px;
-          margin-bottom: 20px;
-        }
-
-        .panelHead span {
-          display: inline-block;
-          color: #6d28d9;
-          background: #f4ecff;
-          border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 11px;
-          font-weight: bold;
-          margin-bottom: 8px;
-        }
-
-        .guideList {
-          display: grid;
-          gap: 12px;
-        }
-
-        .guideList > div {
-          display: grid;
-          grid-template-columns: 40px 1fr auto;
-          gap: 12px;
-          align-items: center;
-          border: 1px solid #eadcff;
-          background: #fff;
-          border-radius: 22px;
-          padding: 14px;
-        }
-
-        .guideList b {
-          width: 40px;
-          height: 40px;
-          border-radius: 16px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          color: #fff;
-        }
-
-        .guideList strong {
-          display: block;
-          color: #211335;
-          margin-bottom: 5px;
-        }
-
-        .guideList span {
-          color: #7b6a91;
-          font-size: 12px;
-          line-height: 1.9;
-        }
-
-        .guideList a {
-          color: #6d28d9;
-          background: #f4ecff;
-          border: 1px solid #e4d4ff;
-          border-radius: 999px;
-          padding: 9px 12px;
-          text-decoration: none;
-          font-size: 12px;
-          font-weight: bold;
-        }
-
-        .activityBox {
-          display: grid;
-          gap: 12px;
-        }
-
-        .activityBox div {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          border: 1px solid #eadcff;
-          background: #fff;
-          border-radius: 20px;
-          padding: 15px;
-        }
-
-        .activityBox span {
-          color: #7b6a91;
-          font-size: 13px;
-        }
-
-        .activityBox strong {
-          color: #6d28d9;
-          font-size: 20px;
-        }
-
-        .primaryLink,
-        .dangerBtn {
-          width: 100%;
-          border: 0;
-          border-radius: 17px;
-          padding: 13px 16px;
-          font-weight: bold;
-          font-size: 14px;
-          cursor: pointer;
-          text-decoration: none;
-          display: inline-block;
-          text-align: center;
-          font-family: inherit;
-        }
-
-        .primaryLink {
-          color: #fff;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-        }
-
-        .dangerBtn {
-          color: #be123c;
-          background: #fff1f2;
-          border: 1px solid #fecdd3;
-        }
-
-        .message {
-          margin-top: 16px;
-          border-radius: 16px;
-          padding: 13px;
-          font-size: 13px;
-          line-height: 1.9;
-        }
-
-        .error {
-          background: #fff1f2;
-          color: #be123c;
-          border: 1px solid #fecdd3;
-        }
-
-        .loader {
-          width: 42px;
-          height: 42px;
-          border-radius: 999px;
-          border: 4px solid #eadcff;
-          border-top-color: #6d28d9;
-          margin: 0 auto 18px;
-          animation: spin 0.85s linear infinite;
-        }
-
-        .mobileBottomNav {
-          display: none;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @media (max-width: 1050px) {
-          .hero,
-          .managementGrid {
-            grid-template-columns: 1fr;
-          }
-
-          .mainActions,
-          .statsGrid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        @media (max-width: 760px) {
-          .accountPage {
-            padding: 12px;
-            padding-bottom: 94px;
-          }
-
-          .shell {
-            width: 100%;
-          }
-
-          .topbar {
-            position: sticky;
-            top: 8px;
-            z-index: 30;
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.86);
-            backdrop-filter: blur(14px);
-            border: 1px solid #eadcff;
-            border-radius: 22px;
-            padding: 10px;
-            margin-bottom: 14px;
-            box-shadow: 0 14px 40px rgba(76, 29, 149, 0.10);
-          }
-
-          .brand .logoMark {
-            width: 42px;
-            height: 42px;
-            border-radius: 16px;
-          }
-
-          .brand strong {
-            font-size: 16px;
-          }
-
-          .brand span {
-            font-size: 11px;
-          }
-
-          .navLinks {
-            width: 100%;
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            padding-bottom: 2px;
-            scrollbar-width: none;
-          }
-
-          .navLinks::-webkit-scrollbar {
-            display: none;
-          }
-
-          .navLinks a {
-            white-space: nowrap;
-            padding: 9px 12px;
-            font-size: 12px;
-            min-height: 38px;
-            display: inline-flex;
-            align-items: center;
-          }
-
-          .centerCard,
-          .hero,
-          .profileCard,
-          .panel,
-          .statCard,
-          .actionCard {
-            border-radius: 24px;
-            padding: 20px;
-          }
-
-          .centerCard {
-            margin: 44px auto 0;
-          }
-
-          h1 {
-            font-size: 27px;
-          }
-
-          h2 {
-            font-size: 17px;
-          }
-
-          p {
-            font-size: 13px;
-            line-height: 2;
-          }
-
-          .hero {
-            gap: 14px;
-            margin-bottom: 14px;
-          }
-
-          .mainActions {
-            display: flex;
-            overflow-x: auto;
-            gap: 10px;
-            padding: 2px 2px 8px;
-            margin-bottom: 14px;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-          }
-
-          .mainActions::-webkit-scrollbar {
-            display: none;
-          }
-
-          .actionCard {
-            min-width: 245px;
-            scroll-snap-align: start;
-          }
-
-          .statsGrid {
-            display: flex;
-            overflow-x: auto;
-            gap: 10px;
-            padding: 2px 2px 8px;
-            margin-bottom: 14px;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-          }
-
-          .statsGrid::-webkit-scrollbar {
-            display: none;
-          }
-
-          .statCard {
-            min-width: 210px;
-            scroll-snap-align: start;
-          }
-
-          .managementGrid {
-            gap: 14px;
-          }
-
-          .guideList > div {
-            grid-template-columns: 40px 1fr;
-          }
-
-          .guideList a {
-            grid-column: 1 / -1;
-            text-align: center;
-          }
-
-          .mobileBottomNav {
-            position: fixed;
-            right: 12px;
-            left: 12px;
-            bottom: 12px;
-            z-index: 80;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 8px;
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid #eadcff;
-            box-shadow: 0 18px 50px rgba(76, 29, 149, 0.18);
-            backdrop-filter: blur(16px);
-          }
-
-          .mobileBottomNav a {
-            text-decoration: none;
-            color: #6d28d9;
-            display: grid;
-            place-items: center;
-            gap: 3px;
-            border-radius: 18px;
-            padding: 8px 4px;
-            min-height: 54px;
-            background: #fbf8ff;
-            border: 1px solid #f0e7ff;
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          .mobileBottomNav span {
-            font-size: 18px;
-            line-height: 1;
-          }
-
-          .mobileBottomNav b {
-            font-size: 10px;
-            line-height: 1.5;
-          }
-
-          .mobileBottomNav a:nth-child(4) {
-            color: #fff;
-            background: linear-gradient(135deg, #6d28d9, #9333ea);
-            border-color: transparent;
-          }
-        }
-      `}</style>
+      <MobileBottomNav />
     </main>
   );
 }

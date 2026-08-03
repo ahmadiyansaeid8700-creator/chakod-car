@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const API_BASE = "https://api.chakod.com";
@@ -274,15 +275,12 @@ export default function AuthStatus() {
 
   if (!user) {
     return (
-      <a className="authStatus authStatusGuest" href="/login">
-        <div className="authAvatar" aria-hidden="true">
-          <UserAvatarIcon />
-        </div>
+      <Link className="authStatus authStatusGuest" href="/login">
         <div className="authStatusText">
-          <strong>ورود / ثبت‌نام</strong>
+          <strong>ورود</strong>
           <span>حساب چاکود</span>
         </div>
-      </a>
+      </Link>
     );
   }
 
@@ -328,23 +326,23 @@ export default function AuthStatus() {
             {roleTitle ? <span>{roleTitle}</span> : null}
           </div>
 
-          <a role="menuitem" href={accountHref} onClick={() => setMenuOpen(false)}>
+          <Link role="menuitem" href={accountHref} onClick={() => setMenuOpen(false)}>
             <span aria-hidden="true">⌂</span>
             {user.account_type === "dealer" || user.account_type === "business"
               ? "داشبورد نمایشگاه"
               : "حساب کاربری"}
-          </a>
+          </Link>
 
-          <a role="menuitem" href="/account/saved" onClick={() => setMenuOpen(false)}>
+          <Link role="menuitem" href="/account/saved" onClick={() => setMenuOpen(false)}>
             <span aria-hidden="true">♡</span>
             نشان‌شده‌ها
-          </a>
+          </Link>
 
           {hasAdminAccess ? (
-            <a role="menuitem" href="/admin" onClick={() => setMenuOpen(false)}>
+            <Link role="menuitem" href="/admin" onClick={() => setMenuOpen(false)}>
               <span aria-hidden="true">⚙</span>
               پنل مدیریت
-            </a>
+            </Link>
           ) : null}
 
           <button type="button" role="menuitem" onClick={() => void logout()}>

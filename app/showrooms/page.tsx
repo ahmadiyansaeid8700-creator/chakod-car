@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ShowroomCard, { type ShowroomCardData } from "../components/ShowroomCard";
+import ShowroomCard, {
+  type ShowroomCardData,
+  type ShowroomListingPreview,
+} from "../components/ShowroomCard";
 
 const API_URL = "https://api.chakod.com/api/listings.php?limit=100&sort=vip";
 
 type Listing = {
   id: number;
+  title: string;
   city: string;
   province: string;
   dealer_name: string | null;
@@ -44,8 +48,13 @@ function normalizeText(value: string) {
 
 function buildDealers(listings: Listing[]): DealerPreview[] {
   const map = new Map<string, DealerPreview>();
+  const ordered = [...listings].sort(
+    (a, b) =>
+      (new Date(b.created_at).getTime() || 0) -
+      (new Date(a.created_at).getTime() || 0),
+  );
 
-  for (const listing of listings) {
+  for (const listing of ordered) {
     const name = listing.dealer_name?.trim();
     if (!name) continue;
 
@@ -61,6 +70,11 @@ function buildDealers(listings: Listing[]): DealerPreview[] {
       listing.dealer_logo_url || listing.dealer_logo || listing.logo_url || null;
     const latestAt = new Date(listing.created_at).getTime() || 0;
     const current = map.get(key);
+    const preview: ShowroomListingPreview = {
+      id: listing.id,
+      title: listing.title || "آگهی خودرو",
+      image: listing.cover_image || null,
+    };
 
     if (current) {
       current.listingCount += 1;
@@ -69,6 +83,15 @@ function buildDealers(listings: Listing[]): DealerPreview[] {
       if (!current.logoUrl && logoUrl) current.logoUrl = logoUrl;
       if (!current.coverImage && listing.cover_image) {
         current.coverImage = listing.cover_image;
+      }
+      if (
+        listing.cover_image &&
+        (current.latestListings?.length || 0) < 3
+      ) {
+        current.latestListings = [
+          ...(current.latestListings || []),
+          preview,
+        ];
       }
       if ((!current.city || current.city === "شهر نامشخص") && listing.city) {
         current.city = listing.city;
@@ -89,6 +112,7 @@ function buildDealers(listings: Listing[]): DealerPreview[] {
       coverImage: listing.cover_image || null,
       verified,
       latestAt,
+      latestListings: listing.cover_image ? [preview] : [],
     });
   }
 

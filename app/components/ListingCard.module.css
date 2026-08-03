@@ -343,6 +343,117 @@
   font-size: 13px;
 }
 
+.cardActions {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 8px;
+}
+
+.viewQrAction,
+.shareAction {
+  min-width: 0;
+  min-height: 54px;
+  border: 1px solid color-mix(in srgb, var(--listing-accent) 22%, #e8dff0);
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--listing-accent-dark);
+  background: var(--listing-soft);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.viewQrAction {
+  padding: 5px 6px 5px 11px;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.viewQrCopy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.viewQrCopy strong {
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.viewQrCopy small {
+  overflow: hidden;
+  color: #807487;
+  font-size: 7px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qrThumb {
+  width: 42px;
+  height: 42px;
+  padding: 3px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(59, 23, 104, 0.12);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+
+.qrThumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.qrThumb i {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, currentColor 33%, transparent 33% 66%, currentColor 66%),
+    linear-gradient(currentColor 33%, transparent 33% 66%, currentColor 66%);
+  opacity: 0.16;
+}
+
+.shareAction {
+  padding: 5px;
+  border-color: #e7deeb;
+  flex-direction: column;
+  gap: 3px;
+  color: #5c4d65;
+  background: #fff;
+  cursor: pointer;
+}
+
+.shareAction svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shareAction span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 7px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewQrAction:hover,
+.shareAction:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--listing-accent) 38%, #ffffff);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--listing-accent) 10%, transparent);
+}
+
 @media (max-width: 640px) {
   .card {
     border-radius: 19px;
@@ -444,6 +555,10 @@
     padding-top: 8px;
   }
 
+  .grid.withActions .footer {
+    display: none;
+  }
+
   .grid .avatar,
   .grid .verified,
   .grid .viewLink {
@@ -455,6 +570,46 @@
   }
 
   .grid .sellerText small {
+    font-size: 6px;
+  }
+
+  .grid .cardActions {
+    margin-top: 7px;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 5px;
+  }
+
+  .grid .viewQrAction,
+  .grid .shareAction {
+    min-height: 45px;
+    border-radius: 10px;
+  }
+
+  .grid .viewQrAction {
+    padding: 4px 5px 4px 8px;
+  }
+
+  .grid .viewQrCopy strong {
+    font-size: 8px;
+  }
+
+  .grid .viewQrCopy small {
+    font-size: 6px;
+  }
+
+  .grid .qrThumb {
+    width: 35px;
+    height: 35px;
+    padding: 2px;
+    border-radius: 6px;
+  }
+
+  .grid .shareAction svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .grid .shareAction span {
     font-size: 6px;
   }
 }

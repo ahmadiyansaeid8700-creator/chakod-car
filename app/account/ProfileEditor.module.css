@@ -1,0 +1,203 @@
+.panel {
+  margin: 14px 0;
+  padding: 18px;
+  border: 1px solid rgba(86, 43, 128, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 14px 40px rgba(55, 26, 84, 0.07);
+}
+
+.incomplete {
+  border-color: rgba(214, 142, 21, 0.28);
+  background: linear-gradient(135deg, #fffdf4, #fff);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 5px;
+  color: #6d28d9;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.summary h2 {
+  margin: 0;
+  color: #251735;
+  font-size: 18px;
+}
+
+.summary p {
+  margin: 5px 0 0;
+  color: #7b6d86;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.summaryActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.completeBadge,
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 29px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.completeBadge { color: #08795b; background: #eafaf3; border: 1px solid #b7ecd9; }
+.pendingBadge { color: #946200; background: #fff7df; border: 1px solid #f4d888; }
+
+.toggleButton,
+.formActions button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.toggleButton { color: #fff; background: linear-gradient(135deg, #6520c4, #8e2be0); box-shadow: 0 8px 18px rgba(104, 40, 187, 0.18); }
+
+.form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee8f4;
+}
+
+.field { display: grid; gap: 7px; color: #382747; font-size: 12px; font-weight: 800; }
+.field input { width: 100%; min-height: 43px; padding: 0 13px; border: 1px solid #e1d8e9; border-radius: 12px; color: #251735; background: #fff; font: inherit; font-size: 12px; outline: none; transition: border-color .16s ease, box-shadow .16s ease; }
+.field input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.1); }
+.field small { color: #80718c; font-size: 9.5px; font-weight: 500; line-height: 1.7; }
+
+.accountTypes { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
+.accountTypes legend { grid-column: 1 / -1; margin-bottom: 1px; color: #382747; font-size: 12px; font-weight: 800; }
+.accountTypes > button { position: relative; width: 100%; display: grid; gap: 4px; min-height: 78px; padding: 11px; border: 1px solid #e8e0ed; border-radius: 13px; text-align: right; font: inherit; background: #fff; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
+.accountTypes > button:hover { transform: translateY(-1px); border-color: #ccb9e4; }
+.accountTypes > button strong { color: #2f1d43; font-size: 12px; }
+.accountTypes > button span { color: #82738e; font-size: 9px; line-height: 1.55; }
+.accountTypes .selectedType { border-color: #8b5cf6; background: #faf7ff; box-shadow: 0 0 0 2px rgba(139,92,246,.08); }
+
+.businessFields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.formActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.formActions button[type="submit"] { color: #fff; background: linear-gradient(135deg, #6520c4, #8e2be0); }
+.formActions button:disabled { cursor: wait; opacity: .65; }
+.formActions .cancelButton { color: #5f4a73; background: #f3eef8; }
+
+.error,
+.success { border-radius: 11px; padding: 10px 12px; font-size: 10px; line-height: 1.7; }
+.error { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; }
+.success { margin-top: 10px; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; }
+.legacyNotice { color: #b45309 !important; font-weight: 700 !important; }
+
+@media (max-width: 900px) {
+  .accountTypes { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .businessFields { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .panel { margin: 10px 0; padding: 13px; border-radius: 17px; }
+  .summary { align-items: flex-start; gap: 10px; }
+  .summary h2 { font-size: 14px; }
+  .summary p { font-size: 9px; }
+  .summaryActions { max-width: 150px; gap: 5px; }
+  .completeBadge,
+  .pendingBadge { min-height: 25px; padding: 0 7px; font-size: 8.5px; }
+  .toggleButton { min-height: 32px; padding: 0 9px; font-size: 9px; }
+  .form { gap: 11px; margin-top: 12px; padding-top: 12px; }
+  .accountTypes { gap: 6px; }
+  .accountTypes > button { min-height: 66px; padding: 8px; border-radius: 11px; }
+  .accountTypes > button strong { font-size: 10px; }
+  .accountTypes > button span { font-size: 7.8px; }
+  .field input { min-height: 40px; }
+  .formActions button { flex: 1; min-height: 36px; }
+}
+
+@media (max-width: 390px) {
+  .summary { display: grid; }
+  .summaryActions { max-width: none; justify-content: flex-start; }
+}
+
+.locationField {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #382747;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.locationField :global(.chakodLocationSelector) {
+  width: 100%;
+  min-width: 0;
+}
+
+.locationField :global(.chakodLocationTrigger) {
+  width: 100%;
+  max-width: none;
+  min-height: 46px;
+  justify-content: flex-start;
+  border-color: #e1d8e9;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.locationField :global(.chakodLocationTriggerCopy) {
+  flex: 1;
+}
+
+.locationField small {
+  color: #80718c;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+.professionalNote {
+  display: grid;
+  gap: 4px;
+  padding: 11px 13px;
+  border: 1px solid #e8ddf4;
+  border-radius: 13px;
+  color: #4e3267;
+  background: linear-gradient(135deg, #faf7ff, #fff);
+}
+
+.professionalNote strong { font-size: 11px; }
+.professionalNote span { color: #81708d; font-size: 9.5px; line-height: 1.75; }
+
+@media (max-width: 768px) {
+  .locationField :global(.chakodLocationTrigger) {
+    width: 100%;
+    max-width: none;
+    min-height: 42px;
+  }
+  .professionalNote { padding: 9px 10px; }
+}

@@ -1,43 +1,55 @@
 .card {
+  width: 100%;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid rgba(109, 40, 217, 0.12);
+  height: 100%;
+  overflow: visible;
+  border: 1px solid #e9e5ee;
   border-radius: 26px;
-  color: #1b1024;
-  background: rgba(255, 255, 255, 0.98);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  color: #1c1722;
+  background: #fff;
   box-shadow:
-    0 24px 70px rgba(48, 25, 70, 0.10),
-    0 2px 10px rgba(48, 25, 70, 0.04);
+    0 18px 48px rgba(37, 24, 51, 0.075),
+    0 2px 8px rgba(37, 24, 51, 0.035);
+  scroll-snap-align: start;
   transition:
-    transform 220ms ease,
-    box-shadow 220ms ease,
-    border-color 220ms ease;
+    transform 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(109, 40, 217, 0.24);
+  transform: translateY(-4px);
+  border-color: rgba(109, 40, 217, 0.22);
   box-shadow:
-    0 32px 86px rgba(48, 25, 70, 0.16),
-    0 4px 14px rgba(48, 25, 70, 0.06);
+    0 28px 62px rgba(41, 24, 59, 0.13),
+    0 4px 12px rgba(41, 24, 59, 0.045);
 }
 
 .cover {
   position: relative;
-  height: 184px;
-  overflow: hidden;
-  display: block;
-  background: #f6f2fc;
+  min-width: 0;
+  aspect-ratio: 1.74 / 1;
+  border-radius: 25px 25px 0 0;
 }
 
-.cover::after {
+.coverLink {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  display: block;
+  background: #f0edf3;
+}
+
+.coverLink::after {
+  position: absolute;
+  inset: 0;
   content: "";
   background:
-    linear-gradient(180deg, rgba(15, 8, 25, 0.03) 25%, rgba(20, 12, 31, 0.68) 100%),
-    linear-gradient(90deg, rgba(91, 33, 182, 0.16), transparent 48%);
+    linear-gradient(180deg, rgba(18, 12, 25, 0.13), transparent 36%),
+    linear-gradient(0deg, rgba(18, 12, 25, 0.12), transparent 38%);
   pointer-events: none;
 }
 
@@ -46,11 +58,11 @@
   height: 100%;
   display: block;
   object-fit: cover;
-  transition: transform 420ms ease;
+  transition: transform 380ms ease;
 }
 
 .card:hover .coverImage {
-  transform: scale(1.045);
+  transform: scale(1.035);
 }
 
 .coverPlaceholder {
@@ -60,113 +72,177 @@
   overflow: hidden;
   display: grid;
   place-items: center;
+  color: #7040c8;
   background:
-    radial-gradient(circle at 18% 18%, rgba(124, 58, 237, 0.24), transparent 8.5rem),
-    radial-gradient(circle at 84% 88%, rgba(14, 165, 233, 0.20), transparent 10rem),
-    linear-gradient(145deg, #faf7ff 0%, #f2f7ff 55%, #f8f4ff 100%);
+    radial-gradient(circle at 18% 22%, rgba(154, 112, 232, 0.28), transparent 8.5rem),
+    radial-gradient(circle at 84% 82%, rgba(69, 118, 236, 0.2), transparent 9.5rem),
+    linear-gradient(145deg, #faf7ff, #eff3ff 58%, #f6f1ff);
 }
 
-.placeholderGlow {
+.coverPlaceholder > span {
   position: absolute;
-  width: 180px;
-  height: 180px;
+  width: 48%;
+  aspect-ratio: 1;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  filter: blur(1px);
+  background: rgba(255, 255, 255, 0.54);
+  filter: blur(2px);
 }
 
-.coverPlaceholder svg {
+.coverPlaceholder > svg {
   position: relative;
   z-index: 1;
-  width: 148px;
+  width: 37%;
+  height: auto;
   fill: none;
-  stroke: #7c3aed;
-  stroke-width: 2.8;
+  stroke: currentColor;
+  stroke-width: 1.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.68;
-  filter: drop-shadow(0 12px 18px rgba(91, 33, 182, 0.13));
+  opacity: 0.72;
+  filter: drop-shadow(0 12px 18px rgba(78, 41, 129, 0.13));
 }
 
-.coverEyebrow {
+.statusBadge {
   position: absolute;
+  z-index: 4;
+  top: 16px;
+  right: 16px;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  color: #fff;
+  box-shadow: 0 9px 24px rgba(29, 17, 42, 0.16);
+  backdrop-filter: blur(10px);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.featuredBadge {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+}
+
+.activeBadge {
+  background: linear-gradient(135deg, #10b981, #07845f);
+}
+
+.shareAction {
+  position: absolute;
+  z-index: 6;
   top: 14px;
   left: 14px;
-  z-index: 3;
-  min-height: 28px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  color: #fff;
-  background: rgba(30, 20, 42, 0.38);
-  backdrop-filter: blur(12px);
-  font-size: 9px;
-  font-weight: 900;
 }
 
-.status {
-  position: absolute;
-  right: 14px;
-  bottom: 13px;
-  z-index: 3;
-  min-height: 31px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.52);
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #fff;
-  backdrop-filter: blur(12px);
-  font-size: 9px;
-  font-weight: 900;
-  box-shadow: 0 8px 24px rgba(17, 10, 27, 0.15);
+.shareAction :global(.dealerShareActions) {
+  position: relative;
 }
 
-.status i {
-  width: 7px;
-  height: 7px;
+.shareAction :global(.dealerShareTrigger) {
+  width: 43px;
+  min-width: 43px;
+  height: 43px;
+  min-height: 43px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.14);
+  display: grid;
+  place-items: center;
+  color: #6d28d9;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 25px rgba(31, 19, 44, 0.16);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    transform 170ms ease,
+    background-color 170ms ease;
 }
 
-.verified {
-  background: rgba(4, 120, 87, 0.82);
+.shareAction :global(.dealerShareTrigger:hover) {
+  transform: scale(1.04);
+  background: #fff;
 }
 
-.active {
-  background: rgba(36, 22, 50, 0.72);
+.shareAction :global(.dealerShareTrigger svg) {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: currentColor;
+}
+
+.shareAction :global(.dealerShareTrigger span) {
+  display: none;
+}
+
+.shareAction :global(.dealerShareMenu) {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 142px;
+  padding: 7px;
+  border: 1px solid #e8e0ee;
+  border-radius: 14px;
+  display: grid;
+  gap: 5px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(40, 21, 55, 0.18);
+}
+
+.shareAction :global(.dealerShareMenu a),
+.shareAction :global(.dealerShareMenu button) {
+  min-height: 35px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  color: #44364d;
+  background: #f8f5fa;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.shareAction :global(.dealerShareMenu a:hover),
+.shareAction :global(.dealerShareMenu button:hover) {
+  color: #5b21b6;
+  background: #f1e9ff;
 }
 
 .body {
-  padding: 18px;
+  min-width: 0;
+  padding: 0 20px 20px;
+  display: grid;
+  grid-template-rows: auto auto auto auto 1fr;
 }
 
-.identity {
-  min-width: 0;
+.logoWrap {
+  position: relative;
+  z-index: 5;
+  min-height: 47px;
+  margin-top: -47px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: center;
 }
 
 .logo {
-  width: 54px;
-  height: 54px;
+  width: 94px;
+  height: 94px;
   flex: 0 0 auto;
   overflow: hidden;
-  border: 3px solid #fff;
-  border-radius: 18px;
+  border: 5px solid #fff;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(145deg, #6d28d9 0%, #4f46e5 54%, #2563eb 100%);
+  background: linear-gradient(145deg, #7c3aed, #4f46e5 58%, #2563eb);
   box-shadow:
-    0 12px 28px rgba(79, 70, 229, 0.24),
-    0 0 0 1px rgba(109, 40, 217, 0.12);
-  font-size: 20px;
+    0 13px 30px rgba(49, 32, 67, 0.17),
+    0 0 0 1px rgba(109, 40, 217, 0.08);
+  font-size: 31px;
   font-weight: 900;
 }
 
@@ -178,131 +254,217 @@
   background: #fff;
 }
 
-.nameBlock {
+.heading {
   min-width: 0;
-  flex: 1;
+  margin-top: 12px;
+  text-align: center;
 }
 
-.nameBlock a,
-.nameBlock span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.nameBlock a {
-  display: block;
-  color: #191020;
-  font-size: 15px;
-  font-weight: 900;
-  line-height: 1.45;
-}
-
-.nameBlock span {
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #786f82;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.nameBlock span svg {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
-  fill: none;
-  stroke: #8b5cf6;
-  stroke-width: 1.8;
-}
-
-.description {
-  min-height: 42px;
-  margin: 14px 0 0;
-  color: #6c6175;
-  font-size: 10px;
-  line-height: 2;
-}
-
-.meta {
-  margin-top: 15px;
-  padding: 7px;
-  border: 1px solid #eee7f6;
-  border-radius: 16px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-  background: #fbf9fe;
-}
-
-.meta > span {
-  min-height: 40px;
-  padding: 7px 9px;
-  border-radius: 11px;
+.titleRow {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  color: #655a70;
-  text-align: center;
-  font-size: 9px;
-  font-weight: 800;
+  gap: 7px;
 }
 
-.meta > span:first-child {
-  color: #5b21b6;
-  background: #f5efff;
+.titleRow > a {
+  min-width: 0;
+  overflow: hidden;
+  color: #18121f;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verifiedMark {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #6d28d9;
+}
+
+.verifiedMark svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  stroke: #fff;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.heading p {
+  margin: 2px 0 0;
+  color: #81798b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.meta {
+  min-width: 0;
+  min-height: 48px;
+  margin-top: 18px;
+  padding: 0 6px;
+  border-top: 1px solid #f0edf3;
+  border-bottom: 1px solid #f0edf3;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) 1px minmax(0, 0.85fr);
+  align-items: center;
+  gap: 11px;
+  color: #625a6b;
+}
+
+.meta > span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.meta b {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta > i {
+  width: 1px;
+  height: 21px;
+  background: #e5e0e9;
 }
 
 .meta svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   flex: 0 0 auto;
   fill: none;
-  stroke: currentColor;
+  stroke: #73697d;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.meta b {
-  color: inherit;
-  font-size: 11px;
+.latestGrid {
+  min-width: 0;
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
 }
 
-.actions {
-  position: relative;
-  margin-top: 14px;
+.latestListing,
+.emptyListing {
+  min-width: 0;
+  aspect-ratio: 1.16 / 1;
+  overflow: hidden;
+  border: 1px solid #e8e4ec;
+  border-radius: 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 46px;
-  gap: 9px;
+  place-items: center;
+  background: #f5f3f7;
+}
+
+.latestListing {
+  position: relative;
+}
+
+.latestListing::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-radius: inherit;
+  content: "";
+  transition: border-color 170ms ease;
+}
+
+.latestListing:hover::after {
+  border-color: rgba(124, 58, 237, 0.42);
+}
+
+.latestListing img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 220ms ease;
+}
+
+.latestListing:hover img {
+  transform: scale(1.055);
+}
+
+.listingPlaceholder,
+.emptyListing {
+  color: #a18cad;
+  background:
+    radial-gradient(circle at 75% 24%, rgba(124, 58, 237, 0.11), transparent 46%),
+    #f7f5f8;
+}
+
+.listingPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.listingPlaceholder svg,
+.emptyListing svg {
+  width: 43%;
+  height: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.62;
+}
+
+.emptyListing {
+  opacity: 0.52;
 }
 
 .primaryAction {
-  min-height: 46px;
-  padding: 0 16px;
+  align-self: end;
+  min-height: 51px;
+  margin-top: 16px;
+  padding: 0 18px;
+  border: 1.5px solid #7c3aed;
   border-radius: 14px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  color: #fff !important;
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 48%, #4f46e5 100%);
-  box-shadow: 0 13px 28px rgba(91, 33, 182, 0.23);
-  font-size: 10px;
+  gap: 10px;
+  color: #6d28d9 !important;
+  background: #fff;
+  font-size: 12px;
   font-weight: 900;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 170ms ease,
+    color 170ms ease,
+    background 170ms ease,
+    box-shadow 170ms ease;
 }
 
 .primaryAction:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 34px rgba(91, 33, 182, 0.29);
+  color: #fff !important;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  box-shadow: 0 13px 27px rgba(91, 33, 182, 0.22);
 }
 
 .primaryAction svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -310,113 +472,119 @@
   stroke-linejoin: round;
 }
 
-.actions :global(.dealerShareActions) {
-  position: relative;
-  width: 46px;
-  height: 46px;
-}
-
-.actions :global(.dealerShareTrigger) {
-  width: 46px;
-  min-width: 46px;
-  height: 46px;
-  min-height: 46px;
-  padding: 0;
-  border: 1px solid #dfd3ee;
-  border-radius: 14px;
-  display: inline-grid;
-  place-items: center;
-  color: #6d28d9;
-  background: #fff;
-  box-shadow: 0 9px 22px rgba(54, 34, 78, 0.08);
-  cursor: pointer;
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
-}
-
-.actions :global(.dealerShareTrigger:hover) {
-  transform: translateY(-1px);
-  border-color: #cdb8e8;
-  background: #f8f4ff;
-}
-
-.actions :global(.dealerShareTrigger svg) {
-  width: 19px;
-  height: 19px;
-  display: block;
-  fill: currentColor;
-}
-
-.actions :global(.dealerShareTrigger span) {
-  display: none;
-}
-
-.actions :global(.dealerShareMenu) {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 9px);
-  z-index: 40;
-  width: 138px;
-  padding: 7px;
-  border: 1px solid #e5daef;
-  border-radius: 14px;
-  display: grid;
-  gap: 5px;
-  background: #fff;
-  box-shadow: 0 18px 44px rgba(42, 21, 58, 0.18);
-}
-
-.actions :global(.dealerShareMenu a),
-.actions :global(.dealerShareMenu button) {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  color: #44354e;
-  background: #f8f4fb;
-  font-family: inherit;
-  font-size: 9px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.actions :global(.dealerShareMenu a:hover),
-.actions :global(.dealerShareMenu button:hover) {
-  color: #5b21b6;
-  background: #f1e8ff;
-}
-
+.coverLink:focus-visible,
+.logo:focus-visible,
+.titleRow > a:focus-visible,
+.latestListing:focus-visible,
 .primaryAction:focus-visible,
-.actions :global(.dealerShareTrigger:focus-visible) {
-  outline: 3px solid rgba(109, 40, 217, 0.22);
+.shareAction :global(.dealerShareTrigger:focus-visible) {
+  outline: 3px solid rgba(109, 40, 217, 0.25);
   outline-offset: 3px;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 700px) {
   .card {
     border-radius: 23px;
   }
 
   .cover {
-    height: 166px;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .statusBadge {
+    top: 12px;
+    right: 12px;
+    min-height: 31px;
+    padding: 0 11px;
+    border-radius: 9px;
+    font-size: 9px;
+  }
+
+  .shareAction {
+    top: 11px;
+    left: 11px;
+  }
+
+  .shareAction :global(.dealerShareTrigger) {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
   }
 
   .body {
-    padding: 15px;
+    padding: 0 15px 16px;
+  }
+
+  .logoWrap {
+    min-height: 41px;
+    margin-top: -41px;
   }
 
   .logo {
-    width: 50px;
-    height: 50px;
-    border-radius: 17px;
+    width: 82px;
+    height: 82px;
+    border-width: 4px;
+    font-size: 27px;
   }
 
-  .nameBlock a {
-    font-size: 14px;
+  .heading {
+    margin-top: 10px;
   }
 
-  .description {
-    min-height: auto;
+  .titleRow > a {
+    font-size: 17px;
+  }
+
+  .meta {
+    min-height: 45px;
+    margin-top: 14px;
+    gap: 7px;
+  }
+
+  .meta b {
+    font-size: 8px;
+  }
+
+  .latestGrid {
+    margin-top: 13px;
+    gap: 7px;
+  }
+
+  .latestListing,
+  .emptyListing {
+    border-radius: 10px;
+  }
+
+  .primaryAction {
+    min-height: 48px;
+    margin-top: 13px;
+    border-radius: 13px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .meta {
+    padding-inline: 2px;
+  }
+
+  .meta svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .latestGrid {
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .coverImage,
+  .latestListing img,
+  .primaryAction,
+  .shareAction :global(.dealerShareTrigger) {
+    transition: none;
   }
 }

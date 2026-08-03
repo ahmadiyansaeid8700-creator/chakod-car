@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CatalogListingsClient from "../../components/CatalogListingsClient";
+import MobileBottomNav from "../../components/MobileBottomNav";
 import type {
   CatalogFilters,
   CatalogResponse,
@@ -166,10 +167,14 @@ function buildApiUrl(segment: CatalogSegment, filters: CatalogFilters) {
 }
 
 async function fetchCatalog(apiUrl: string): Promise<CatalogResponse | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4200);
+
   try {
     const response = await fetch(apiUrl, {
       cache: "no-store",
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
 
     if (!response.ok) return null;
@@ -179,6 +184,8 @@ async function fetchCatalog(apiUrl: string): Promise<CatalogResponse | null> {
     return payload;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -213,6 +220,7 @@ export default async function SegmentCatalogPage({
 
   const filters = readFilters((await searchParams) || {});
   const apiUrl = buildApiUrl(segment, filters);
+  const clientApiUrl = `/api/catalog?${new URL(apiUrl).searchParams.toString()}`;
   const initialResponse = await fetchCatalog(apiUrl);
   const totalText = initialResponse
     ? new Intl.NumberFormat("fa-IR").format(initialResponse.total)
@@ -274,13 +282,15 @@ export default async function SegmentCatalogPage({
 
       <section className={styles.browser} aria-label={config.title}>
         <CatalogListingsClient
-          apiUrl={apiUrl}
+          key={apiUrl}
+          clientApiUrl={clientApiUrl}
           segment={segment}
           badge={config.badge}
           filters={filters}
           initialResponse={initialResponse}
         />
       </section>
+      <MobileBottomNav />
     </main>
   );
 }

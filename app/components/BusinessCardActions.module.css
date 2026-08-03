@@ -1,0 +1,225 @@
+.actions {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.viewQrBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  min-width: 0;
+  min-height: 48px;
+  overflow: hidden;
+  border: 1px solid #ded5e8;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(37, 23, 50, 0.07);
+}
+
+.viewButton {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 0 13px;
+  background: linear-gradient(135deg, #6d28ff, #4d0fd2);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.viewButton svg,
+.shareButton svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.qrButton,
+.shareButton {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.qrButton {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-right: 1px solid #ded5e8;
+  background: #ffffff;
+}
+
+.qrButton img {
+  width: 40px;
+  height: 40px;
+}
+
+.qrPlaceholder {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #2b1e36;
+  background:
+    linear-gradient(90deg, #2b1e36 25%, transparent 25% 50%, #2b1e36 50% 75%, transparent 75%),
+    linear-gradient(#2b1e36 25%, transparent 25% 50%, #2b1e36 50% 75%, transparent 75%);
+  background-size: 10px 10px;
+}
+
+.shareButton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #ded5e8;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #5b4968;
+  box-shadow: 0 8px 20px rgba(37, 23, 50, 0.07);
+}
+
+.shareStatus {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  color: #6d28ff;
+  font-size: 7px;
+  font-weight: 900;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.viewButton,
+.qrButton,
+.shareButton {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.viewButton:hover,
+.qrButton:hover,
+.shareButton:hover {
+  transform: translateY(-1px);
+}
+
+.shareButton:hover {
+  border-color: #bda9d2;
+  box-shadow: 0 11px 24px rgba(70, 38, 98, 0.12);
+}
+
+.actions :is(a, button):focus-visible {
+  outline: 3px solid rgba(109, 40, 255, 0.28);
+  outline-offset: 2px;
+}
+
+.modalLayer {
+  position: fixed;
+  z-index: 2200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(15, 9, 21, 0.52);
+  backdrop-filter: blur(4px);
+  cursor: default;
+}
+
+.qrDialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  width: min(350px, 100%);
+  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 25px;
+  background: #ffffff;
+  color: #25192e;
+  box-shadow: 0 30px 90px rgba(20, 11, 30, 0.34);
+  text-align: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #e8e0ed;
+  border-radius: 50%;
+  background: #faf8fc;
+  color: #62546b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qrDialog > span {
+  color: #6d28ff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.qrDialog > strong {
+  max-width: 100%;
+  margin-top: 7px;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qrDialog > img,
+.dialogLoading {
+  width: 220px;
+  height: 220px;
+  margin-top: 18px;
+  border: 1px solid #eee8f2;
+  border-radius: 18px;
+}
+
+.dialogLoading {
+  display: grid;
+  place-items: center;
+  background: #faf9fb;
+  color: #83758d;
+  font-size: 10px;
+}
+
+.qrDialog p {
+  margin: 16px 0 0;
+  color: #776b80;
+  font-size: 10px;
+  line-height: 1.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewButton,
+  .qrButton,
+  .shareButton {
+    transition: none;
+  }
+}

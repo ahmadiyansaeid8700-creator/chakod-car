@@ -282,11 +282,8 @@ export default function HomeStories() {
     else showNext();
   }
 
-  // در صفحه عمومی، استوری فقط وقتی محتوای واقعی دارد نمایش داده می‌شود.
-  // پیام یا کادر خالی باعث شلوغی و فاصلهٔ اضافی در صفحه اصلی نمی‌شود.
-  if (!loading && stories.length === 0) {
-    return null;
-  }
+  // ردیف استوری همیشه در صفحهٔ اصلی باقی می‌ماند.
+  // اگر استوری فعالی وجود نداشته باشد، یک ورودی فشرده برای مدیریت استوری نمایش داده می‌شود.
 
   return (
     <section
@@ -295,12 +292,7 @@ export default function HomeStories() {
       aria-label="استوری‌های آگهی چاکود"
     >
       <div className="storyHeader">
-        <div>
-          <span>استوری‌های تأییدشده</span>
-          <h2>ویژه‌های {location.label}</h2>
-        </div>
-
-        <a href="/dashboard/listings">مدیریت استوری من</a>
+        <h2>استوری‌ها</h2>
       </div>
 
       {loading ? (
@@ -312,7 +304,7 @@ export default function HomeStories() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : stories.length > 0 ? (
         <div className="storyScroller">
           {stories.map((item, index) => {
             const imageUrl = getStoryImage(item);
@@ -352,6 +344,21 @@ export default function HomeStories() {
               </button>
             );
           })}
+        </div>
+      ) : (
+        <div className="storyScroller storyScrollerFallback">
+          <a
+            className="storyItem storyFallbackItem"
+            href="/dashboard/listings"
+            aria-label="مدیریت و ثبت استوری من"
+          >
+            <span className="storyRing">
+              <span className="storyAvatar storyFallbackAvatar">
+                <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
+              </span>
+            </span>
+            <strong>استوری شما</strong>
+          </a>
         </div>
       )}
 
@@ -950,64 +957,32 @@ export default function HomeStories() {
         }
 
         @media (max-width: 640px) {
-          .homeStories {
-            padding: 15px 12px 8px;
-            border: 1px solid rgba(231, 225, 239, 0.9);
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 14px 36px rgba(42, 26, 68, 0.06);
-          }
-
-          .storyHeader {
-            margin-bottom: 9px;
-          }
-
-          .storyHeader > div > span {
-            font-size: 8px;
-            letter-spacing: 0.4px;
-          }
-
           .storyHeader h2 {
-            margin-top: 4px;
-            font-size: 15px;
-            line-height: 1.5;
+            font-size: 14px;
           }
 
           .storyHeader > a {
             min-height: 30px;
-            padding: 0 7px;
-            border: 0;
-            color: #6d28d9;
-            background: transparent;
-            font-size: 8px;
+            padding: 0 9px;
+            font-size: 7px;
           }
 
           .storyScroller {
-            width: calc(100% + 12px);
-            margin-left: -12px;
-            gap: 10px;
-            padding: 3px 0 10px 12px;
+            width: calc(100% + 10px);
+            margin-left: -10px;
+            padding-left: 10px;
           }
 
           .storyItem,
           .storySkeleton {
-            min-width: 74px;
-            max-width: 74px;
+            min-width: 78px;
+            max-width: 78px;
           }
 
           .storyRing,
           .storySkeleton div {
-            width: 62px;
-            height: 62px;
-          }
-
-          .storyRing {
-            padding: 2px;
-            box-shadow: 0 8px 18px rgba(109, 40, 217, 0.14);
-          }
-
-          .storyAvatar {
-            border-width: 2px;
+            width: 65px;
+            height: 65px;
           }
 
           .storyItem > strong {
@@ -1030,6 +1005,244 @@ export default function HomeStories() {
             bottom: max(20px, env(safe-area-inset-bottom));
           }
         }
+
+        /* v16.3: compact public stories directly below the sticky search */
+        .homeStories {
+          display: grid;
+          grid-template-columns: 68px minmax(0, 1fr);
+          align-items: center;
+          gap: 9px;
+          min-height: 74px;
+        }
+
+        .storyHeader {
+          margin: 0;
+          display: block;
+        }
+
+        .storyHeader h2 {
+          margin: 0;
+          color: #2d2038;
+          font-size: 11px;
+          font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .storyScroller {
+          gap: 8px;
+          padding: 2px 0 4px;
+        }
+
+        .storyItem,
+        .storySkeleton {
+          min-width: 64px;
+          max-width: 64px;
+        }
+
+        .storyRing,
+        .storySkeleton div {
+          width: 54px;
+          height: 54px;
+        }
+
+        .storyRing {
+          padding: 2px;
+          box-shadow: 0 6px 15px rgba(109, 40, 217, 0.13);
+        }
+
+        .storyAvatar {
+          border-width: 2px;
+        }
+
+        .storyItem {
+          gap: 3px;
+        }
+
+        .storyItem > strong {
+          font-size: 8px;
+        }
+
+        .storyPrice,
+        .storyItem em {
+          display: none;
+        }
+
+        .storyScrollerFallback {
+          overflow: hidden;
+        }
+
+        .storyFallbackItem {
+          text-decoration: none;
+        }
+
+        .storyFallbackAvatar {
+          background: linear-gradient(145deg, #ffffff, #efe7ff);
+        }
+
+        .storyFallbackAvatar img {
+          width: 62%;
+          height: 62%;
+          object-fit: contain;
+        }
+
+        .storySkeleton {
+          gap: 5px;
+        }
+
+        .storySkeleton span {
+          width: 42px;
+          height: 6px;
+        }
+
+        @media (max-width: 640px) {
+          .homeStories {
+            grid-template-columns: 54px minmax(0, 1fr);
+            gap: 6px;
+            min-height: 64px;
+          }
+
+          .storyHeader h2 {
+            font-size: 9px;
+          }
+
+          .storyScroller {
+            gap: 6px;
+            padding-bottom: 2px;
+          }
+
+          .storyItem,
+          .storySkeleton {
+            min-width: 56px;
+            max-width: 56px;
+          }
+
+          .storyRing,
+          .storySkeleton div {
+            width: 48px;
+            height: 48px;
+          }
+
+          .storyItem > strong {
+            font-size: 7px;
+          }
+        }
+
+
+        /* v16.4.2 — دایره‌های استوری برجسته‌تر و مدرن‌تر */
+        .homeStories {
+          grid-template-columns: 74px minmax(0, 1fr);
+          min-height: 92px;
+          gap: 12px;
+        }
+
+        .storyHeader h2 {
+          font-size: 11px;
+          font-weight: 950;
+        }
+
+        .storyScroller {
+          gap: 11px;
+          padding: 5px 2px 7px;
+        }
+
+        .storyItem,
+        .storySkeleton {
+          min-width: 80px;
+          max-width: 80px;
+        }
+
+        .storyRing,
+        .storySkeleton div {
+          width: 70px;
+          height: 70px;
+        }
+
+        .storyRing {
+          position: relative;
+          isolation: isolate;
+          padding: 3px;
+          background: conic-gradient(from 210deg, #4c1d95, #7c3aed 25%, #c084fc 48%, #8b5cf6 72%, #4c1d95);
+          box-shadow: 0 10px 26px rgba(91, 33, 182, 0.2), 0 0 0 1px rgba(124, 58, 237, 0.1);
+        }
+
+        .storyRing::after {
+          content: "";
+          position: absolute;
+          inset: -5px;
+          z-index: -1;
+          border-radius: inherit;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 68%);
+          opacity: 0.9;
+          pointer-events: none;
+        }
+
+        .storyRing::before {
+          content: "";
+          position: absolute;
+          right: 2px;
+          bottom: 5px;
+          z-index: 3;
+          width: 10px;
+          height: 10px;
+          border: 2px solid #ffffff;
+          border-radius: 999px;
+          background: #7c3aed;
+          box-shadow: 0 3px 8px rgba(76, 29, 149, 0.35);
+        }
+
+        .storyAvatar {
+          border-width: 3px;
+          box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.08);
+        }
+
+        .storyItem {
+          gap: 5px;
+        }
+
+        .storyItem > strong {
+          font-size: 8.5px;
+          font-weight: 900;
+        }
+
+        .storyItem:hover .storyRing {
+          transform: translateY(-3px) scale(1.035);
+          box-shadow: 0 14px 30px rgba(91, 33, 182, 0.26), 0 0 0 1px rgba(124, 58, 237, 0.12);
+        }
+
+        @media (max-width: 640px) {
+          .homeStories {
+            grid-template-columns: 52px minmax(0, 1fr);
+            min-height: 82px;
+            gap: 8px;
+          }
+
+          .storyHeader h2 {
+            font-size: 9px;
+          }
+
+          .storyScroller {
+            gap: 9px;
+            padding-top: 4px;
+            padding-bottom: 5px;
+          }
+
+          .storyItem,
+          .storySkeleton {
+            min-width: 72px;
+            max-width: 72px;
+          }
+
+          .storyRing,
+          .storySkeleton div {
+            width: 64px;
+            height: 64px;
+          }
+
+          .storyItem > strong {
+            font-size: 7.5px;
+          }
+        }
+
       `}</style>
     </section>
   );

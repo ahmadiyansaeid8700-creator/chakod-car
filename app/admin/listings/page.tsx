@@ -68,6 +68,15 @@ type AdminListingsResponse = {
   data?: AdminListing[];
 };
 
+type AdminAccessResponse = {
+  success: boolean;
+  is_admin?: boolean;
+  message?: string;
+  admin?: {
+    permissions?: string[];
+  };
+};
+
 type ListingAction =
   | "approve_listing"
   | "reject_listing"
@@ -231,9 +240,31 @@ function faDate(value?: string | null) {
   });
 }
 
+function hasPermission(
+  permissions: string[],
+  permission: string
+) {
+  return (
+    permissions.includes("*") ||
+    permissions.includes(permission)
+  );
+}
+
 export default function AdminListingsPage() {
-  const [loading, setLoading] =
+  const [accessLoading, setAccessLoading] =
     useState(true);
+
+  const [canViewListings, setCanViewListings] =
+    useState(false);
+
+  const [canManageListings, setCanManageListings] =
+    useState(false);
+
+  const [accessMessage, setAccessMessage] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const [savingId, setSavingId] =
     useState<number | null>(null);
@@ -267,6 +298,82 @@ export default function AdminListingsPage() {
 
   const [query, setQuery] =
     useState("");
+
+  const verifyAccess = useCallback(async () => {
+    setAccessLoading(true);
+    setAccessMessage("");
+
+    const token = getToken();
+
+    if (!token) {
+      setCanViewListings(false);
+      setCanManageListings(false);
+      setAccessMessage(
+        "برای ورود به صف مدیریت آگهی‌ها، ابتدا وارد حساب ادمین شوید."
+      );
+      setAccessLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/admin-me.php`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Session-Token": token,
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        }
+      );
+      const json =
+        await readJson<AdminAccessResponse>(
+          response
+        );
+      const permissions =
+        json.admin?.permissions || [];
+      const canManage = hasPermission(
+        permissions,
+        "listings.manage"
+      );
+      const canView =
+        canManage ||
+        hasPermission(
+          permissions,
+          "listings.view"
+        );
+
+      if (
+        !response.ok ||
+        !json.success ||
+        !json.is_admin ||
+        !canView
+      ) {
+        setCanViewListings(false);
+        setCanManageListings(false);
+        setAccessMessage(
+          json.message ||
+            "این نقش اجازه مشاهده صف آگهی‌ها را ندارد."
+        );
+        return;
+      }
+
+      setCanViewListings(true);
+      setCanManageListings(canManage);
+    } catch (requestError) {
+      setCanViewListings(false);
+      setCanManageListings(false);
+      setAccessMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "بررسی سطح دسترسی ادمین انجام نشد."
+      );
+    } finally {
+      setAccessLoading(false);
+    }
+  }, []);
 
   const loadListings = useCallback(
     async (
@@ -365,14 +472,35 @@ export default function AdminListingsPage() {
   );
 
   useEffect(() => {
-    void loadListings(1);
-  }, [loadListings]);
+    const timeoutId = window.setTimeout(() => {
+      void verifyAccess();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [verifyAccess]);
+
+  useEffect(() => {
+    if (!canViewListings) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void loadListings(1);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [canViewListings, loadListings]);
 
   async function doAction(
     listing: AdminListing,
     action: ListingAction
   ) {
     setMessage("");
+
+    if (!canManageListings) {
+      setMessage(
+        "این نقش فقط اجازه مشاهده دارد و نمی‌تواند وضعیت آگهی را تغییر دهد."
+      );
+      return;
+    }
 
     let reason = "";
     let notes = "";
@@ -514,6 +642,66 @@ export default function AdminListingsPage() {
     }
   }
 
+  if (accessLoading) {
+    return (
+      <main
+        className="adminListingsPage gatePage"
+        dir="rtl"
+      >
+        <section className="gateState">
+          <div
+            className="spinner"
+            aria-hidden="true"
+          />
+          <h1>در حال بررسی دسترسی ادمین...</h1>
+          <p>
+            نقش و مجوز صف آگهی‌ها از سرور چاکود
+            بررسی می‌شود.
+          </p>
+        </section>
+        <style>{styles}</style>
+      </main>
+    );
+  }
+
+  if (!canViewListings) {
+    return (
+      <main
+        className="adminListingsPage gatePage"
+        dir="rtl"
+      >
+        <section className="gateState denied">
+          <span
+            className="gateIcon"
+            aria-hidden="true"
+          >
+            🔒
+          </span>
+          <h1>دسترسی به صف آگهی‌ها مجاز نیست</h1>
+          <p>
+            {accessMessage ||
+              "این نقش اجازه مشاهده اطلاعات آگهی‌ها را ندارد."}
+          </p>
+          <div className="gateActions">
+            <Link href="/admin">
+              بازگشت به داشبورد
+            </Link>
+            <button
+              type="button"
+              onClick={() => void verifyAccess()}
+            >
+              بررسی دوباره
+            </button>
+            <Link href="/login">
+              ورود دوباره
+            </Link>
+          </div>
+        </section>
+        <style>{styles}</style>
+      </main>
+    );
+  }
+
   return (
     <main
       className="adminListingsPage"
@@ -574,6 +762,12 @@ export default function AdminListingsPage() {
               خوانده می‌شوند و وضعیت عمومی استاندارد
               «approved» است.
             </p>
+
+            <span className="accessBadge">
+              {canManageListings
+                ? "سطح دسترسی: بررسی و اقدام"
+                : "سطح دسترسی: فقط مشاهده"}
+            </span>
           </div>
 
           <div className="headerActions">
@@ -993,73 +1187,81 @@ export default function AdminListingsPage() {
                       ) : null}
 
                       <div className="actions">
-                        <button
-                          type="button"
-                          className="approveBtn"
-                          disabled={
-                            savingId ===
-                            item.id
-                          }
-                          onClick={() =>
-                            void doAction(
-                              item,
-                              "approve_listing"
-                            )
-                          }
-                        >
-                          تأیید
-                        </button>
+                        {canManageListings ? (
+                          <>
+                            <button
+                              type="button"
+                              className="approveBtn"
+                              disabled={
+                                savingId ===
+                                item.id
+                              }
+                              onClick={() =>
+                                void doAction(
+                                  item,
+                                  "approve_listing"
+                                )
+                              }
+                            >
+                              تأیید
+                            </button>
 
-                        <button
-                          type="button"
-                          className="editBtn"
-                          disabled={
-                            savingId ===
-                            item.id
-                          }
-                          onClick={() =>
-                            void doAction(
-                              item,
-                              "needs_edit_listing"
-                            )
-                          }
-                        >
-                          نیازمند اصلاح
-                        </button>
+                            <button
+                              type="button"
+                              className="editBtn"
+                              disabled={
+                                savingId ===
+                                item.id
+                              }
+                              onClick={() =>
+                                void doAction(
+                                  item,
+                                  "needs_edit_listing"
+                                )
+                              }
+                            >
+                              نیازمند اصلاح
+                            </button>
 
-                        <button
-                          type="button"
-                          className="rejectBtn"
-                          disabled={
-                            savingId ===
-                            item.id
-                          }
-                          onClick={() =>
-                            void doAction(
-                              item,
-                              "reject_listing"
-                            )
-                          }
-                        >
-                          رد
-                        </button>
+                            <button
+                              type="button"
+                              className="rejectBtn"
+                              disabled={
+                                savingId ===
+                                item.id
+                              }
+                              onClick={() =>
+                                void doAction(
+                                  item,
+                                  "reject_listing"
+                                )
+                              }
+                            >
+                              رد
+                            </button>
 
-                        <button
-                          type="button"
-                          className="flagBtn"
-                          disabled={
-                            savingId ===
-                            item.id
-                          }
-                          onClick={() =>
-                            void doAction(
-                              item,
-                              "flag_listing"
-                            )
-                          }
-                        >
-                          پرچم‌گذاری
-                        </button>
+                            <button
+                              type="button"
+                              className="flagBtn"
+                              disabled={
+                                savingId ===
+                                item.id
+                              }
+                              onClick={() =>
+                                void doAction(
+                                  item,
+                                  "flag_listing"
+                                )
+                              }
+                            >
+                              پرچم‌گذاری
+                            </button>
+                          </>
+                        ) : (
+                          <span className="viewOnlyNotice">
+                            این حساب فقط اجازه مشاهده دارد.
+                          </span>
+                        )}
 
                         <Link
                           href={
@@ -1274,6 +1476,63 @@ const styles = `
       24px 24px 95px;
   }
 
+  .gatePage {
+    display: grid;
+    min-height: 100vh;
+    padding: 24px;
+    place-items: center;
+  }
+
+  .gateState {
+    display: grid;
+    width: min(560px, 100%);
+    padding: 38px 28px;
+    place-items: center;
+    color: #725f86;
+    text-align: center;
+    border: 1px solid #eadcff;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 22px 70px rgba(76, 29, 149, 0.12);
+  }
+
+  .gateState h1 {
+    margin: 18px 0 6px;
+    color: #211335;
+    font-size: 23px;
+  }
+
+  .gateState p {
+    margin: 0;
+    line-height: 2;
+  }
+
+  .gateIcon {
+    font-size: 34px;
+  }
+
+  .gateActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 20px;
+  }
+
+  .gateActions a,
+  .gateActions button {
+    padding: 11px 14px;
+    color: #6d28d9;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    text-decoration: none;
+    border: 0;
+    border-radius: 13px;
+    background: #f4ecff;
+    cursor: pointer;
+  }
+
   .topHeader {
     display: flex;
     align-items: flex-start;
@@ -1306,6 +1565,18 @@ const styles = `
     color: #725f86;
     font-size: 13px;
     line-height: 2;
+  }
+
+  .accessBadge {
+    display: inline-flex;
+    margin-top: 9px;
+    padding: 6px 10px;
+    color: #5b21b6;
+    font-size: 11px;
+    font-weight: 900;
+    border: 1px solid #e4d4ff;
+    border-radius: 999px;
+    background: #faf7ff;
   }
 
   .headerActions {
@@ -1681,6 +1952,18 @@ const styles = `
   .actions a {
     color: #6d28d9;
     background: #f4ecff;
+  }
+
+  .viewOnlyNotice {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 13px;
+    color: #6b5a7e;
+    font-size: 12px;
+    font-weight: 900;
+    border: 1px solid #e8def1;
+    border-radius: 13px;
+    background: #faf8fc;
   }
 
   button:disabled {

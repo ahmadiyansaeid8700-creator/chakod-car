@@ -8,12 +8,10 @@ import {
   HOME_LOCATION_EVENT,
   getHomeLocationScopes,
   loadHomeLocation,
-  saveHomeLocation,
   type HomeLocationSelection,
 } from "./home-location";
 import HomeHorizontalRail from "./HomeHorizontalRail";
 import ListingCard, { type ListingCardData } from "./ListingCard";
-import ShowroomCard, { type ShowroomCardData } from "./ShowroomCard";
 
 const API_BASE_URL = "https://api.chakod.com/api/listings.php";
 
@@ -41,9 +39,8 @@ type Listing = ListingCardData & {
 };
 
 type ApiResponse = { success?: boolean; data?: Listing[] };
-type Tone = "luxury" | "freezone" | "economic";
+type Tone = "luxury" | "freezone";
 
-type DealerPreview = ShowroomCardData;
 
 const luxuryBrands = [
   "porsche",
@@ -157,17 +154,6 @@ function isLuxury(listing: Listing) {
   );
 }
 
-function isEconomic(listing: Listing) {
-  const price = Number(listing.price_toman || 0);
-  return (
-    listing.market_segment === "economic" ||
-    (price > 0 &&
-      price <= 1_500_000_000 &&
-      !isFreezone(listing) &&
-      !isLuxury(listing))
-  );
-}
-
 function byNewest(a: Listing, b: Listing) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
@@ -236,79 +222,6 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
   );
 }
 
-function getDealers(listings: Listing[]): DealerPreview[] {
-  const map = new Map<string, DealerPreview & { latestAt: number }>();
-
-  for (const listing of listings) {
-    const name = listing.dealer_name?.trim();
-    if (!name) continue;
-
-    const stableKey = listing.dealer_id
-      ? `id:${listing.dealer_id}`
-      : `name:${normalizeText(name)}`;
-    const verified = Boolean(
-      listing.dealer_verified ||
-      listing.is_dealer_verified ||
-      listing.dealer_is_verified,
-    );
-    const logoUrl =
-      listing.dealer_logo_url ||
-      listing.dealer_logo ||
-      listing.logo_url ||
-      null;
-    const latestAt = new Date(listing.created_at).getTime() || 0;
-    const current = map.get(stableKey);
-
-    if (current) {
-      current.listingCount += 1;
-      current.verified = current.verified || verified;
-      current.latestAt = Math.max(current.latestAt, latestAt);
-      if (!current.logoUrl && logoUrl) current.logoUrl = logoUrl;
-      if (!current.coverImage && listing.cover_image) {
-        current.coverImage = listing.cover_image;
-      }
-      if ((!current.city || current.city === "شهر نامشخص") && listing.city) {
-        current.city = listing.city;
-      }
-      if (!current.province && listing.province)
-        current.province = listing.province;
-      continue;
-    }
-
-    map.set(stableKey, {
-      key: stableKey,
-      name,
-      city: listing.city || "شهر نامشخص",
-      province: listing.province || "",
-      listingCount: 1,
-      logoUrl,
-      coverImage: listing.cover_image || null,
-      verified,
-      latestAt,
-    });
-  }
-
-  return Array.from(map.values())
-    .sort(
-      (a, b) =>
-        Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||
-        b.listingCount - a.listingCount ||
-        b.latestAt - a.latestAt ||
-        a.name.localeCompare(b.name, "fa"),
-    )
-    .slice(0, 8)
-    .map((dealer) => ({
-      key: dealer.key,
-      name: dealer.name,
-      city: dealer.city,
-      province: dealer.province,
-      listingCount: dealer.listingCount,
-      logoUrl: dealer.logoUrl,
-      coverImage: dealer.coverImage,
-      verified: dealer.verified,
-    }));
-}
-
 function ShowcaseSection({
   id,
   kicker,
@@ -365,45 +278,6 @@ function ShowcaseSection({
             tone={tone}
             variant="rail"
           />
-        ))}
-      </HomeHorizontalRail>
-    </section>
-  );
-}
-
-function DealerSection({ dealers }: { dealers: DealerPreview[] }) {
-  if (dealers.length === 0) return null;
-
-  return (
-    <section className="masterSection masterDealerSection" id="dealers">
-      <div className="masterSectionHeader masterDealerHeader">
-        <div className="masterSectionTitleBlock">
-          <span>SHOWROOMS OF CHAKOD</span>
-          <div className="masterSectionTitleRow">
-            <h2>نمایشگاه‌های منتخب</h2>
-            <Link
-              className="masterShowAllLink masterDealerShowAll"
-              href="/showrooms"
-            >
-              نمایش همه <span aria-hidden="true">←</span>
-            </Link>
-          </div>
-        </div>
-        <div className="masterSectionHeaderSide">
-          <p>
-            نمایشگاه‌های فعال با موجودی واقعی؛ برای دیدن خودروها و ویترین عمومی،
-            کارت نمایشگاه را باز کن.
-          </p>
-        </div>
-      </div>
-
-      <HomeHorizontalRail
-        ariaLabel="نمایشگاه‌های منتخب چاکود"
-        className="homeRailShell--dealers"
-        showControls={dealers.length > 2}
-      >
-        {dealers.map((dealer) => (
-          <ShowroomCard key={dealer.key} showroom={dealer} />
         ))}
       </HomeHorizontalRail>
     </section>
@@ -486,59 +360,28 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const sorted = [...listings].sort(byNewest);
     const freezone = sorted.filter(isFreezone).slice(0, 9);
     const luxury = sorted.filter(isLuxury).slice(0, 9);
-    const used = new Set([...freezone, ...luxury].map((item) => item.id));
-    const economic = sorted
-      .filter((item) => !used.has(item.id) && isEconomic(item))
-      .slice(0, 9);
     const searchResults = query
       ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
       : [];
     return {
       freezone,
       luxury,
-      economic,
       searchResults,
-      dealers: getDealers(sorted),
     };
   }, [listings, query]);
 
   if (status === "loading") {
     return (
-      <section className="masterSection masterEmptyShowcase" aria-live="polite">
-        <span>◌</span>
-        <strong>در حال دریافت خودروهای چاکود</strong>
-        <p>کارت‌ها مستقیم از فهرست فعال آگهی‌ها بارگذاری می‌شوند.</p>
-      </section>
+      <div className="masterHomeDataLoading" aria-live="polite">
+        <span />
+        <span />
+        <span />
+      </div>
     );
   }
 
-  if (status === "error") {
-    return (
-      <section className="masterSection masterEmptyShowcase" aria-live="polite">
-        <span>!</span>
-        <strong>دریافت آگهی‌ها ناموفق بود</strong>
-        <p>مرورگر نتوانست به API چاکود متصل شود.</p>
-        <button type="button" onClick={() => window.location.reload()}>
-          تلاش دوباره
-        </button>
-      </section>
-    );
-  }
-
-  if (status === "ready" && listings.length === 0 && location.mode !== "all") {
-    return (
-      <section className="masterSection masterEmptyShowcase" aria-live="polite">
-        <span>⌖</span>
-        <strong>در محدوده «{location.label}» آگهی فعالی پیدا نشد</strong>
-        <p>محدوده را تغییر بده یا آگهی‌های سراسر ایران را ببین.</p>
-        <button
-          type="button"
-          onClick={() => saveHomeLocation(DEFAULT_HOME_LOCATION)}
-        >
-          نمایش سراسر ایران
-        </button>
-      </section>
-    );
+  if (status === "error" || listings.length === 0) {
+    return null;
   }
 
   return (
@@ -598,19 +441,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             tone="freezone"
             allHref="/ads/freezone"
           />
-          <ShowcaseSection
-            id="economic"
-            kicker="SMART VALUE"
-            title="انتخاب‌های اقتصادی چاکود"
-            description="خودروهای اقتصادی و ارزشمند بر اساس قیمت، سال و کیفیت آگهی."
-            listings={data.economic}
-            badge="ارزش خرید"
-            tone="economic"
-            allHref="/ads/economic"
-          />
         </>
       )}
-      <DealerSection dealers={data.dealers} />
     </>
   );
 }

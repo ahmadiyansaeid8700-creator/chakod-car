@@ -1,0 +1,301 @@
+.dealerSection {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding-top: 58px;
+}
+
+.sectionIntro {
+  margin-bottom: 19px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.sectionIntro > div:first-child {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  color: #6d28d9;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.sectionIntro h2 {
+  margin: 7px 0 0;
+  color: #1a1520;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.5;
+}
+
+.sectionActions {
+  flex: 0 0 auto;
+}
+
+.sectionActions a {
+  min-height: 39px;
+  padding: 0 14px;
+  border: 1px solid #e4e0e8;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #514a58;
+  background: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    color 170ms ease;
+}
+
+.sectionActions a:hover {
+  transform: translateX(-2px);
+  border-color: rgba(109, 40, 217, 0.3);
+  color: #6d28d9;
+}
+
+.dealerRail,
+.skeletonRail {
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(310px, 1fr);
+  align-items: stretch;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 7px 2px 25px;
+  scroll-padding-inline: 2px;
+  scroll-snap-type: inline mandatory;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: #d7d0df transparent;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dealerRail > *,
+.skeletonRail > * {
+  min-width: 0;
+}
+
+.compactEmpty {
+  min-height: 215px;
+  padding: 28px;
+  border: 1px dashed #d9cde4;
+  border-radius: 25px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.compactEmpty strong {
+  color: #2a2231;
+  font-size: 14px;
+}
+
+.compactEmpty span {
+  color: #81778a;
+  font-size: 10px;
+  line-height: 1.9;
+}
+
+.skeletonCard {
+  position: relative;
+  min-height: 540px;
+  overflow: hidden;
+  border: 1px solid #ece8ef;
+  border-radius: 26px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(37, 24, 51, 0.055);
+  scroll-snap-align: start;
+}
+
+.skeletonCover,
+.skeletonLogo,
+.skeletonTitle,
+.skeletonMeta,
+.skeletonProducts,
+.skeletonButton {
+  display: block;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(238, 235, 241, 0.82) 20%,
+      rgba(249, 248, 250, 0.98) 42%,
+      rgba(238, 235, 241, 0.82) 64%
+    );
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.25s ease-in-out infinite;
+}
+
+.skeletonCover {
+  width: 100%;
+  aspect-ratio: 1.74 / 1;
+}
+
+.skeletonLogo {
+  width: 94px;
+  height: 94px;
+  margin-top: -47px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+}
+
+.skeletonTitle {
+  width: 46%;
+  height: 19px;
+  margin-top: 14px;
+  border-radius: 999px;
+}
+
+.skeletonMeta {
+  width: calc(100% - 40px);
+  height: 48px;
+  margin-top: 28px;
+  border-radius: 10px;
+}
+
+.skeletonProducts {
+  width: calc(100% - 40px);
+  height: 94px;
+  margin-top: 15px;
+  border-radius: 12px;
+}
+
+.skeletonButton {
+  width: calc(100% - 40px);
+  height: 51px;
+  margin-top: 16px;
+  border-radius: 14px;
+}
+
+@keyframes skeletonShimmer {
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (min-width: 1181px) {
+  .dealerRail,
+  .skeletonRail {
+    grid-auto-columns: calc((100% - 36px) / 3);
+  }
+}
+
+@media (max-width: 900px) {
+  .dealerSection {
+    width: min(100% - 28px, 1280px);
+    padding-top: 48px;
+  }
+
+  .sectionIntro {
+    margin-bottom: 16px;
+  }
+
+  .sectionIntro h2 {
+    margin-top: 4px;
+    font-size: 19px;
+  }
+
+  .eyebrow {
+    font-size: 8px;
+  }
+
+  .sectionActions a {
+    min-height: 35px;
+    padding: 0 10px;
+    font-size: 8px;
+  }
+
+  .dealerRail,
+  .skeletonRail {
+    grid-auto-columns: min(360px, 82vw);
+    gap: 13px;
+  }
+}
+
+@media (max-width: 620px) {
+  .dealerSection {
+    width: calc(100% - 20px);
+  }
+
+  .dealerRail,
+  .skeletonRail {
+    grid-auto-columns: min(340px, calc(100vw - 40px));
+    gap: 11px;
+    padding-top: 5px;
+    padding-bottom: 18px;
+  }
+
+  .skeletonCard {
+    min-height: 475px;
+    border-radius: 23px;
+  }
+
+  .skeletonLogo {
+    width: 82px;
+    height: 82px;
+    margin-top: -41px;
+    border-width: 4px;
+  }
+
+  .skeletonMeta,
+  .skeletonProducts,
+  .skeletonButton {
+    width: calc(100% - 30px);
+  }
+
+  .skeletonMeta {
+    height: 45px;
+    margin-top: 23px;
+  }
+
+  .skeletonProducts {
+    height: 80px;
+    margin-top: 13px;
+  }
+
+  .skeletonButton {
+    height: 48px;
+    margin-top: 13px;
+  }
+}
+
+@media (max-width: 390px) {
+  .sectionIntro {
+    gap: 10px;
+  }
+
+  .sectionIntro h2 {
+    font-size: 17px;
+  }
+
+  .sectionActions a {
+    padding-inline: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionActions a,
+  .skeletonCover,
+  .skeletonLogo,
+  .skeletonTitle,
+  .skeletonMeta,
+  .skeletonProducts,
+  .skeletonButton {
+    animation: none;
+    transition: none;
+  }
+}

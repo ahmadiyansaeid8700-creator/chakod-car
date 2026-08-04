@@ -43,10 +43,6 @@ export default function NotFoundPage() {
             مشاهده بازار خودرو
           </Link>
         </div>
-
-        <p className={styles.help}>
-          هنوز به کمک نیاز دارید؟ <Link href="/support">پشتیبانی چاکود</Link>
-        </p>
       </section>
     </main>
   );

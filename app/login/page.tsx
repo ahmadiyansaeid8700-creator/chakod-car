@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useState } from "react";
 
+import { safeReturnTo } from "./return-to";
+
 const RESEND_SECONDS = 90;
 const LOCAL_DEV_SESSION_TOKEN = "chakod-local-dev-session";
 const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
@@ -104,6 +106,11 @@ export default function LoginPage() {
   const canVerify = /^[0-9]{5}$/.test(normalizedCode);
   const canResend = canSend && resendCountdown === 0 && !loading;
 
+  function postLoginDestination(fallback = "/") {
+    const requestedPath = new URLSearchParams(window.location.search).get("returnTo");
+    return safeReturnTo(requestedPath, fallback);
+  }
+
   useEffect(() => {
     if (resendCountdown <= 0) return;
 
@@ -150,7 +157,7 @@ export default function LoginPage() {
       }),
     );
     window.dispatchEvent(new Event("chakod:auth-changed"));
-    window.location.assign("/account?complete=1");
+    window.location.assign(postLoginDestination("/account?complete=1"));
   }
 
   async function sendCode(isResend = false) {
@@ -253,12 +260,15 @@ export default function LoginPage() {
       );
       window.dispatchEvent(new Event("chakod:auth-changed"));
 
-      const nextUrl = isProfileComplete(json.user) ? "/" : "/account?complete=1";
+      const defaultNextUrl = isProfileComplete(json.user)
+        ? safeReturnTo(json.redirect_to)
+        : "/account?complete=1";
+      const nextUrl = postLoginDestination(defaultNextUrl);
 
       setMessage(
-        isProfileComplete(json.user)
-          ? "ورود موفق بود. در حال انتقال به صفحه اصلی..."
-          : "ورود موفق بود. لطفاً یک‌بار پروفایل خود را تکمیل کنید."
+        nextUrl === "/account?complete=1"
+          ? "ورود موفق بود. لطفاً یک‌بار پروفایل خود را تکمیل کنید."
+          : "ورود موفق بود. در حال انتقال به صفحه درخواستی..."
       );
 
       setStep("done");

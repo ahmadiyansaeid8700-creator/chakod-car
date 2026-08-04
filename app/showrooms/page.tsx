@@ -215,13 +215,6 @@ export default function PublicShowroomsPage() {
           <nav aria-label="ناوبری نمایشگاه‌ها">
             <a href="/">خانه</a>
             <a href="/ads">همه خودروها</a>
-            <a className="manageLink" href="/dealers">
-              مدیریت نمایشگاه
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 20V8l8-4 8 4v12" />
-                <path d="M8 20v-7h8v7M4 10h16" />
-              </svg>
-            </a>
           </nav>
         </div>
       </header>

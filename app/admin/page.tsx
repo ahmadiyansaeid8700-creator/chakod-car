@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { canOpenAdminCommerce } from "../../lib/route-access";
+
 type AdminMeResponse = {
   success: boolean;
   is_admin?: boolean;
@@ -216,7 +218,7 @@ export default function AdminPage() {
   const canAuditServices =
     isSuperAdmin && !!admin?.can_audit_services;
 
-  const canOpenCommerce = true;
+  const canOpenCommerce = canOpenAdminCommerce(admin);
 
   const hasVisibleModule =
     canViewListings ||

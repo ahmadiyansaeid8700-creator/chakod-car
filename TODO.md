@@ -5,7 +5,7 @@
 ```text
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Latest known remote commit: e067eb8
+Latest known remote commit: 0e177d4
 Current product phase: 2 — پچ‌های پس از ممیزی
 ```
 
@@ -110,7 +110,8 @@ Current product phase: 2 — پچ‌های پس از ممیزی
 - Affected files: `app/admin/layout.tsx`، `app/dealers/layout.tsx`، `app/admin/page.tsx`، `app/showrooms/page.tsx`، `lib/route-access.ts`، `lib/server-route-access.ts`، `tests/route-access.test.mjs`
 - Database impact: ندارد
 - Environment impact: ندارد
-- Rollback commit: `ff8c224`
+- Published commit: `0e177d4`
+- Published rollback base: `e067eb8`
 - Tests executed: هفت تست واحد ورود و دسترسی؛ ESLint فایل‌های جدید؛ TypeScript سراسری؛ Build محلی پنج‌مرحله‌ای Vinext؛ مجموعه تست‌های مستقل پروژه
 - Result: Build محلی و ۱۵ تست مستقل موفق؛ ESLint فایل‌های جدید بدون خطا؛ TypeScript فقط خطاهای قدیمی Affiliate/Cloudflare را گزارش کرد. Build مخصوص Cloudflare پیش از Compile به‌علت نبود `.openai/hosting.json` و `build/sites-vite-plugin` متوقف شد و سه تست رندر وابسته به خروجی Cloudflare روی Build محلی قابل اجرا نبودند.
 - Follow-up: تعیین و تثبیت مسیر نهایی خودروها

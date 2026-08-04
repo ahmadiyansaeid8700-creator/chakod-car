@@ -8,7 +8,7 @@
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
 Base commit before recent patches: e067eb8
-Latest completed code commit: 85ac1b3
+Latest published patch bundle: 0e177d4
 ```
 
 > شاخه `main` مبنای ادامه کار نیست. تا زمان تأیید صریح مالک پروژه، روی شاخه بالا کار کن و آن را با `main` ادغام نکن.
@@ -16,8 +16,9 @@ Latest completed code commit: 85ac1b3
 ## وضعیت فعلی
 
 - ممیزی کامل صفحات، مسیرها، لینک‌ها و دکمه‌ها انجام شده است.
-- Patch اصلاح مسیر بازگشت ورود (`returnTo`) در Commit `ff8c224` تکمیل شده است.
-- Patch محافظت سروری از مسیرهای مدیریت و نشست مسیرهای `/dealers/*` در Commit `85ac1b3` تکمیل شده است.
+- Patch اصلاح مسیر بازگشت ورود (`returnTo`) تکمیل و منتشر شده است.
+- Patch محافظت سروری از مسیرهای مدیریت و نشست مسیرهای `/dealers/*` تکمیل و منتشر شده است.
+- هر دو Patch همراه این فایل در Commit منتشرشده `0e177d4` قرار دارند.
 - Build محلی پنج‌مرحله‌ای Vinext بعد از آخرین Patch موفق بوده است.
 - ۱۵ تست مستقل پروژه موفق بوده‌اند.
 - Build مخصوص Cloudflare در محیط قبلی به‌دلیل نبود فایل‌های Git-ignored زیر قابل اجرا نبوده است:
@@ -59,10 +60,10 @@ build/sites-vite-plugin
 
 ## گزارش آخرین Patchها
 
-| Commit | تغییر | نتیجه |
+| Commit منتشرشده | تغییر | نتیجه |
 |---|---|---|
-| `ff8c224` | اجرای امن `returnTo` پس از ورود | ۴ تست اختصاصی موفق |
-| `85ac1b3` | Guard سروری `/admin/*`، نشست `/dealers/*` و حذف لینک عمومی مدیریت | Build محلی موفق و ۱۵ تست مستقل موفق |
+| `0e177d4` | اجرای امن `returnTo` پس از ورود | ۴ تست اختصاصی موفق |
+| `0e177d4` | Guard سروری `/admin/*`، نشست `/dealers/*` و حذف لینک عمومی مدیریت | Build محلی موفق و ۱۵ تست مستقل موفق |
 
 ## دستور آماده برای چت جدید
 

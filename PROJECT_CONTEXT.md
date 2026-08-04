@@ -21,7 +21,7 @@ C:\Users\Computer Bartar\chakod-car
 ```text
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
-Latest known remote commit: e067eb8
+Latest known remote commit: 0e177d4
 ```
 
 > شاخه `main` در زمان تهیه این سند از شاخه کاری عقب‌تر است. تا پیش از تأیید Build و بررسی تغییرات، Merge خودکار انجام نشود.
@@ -36,7 +36,8 @@ Latest known remote commit: e067eb8
 - همه مسیرهای `/admin/*` پیش از رندر محتوا با نشست و نقش سروری کنترل می‌شوند.
 - مسیرهای `/dealers/*` فقط با نشست معتبر باز می‌شوند و لینک مدیریتی آن از صفحه عمومی نمایشگاه‌ها حذف شده است.
 - نمایش بخش مالی و تجاری مدیریت دیگر همگانی نیست و به نقش یا مجوز واقعی وابسته است.
-- نقطه بازگشت Patch 2.9، Commit `ff8c224` است.
+- Patchهای ورود و محافظت مسیرهای مدیریتی همراه مستندات تحویل در Commit منتشرشده `0e177d4` قرار دارند.
+- نقطه بازگشت منتشرشده پیش از این دو Patch، Commit `e067eb8` است.
 - Build محلی پنج‌مرحله‌ای Vinext پس از Patch 2.9 با موفقیت کامل شد.
 - ۱۵ تست مستقل پروژه موفق شدند؛ سه تست رندر مخصوص خروجی Cloudflare روی Build محلی تابع `worker.fetch` ندارند.
 - Build کامل در محیط فعلی به‌علت نبود فایل‌های محلی و Git-ignored زیر شروع نشد:

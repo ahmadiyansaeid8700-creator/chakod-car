@@ -258,7 +258,7 @@ export default async function SegmentCatalogPage({
           <Link href="/">خانه</Link>
           <Link href="/showrooms">نمایشگاه‌ها</Link>
           <Link href="/account/saved">ذخیره‌شده‌ها</Link>
-          <Link className={styles.submitLink} href="/submit">
+          <Link className={styles.submitLink} href="/account/listings/new">
             ثبت آگهی
           </Link>
         </nav>

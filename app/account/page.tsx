@@ -470,7 +470,7 @@ export default function AccountPage() {
                 <div><strong>داشبورد مدیریتی</strong><span>آمار و وضعیت حساب</span></div>
                 <span className={styles.cardArrow}><ArrowIcon /></span>
               </a>
-              <a className={styles.actionCard} href="/dashboard/listings">
+              <a className={styles.actionCard} href="/account/listings">
                 <IconFrame><ListingsIcon /></IconFrame>
                 <div><strong>آگهی‌های من</strong><span>مشاهده و ویرایش</span></div>
                 <span className={styles.cardArrow}><ArrowIcon /></span>
@@ -485,7 +485,7 @@ export default function AccountPage() {
                   <span className={styles.cardArrow}><ArrowIcon /></span>
                 </a>
               ) : (
-                <a className={styles.actionCard} href="/submit">
+                <a className={styles.actionCard} href="/account/listings/new">
                   <IconFrame><AddIcon /></IconFrame>
                   <div><strong>ثبت آگهی</strong><span>خودرو جدید</span></div>
                   <span className={styles.cardArrow}><ArrowIcon /></span>
@@ -514,7 +514,7 @@ export default function AccountPage() {
                 <div className={styles.growthActions}>
                   <a className={styles.growthPrimary} href="/account/ads">رزرو تبلیغ منطقه‌ای</a>
                   {stats.total > 0 && !isBusinessDirectoryAccount && (
-                    <a className={styles.growthSecondary} href="/dashboard/listings">ویژه‌کردن آگهی</a>
+                    <a className={styles.growthSecondary} href="/account/listings">ویژه‌کردن آگهی</a>
                   )}
                 </div>
               </section>
@@ -539,7 +539,7 @@ export default function AccountPage() {
                       </span>
                       <i><ArrowIcon /></i>
                     </a>
-                    <a href="/dashboard/listings">
+                    <a href="/account/listings">
                       <b>۲</b>
                       <span>
                         <strong>آگهی‌ها را مدیریت کنید</strong>
@@ -557,7 +557,7 @@ export default function AccountPage() {
                         <i><ArrowIcon /></i>
                       </a>
                     ) : (
-                      <a href="/submit">
+                      <a href="/account/listings/new">
                         <b>۳</b>
                         <span>
                           <strong>آگهی جدید ثبت کنید</strong>

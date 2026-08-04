@@ -287,7 +287,7 @@ export default function DashboardPage() {
           <nav className="navLinks">
             <a href="/">خانه</a>
             <a href="/account">حساب</a>
-            <a href="/submit">ثبت آگهی</a>
+            <a href="/account/listings/new">ثبت آگهی</a>
             <a href="/dealers">نمایشگاه</a>
           </nav>
         </header>
@@ -351,7 +351,7 @@ export default function DashboardPage() {
             </section>
 
             <section className="quickActions">
-              <a href="/submit" className="quickAction primaryAction">
+              <a href="/account/listings/new" className="quickAction primaryAction">
                 <span>＋</span>
                 <div>
                   <strong>ثبت آگهی جدید</strong>
@@ -560,7 +560,7 @@ export default function DashboardPage() {
                     <span>مدیریت آگهی</span>
                     <h2>آگهی‌های اخیر</h2>
                   </div>
-                  <a href="/submit">ثبت آگهی</a>
+                  <a href="/account/listings/new">ثبت آگهی</a>
                 </div>
 
                 {recentListings.length === 0 ? (
@@ -615,7 +615,7 @@ export default function DashboardPage() {
 
                         <div className="listingActions">
                           <a href={`/cars/${listing.id}`}>نمایش</a>
-                          <a href={`/dashboard/listings/${listing.id}`}>مدیریت</a>
+                          <a href={`/account/listings/${listing.id}`}>مدیریت</a>
                         </div>
                       </div>
                     ))}
@@ -699,7 +699,7 @@ export default function DashboardPage() {
           <span>📊</span>
           <b>داشبورد</b>
         </a>
-        <a href="/submit">
+        <a href="/account/listings/new">
           <span>＋</span>
           <b>ثبت آگهی</b>
         </a>

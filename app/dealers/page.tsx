@@ -315,7 +315,7 @@ export default function DealersPage() {
           </Link>
 
           <div className="navLinks">
-            <a href="/submit">ثبت آگهی</a>
+            <a href="/account/listings/new">ثبت آگهی</a>
             <a href="/account">حساب کاربری</a>
           </div>
         </div>
@@ -492,7 +492,7 @@ export default function DealersPage() {
                   </div>
                 )}
 
-                <a className="secondaryLink" href="/submit">
+                <a className="secondaryLink" href="/account/listings/new">
                   رفتن به ثبت آگهی
                 </a>
               </div>

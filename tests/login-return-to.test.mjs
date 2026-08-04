@@ -5,8 +5,8 @@ import { safeReturnTo } from "../app/login/return-to.ts";
 
 test("keeps a valid internal returnTo path including query and hash", () => {
   assert.equal(
-    safeReturnTo("/dashboard/listings?status=pending#results"),
-    "/dashboard/listings?status=pending#results",
+    safeReturnTo("/account/listings?status=pending#results"),
+    "/account/listings?status=pending#results",
   );
 });
 

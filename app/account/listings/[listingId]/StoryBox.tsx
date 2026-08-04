@@ -1,10 +1,10 @@
 "use client";
 
-type StoryBoxProps = {
+type ListingStoryBoxProps = {
   listingId: number;
 };
 
-export default function StoryBox({ listingId }: StoryBoxProps) {
+export default function StoryBox({ listingId }: ListingStoryBoxProps) {
   return (
     <section className="storyBox">
       <div className="storyBoxHead">

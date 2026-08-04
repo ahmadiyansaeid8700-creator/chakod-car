@@ -390,7 +390,7 @@ export default function DealerCommandCenter() {
 
         <section className={styles.dashboardGrid}>
           <article className={styles.panel}>
-            <header><div><span>عملکرد موجودی</span><h2>آگهی‌های پربازدید</h2></div><Link href="/dashboard/listings">همه آگهی‌ها</Link></header>
+            <header><div><span>عملکرد موجودی</span><h2>آگهی‌های پربازدید</h2></div><Link href="/account/listings">همه آگهی‌ها</Link></header>
             <div className={styles.rankingList}>
               {(data.top_listings || []).length ? data.top_listings?.map((listing, index) => (
                 <div className={styles.rankingRow} key={listing.id}>

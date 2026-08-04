@@ -172,10 +172,10 @@ export default function MobileBottomNav() {
       {
         id: "submit",
         title: "ثبت آگهی",
-        href: "/submit",
+        href: "/account/listings/new",
         icon: <SubmitIcon />,
         primary: true,
-        isActive: (currentPath) => currentPath === "/submit" || currentPath.startsWith("/submit/"),
+        isActive: (currentPath) => currentPath === "/account/listings/new",
       },
       {
         id: "services",

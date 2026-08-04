@@ -475,7 +475,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
             <AuthStatus />
 
-            <Link className="masterSubmitButton" href="/submit">
+            <Link className="masterSubmitButton" href="/account/listings/new">
               <span aria-hidden="true">＋</span>
               <b>ثبت آگهی</b>
             </Link>

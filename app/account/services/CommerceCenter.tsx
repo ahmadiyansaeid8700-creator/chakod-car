@@ -309,7 +309,7 @@ export default function CommerceCenter() {
             <div className={styles.panel}>
               <div className={styles.panelHeading}>
                 <div><span>مرحله ۱</span><h2>آگهی را انتخاب کنید</h2></div>
-                <Link href="/dashboard/listings">مدیریت آگهی‌ها</Link>
+                <Link href="/account/listings">مدیریت آگهی‌ها</Link>
               </div>
               {data?.listings?.length ? (
                 <select value={listingId} onChange={(event) => setListingId(Number(event.target.value))} className={styles.select}>
@@ -323,7 +323,7 @@ export default function CommerceCenter() {
                 <div className={styles.emptyState}>
                   <strong>هنوز آگهی ندارید</strong>
                   <span>ابتدا خودرو را ثبت کنید تا خدمات انتشار و تبلیغ برای آن فعال شود.</span>
-                  <Link href="/submit">ثبت آگهی خودرو</Link>
+                  <Link href="/account/listings/new">ثبت آگهی خودرو</Link>
                 </div>
               )}
 

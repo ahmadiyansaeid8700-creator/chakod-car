@@ -349,7 +349,7 @@ export default function HomeStories() {
         <div className="storyScroller storyScrollerFallback">
           <a
             className="storyItem storyFallbackItem"
-            href="/dashboard/listings"
+            href="/account/listings"
             aria-label="مدیریت و ثبت استوری من"
           >
             <span className="storyRing">

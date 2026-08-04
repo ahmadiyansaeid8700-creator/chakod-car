@@ -17,6 +17,7 @@ export type ShowroomListingPreview = {
 
 export type ShowroomCardData = {
   key: string;
+  slug?: string | null;
   name: string;
   city: string;
   province?: string;
@@ -111,7 +112,9 @@ function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
 }
 
 export default function ShowroomCard({ showroom }: ShowroomCardProps) {
-  const href = `/showrooms/${encodeURIComponent(showroom.name)}`;
+  const href = showroom.slug
+    ? `/businesses/${encodeURIComponent(showroom.slug)}`
+    : `/businesses?type=dealer&q=${encodeURIComponent(showroom.name)}`;
   const coverUrl = getImageUrl(showroom.coverImage);
   const logoUrl = getImageUrl(showroom.logoUrl);
   const [failedCoverUrl, setFailedCoverUrl] = useState("");

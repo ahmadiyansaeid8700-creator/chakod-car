@@ -13,6 +13,7 @@ import type {
   CatalogSegment,
 } from "../ads/[segment]/catalog-types";
 import styles from "../ads/[segment]/CatalogPage.module.css";
+import { carMarketPath, withSearchParams } from "../../lib/car-routes";
 
 type Props = {
   clientApiUrl: string;
@@ -122,8 +123,7 @@ function buildHref(
     params.set("page", String(options.page));
   }
 
-  const search = params.toString();
-  return `/ads/${segment}${search ? `?${search}` : ""}`;
+  return withSearchParams(carMarketPath(segment), Object.fromEntries(params));
 }
 
 export default function CatalogListingsClient({
@@ -313,7 +313,7 @@ export default function CatalogListingsClient({
                 <span aria-hidden="true">×</span>
               </Link>
             ))}
-            <Link className={styles.clearAllChip} href={`/ads/${segment}`}>
+            <Link className={styles.clearAllChip} href={carMarketPath(segment)}>
               پاک‌کردن همه
             </Link>
           </div>
@@ -364,7 +364,7 @@ export default function CatalogListingsClient({
             <p>
               محدوده قیمت، موقعیت یا مشخصات خودرو را تغییر بده تا گزینه‌های بیشتری ببینی.
             </p>
-            <Link href={`/ads/${segment}`}>نمایش همه آگهی‌های این بخش</Link>
+            <Link href={carMarketPath(segment)}>نمایش همه آگهی‌های این بخش</Link>
           </div>
         )}
 

@@ -585,7 +585,7 @@ export default function DashboardListingsPage() {
                       <a href={`/dashboard/listings/${listing.id}`} className="manageBtn">
                         مدیریت
                       </a>
-                      <a href={`/listing/${listing.id}`} className="viewBtn">
+                      <a href={`/cars/${listing.id}`} className="viewBtn">
                         نمایش
                       </a>
                     </div>

@@ -63,7 +63,7 @@ test("calculates asking-price intelligence without inventing transaction data", 
       fuel_type: "gasoline",
       seller_type: "personal",
       views_count: 10,
-      href: `/listing/${index + 1}`,
+      href: `/cars/${index + 1}`,
     }),
   );
   const market = buildMarketIntelligence(
@@ -111,7 +111,7 @@ function adminListing(
     owner_type: "personal",
     created_at: "2026-07-28 10:00:00",
     age_days: 0,
-    href: "/listing/1",
+    href: "/cars/1",
     priority_score: 0,
     priority_reasons: [],
     ...overrides,

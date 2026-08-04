@@ -457,7 +457,7 @@ export default function HomeStories() {
                 <a
                   href={
                     activeStory.public_url ||
-                    `/listing/${encodeURIComponent(activeStory.listing_id)}`
+                    `/cars/${encodeURIComponent(activeStory.listing_id)}`
                   }
                 >
                   مشاهده آگهی کامل

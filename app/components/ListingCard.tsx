@@ -93,7 +93,7 @@ export default function ListingCard({
   variant = "grid",
   showActions = false,
 }: ListingCardProps) {
-  const href = `/listing/${listing.id}`;
+  const href = `/cars/${listing.id}`;
   const imageUrl = getImageUrl(listing.cover_image);
   const sellerLabel = getSellerLabel(listing);
   const dealerVerified = Boolean(

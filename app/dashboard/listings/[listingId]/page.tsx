@@ -764,7 +764,7 @@ export default function ListingManagePage() {
                   {canManage ? "دسترسی کامل مدیریت" : "فقط امکان مشاهده"}
                 </div>
                 {currentStatus === "active" ? (
-                  <a className="publicLink" href={`/listing/${listing.id}`} target="_blank" rel="noreferrer">
+                  <a className="publicLink" href={`/cars/${listing.id}`} target="_blank" rel="noreferrer">
                     مشاهده آگهی عمومی
                   </a>
                 ) : (

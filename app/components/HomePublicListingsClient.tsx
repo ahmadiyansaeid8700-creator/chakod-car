@@ -429,7 +429,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             listings={data.luxury}
             badge="منتخب لوکس"
             tone="luxury"
-            allHref="/ads/luxury"
+            allHref="/cars/luxury"
           />
           <ShowcaseSection
             id="freezone"
@@ -439,7 +439,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             listings={data.freezone}
             badge="منطقه آزاد"
             tone="freezone"
-            allHref="/ads/freezone"
+            allHref="/cars/free-zone"
           />
         </>
       )}

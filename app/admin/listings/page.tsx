@@ -1266,7 +1266,7 @@ export default function AdminListingsPage() {
                         <Link
                           href={
                             item.public_url ||
-                            `/listing/${item.id}`
+                            `/cars/${item.id}`
                           }
                           target="_blank"
                         >

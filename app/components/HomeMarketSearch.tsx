@@ -60,7 +60,7 @@ export default function HomeMarketSearch({
   return (
     <form
       className="masterSearch masterHeaderSearch"
-      action="/ads/all"
+      action="/cars"
       method="get"
       role="search"
     >

@@ -89,7 +89,7 @@ function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
   return (
     <a
       className={styles.latestListing}
-      href={`/listing/${listing.id}`}
+      href={`/cars/${listing.id}`}
       aria-label={`مشاهده آگهی ${listing.title}`}
       title={listing.title}
     >

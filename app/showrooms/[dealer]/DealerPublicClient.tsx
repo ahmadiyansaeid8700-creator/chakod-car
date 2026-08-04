@@ -214,7 +214,7 @@ export default function DealerPublicClient({ rawDealer }: { rawDealer: string })
                 <span>خودروهای نمایشگاه</span>
                 <h2>آگهی‌های فعال {dealerName}</h2>
               </div>
-              <a href={`/ads?q=${encodeURIComponent(dealerName)}`}>جست‌وجوی کامل</a>
+              <a href={`/cars?q=${encodeURIComponent(dealerName)}`}>جست‌وجوی کامل</a>
             </div>
 
             <div className="dealerGrid">

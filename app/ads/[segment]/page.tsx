@@ -3,9 +3,10 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import CatalogListingsClient from "../../components/CatalogListingsClient";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import { carMarketPath, legacyAdsRedirect } from "../../../lib/car-routes";
 import type {
   CatalogFilters,
   CatalogResponse,
@@ -208,9 +209,11 @@ export async function generateMetadata({
 export default async function SegmentCatalogPage({
   params,
   searchParams,
+  canonical = false,
 }: {
   params: Promise<{ segment: string }>;
   searchParams?: Promise<SearchParams>;
+  canonical?: boolean;
 }) {
   const { segment: rawSegment } = await params;
   const segment = rawSegment as CatalogSegment;
@@ -218,7 +221,13 @@ export default async function SegmentCatalogPage({
 
   if (!config) notFound();
 
-  const filters = readFilters((await searchParams) || {});
+  const resolvedSearchParams = (await searchParams) || {};
+
+  if (!canonical) {
+    permanentRedirect(legacyAdsRedirect(segment, resolvedSearchParams));
+  }
+
+  const filters = readFilters(resolvedSearchParams);
   const apiUrl = buildApiUrl(segment, filters);
   const clientApiUrl = `/api/catalog?${new URL(apiUrl).searchParams.toString()}`;
   const initialResponse = await fetchCatalog(apiUrl);
@@ -273,7 +282,7 @@ export default async function SegmentCatalogPage({
           <Link
             key={key}
             className={key === segment ? styles.segmentActive : undefined}
-            href={`/ads/${key}`}
+            href={carMarketPath(key)}
           >
             {segmentConfig[key].shortTitle}
           </Link>

@@ -324,7 +324,7 @@ function normalizePublicListing(
     fuel_type: cleanText(value.fuel_type, 100),
     seller_type: cleanText(value.seller_type, 80),
     views_count: toFiniteNumber(value.views_count),
-    href: `/listing/${id}`,
+    href: `/cars/${id}`,
   };
 }
 
@@ -349,7 +349,7 @@ function normalizeAdminListings(values: AdminListingPayload[] | undefined) {
         owner_type: cleanText(value.listing_owner_type, 60),
         created_at: createdAt,
         age_days: ageInDays(createdAt),
-        href: `/listing/${id}`,
+        href: `/cars/${id}`,
         priority_score: 0,
         priority_reasons: [],
       };
@@ -473,7 +473,7 @@ function ageInDays(value: string) {
 }
 
 function listingIdFromPath(path: string) {
-  const match = path.match(/^\/listing\/(\d+)(?:\/|$)/);
+  const match = path.match(/^\/cars\/(\d+)(?:\/|$)/);
   return match ? Number(match[1]) : null;
 }
 

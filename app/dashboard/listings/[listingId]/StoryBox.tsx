@@ -28,7 +28,7 @@ export default function StoryBox({ listingId }: StoryBoxProps) {
 
         <a
           className="storyBoxLink"
-          href={`/listing/${listingId}`}
+          href={`/cars/${listingId}`}
           target="_blank"
           rel="noreferrer"
         >

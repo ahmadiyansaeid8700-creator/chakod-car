@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import ListingDetailClient from "./ListingDetailClient";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
+import { carDetailPath } from "../../../lib/car-routes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -19,11 +20,18 @@ async function getInitialListing(listingId: number): Promise<ListingApiResponse 
   }
 }
 
-export default async function ListingDetailPage({ params }: PageProps) {
+export default async function ListingDetailPage({
+  params,
+  canonical = false,
+}: PageProps & { canonical?: boolean }) {
   const resolvedParams = await params;
   const listingId = Number(resolvedParams.id);
 
   if (!Number.isFinite(listingId) || listingId <= 0) notFound();
+
+  if (!canonical) {
+    permanentRedirect(carDetailPath(resolvedParams.id));
+  }
 
   const initialResponse = await getInitialListing(listingId);
 

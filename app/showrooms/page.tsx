@@ -214,7 +214,7 @@ export default function PublicShowroomsPage() {
 
           <nav aria-label="ناوبری نمایشگاه‌ها">
             <a href="/">خانه</a>
-            <a href="/ads">همه خودروها</a>
+            <a href="/cars">همه خودروها</a>
           </nav>
         </div>
       </header>

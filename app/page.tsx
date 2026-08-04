@@ -458,7 +458,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </Link>
 
           <div className="masterNavLinks">
-            <Link href="/ads">خودروها</Link>
+            <Link href="/cars">خودروها</Link>
             <Link href="/showrooms">نمایشگاه‌ها</Link>
             <Link href="/businesses">کسب‌وکارها</Link>
           </div>
@@ -550,7 +550,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 listings={luxury}
                 badge="منتخب لوکس"
                 tone="luxury"
-                allHref="/ads/luxury"
+                allHref="/cars/luxury"
               />
 
               <ShowcaseSection
@@ -561,7 +561,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 listings={freezone}
                 badge="منطقه آزاد"
                 tone="freezone"
-                allHref="/ads/freezone"
+                allHref="/cars/free-zone"
               />
             </>
           )}
@@ -587,8 +587,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </p>
 
           <div>
-            <Link href="/ads/luxury">خودروهای لوکس</Link>
-            <Link href="/ads/freezone">منطقه آزاد</Link>
+            <Link href="/cars/luxury">خودروهای لوکس</Link>
+            <Link href="/cars/free-zone">منطقه آزاد</Link>
             <Link href="/showrooms">نمایشگاه‌ها</Link>
             <Link href="/businesses">خدمات خودرو</Link>
             <Link href="/rules">قوانین</Link>

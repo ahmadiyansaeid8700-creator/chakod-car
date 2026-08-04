@@ -11,19 +11,19 @@ const guides: Guide[] = [
   {
     title: "پیدا کردن خودروی مناسب",
     description: "بازار خودرو را با جست‌وجوی برند، مدل و محدوده بررسی کن.",
-    href: "/ads/all",
+    href: "/cars",
     icon: "⌕",
   },
   {
     title: "خودروهای لوکس و خاص",
     description: "منتخب خودروهای ممتاز و آگهی‌های باکیفیت را ببین.",
-    href: "/ads/luxury",
+    href: "/cars/luxury",
     icon: "✦",
   },
   {
     title: "خودروهای منطقه آزاد",
     description: "آگهی‌های منطقه آزاد را در ویترین اختصاصی مقایسه کن.",
-    href: "/ads/freezone",
+    href: "/cars/free-zone",
     icon: "◇",
   },
   {

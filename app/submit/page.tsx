@@ -1729,7 +1729,7 @@ export default function SubmitListingPage() {
 
             setTimeout(() => {
               window.location.href = isPublished
-                ? `/listing/${listingId}`
+                ? `/cars/${listingId}`
                 : `/dashboard/listings/${listingId}`;
             }, 1800);
           } catch (finalizeError) {
@@ -1789,7 +1789,7 @@ export default function SubmitListingPage() {
 
       setTimeout(() => {
         window.location.href = isPublished
-          ? `/listing/${createdListingId}`
+          ? `/cars/${createdListingId}`
           : `/dashboard/listings/${createdListingId}`;
       }, 1800);
     } catch (finalizeError) {

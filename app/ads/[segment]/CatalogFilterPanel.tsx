@@ -9,6 +9,7 @@ import type {
   CatalogSegment,
 } from "./catalog-types";
 import styles from "./CatalogPage.module.css";
+import { carMarketPath } from "../../../lib/car-routes";
 
 type CatalogFilterPanelProps = {
   segment: CatalogSegment;
@@ -458,7 +459,7 @@ export default function CatalogFilterPanel({
     return (
       <form
         className={styles.filterForm}
-        action={`/ads/${segment}`}
+        action={carMarketPath(segment)}
         method="get"
         onSubmit={() => mobile && setDrawerOpen(false)}
       >
@@ -467,7 +468,7 @@ export default function CatalogFilterPanel({
           <button className={styles.applyButton} type="submit">
             {loading ? "در حال دریافت آگهی‌ها" : "اعمال فیلترها"}
           </button>
-          <a className={styles.clearButton} href={`/ads/${segment}`}>
+          <a className={styles.clearButton} href={carMarketPath(segment)}>
             پاک‌کردن
           </a>
         </div>
@@ -491,7 +492,7 @@ export default function CatalogFilterPanel({
       <div className={styles.mobileToolbar}>
         <form
           className={styles.mobileSearchForm}
-          action={`/ads/${segment}`}
+          action={carMarketPath(segment)}
           method="get"
         >
           {renderSearchHiddenInputs()}

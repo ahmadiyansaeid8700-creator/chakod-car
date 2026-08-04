@@ -614,7 +614,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="listingActions">
-                          <a href={`/listing/${listing.id}`}>نمایش</a>
+                          <a href={`/cars/${listing.id}`}>نمایش</a>
                           <a href={`/dashboard/listings/${listing.id}`}>مدیریت</a>
                         </div>
                       </div>

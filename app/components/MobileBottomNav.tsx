@@ -165,9 +165,9 @@ export default function MobileBottomNav() {
       {
         id: "market",
         title: "بازار",
-        href: "/ads",
+        href: "/cars",
         icon: <MarketIcon />,
-        isActive: (currentPath) => currentPath === "/ads" || currentPath.startsWith("/ads/"),
+        isActive: (currentPath) => currentPath === "/cars" || currentPath.startsWith("/cars/"),
       },
       {
         id: "submit",

@@ -300,7 +300,7 @@ export default function SavedListingsPage() {
                   key={item.saved_id}
                   className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <Link href={`/listing/${item.listing_id}`} className="block">
+                  <Link href={`/cars/${item.listing_id}`} className="block">
                     <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                       {imageUrl ? (
                         <img
@@ -328,7 +328,7 @@ export default function SavedListingsPage() {
                   </Link>
 
                   <div className="p-4">
-                    <Link href={`/listing/${item.listing_id}`} className="block">
+                    <Link href={`/cars/${item.listing_id}`} className="block">
                       <h2 className="line-clamp-1 text-base font-black text-slate-950">
                         {item.title ||
                           [item.brand, item.model, item.year].filter(Boolean).join(" ")}
@@ -361,7 +361,7 @@ export default function SavedListingsPage() {
 
                     <div className="mt-4 flex gap-2">
                       <Link
-                        href={`/listing/${item.listing_id}`}
+                        href={`/cars/${item.listing_id}`}
                         className="flex-1 rounded-2xl bg-slate-950 px-4 py-3 text-center text-sm font-bold text-white"
                       >
                         مشاهده آگهی

@@ -5,7 +5,7 @@
 ```text
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Latest known remote commit: 0e177d4
+Latest known remote commit: b5fb874
 Current product phase: 2 — پچ‌های پس از ممیزی
 ```
 
@@ -85,6 +85,7 @@ Current product phase: 2 — پچ‌های پس از ممیزی
 - [ ] پچ ۲.۷: یکسان‌سازی مسیر کسب‌وکارها
 - [ ] پچ ۲.۸: یکسان‌سازی مسیر همکاری در فروش
 - [x] پچ ۲.۹: پنهان‌سازی کامل مسیرهای مدیریت برای کاربر عادی
+- [x] پچ ۲.۱۰: تثبیت مسیرهای عمومی خودرو روی `/cars/*`
 
 هر پچ باید جداگانه Commit و تست شود.
 
@@ -115,6 +116,20 @@ Current product phase: 2 — پچ‌های پس از ممیزی
 - Tests executed: هفت تست واحد ورود و دسترسی؛ ESLint فایل‌های جدید؛ TypeScript سراسری؛ Build محلی پنج‌مرحله‌ای Vinext؛ مجموعه تست‌های مستقل پروژه
 - Result: Build محلی و ۱۵ تست مستقل موفق؛ ESLint فایل‌های جدید بدون خطا؛ TypeScript فقط خطاهای قدیمی Affiliate/Cloudflare را گزارش کرد. Build مخصوص Cloudflare پیش از Compile به‌علت نبود `.openai/hosting.json` و `build/sites-vite-plugin` متوقف شد و سه تست رندر وابسته به خروجی Cloudflare روی Build محلی قابل اجرا نبودند.
 - Follow-up: تعیین و تثبیت مسیر نهایی خودروها
+
+### Patch 2.10 — تثبیت مسیرهای عمومی خودرو
+
+- Phase: 2 — پچ‌های پس از ممیزی
+- Purpose: تبدیل `/cars/*` به مسیر اصلی بازار و جزئیات خودرو و حذف تمام ورودی‌های عمومی مسیرهای قدیمی
+- Affected routes: `/cars`، `/cars/luxury`، `/cars/free-zone`، `/cars/[slug]`، `/ads/*`، `/listing/[id]`
+- Affected files: صفحات خودرو، کارت‌ها و لینک‌های عمومی، دستیار هوشمند، `lib/car-routes.ts` و `tests/car-routes.test.mjs`
+- Database impact: ندارد
+- Environment impact: ندارد
+- Published commit: `b5fb874`
+- Published rollback base: `b7d620b`
+- Tests executed: چهار تست واحد نگاشت مسیر؛ ۱۹ تست مستقل پروژه؛ ESLint فایل‌های جدید؛ TypeScript سراسری؛ Build محلی پنج‌مرحله‌ای Vinext؛ ۹ بررسی HTTP
+- Result: موفق؛ مسیرهای اصلی پاسخ `200` و مسیرهای قدیمی Redirect دائمی `308` دارند. TypeScript فقط خطاهای قدیمی Affiliate/Cloudflare را گزارش کرد و ESLint فایل‌های جدید صفر خطا و یک هشدار قدیمی تصویر داشت.
+- Follow-up: یکسان‌سازی ثبت و مدیریت آگهی‌ها روی `/account/listings/*`
 
 ---
 

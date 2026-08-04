@@ -16,6 +16,7 @@ type ApiListing = {
   province?: string | null;
   dealer_name?: string | null;
   dealer_id?: number | string | null;
+  dealer_slug?: string | null;
   dealer_logo_url?: string | null;
   dealer_logo?: string | null;
   logo_url?: string | null;
@@ -89,6 +90,7 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
       current.listingCount += 1;
       current.verified = current.verified || verified;
       current.latestAt = Math.max(current.latestAt, latestAt);
+      if (!current.slug && listing.dealer_slug) current.slug = listing.dealer_slug;
       if (!current.logoUrl && logoUrl) current.logoUrl = logoUrl;
       if (!current.coverImage && listing.cover_image) {
         current.coverImage = listing.cover_image;
@@ -115,6 +117,7 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
 
     map.set(key, {
       key,
+      slug: listing.dealer_slug || null,
       name,
       city: listing.city || "شهر نامشخص",
       province: listing.province || "",
@@ -223,7 +226,7 @@ export default function HomeFeaturedShowrooms({
           <h2>نمایشگاه‌های منتخب</h2>
         </div>
         <div className={styles.sectionActions}>
-          <a href="/showrooms">
+          <a href="/dealerships">
             نمایش همه
             <span aria-hidden="true">←</span>
           </a>

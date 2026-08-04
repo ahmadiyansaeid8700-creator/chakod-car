@@ -6,6 +6,15 @@ import styles from "./page.module.css";
 
 type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
 
+type BusinessesPageProps = {
+  initialType?: "" | BusinessType;
+  basePath?: string;
+  lockType?: boolean;
+  kicker?: string;
+  title?: string;
+  description?: string;
+};
+
 type PublicBusiness = {
   id: number;
   slug: string;
@@ -60,8 +69,18 @@ function initialParam(name: string) {
   return new URLSearchParams(window.location.search).get(name) || "";
 }
 
-export default function BusinessesPage() {
-  const [type, setType] = useState(() => initialParam("type"));
+export default function BusinessesPage({
+  initialType = "",
+  basePath = "/businesses",
+  lockType = false,
+  kicker = "راهنمای خدمات خودرویی چاکود",
+  title = "کسب‌وکارهای خودرو را نزدیک خودتان پیدا کنید",
+  description = "نمایشگاه، تعمیرگاه، کارواش، دیتیلینگ، شیشه دودی، فروشگاه قطعات و سایر خدمات خودرو.",
+}: BusinessesPageProps = {}) {
+  const [type, setType] = useState<"" | BusinessType>(() => {
+    const requestedType = initialParam("type") as "" | BusinessType;
+    return lockType ? initialType : requestedType || initialType;
+  });
   const [category, setCategory] = useState(() => initialParam("category"));
   const [query, setQuery] = useState(() => initialParam("q"));
   const [city, setCity] = useState(() => initialParam("city"));
@@ -81,8 +100,9 @@ export default function BusinessesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const url = `/api/businesses?${search.toString()}`;
-    window.history.replaceState({}, "", `/businesses?${search.toString()}`);
+    const queryString = search.toString();
+    const url = `/api/businesses?${queryString}`;
+    window.history.replaceState({}, "", `${basePath}?${queryString}`);
     setLoading(true);
     setError("");
 
@@ -104,7 +124,7 @@ export default function BusinessesPage() {
       });
 
     return () => controller.abort();
-  }, [search]);
+  }, [basePath, search]);
 
   return (
     <main className={styles.page} dir="rtl">
@@ -114,29 +134,33 @@ export default function BusinessesPage() {
       </header>
 
       <section className={styles.hero}>
-        <span>راهنمای خدمات خودرویی چاکود</span>
-        <h1>کسب‌وکارهای خودرو را نزدیک خودتان پیدا کنید</h1>
-        <p>نمایشگاه، تعمیرگاه، کارواش، دیتیلینگ، شیشه دودی، فروشگاه قطعات و سایر خدمات خودرو.</p>
+        <span>{kicker}</span>
+        <h1>{title}</h1>
+        <p>{description}</p>
       </section>
 
       <section className={styles.filters} aria-label="فیلتر کسب‌وکارها">
-        <div className={styles.typeTabs}>
-          {types.map((item) => (
-            <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
-              {item.label}
-            </button>
-          ))}
-        </div>
+        {!lockType ? (
+          <div className={styles.typeTabs}>
+            {types.map((item) => (
+              <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className={styles.filterGrid}>
           <label><span>جست‌وجو</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="نام کسب‌وکار یا نوع خدمت" /></label>
           <label><span>شهر</span><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً رشت یا تهران" /></label>
-          <label><span>خدمت</span><select value={category} onChange={(event) => {
-            const nextCategory = event.target.value;
-            const selected = serviceCategories.find((item) => item.key === nextCategory);
-            setCategory(nextCategory);
-            if (selected?.type) setType(selected.type);
-          }}>{serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
-          <button type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(""); }}>پاک‌کردن فیلترها</button>
+          {!lockType ? (
+            <label><span>خدمت</span><select value={category} onChange={(event) => {
+              const nextCategory = event.target.value;
+              const selected = serviceCategories.find((item) => item.key === nextCategory);
+              setCategory(nextCategory);
+              if (selected?.type) setType(selected.type);
+            }}>{serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
+          ) : null}
+          <button type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(lockType ? initialType : ""); }}>پاک‌کردن فیلترها</button>
         </div>
       </section>
 

@@ -30,7 +30,7 @@ export default function HomeFooter() {
 
         <div className="homeFooterColumns">
           <div><h3>بازار خودرو</h3><Link href="/cars">همه آگهی‌ها</Link><Link href="/cars/luxury">خودروهای لوکس</Link><Link href="/cars/free-zone">منطقه آزاد</Link><Link href="/cars?segment=economic">اقتصادی</Link></div>
-          <div><h3>کسب‌وکارها</h3><Link href="/showrooms">نمایشگاه‌ها</Link><Link href="/account?join=repair">عضویت تعمیرگاه</Link><Link href="/account?join=parts">عضویت فروشگاه</Link><Link href="/#auto-services">خدمات خودرو</Link></div>
+          <div><h3>کسب‌وکارها</h3><Link href="/dealerships">نمایشگاه‌ها</Link><Link href="/account?join=repair">عضویت تعمیرگاه</Link><Link href="/account?join=parts">عضویت فروشگاه</Link><Link href="/#auto-services">خدمات خودرو</Link></div>
           <div><h3>چاکود</h3><Link href="/account/listings/new">ثبت آگهی</Link><Link href="/account">حساب کاربری</Link><Link href="/rules">قوانین و مقررات</Link><Link href="/rules">حریم خصوصی</Link></div>
         </div>
       </div>

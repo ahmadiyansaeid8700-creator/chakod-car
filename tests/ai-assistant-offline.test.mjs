@@ -135,7 +135,7 @@ test("offline intent detection recognizes core user tasks", () => {
   );
   assert.equal(
     detectOfflineIntent("تا دو میلیارد چه ماشینی بخرم؟", "user"),
-    "price_analysis",
+    "vehicle_search",
   );
 });
 

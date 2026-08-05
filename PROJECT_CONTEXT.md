@@ -152,7 +152,6 @@ Tests:
 Result:
 ```
 
-
 ## Launch-2 — Affiliate TypeScript (تکمیل‌شده)
 
 - خطاهای `HeadersInit` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.
@@ -165,3 +164,91 @@ Result:
 - چهار خطای غیر Affiliate باقی مانده‌اند: دو import تست با پسوند `.ts` و دو وابستگی محیط Build در `vite.config.ts`.
 - پنج هشدار قدیمی ESLint در Effectها و متغیر استفاده‌نشده برای پچ جداگانه ثبت شده‌اند.
 - اقدام بعدی باید در پچ مستقل انتخاب شود؛ امنیت وابستگی‌ها، بدهی ESLint یا TypeScript سراسری نباید با هم ترکیب شوند.
+
+## Launch-3 — به‌روزرسانی قطعی 2026-08-06
+
+این بخش وضعیت‌های قدیمی بالاتر را برای ادامه جاری پروژه اصلاح و تکمیل می‌کند.
+
+### شاخه و نقطه جاری
+
+```text
+Base branch: backup-latest-2026-08-03
+Base head before Launch-3: e60973bcc149559994cc859f87d7f980c8667f0c
+Launch branch: agent/launch-3-local-baseline
+Latest saved Launch-3 session commit: f72d69dc5c171eaecc2cb23168ef30275b0443dc
+Main: untouched
+```
+
+### هویت برند تاییدشده
+
+```text
+نام فارسی: چاکود
+نام لاتین: Chakod
+شعار: پلتفرم رشد کسب و کار
+```
+
+تصویر سه‌بعدی بنفش ارسال‌شده توسط مالک مرجع بصری لانچ است؛ استفاده در Open Graph و Assetهای نهایی هنوز `[~]` است.
+
+### اجرای محلی تاییدشده
+
+- [x] Git `2.55.0.windows.2`، Node.js `v26.4.0` و npm `11.17.0` روی لپ‌تاپ تایید شدند.
+- [x] `npm.cmd ci` موفق شد و ۵۲۸ پکیج نصب شدند.
+- [x] Vite `8.0.13` در `948ms` روی `127.0.0.1:5173` بالا آمد.
+- [x] `/`، `/cars` و `/login` با اسکرین‌شات در Chrome تایید شدند.
+- [x] `/account/affiliate` رندر شد.
+- [x] کاربر عادی و مهمان نتوانستند `/admin/affiliate` را باز کنند.
+
+### ایرادهای مشاهده‌شده
+
+- [!] دریافت داده `/account/affiliate` در Local شکست خورد.
+- [!] مهمان `/admin/affiliate` به `/` رفت؛ رفتار مورد انتظار `/login?returnTo=%2Fadmin` است.
+- [!] ورود آزمایشی لوکال نباید در Production فعال بماند.
+- [~] تصاویر Placeholder، ترکیب زبان و چیدمان انتهای Grid در `/cars` نیازمند پچ‌های مستقل‌اند.
+- [~] هشدار `DEP0205 module.register()` هنگام اجرای Vite ثبت شد.
+
+### پچ جاری Redirect ادمین
+
+```text
+Phase: Launch-3
+Patch title: Admin guest redirect
+Affected routes: /admin/* و /login
+Affected files:
+- app/admin/layout.tsx
+- lib/route-access.ts
+- tests/route-access.test.mjs
+Database impact: ندارد
+Environment impact: ندارد
+Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
+```
+
+- [~] تصمیم `allow | login | home` پیاده‌سازی شده است.
+- [~] مهمان به `/login?returnTo=%2Fadmin` هدایت می‌شود.
+- [~] کاربر عادی واردشده به `/` برمی‌گردد.
+- [~] تست Regression سه حالت اضافه شده است.
+- [ ] پچ روی لپ‌تاپ Pull و اجرا نشده است.
+- [ ] تست واحد، TypeScript و Smoke Test پس از Pull باقی مانده‌اند.
+
+```text
+Implementation commits:
+bf4e9b563bb3b9ff1ec0f97981145f4ff7d78a52
+68a016e27d2e1d3916a4ece57a3cb4d2000bf38f
+f8fa8cb82ed05fc031f3be6aa06c7c17bce4f1f4
+Checklist commit:
+b4acbe4d8e141888cf47366e378e0fe639fbccda
+Session handoff commit:
+f72d69dc5c171eaecc2cb23168ef30275b0443dc
+```
+
+### نقطه ادامه
+
+جلسه بعد ابتدا `AI_HANDOFF.md` و سپس `docs/LAUNCH-3-ADMIN-REDIRECT-CHECKLIST-FA.md` خوانده شود. روی لپ‌تاپ، بعد از توقف Vite:
+
+```powershell
+git status
+git pull --ff-only origin agent/launch-3-local-baseline
+node --test tests/route-access.test.mjs
+npx.cmd tsc --noEmit -p tsconfig.launch.json
+npm.cmd run dev
+```
+
+سپس مهمان Incognito و کاربر آزمایشی عادی جداگانه تست شوند. تا قبل از موفقیت واقعی، وضعیت پچ `[~]` باقی می‌ماند.

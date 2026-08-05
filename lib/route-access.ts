@@ -5,6 +5,8 @@ type AdminIdentity = {
   permissions?: string[] | null;
 };
 
+export type AdminRouteResolution = "allow" | "login" | "home";
+
 const COMMERCE_PERMISSIONS = [
   "pricing.view",
   "orders.view",
@@ -22,6 +24,15 @@ export function hasAuthenticatedRouteAccess(payload: IdentityPayload) {
 
 export function hasAdminRouteAccess(payload: IdentityPayload) {
   return payload?.success === true && payload.is_admin === true;
+}
+
+export function resolveAdminRouteAccess(
+  adminPayload: IdentityPayload,
+  userPayload: IdentityPayload,
+): AdminRouteResolution {
+  if (hasAdminRouteAccess(adminPayload)) return "allow";
+  if (hasAuthenticatedRouteAccess(userPayload)) return "home";
+  return "login";
 }
 
 export function canOpenAdminCommerce(admin: AdminIdentity | null | undefined) {

@@ -1,0 +1,77 @@
+name: Apply Launch-2 closeout documentation
+
+on:
+  push:
+    branches:
+      - agent/launch-2-closeout-docs
+    paths:
+      - ".github/workflows/apply-launch-2-closeout-docs.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  closeout-docs:
+    name: Update Launch-2 project records
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout documentation branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/launch-2-closeout-docs
+
+      - name: Update project records
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const publishedCommit = '7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee';
+          const ciRun = '31047552740';
+
+          const contextPath = 'PROJECT_CONTEXT.md';
+          let context = fs.readFileSync(contextPath, 'utf8');
+          const contextMarker = '## Launch-2 — Affiliate TypeScript (تکمیل‌شده)';
+          if (!context.includes(contextMarker)) {
+            context += `\n\n${contextMarker}\n\n- خطاهای \`HeadersInit\` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.\n- هر دو تابع \`tokenHeaders\` اکنون فقط \`Record<string, string>\` برمی‌گردانند.\n- TypeScript اختصاصی Affiliate بدون خطا اجرا شد و TypeScript سراسری دیگر هیچ خطای Affiliate گزارش نمی‌کند.\n- ۲۷ تست Regression موفق شدند.\n- مسیر \`/account/affiliate\` پاسخ HTTP \`200\` و مسیر \`/admin/affiliate\` برای مهمان Redirect امن \`307\` داد.\n- Pull Request شماره ۴ با Commit \`${publishedCommit}\` در \`backup-latest-2026-08-03\` ادغام شد.\n- GitHub Actions Run شماره \`${ciRun}\` موفق شد.\n- چهار خطای غیر Affiliate باقی مانده‌اند: دو import تست با پسوند \`.ts\` و دو وابستگی محیط Build در \`vite.config.ts\`.\n- پنج هشدار قدیمی ESLint در Effectها و متغیر استفاده‌نشده برای پچ جداگانه ثبت شده‌اند.\n- اقدام بعدی باید در پچ مستقل انتخاب شود؛ امنیت وابستگی‌ها، بدهی ESLint یا TypeScript سراسری نباید با هم ترکیب شوند.\n`;
+            fs.writeFileSync(contextPath, context);
+          }
+
+          const todoPath = 'TODO.md';
+          let todo = fs.readFileSync(todoPath, 'utf8');
+          const todoMarker = '## Launch-2 — Affiliate TypeScript (تکمیل‌شده)';
+          if (!todo.includes(todoMarker)) {
+            todo += `\n\n${todoMarker}\n\n- [x] شاخه مستقل Launch-2 ساخته شد.\n- [x] نوع هدرهای احراز هویت پنل کاربر Affiliate اصلاح شد.\n- [x] نوع هدرهای احراز هویت پنل مدیریت Affiliate اصلاح شد.\n- [x] TypeScript اختصاصی Affiliate موفق شد.\n- [x] TypeScript سراسری بدون خطای Affiliate اجرا شد.\n- [x] ۲۷ تست Regression موفق شدند.\n- [x] Smoke Test مسیرهای Affiliate موفق شد.\n- [x] PR شماره ۴ با Commit \`${publishedCommit}\` ادغام شد.\n- [x] نتیجه در \`docs/LAUNCH-2-AFFILIATE-TYPES-CHECKLIST-FA.md\` ثبت شد.\n\n### اقدام‌های باز بعد از Launch-2\n\n- [ ] دو خطای import تست با پسوند \`.ts\` در پچ TypeScript مستقل تعیین تکلیف شوند.\n- [ ] وابستگی‌های محیط Build در \`vite.config.ts\` فقط در محیط واقعی Cloudflare بررسی شوند.\n- [ ] پنج هشدار قدیمی ESLint Affiliate در پچ مستقل اصلاح شوند.\n- [ ] ۱۸ آسیب‌پذیری npm در پچ امنیت وابستگی‌ها و بدون \`npm audit fix --force\` بررسی شوند.\n`;
+            fs.writeFileSync(todoPath, todo);
+          }
+
+          const checklistPath = 'docs/LAUNCH-2-AFFILIATE-TYPES-CHECKLIST-FA.md';
+          let checklist = fs.readFileSync(checklistPath, 'utf8');
+          const replacements = [
+            ['Phase: Launch-2\nWorking branch: agent/launch-2-affiliate-types', 'Phase: Launch-2 — تکمیل‌شده\nWorking branch: backup-latest-2026-08-03'],
+            ['Pull Request: #4\nCI Run: 31047367901 — موفق', `Pull Request: #4 — ادغام‌شده\nPublished commit: ${publishedCommit}\nFinal CI Run: ${ciRun} — موفق`],
+            ['- [ ] Pull Request پس از آخرین Check در `backup-latest-2026-08-03` ادغام شود.', `- [x] Pull Request شماره ۴ با Commit \`${publishedCommit}\` در \`backup-latest-2026-08-03\` ادغام شد.`],
+            ['- [ ] نتیجه نهایی در `PROJECT_CONTEXT.md` و `TODO.md` ثبت شود.', '- [x] نتیجه نهایی در `PROJECT_CONTEXT.md` و `TODO.md` ثبت شد.'],
+            ['- [~] مرحله تا ادغام PR شماره ۴ و ثبت نهایی مستندات باز می‌ماند.', '- [x] Launch-2 بسته شد و پروژه برای پچ روزانه بعدی آماده است.'],
+          ];
+          for (const [from, to] of replacements) {
+            if (!checklist.includes(from)) {
+              throw new Error(`Checklist replacement not found: ${from}`);
+            }
+            checklist = checklist.replace(from, to);
+          }
+          fs.writeFileSync(checklistPath, checklist);
+          NODE
+
+      - name: Commit closeout documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PROJECT_CONTEXT.md TODO.md docs/LAUNCH-2-AFFILIATE-TYPES-CHECKLIST-FA.md
+          git diff --cached --check
+          git diff --cached --quiet && { echo "No documentation changes were produced."; exit 1; }
+          git commit -m "close Launch-2 project records"
+          git push origin HEAD:agent/launch-2-closeout-docs

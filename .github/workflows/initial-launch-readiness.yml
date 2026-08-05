@@ -1,0 +1,104 @@
+name: Initial Launch Readiness
+
+on:
+  pull_request:
+    branches:
+      - backup-latest-2026-08-03
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "types/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig*.json"
+      - "vite.windows.config.ts"
+      - "docs/INITIAL-LAUNCH-CHECKLIST-FA.md"
+      - ".github/workflows/initial-launch-readiness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: initial-launch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate initial local launch
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Initial launch TypeScript check
+        run: npx tsc --noEmit -p tsconfig.launch.json
+
+      - name: Run core JavaScript tests
+        run: >-
+          node --experimental-strip-types --test
+          tests/login-return-to.test.mjs
+          tests/route-access.test.mjs
+          tests/car-routes.test.mjs
+          tests/listing-routes.test.mjs
+          tests/ai-assistant-offline.test.mjs
+
+      - name: Run TypeScript AI tests
+        run: >-
+          node --experimental-strip-types --test
+          tests/ai-assistant-intelligence.test.ts
+          tests/ai-moderation-policy.test.ts
+
+      - name: Lint launch patch
+        run: >-
+          npx eslint
+          lib/runtime-env.ts
+          types/cloudflare-runtime.d.ts
+
+      - name: Start local server and smoke-test routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev > /tmp/chakod-dev.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=false
+          for _ in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/ > /tmp/chakod-home.html; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/chakod-dev.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [[ "$ready" != "true" ]]; then
+            cat /tmp/chakod-dev.log
+            exit 1
+          fi
+
+          curl --fail --silent --show-error http://127.0.0.1:5173/cars > /tmp/chakod-cars.html
+          curl --fail --silent --show-error http://127.0.0.1:5173/login > /tmp/chakod-login.html
+          test -s /tmp/chakod-home.html
+          test -s /tmp/chakod-cars.html
+          test -s /tmp/chakod-login.html

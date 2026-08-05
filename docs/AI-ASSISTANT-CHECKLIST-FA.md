@@ -12,7 +12,9 @@
 Current AI phase: AI-1 — هسته مستقل و fallback آفلاین
 Working branch: agent/ai-independent-core
 Cloud model: اختیاری
-Independent core: پیاده‌سازی‌شده؛ در انتظار اجرای تست و Build محیط پروژه
+Independent core: پیاده‌سازی‌شده؛ در انتظار نتیجه CI و Build محیط پروژه
+Draft pull request: #2 ایجاد شده
+CI workflow: اضافه شده؛ اجرای نهایی در حال بررسی
 ```
 
 ## ۱. تعریف دامنه و معماری
@@ -113,18 +115,25 @@ Independent core: پیاده‌سازی‌شده؛ در انتظار اجرای 
 - [~] تست امنیت و ورودی حساس؛ تست خودکار نوشته شده است.
 - [ ] تست عدم ایجاد بن‌بست در گفتگو.
 - [ ] تست Performance و حجم Bundle.
+- [x] ایجاد شاخه مستقل `agent/ai-independent-core` از شاخه کاری صحیح پروژه.
+- [x] ذخیره تمام تغییرات AI-1 در Commitهای مستقل GitHub.
+- [x] ایجاد Draft Pull Request شماره ۲ به مقصد `backup-latest-2026-08-03`.
+- [x] افزودن Workflow مستقل GitHub Actions برای تست هسته AI، ESLint و TypeScript.
+- [~] اجرای Workflow و بررسی نتیجه تمام Checkها.
 - [ ] انتشار مرحله‌ای و امکان غیرفعال‌سازی فوری.
+- [ ] ادغام Pull Request پس از موفقیت تست‌ها و تأیید مالک پروژه.
 
 ## Patch AI-1 — هسته مستقل دستیار
 
 - Phase: AI-1
 - Purpose: فعال‌ماندن راهنمایی، مسیریابی و پاسخ‌های داده‌محور بدون وابستگی اجباری به OpenAI
 - Affected route: `/api/ai/assistant`
-- Affected files: `lib/ai-assistant/offline.ts`، `app/api/ai/assistant/route.ts`، `tests/ai-assistant-offline.test.mjs`
+- Affected files: `lib/ai-assistant/offline.ts`، `app/api/ai/assistant/route.ts`، `tests/ai-assistant-offline.test.mjs`، `.github/workflows/ai-independent-core.yml`
 - Database impact: ندارد
 - Environment impact: ندارد؛ `OPENAI_API_KEY` همچنان اختیاری است
 - Safety: فقط مسیرهای داخلی مجاز و داده‌های واقعی ارائه‌شده به هسته استفاده می‌شوند
-- Tests: پنج سناریوی خودکار افزوده شده؛ اجرای کامل تست و Build هنوز تأیید نشده است
+- Tests: پنج سناریوی خودکار و Workflow اجرای آن‌ها افزوده شده؛ نتیجه اجرای CI هنوز در حال بررسی است
+- Pull Request: Draft PR شماره ۲ ایجاد شده است
 - Rollback: بازگشت شاخه به Commit مبنای `6ed6fceb540a14ba2a5de31fc9a9dcb1cb540480`
 
 ## شرط پایان

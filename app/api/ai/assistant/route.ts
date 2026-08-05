@@ -80,19 +80,15 @@ export async function POST(request: Request) {
     try {
       const result = await askChakodAssistant(parsed.messages, knowledge);
       return NextResponse.json(result, responseInit(200));
-    } catch (error) {
-      if (error instanceof AssistantServiceError) {
-        return NextResponse.json(
-          buildOfflineAssistantReply(
-            parsed.messages,
-            knowledge,
-            "cloud_unavailable",
-          ),
-          responseInit(200),
-        );
-      }
-
-      throw error;
+    } catch {
+      return NextResponse.json(
+        buildOfflineAssistantReply(
+          parsed.messages,
+          knowledge,
+          "cloud_unavailable",
+        ),
+        responseInit(200),
+      );
     }
   } catch (error) {
     const status =

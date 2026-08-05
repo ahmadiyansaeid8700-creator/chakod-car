@@ -17,7 +17,7 @@ const channels = [
 ] as const;
 const statusLabels:Record<string,string>={awaiting_payment:"در انتظار پرداخت",hold:"معلق",available:"قابل تسویه",scheduled:"در صف پرداخت",paid:"پرداخت‌شده",reversed:"لغوشده",active_tracking:"فعال",active:"فعال",suspended:"تعلیق",terminated:"خاتمه",not_submitted:"ثبت نشده",pending_review:"در انتظار بررسی",verified:"تأیید شده",rejected:"رد شده"};
 function fa(value:number){return Number(value||0).toLocaleString("fa-IR")}
-function tokenHeaders(){if(typeof window==="undefined")return {};const token=localStorage.getItem("chakod_session_token")||"";return token?{Authorization:`Bearer ${token}`,"X-Session-Token":token}:{};}
+function tokenHeaders(): Record<string, string>{if(typeof window==="undefined")return {};const token=localStorage.getItem("chakod_session_token")||"";return token?{Authorization:`Bearer ${token}`,"X-Session-Token":token}:{};}
 
 export default function AffiliateAccountClient(){
  const router=useRouter();

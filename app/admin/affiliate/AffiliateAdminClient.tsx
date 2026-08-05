@@ -138,7 +138,7 @@ function fa(value: number) {
   return Number(value || 0).toLocaleString("fa-IR");
 }
 
-function tokenHeaders() {
+function tokenHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("chakod_session_token") || "";
   return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};

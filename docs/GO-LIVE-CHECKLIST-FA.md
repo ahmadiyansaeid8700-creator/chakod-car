@@ -26,17 +26,18 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [x] آخرین تغییرات شاخه مبنا با Fast-forward دریافت شد.
 - [x] وابستگی ها با `npm ci` نصب شدند.
 - [x] از اجرای `npm audit fix --force` خودداری شد.
+- [x] شاخه `agent/launch-3-local-baseline` روی لپ تاپ فعال و به Origin متصل شد.
 
 ## فاز ۱ — اجرای پایه محلی
 
-- [~] اجرای سرور توسعه با `npm.cmd run dev`.
-- [ ] ثبت نسخه Node.js و npm مورد استفاده در نتیجه تست.
-- [ ] باز شدن صفحه اصلی `/` بدون خطای Runtime.
+- [x] سرور توسعه با `npm.cmd run dev` اجرا شد.
+- [x] نسخه های اجرای محلی ثبت شدند: Node.js `v26.4.0` و npm `11.17.0`.
+- [x] صفحه اصلی `/` بدون خطای Runtime قابل مشاهده باز شد.
 - [ ] باز شدن فهرست خودروها `/cars`.
 - [ ] باز شدن صفحه ورود `/login`.
 - [ ] باز شدن `/account/affiliate` طبق رفتار مورد انتظار.
 - [ ] Redirect امن مهمان از `/admin/affiliate` به ورود.
-- [ ] بررسی Console مرورگر و ترمینال برای خطاهای Runtime.
+- [~] بررسی Console مرورگر و ترمینال برای خطاهای Runtime.
 - [ ] توقف صحیح سرور و ثبت نتیجه در این فایل.
 
 ## فاز ۲ — سلامت کد و Regression
@@ -130,6 +131,9 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 
 ## فاز ۷ — تجربه کاربری، موبایل و SEO
 
+- [x] نام برند `چاکود` و نگارش لاتین `Chakod` توسط مالک پروژه تایید شد.
+- [x] شعار `پلتفرم رشد کسب و کار` توسط مالک تایید و در لوگوی صفحه اصلی مشاهده شد.
+- [~] تصویر مرجع لوگوی سه بعدی بنفش دریافت شد؛ استفاده در Open Graph و Assetهای لانچ هنوز اجرا نشده است.
 - [ ] بررسی موبایل در عرض های رایج.
 - [ ] بررسی دسکتاپ در Chrome، Firefox و Edge.
 - [ ] بررسی RTL، فونت فارسی و شکست خطوط.
@@ -185,10 +189,10 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 ```text
 Date: 2026-08-06
 Phase: Launch-3 — Local Baseline
-Patch: ایجاد چک لیست Go-Live و اجرای پایه محلی
-Completed: Git، Node، npm، شاخه صحیح، Pull امن و npm ci
-Tests: اجرای Runtime هنوز در انتظار خروجی لپ تاپ
-Published commit: در انتظار تکمیل تست و PR
-Open blockers: Build محیط Cloudflare، امنیت وابستگی ها، تست جریان های محصول
-Next action: اجرای npm.cmd run dev و Smoke Test مسیرهای پایه
+Patch: چک لیست Go-Live و اجرای پایه محلی
+Completed: ابزارها، شاخه لانچ، Pull امن، npm ci، اجرای Vite، صفحه اصلی و تایید برند
+Tests: Vite 8.0.13 در 948ms آماده شد؛ صفحه اصلی با اسکرین شات تایید شد
+Published commit: در انتظار تکمیل Smoke Test و PR
+Open blockers: Console مرورگر، مسیرهای پایه، Build محیط Cloudflare، امنیت وابستگی ها و تست جریان های محصول
+Next action: تست `/cars`، `/login`، `/account/affiliate` و `/admin/affiliate`
 ```

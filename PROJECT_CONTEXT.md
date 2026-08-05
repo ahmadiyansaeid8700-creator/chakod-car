@@ -151,3 +151,17 @@ Rollback point:
 Tests:
 Result:
 ```
+
+
+## Launch-2 — Affiliate TypeScript (تکمیل‌شده)
+
+- خطاهای `HeadersInit` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.
+- هر دو تابع `tokenHeaders` اکنون فقط `Record<string, string>` برمی‌گردانند.
+- TypeScript اختصاصی Affiliate بدون خطا اجرا شد و TypeScript سراسری دیگر هیچ خطای Affiliate گزارش نمی‌کند.
+- ۲۷ تست Regression موفق شدند.
+- مسیر `/account/affiliate` پاسخ HTTP `200` و مسیر `/admin/affiliate` برای مهمان Redirect امن `307` داد.
+- Pull Request شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` در `backup-latest-2026-08-03` ادغام شد.
+- GitHub Actions Run شماره `31047552740` موفق شد.
+- چهار خطای غیر Affiliate باقی مانده‌اند: دو import تست با پسوند `.ts` و دو وابستگی محیط Build در `vite.config.ts`.
+- پنج هشدار قدیمی ESLint در Effectها و متغیر استفاده‌نشده برای پچ جداگانه ثبت شده‌اند.
+- اقدام بعدی باید در پچ مستقل انتخاب شود؛ امنیت وابستگی‌ها، بدهی ESLint یا TypeScript سراسری نباید با هم ترکیب شوند.

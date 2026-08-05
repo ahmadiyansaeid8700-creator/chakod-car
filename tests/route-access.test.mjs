@@ -5,6 +5,7 @@ import {
   canOpenAdminCommerce,
   hasAdminRouteAccess,
   hasAuthenticatedRouteAccess,
+  resolveAdminRouteAccess,
 } from "../lib/route-access.ts";
 
 test("requires a confirmed authenticated identity for private dealer routes", () => {
@@ -17,6 +18,21 @@ test("requires an explicitly confirmed admin identity for admin routes", () => {
   assert.equal(hasAdminRouteAccess({ success: true, is_admin: true }), true);
   assert.equal(hasAdminRouteAccess({ success: true, is_admin: false }), false);
   assert.equal(hasAdminRouteAccess({ success: false, is_admin: true }), false);
+});
+
+test("resolves admin routing separately for admins, signed-in users, and guests", () => {
+  assert.equal(
+    resolveAdminRouteAccess(
+      { success: true, is_admin: true },
+      { success: true, logged_in: true },
+    ),
+    "allow",
+  );
+  assert.equal(
+    resolveAdminRouteAccess(null, { success: true, logged_in: true }),
+    "home",
+  );
+  assert.equal(resolveAdminRouteAccess(null, null), "login");
 });
 
 test("does not expose commerce merely because a user is an admin", () => {

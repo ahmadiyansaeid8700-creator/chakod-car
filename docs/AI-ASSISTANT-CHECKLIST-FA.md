@@ -10,11 +10,12 @@
 
 ```text
 Current AI phase: AI-1 — هسته مستقل و fallback آفلاین
-Working branch: agent/ai-independent-core
+Working branch: backup-latest-2026-08-03
 Cloud model: اختیاری
-Independent core: پیاده‌سازی و تست‌شده
-Draft pull request: #2 ایجاد شده
-CI workflow: موفق — Run 31039523698
+Independent core: پیاده‌سازی، تست و ادغام‌شده
+Pull request: #2 ادغام شد
+Merged commit: dc3174352d5c1cae46c085dc65bbd5956a9a2e63
+CI workflow: موفق — Run 31039733336
 Full verified build: در CI اجرا نشد؛ پیش‌نیازهای محیط میزبانی موجود نیست
 ```
 
@@ -118,13 +119,13 @@ Full verified build: در CI اجرا نشد؛ پیش‌نیازهای محیط 
 - [ ] تست Performance و حجم Bundle.
 - [x] ایجاد شاخه مستقل `agent/ai-independent-core` از شاخه کاری صحیح پروژه.
 - [x] ذخیره تمام تغییرات AI-1 در Commitهای مستقل GitHub.
-- [x] ایجاد Draft Pull Request شماره ۲ به مقصد `backup-latest-2026-08-03`.
+- [x] ایجاد Pull Request شماره ۲ به مقصد `backup-latest-2026-08-03`.
 - [x] افزودن Workflow مستقل GitHub Actions برای تست هسته AI، ESLint و TypeScript.
-- [x] اجرای Workflow و موفقیت تست‌ها، ESLint و TypeScript اختصاصی هسته در Run `31039523698`.
+- [x] اجرای Workflow و موفقیت تست‌ها، ESLint و TypeScript اختصاصی هسته در Run `31039733336`.
 - [!] TypeScript سراسری پروژه دارای خطاهای قدیمی Affiliate، Cloudflare types و فایل‌های محیط Build است؛ در پچ آماده‌سازی استارت رفع می‌شود.
 - [!] Build کامل در GitHub CI به‌علت نبود `.openai/hosting.json` و `build/sites-vite-plugin` اجرا نشد.
 - [ ] انتشار مرحله‌ای و امکان غیرفعال‌سازی فوری.
-- [ ] ادغام Pull Request پس از موفقیت تست‌ها و تأیید مالک پروژه.
+- [x] ادغام Pull Request شماره ۲ در شاخه `backup-latest-2026-08-03` با Commit `dc317435`.
 
 ## Patch AI-1 — هسته مستقل دستیار
 
@@ -136,9 +137,10 @@ Full verified build: در CI اجرا نشد؛ پیش‌نیازهای محیط 
 - Environment impact: ندارد؛ `OPENAI_API_KEY` همچنان اختیاری است
 - Safety: فقط مسیرهای داخلی مجاز و داده‌های واقعی ارائه‌شده به هسته استفاده می‌شوند
 - Tests: پنج تست از پنج تست موفق؛ ESLint موفق؛ TypeScript اختصاصی هسته موفق
-- CI: GitHub Actions Run `31039523698` موفق
+- CI: GitHub Actions Run `31039733336` موفق
 - Full build: در CI به‌دلیل نبود پیش‌نیازهای محلی میزبانی اجرا نشد
-- Pull Request: Draft PR شماره ۲
+- Pull Request: شماره ۲ ادغام شد
+- Published commit: `dc3174352d5c1cae46c085dc65bbd5956a9a2e63`
 - Rollback: بازگشت شاخه به Commit مبنای `6ed6fceb540a14ba2a5de31fc9a9dcb1cb540480`
 
 ## شرط پایان

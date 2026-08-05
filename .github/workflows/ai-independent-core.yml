@@ -39,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Run independent AI tests
-        run: node --test tests/ai-assistant-offline.test.mjs
+        run: node --experimental-strip-types --test tests/ai-assistant-offline.test.mjs
 
       - name: Lint affected files
         run: >-

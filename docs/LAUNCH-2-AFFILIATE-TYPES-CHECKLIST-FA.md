@@ -5,11 +5,12 @@
 ## وضعیت
 
 ```text
-Phase: Launch-2
-Working branch: agent/launch-2-affiliate-types
+Phase: Launch-2 — تکمیل‌شده
+Working branch: backup-latest-2026-08-03
 Base branch: backup-latest-2026-08-03
-Pull Request: #4
-CI Run: 31047367901 — موفق
+Pull Request: #4 — ادغام‌شده
+Published commit: 7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee
+Final CI Run: 31047552740 — موفق
 Rollback point: b8fe5125c661a859a86c5dc455ee92e54f786eca
 ```
 
@@ -43,8 +44,8 @@ Rollback point: b8fe5125c661a859a86c5dc455ee92e54f786eca
 
 - [x] Pull Request مستقل Launch-2 با شماره ۴ ساخته شد.
 - [x] GitHub Actions Run شماره `31047367901` موفق شد.
-- [ ] Pull Request پس از آخرین Check در `backup-latest-2026-08-03` ادغام شود.
-- [ ] نتیجه نهایی در `PROJECT_CONTEXT.md` و `TODO.md` ثبت شود.
+- [x] Pull Request شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` در `backup-latest-2026-08-03` ادغام شد.
+- [x] نتیجه نهایی در `PROJECT_CONTEXT.md` و `TODO.md` ثبت شد.
 
 ## بدهی‌های فنی ثبت‌شده و خارج از این پچ
 
@@ -58,7 +59,7 @@ Rollback point: b8fe5125c661a859a86c5dc455ee92e54f786eca
 
 - [x] خطاهای `HeadersInit` در هر دو پنل Affiliate رفع شدند.
 - [x] شرط فنی TypeScript و اجرای محلی Affiliate تأیید شد.
-- [~] مرحله تا ادغام PR شماره ۴ و ثبت نهایی مستندات باز می‌ماند.
+- [x] Launch-2 بسته شد و پروژه برای پچ روزانه بعدی آماده است.
 
 ## شرط پایان
 

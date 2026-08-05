@@ -97,3 +97,23 @@ Published commit:
 Open blockers:
 Next action:
 ```
+
+
+## Launch-2 — Affiliate TypeScript (تکمیل‌شده)
+
+- [x] شاخه مستقل Launch-2 ساخته شد.
+- [x] نوع هدرهای احراز هویت پنل کاربر Affiliate اصلاح شد.
+- [x] نوع هدرهای احراز هویت پنل مدیریت Affiliate اصلاح شد.
+- [x] TypeScript اختصاصی Affiliate موفق شد.
+- [x] TypeScript سراسری بدون خطای Affiliate اجرا شد.
+- [x] ۲۷ تست Regression موفق شدند.
+- [x] Smoke Test مسیرهای Affiliate موفق شد.
+- [x] PR شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` ادغام شد.
+- [x] نتیجه در `docs/LAUNCH-2-AFFILIATE-TYPES-CHECKLIST-FA.md` ثبت شد.
+
+### اقدام‌های باز بعد از Launch-2
+
+- [ ] دو خطای import تست با پسوند `.ts` در پچ TypeScript مستقل تعیین تکلیف شوند.
+- [ ] وابستگی‌های محیط Build در `vite.config.ts` فقط در محیط واقعی Cloudflare بررسی شوند.
+- [ ] پنج هشدار قدیمی ESLint Affiliate در پچ مستقل اصلاح شوند.
+- [ ] ۱۸ آسیب‌پذیری npm در پچ امنیت وابستگی‌ها و بدون `npm audit fix --force` بررسی شوند.

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { hasAdminRouteAccess } from "../../lib/route-access";
+import { resolveAdminRouteAccess } from "../../lib/route-access";
 import { readServerIdentity } from "../../lib/server-route-access";
 
 export const dynamic = "force-dynamic";
@@ -10,9 +10,17 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const identity = await readServerIdentity("/api/admin-me.php");
+  const adminIdentity = await readServerIdentity("/api/admin-me.php");
 
-  if (!hasAdminRouteAccess(identity)) redirect("/");
+  if (adminIdentity?.success === true && adminIdentity.is_admin === true) {
+    return children;
+  }
+
+  const userIdentity = await readServerIdentity("/api/me.php");
+  const resolution = resolveAdminRouteAccess(adminIdentity, userIdentity);
+
+  if (resolution === "login") redirect("/login?returnTo=%2Fadmin");
+  if (resolution === "home") redirect("/");
 
   return children;
 }

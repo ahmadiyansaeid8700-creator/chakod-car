@@ -98,7 +98,6 @@ Open blockers:
 Next action:
 ```
 
-
 ## Launch-2 — Affiliate TypeScript (تکمیل‌شده)
 
 - [x] شاخه مستقل Launch-2 ساخته شد.
@@ -117,3 +116,106 @@ Next action:
 - [ ] وابستگی‌های محیط Build در `vite.config.ts` فقط در محیط واقعی Cloudflare بررسی شوند.
 - [ ] پنج هشدار قدیمی ESLint Affiliate در پچ مستقل اصلاح شوند.
 - [ ] ۱۸ آسیب‌پذیری npm در پچ امنیت وابستگی‌ها و بدون `npm audit fix --force` بررسی شوند.
+
+## Launch-3 — جلسه 2026-08-06
+
+### وضعیت شاخه
+
+```text
+Base branch: backup-latest-2026-08-03
+Launch branch: agent/launch-3-local-baseline
+Base head: e60973bcc149559994cc859f87d7f980c8667f0c
+Latest saved session handoff: f72d69dc5c171eaecc2cb23168ef30275b0443dc
+Main: untouched
+```
+
+### آماده‌سازی و Smoke Test انجام‌شده
+
+- [x] Git، Node.js و npm روی لپ‌تاپ تایید شدند.
+- [x] شاخه مبنا Fast-forward شد.
+- [x] `npm.cmd ci` با نصب ۵۲۸ پکیج موفق شد.
+- [x] شاخه `agent/launch-3-local-baseline` فعال شد.
+- [x] Vite روی `127.0.0.1:5173` بالا آمد.
+- [x] `/` در Chrome باز و برند تایید شد.
+- [x] `/cars` در زوم ۱۰۰ درصد باز شد.
+- [x] `/login` در زوم ۱۰۰ درصد باز شد.
+- [x] `/account/affiliate` رندر شد.
+- [x] دسترسی کاربر عادی به `/admin/affiliate` مسدود شد.
+- [x] دسترسی مهمان Incognito به `/admin/affiliate` مسدود شد.
+
+### هویت برند
+
+- [x] نام فارسی `چاکود` تایید شد.
+- [x] نام لاتین `Chakod` تایید شد.
+- [x] شعار `پلتفرم رشد کسب و کار` تایید شد.
+- [~] تصویر سه‌بعدی بنفش به عنوان مرجع لوگو دریافت شد.
+- [ ] Asset نهایی Open Graph و آیکن‌های لانچ از روی مرجع آماده شوند.
+
+### ایرادهای ثبت‌شده
+
+- [!] دریافت اطلاعات `/account/affiliate` در Local شکست خورد.
+- [!] مهمان `/admin/affiliate` به `/` رفت، نه `/login`.
+- [!] ورود آزمایشی لوکال باید پیش از Production غیرفعال شود.
+- [~] کارت‌های `/cars` عمدتا Placeholder دارند.
+- [~] زبان فارسی و انگلیسی و RTL بعضی کارت‌ها یکدست نیست.
+- [~] Grid انتهای فهرست خودرو برای تعداد فرد فضای خالی زیاد دارد.
+- [~] هشدار `DEP0205 module.register()` در اجرای Vite دیده شد.
+
+## پچ فعال — Admin guest redirect
+
+```text
+Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
+Implementation commits:
+bf4e9b563bb3b9ff1ec0f97981145f4ff7d78a52
+68a016e27d2e1d3916a4ece57a3cb4d2000bf38f
+f8fa8cb82ed05fc031f3be6aa06c7c17bce4f1f4
+Checklist commit:
+b4acbe4d8e141888cf47366e378e0fe639fbccda
+```
+
+- [~] تصمیم سه‌حالته `allow | login | home` پیاده‌سازی شده است.
+- [~] مهمان به `/login?returnTo=%2Fadmin` هدایت می‌شود.
+- [~] کاربر عادی واردشده به `/` برمی‌گردد.
+- [~] تست Regression سه حالت اضافه شده است.
+- [ ] آخرین Commitهای شاخه روی لپ‌تاپ Pull شوند.
+- [ ] `node --test tests/route-access.test.mjs` اجرا شود.
+- [ ] `npx.cmd tsc --noEmit -p tsconfig.launch.json` اجرا شود.
+- [ ] Vite دوباره اجرا شود.
+- [ ] مهمان Incognito از `/admin/affiliate` به `/login?returnTo=%2Fadmin` برسد.
+- [ ] کاربر آزمایشی عادی همچنان از `/admin/affiliate` به `/` برگردد.
+- [ ] Console و ترمینال برای خطای جدید بررسی شوند.
+- [ ] پس از موفقیت واقعی، چک‌لیست پچ و Go-Live به `[x]` به‌روزرسانی شوند.
+- [ ] PR مستقل Launch-3 فقط بعد از تست‌های موفق ساخته شود.
+
+## نقطه شروع جلسه بعد
+
+در PowerShell داخل VS Code و مسیر `C:\Users\Computer Bartar\chakod-car`:
+
+```powershell
+git status
+git pull --ff-only origin agent/launch-3-local-baseline
+node --test tests/route-access.test.mjs
+npx.cmd tsc --noEmit -p tsconfig.launch.json
+npm.cmd run dev
+```
+
+اولویت بعد از پایان پچ Redirect:
+
+1. بررسی Network و Console خطای Affiliate.
+2. تحلیل امن `npm audit`.
+3. رفع دو import تست TypeScript.
+4. آماده‌سازی محیط واقعی Build Cloudflare.
+5. ادامه تست جریان‌های ورود، آگهی، تصویر، مدیریت و Staging.
+
+## گزارش پایان جلسه
+
+```text
+Date: 2026-08-06 03:11 +03:30
+Phase: Launch-3 — Local Baseline
+Patch: Admin guest redirect
+Completed: راه‌اندازی لپ‌تاپ، Smoke Test صفحات پایه، ثبت برند و کشف ایراد Redirect
+Tests: تست تصویری انجام شد؛ تست خودکار پچ جدید هنوز اجرا نشده
+Published state: تمام کد و مستندات جلسه روی agent/launch-3-local-baseline ذخیره شده‌اند
+Open blockers: Affiliate API، Redirect تست‌نشده، Local login در Production، Build Cloudflare، امنیت وابستگی‌ها
+Next action: Pull و تست پچ Admin guest redirect
+```

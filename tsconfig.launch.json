@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "incremental": false,
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules",
+    ".next",
+    "vite.config.ts",
+    "app/account/affiliate/**",
+    "app/admin/affiliate/**"
+  ]
+}

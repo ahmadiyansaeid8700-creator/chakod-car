@@ -9,10 +9,10 @@ import {
   buildAdminKnowledge,
   buildPublicKnowledge,
 } from "@/lib/ai-assistant/context";
+import { buildOfflineAssistantReply } from "@/lib/ai-assistant/offline";
 import {
   askChakodAssistant,
   AssistantServiceError,
-  buildUnconfiguredReply,
 } from "@/lib/ai-assistant/openai";
 
 export const runtime = "nodejs";
@@ -63,19 +63,33 @@ export async function POST(request: Request) {
     const adminKnowledge = requestedAdmin
       ? await buildAdminKnowledge(parsed.page, sessionToken)
       : null;
+    const knowledge =
+      adminKnowledge || (await buildPublicKnowledge(lastMessage, parsed.page));
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        buildUnconfiguredReply(adminKnowledge ? "admin" : "user"),
+        buildOfflineAssistantReply(
+          parsed.messages,
+          knowledge,
+          "cloud_not_configured",
+        ),
         responseInit(200),
       );
     }
 
-    const knowledge =
-      adminKnowledge || (await buildPublicKnowledge(lastMessage, parsed.page));
-    const result = await askChakodAssistant(parsed.messages, knowledge);
-
-    return NextResponse.json(result, responseInit(200));
+    try {
+      const result = await askChakodAssistant(parsed.messages, knowledge);
+      return NextResponse.json(result, responseInit(200));
+    } catch {
+      return NextResponse.json(
+        buildOfflineAssistantReply(
+          parsed.messages,
+          knowledge,
+          "cloud_unavailable",
+        ),
+        responseInit(200),
+      );
+    }
   } catch (error) {
     const status =
       error instanceof AssistantServiceError ? error.status : 400;

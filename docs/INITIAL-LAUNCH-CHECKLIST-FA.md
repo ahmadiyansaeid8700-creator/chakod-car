@@ -8,6 +8,7 @@
 Phase: Launch-1
 Working branch: agent/initial-launch-readiness
 Base branch: backup-latest-2026-08-03
+Pull Request: #3
 Rollback point: dadecbc21b00884ce6af54e2c17c471bffa001cc
 ```
 
@@ -17,7 +18,8 @@ Rollback point: dadecbc21b00884ce6af54e2c17c471bffa001cc
 - [x] شاخه مستقل آماده‌سازی استارت اولیه ساخته شد.
 - [x] تنظیم TypeScript مخصوص استارت اولیه اضافه شد.
 - [x] تعریف حداقلی نوع‌های Cloudflare Runtime اضافه شد.
-- [ ] Pull Request آماده‌سازی استارت اولیه ساخته شود.
+- [x] Workflow مستقل استارت اولیه اضافه شد.
+- [x] Pull Request شماره ۳ آماده‌سازی استارت اولیه ساخته شد.
 
 ## نصب و کنترل کیفیت
 

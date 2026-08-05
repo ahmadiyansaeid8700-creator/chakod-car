@@ -38,14 +38,17 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [x] مسیر `/account/affiliate` باز شد و پس از حالت بارگذاری، فرم همکاری در فروش رندر شد.
 - [!] دریافت اطلاعات پنل `/account/affiliate` در محیط Local شکست خورد و پیام `دریافت اطلاعات انجام نشد` نمایش داده شد.
 - [x] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد و مرورگر به `/` برگشت.
-- [~] Redirect مهمان واقعی بدون Session از `/admin/affiliate` به `/login` هنوز جداگانه تست نشده است.
+- [x] دسترسی مهمان واقعی بدون Session در Incognito به `/admin/affiliate` مسدود شد.
+- [!] مهمان واقعی نیز به اشتباه به `/` برگشت؛ رفتار مورد انتظار `/login?returnTo=%2Fadmin` است.
+- [~] پچ تفکیک مهمان، کاربر عادی و ادمین روی GitHub پیاده سازی شده ولی هنوز روی لپ تاپ Pull و تست نشده است.
 - [~] بررسی Console مرورگر و ترمینال برای خطاهای Runtime.
 - [ ] توقف صحیح سرور و ثبت نتیجه در این فایل.
 
 ## فاز ۲ — سلامت کد و Regression
 
-- [ ] اجرای TypeScript محدوده Launch.
+- [ ] اجرای TypeScript محدوده Launch پس از Pull پچ Redirect.
 - [ ] اجرای TypeScript اختصاصی Affiliate.
+- [ ] اجرای تست Regression جدید `tests/route-access.test.mjs`.
 - [ ] تعیین تکلیف دو import تست با پسوند `.ts`.
 - [ ] جداسازی خطاهای واقعی برنامه از وابستگی های محیط Cloudflare.
 - [ ] اجرای ESLint و رفع Errorها.
@@ -83,8 +86,9 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [ ] ثبت نام کاربر جدید.
 - [ ] ورود و خروج.
 - [ ] بازیابی یا تغییر رمز در صورت وجود قابلیت.
-- [ ] عملکرد امن `returnTo` بعد از ورود.
-- [~] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد؛ سایر مسیرهای `/admin/*` و رفتار مهمان واقعی هنوز کامل تست نشده اند.
+- [~] منطق امن `returnTo` برای مهمان ادمین در پچ جدید پیاده سازی شده ولی هنوز Runtime تست نشده است.
+- [~] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد.
+- [!] Redirect مهمان ادمین پیش از پچ اشتباه بود و باید بعد از Pull دوباره تست شود.
 - [ ] جلوگیری از دسترسی غیرمجاز به `/dealers/*` و صفحات حساب دیگران.
 - [ ] انقضای Session و رفتار Token نامعتبر.
 - [!] دکمه `ورود آزمایشی لوکال` فقط برای توسعه مجاز است و باید پیش از Production غیرفعال یا از خروجی تولید حذف شود.
@@ -105,7 +109,8 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 
 - [~] پنل Affiliate کاربر، فرم مشخصات و کانال های معرفی در محیط Local رندر شدند.
 - [!] API یا اتصال داده پنل Affiliate کاربر در Local پاسخ موفق نداد؛ علت باید از Network، Console، Session و تنظیمات محیط مشخص شود.
-- [~] کنترل دسترسی Affiliate ادمین برای کاربر عادی عمل کرد و صفحه ادمین رندر نشد؛ نقش مهمان و ادمین واقعی هنوز تست نشده اند.
+- [~] کنترل دسترسی Affiliate ادمین برای کاربر عادی و مهمان مانع رندر صفحه شد؛ مقصد Redirect مهمان نیازمند تایید پچ جدید است.
+- [ ] پنل Affiliate با نقش ادمین واقعی تست شود.
 - [ ] دستیار AI بدون کلید ابری با هسته مستقل.
 - [ ] Fallback هنگام Timeout یا خطای مدل ابری.
 - [ ] عدم دریافت یا نمایش Token، رمز و اطلاعات کارت.
@@ -146,7 +151,7 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [~] در انتهای فهرست یک کارت تنها و فضای خالی زیاد دیده می شود؛ چیدمان Grid برای تعداد فرد باید اصلاح یا توجیه شود.
 - [~] صفحه `/login` در Chrome و زوم ۱۰۰ درصد بررسی شد؛ چیدمان، لوگو و فرم اصلی پایدار دیده شدند.
 - [~] صفحه `/account/affiliate` ابتدا Loading Card و سپس فرم کامل را نشان داد؛ پیام خطای دریافت داده برای کاربر قابل مشاهده و نیازمند اصلاح است.
-- [~] مراجعه کاربر عادی به `/admin/affiliate` او را به صفحه اصلی برگرداند؛ پیام عدم دسترسی یا Redirect مهمان به ورود هنوز ارزیابی نشده است.
+- [~] مراجعه کاربر عادی و مهمان به `/admin/affiliate` صفحه ادمین را باز نکرد؛ مقصد مهمان پیش از پچ اشتباه بود.
 - [ ] بررسی RTL، فونت فارسی و شکست خطوط در همه صفحات.
 - [ ] بررسی فرم ها با صفحه کلید و Focus قابل مشاهده.
 - [ ] متن جایگزین تصاویر مهم.
@@ -195,15 +200,37 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [ ] مانیتورینگ ۲۴ ساعت اول فعال است.
 - [ ] فقط پس از موارد بالا تصمیم درباره ادغام با `main` گرفته شود.
 
+## پچ جاری — Admin guest redirect
+
+```text
+Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
+Implementation commits:
+bf4e9b563bb3b9ff1ec0f97981145f4ff7d78a52
+68a016e27d2e1d3916a4ece57a3cb4d2000bf38f
+f8fa8cb82ed05fc031f3be6aa06c7c17bce4f1f4
+Checklist commit:
+b4acbe4d8e141888cf47366e378e0fe639fbccda
+Session handoff commit:
+f72d69dc5c171eaecc2cb23168ef30275b0443dc
+```
+
+- [~] پیاده سازی روی GitHub ذخیره شده است.
+- [ ] Pull روی لپ تاپ.
+- [ ] تست واحد Route access.
+- [ ] TypeScript محدوده Launch.
+- [ ] Smoke Test مهمان Incognito.
+- [ ] Smoke Test کاربر عادی.
+- [ ] ثبت نتیجه و ساخت PR فقط پس از موفقیت.
+
 ## گزارش اجرای جاری
 
 ```text
-Date: 2026-08-06
+Date: 2026-08-06 03:11 +03:30
 Phase: Launch-3 — Local Baseline
-Patch: چک لیست Go-Live و اجرای پایه محلی
-Completed: ابزارها، شاخه لانچ، Pull امن، npm ci، اجرای Vite، صفحه اصلی، `/cars`، `/login`، رندر `/account/affiliate`، مسدودسازی `/admin/affiliate` برای کاربر عادی و تایید برند
-Tests: Vite 8.0.13 در 948ms آماده شد؛ مسیرهای پایه در Chrome و زوم ۱۰۰ درصد با اسکرین شات تایید شدند
-Published commit: در انتظار تکمیل Smoke Test و PR
-Open blockers: شکست دریافت داده Affiliate، تست مهمان واقعی، ورود آزمایشی لوکال در Production، تصاویر Placeholder، یکدستی زبان، چیدمان انتهای Grid، Console مرورگر، Build Cloudflare و امنیت وابستگی ها
-Next action: تست `/admin/affiliate` در حالت Incognito بدون Session و سپس بررسی Console و Network خطای Affiliate
+Patch: Admin guest redirect
+Completed: ابزارها، شاخه لانچ، npm ci، اجرای Vite، صفحات پایه، رندر Affiliate، تست کاربر عادی و مهمان، تایید برند
+Tests: تست تصویری انجام شد؛ تست خودکار و Runtime پچ Redirect هنوز اجرا نشده است
+Saved state: AI_HANDOFF.md، PROJECT_CONTEXT.md، TODO.md و چک لیست اختصاصی پچ روی GitHub ذخیره شده اند
+Open blockers: Redirect مهمان تست نشده پس از پچ، شکست دریافت داده Affiliate، ورود آزمایشی لوکال در Production، تصاویر Placeholder، Build Cloudflare و امنیت وابستگی ها
+Next action: Pull شاخه، اجرای route-access test و TypeScript، سپس تست مجدد Incognito
 ```

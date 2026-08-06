@@ -77,12 +77,13 @@ Rollback point: af175a0b2c6dce2d39e6139964bf1c9dc97cd577
 - [x] تست `Test-NetConnection api.chakod.com -Port 443` اجرا شد؛ دامنه به `10.10.34.35` Resolve شد و `TcpTestSucceeded` برابر `False` بود.
 - [x] تست DNS عمومی با Resolver مستقل `1.1.1.1` اجرا شد و دامنه به IPهای عمومی Cloudflare یعنی `172.67.204.1` و `104.21.77.33` Resolve شد.
 - [x] DNS فعال کارت `Wi-Fi` بررسی شد و `ServerAddresses` برابر `192.168.1.1` بود.
+- [x] PowerShell با دسترسی Administrator باز شد، DNS کارت `Wi-Fi` روی `1.1.1.1` و `1.0.0.1` تنظیم شد و Cache ویندوز بدون خطا پاک شد.
 - [!] داده واقعی خودروهای لوکس هنوز تایید نشده است؛ اتصال مستقیم به `api.chakod.com:443` پیش از دریافت پاسخ Timeout می‌شود.
 - [!] آدرس `10.10.34.35` در محدوده خصوصی `10.0.0.0/8` قرار دارد و از مسیر اینترنت عمومی قابل دسترسی نیست.
 - [!] DNS فعال سیستم از مودم با آدرس `192.168.1.1` دریافت می‌شود و مودم یا Resolver بالادستی آن برای دامنه API پاسخ خصوصی اشتباه برمی‌گرداند.
 - [!] Console در Runtime پاسخ‌های `502` و `522` برای API کسب‌وکارها، استوری‌ها، ذخیره آگهی و API عمومی چاکود نشان داد؛ این مورد مربوط به پایداری بک‌اند است و با ریسپانسیو اشتباه گرفته نشود.
 - [!] پراکسی محلی و رابط کاربری علت اصلی این Timeout نیستند؛ مسیر بالادست مستقیما هم پاسخ نداده است.
-- [~] DNS کارت `Wi-Fi` باید موقتا روی Resolver عمومی تنظیم و سپس Cache ویندوز پاک شود تا مسیر API دوباره آزمایش شود.
+- [~] باید Resolve پیش‌فرض ویندوز دوباره بررسی شود تا تایید شود سیستم از DNS عمومی جدید استفاده می‌کند.
 
 ## Commitها
 
@@ -112,8 +113,8 @@ Mobile safe-spacing regression test:
 ## اقدام بعدی
 
 ```powershell
-# Terminal: Windows PowerShell (Run as administrator)
+# Terminal: Administrator Windows PowerShell
 # Folder: هر مسیر
 
-Set-DnsClientServerAddress -InterfaceAlias "Wi-Fi" -ServerAddresses ("1.1.1.1","1.0.0.1"); Clear-DnsClientCache
+Resolve-DnsName api.chakod.com -Type A
 ```

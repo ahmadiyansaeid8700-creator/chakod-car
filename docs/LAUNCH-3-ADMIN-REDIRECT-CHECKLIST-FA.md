@@ -10,7 +10,7 @@ Affected route: /admin/*
 Login route: /login?returnTo=/admin
 Database impact: ندارد
 Environment impact: ندارد
-Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
+Rollback point: 3be38a804d6639e0594d2395c5e3238d4cb8ec0
 ```
 
 ## شواهد پیش از اصلاح
@@ -32,7 +32,8 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [x] آخرین Commitهای شاخه با Fast-forward روی لپ تاپ دریافت شدند و HEAD محلی تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` به روز شد.
 - [x] `node --test tests/route-access.test.mjs` اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون خروجی اجرا شد.
-- [ ] اجرای سرور محلی پس از تغییر.
+- [x] سرور محلی پس از تغییر با Vite `8.0.13` روی `http://127.0.0.1:5173/` در `3246ms` آماده شد.
+- [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام استارت دیده شد و نیازمند بررسی منبع است.
 - [ ] تایید مهمان ناشناس: `/admin/affiliate` به `/login?returnTo=%2Fadmin` برسد.
 - [ ] تایید کاربر عادی: `/admin/affiliate` باز نشود و به `/` برگردد.
 - [ ] بررسی نبود خطای جدید در ترمینال و Console.
@@ -56,6 +57,13 @@ TypeScript result:
 - command: npx.cmd tsc --noEmit -p tsconfig.launch.json
 - result: success; no diagnostics printed
 
-Status: پیاده سازی شده، روی لپ تاپ دریافت شده، تست واحد و TypeScript موفق هستند؛ در انتظار Smoke Test Runtime
+Runtime result:
+- command: npm.cmd run dev
+- Vite: 8.0.13
+- ready_ms: 3246
+- local_url: http://127.0.0.1:5173/
+- warning: DEP0205 module.register() deprecation; non-blocking
+
+Status: پیاده سازی شده، روی لپ تاپ دریافت شده، تست واحد و TypeScript موفق هستند و سرور محلی بالا آمده است؛ در انتظار Smoke Test مرورگر
 Published commit: هنوز ادغام نشده
 ```

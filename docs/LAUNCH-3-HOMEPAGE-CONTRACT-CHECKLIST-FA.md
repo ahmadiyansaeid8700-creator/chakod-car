@@ -59,6 +59,7 @@ Rollback point: af175a0b2c6dce2d39e6139964bf1c9dc97cd577
 - [x] تست قرارداد بعد از افزودن ریسپانسیو دوباره اجرا شد.
 - [x] نتیجه نهایی خودکار ثبت شد: ۶ تست موفق، صفر شکست، صفر Skip، مدت `100.5623ms`.
 - [x] ساختار، مسیرهای اصلی، لوکیشن مشترک، Grid صفحات مقصد و قرارداد ریسپانسیو با تست خودکار تایید شدند.
+- [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون Diagnostic اجرا شد.
 - [~] بررسی تصویری جداگانه در عرض تبلت و موبایل هنوز باقی مانده است.
 - [~] باز شدن واقعی دکمه‌های `نمایش همه` و چیدمان مقصد باید در Runtime مرورگر تکمیل شود.
 
@@ -87,5 +88,5 @@ b9c36afde1a2bf2bfbf7bbd898868acf02c87636
 # Terminal: PowerShell
 # Folder: C:\Users\Computer Bartar\chakod-car
 
-npx.cmd tsc --noEmit -p tsconfig.launch.json
+npm.cmd run dev
 ```

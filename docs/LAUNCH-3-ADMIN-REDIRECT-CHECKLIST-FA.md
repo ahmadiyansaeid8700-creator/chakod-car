@@ -24,7 +24,7 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [~] تصمیم دسترسی سه حالته `allow | login | home` در `lib/route-access.ts` اضافه شد.
 - [~] ادمین تاییدشده اجازه ورود دارد.
 - [~] کاربر واردشده ولی غیرادمین به `/` برمی گردد.
-- [~] مهمان بدون Session به `/login?returnTo=%2Fadmin` منتقل می شود.
+- [x] مهمان بدون Session در Runtime به `/login?returnTo=%2Fadmin` منتقل شد.
 - [x] تست Regression برای هر سه حالت در `tests/route-access.test.mjs` اضافه و با موفقیت اجرا شد.
 
 ## تست های لازم
@@ -34,10 +34,10 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون خروجی اجرا شد.
 - [x] سرور محلی پس از تغییر با Vite `8.0.13` روی `http://127.0.0.1:5173/` در `3246ms` آماده شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام استارت دیده شد و نیازمند بررسی منبع است.
-- [ ] تایید مهمان ناشناس: `/admin/affiliate` به `/login?returnTo=%2Fadmin` برسد.
+- [x] مهمان ناشناس در Incognito از `/admin/affiliate` به `/login?returnTo=%2Fadmin` منتقل شد.
 - [ ] تایید کاربر عادی: `/admin/affiliate` باز نشود و به `/` برگردد.
 - [ ] بررسی نبود خطای جدید در ترمینال و Console.
-- [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`.
+- [~] نتیجه مهمان در `docs/GO-LIVE-CHECKLIST-FA.md` ثبت شد؛ نتیجه نهایی پچ پس از تست کاربر عادی ثبت می شود.
 
 ## وضعیت انتشار
 
@@ -64,6 +64,11 @@ Runtime result:
 - local_url: http://127.0.0.1:5173/
 - warning: DEP0205 module.register() deprecation; non-blocking
 
-Status: پیاده سازی شده، روی لپ تاپ دریافت شده، تست واحد و TypeScript موفق هستند و سرور محلی بالا آمده است؛ در انتظار Smoke Test مرورگر
+Guest smoke result:
+- input: http://127.0.0.1:5173/admin/affiliate
+- final_url: http://127.0.0.1:5173/login?returnTo=%2Fadmin
+- result: success
+
+Status: تست مهمان، تست واحد و TypeScript موفق هستند؛ در انتظار تست Runtime کاربر عادی و بررسی Console
 Published commit: هنوز ادغام نشده
 ```

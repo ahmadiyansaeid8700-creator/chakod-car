@@ -43,7 +43,7 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 
 ## تست های لازم
 
-- [ ] توقف صحیح Vite پیش از Pull.
+- [x] Vite پیش از Pull با `Ctrl + C` متوقف شد و ترمینال به PowerShell برگشت.
 - [ ] Pull امن با Fast-forward روی لپ تاپ.
 - [ ] اجرای `node --test tests/local-public-api.test.mjs`.
 - [ ] اجرای دوباره `node --test tests/route-access.test.mjs` برای اطمینان از نبود Regression دسترسی.
@@ -57,6 +57,6 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده ولی هنوز روی لپ تاپ Pull و تست نشده است
+Status: پیاده سازی شده و Vite برای Pull امن متوقف شده است؛ هنوز روی لپ تاپ Pull و تست نشده است
 Published commit: هنوز ادغام نشده
 ```

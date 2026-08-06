@@ -8,19 +8,32 @@ import {
   proxyAuthenticatedJson,
   rejectCrossSiteMutation,
 } from "../../../../lib/chakod-auth-proxy";
-import { getCommerceCatalogItem } from "../../../../lib/commerce-catalog";
 import { getFinanceOwnerKey } from "../../../../lib/finance-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_TYPES = new Set(["wallet_charge", "promotion", "subscription"]);
-const CODE_PATTERN = /^[a-z0-9_-]{2,64}$/i;
-const ORDER_PATTERN = /^CHK-\d{10,}-[A-Z0-9]{10}$/;
+const ALLOWED_TYPES = new Set(["wallet_charge", "promotion", "subscription", "service"]);
+const CODE_PATTERN = /^[a-z0-9_-]{2,80}$/i;
+const ORDER_PATTERN = /^[a-z0-9_-]{6,100}$/i;
 const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
 
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function orderDescription(order: typeof commerceOrders.$inferSelect) {
+  if (order.orderType === "wallet_charge") return "افزایش موجودی کیف پول چاکود";
+
+  try {
+    const metadata = JSON.parse(order.metadataJson) as Record<string, unknown>;
+    const title = cleanText(metadata.service_title || metadata.listing_title, 180);
+    if (title) return title;
+  } catch {
+    // Product code is a safe fallback when metadata is unavailable.
+  }
+
+  return `خدمت چاکود: ${order.productCode}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -43,8 +56,8 @@ export async function POST(request: NextRequest) {
   }
 
   const type = cleanText(input.type, 32);
-  const code = cleanText(input.code, 64);
-  const orderNo = cleanText(input.order_no, 80);
+  const code = cleanText(input.service_key || input.code, 80);
+  const orderNo = cleanText(input.order_no, 100);
   const idempotencyKey = cleanText(input.idempotency_key, 100);
   const callbackPath = cleanText(input.callback_path, 160);
 
@@ -53,7 +66,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!CODE_PATTERN.test(code)) {
-    return jsonResponse({ success: false, message: "کد محصول معتبر نیست." }, 400);
+    return jsonResponse({ success: false, message: "کد خدمت معتبر نیست." }, 400);
   }
 
   if (!ORDER_PATTERN.test(orderNo) || !IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
@@ -89,14 +102,6 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "این سفارش در وضعیت قابل پرداخت نیست." }, 409);
     }
 
-    const product = type === "wallet_charge" ? null : getCommerceCatalogItem(type, code);
-    if (type !== "wallet_charge" && !product) {
-      return jsonResponse({ success: false, message: "محصول انتخاب‌شده دیگر فعال نیست." }, 409);
-    }
-
-    const description = type === "wallet_charge"
-      ? "افزایش موجودی کیف پول چاکود"
-      : product!.title;
     const safeCallbackPath = callbackPath.startsWith("/account/payments/")
       ? callbackPath
       : "/account/payments/callback";
@@ -111,9 +116,10 @@ export async function POST(request: NextRequest) {
         order_no: order.orderNo,
         idempotency_key: order.idempotencyKey,
         type: order.orderType,
+        service_key: order.productCode,
         code: order.productCode,
         amount_toman: order.finalAmountToman,
-        description,
+        description: orderDescription(order),
         callback_url: callbackUrl.toString(),
       }),
     });

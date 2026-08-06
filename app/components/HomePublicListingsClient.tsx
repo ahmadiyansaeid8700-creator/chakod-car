@@ -1,4 +1,4 @@
-// CHAKOD_HOME_LOCATION_MULTI_REGION_V4
+// CHAKOD_HOME_LOCATION_MULTI_REGION_V5
 "use client";
 
 import Link from "next/link";
@@ -11,6 +11,9 @@ import {
   type HomeLocationSelection,
 } from "./home-location";
 import HomeHorizontalRail from "./HomeHorizontalRail";
+import HomeVehicleCard, {
+  HomeVehicleCardFallback,
+} from "./HomeVehicleCard";
 import ListingCard, { type ListingCardData } from "./ListingCard";
 
 const API_BASE_URL = "https://api.chakod.com/api/listings.php";
@@ -78,6 +81,7 @@ const luxuryBrands = [
   "maybach",
   "مایباخ",
   "tesla",
+  "تسلا",
   "genesis",
   "جنسیس",
   "infiniti",
@@ -95,11 +99,6 @@ const luxuryBrands = [
   "lucano",
   "لوکانو",
 ];
-
-const FALLBACKS: Record<Tone, string[]> = {
-  luxury: ["خودروهای لوکس منتخب", "خودروهای وارداتی ممتاز", "جدیدترین آگهی‌های لوکس"],
-  freezone: ["خودروهای منطقه آزاد", "تازه‌های مناطق آزاد", "آگهی‌های ویژه منطقه آزاد"],
-};
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -290,40 +289,22 @@ function ShowcaseSection({
       >
         {hasListings
           ? listings.map((listing) => (
-              <ListingCard
+              <HomeVehicleCard
                 key={listing.id}
                 listing={listing}
                 badge={badge}
                 tone={tone}
-                variant="rail"
               />
             ))
-          : FALLBACKS[tone].map((label, index) => (
-              <Link
-                className={`homeVehicleFallbackCard homeVehicleFallbackCard--${tone}`}
+          : [0, 1, 2].map((index) => (
+              <HomeVehicleCardFallback
+                key={`${tone}-${index}`}
+                tone={tone}
                 href={allHref}
-                key={label}
-              >
-                <span className="homeVehicleFallbackVisual">
-                  <img
-                    src="/brand/chakod-symbol.png"
-                    alt=""
-                    aria-hidden="true"
-                  />
-                  <i>{String(index + 1).padStart(2, "0")}</i>
-                </span>
-                <span className="homeVehicleFallbackCopy">
-                  <strong>{label}</strong>
-                  <small>
-                    {status === "loading"
-                      ? `در حال دریافت آگهی‌های ${locationLabel}`
-                      : `مشاهده آگهی‌های موجود در ${locationLabel}`}
-                  </small>
-                  <b>
-                    ورود به ویترین <span aria-hidden="true">←</span>
-                  </b>
-                </span>
-              </Link>
+                status={status}
+                locationLabel={locationLabel}
+                index={index}
+              />
             ))}
       </HomeHorizontalRail>
     </section>
@@ -481,114 +462,6 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           />
         </>
       )}
-
-      <style>{`
-        .homeVehicleFallbackCard {
-          width: min(340px, 82vw);
-          min-width: min(340px, 82vw);
-          min-height: 210px;
-          padding: 20px;
-          border: 1px solid #e4d8f1;
-          border-radius: 23px;
-          display: grid;
-          grid-template-columns: 90px minmax(0, 1fr);
-          align-items: center;
-          gap: 17px;
-          color: #251735;
-          background: linear-gradient(145deg, #ffffff, #faf7ff);
-          box-shadow: 0 14px 36px rgba(42, 26, 68, 0.07);
-          scroll-snap-align: start;
-        }
-
-        .homeVehicleFallbackCard--freezone {
-          border-color: #d7e9ee;
-          background: linear-gradient(145deg, #ffffff, #f2fbfc);
-        }
-
-        .homeVehicleFallbackVisual {
-          position: relative;
-          width: 90px;
-          height: 116px;
-          border-radius: 21px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(150deg, #efe7ff, #ffffff);
-          box-shadow: inset 0 0 0 1px rgba(109, 40, 217, 0.1);
-        }
-
-        .homeVehicleFallbackCard--freezone .homeVehicleFallbackVisual {
-          background: linear-gradient(150deg, #e5f7fa, #ffffff);
-        }
-
-        .homeVehicleFallbackVisual img {
-          width: 50px;
-          height: 62px;
-          object-fit: contain;
-        }
-
-        .homeVehicleFallbackVisual i {
-          position: absolute;
-          left: 8px;
-          bottom: 7px;
-          color: #7c3aed;
-          font-size: 8px;
-          font-style: normal;
-          font-weight: 950;
-        }
-
-        .homeVehicleFallbackCopy,
-        .homeVehicleFallbackCopy strong,
-        .homeVehicleFallbackCopy small {
-          display: block;
-          min-width: 0;
-        }
-
-        .homeVehicleFallbackCopy strong {
-          color: #251735;
-          font-size: 14px;
-          line-height: 1.7;
-        }
-
-        .homeVehicleFallbackCopy small {
-          margin-top: 7px;
-          color: #81758b;
-          font-size: 9px;
-          line-height: 1.9;
-        }
-
-        .homeVehicleFallbackCopy b {
-          margin-top: 16px;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          color: #6d28d9;
-          font-size: 8px;
-          font-weight: 950;
-        }
-
-        @media (max-width: 560px) {
-          .homeVehicleFallbackCard {
-            width: min(292px, 84vw);
-            min-width: min(292px, 84vw);
-            min-height: 170px;
-            padding: 14px;
-            grid-template-columns: 70px minmax(0, 1fr);
-            gap: 12px;
-            border-radius: 19px;
-          }
-
-          .homeVehicleFallbackVisual {
-            width: 70px;
-            height: 92px;
-            border-radius: 17px;
-          }
-
-          .homeVehicleFallbackVisual img {
-            width: 40px;
-            height: 50px;
-          }
-        }
-      `}</style>
     </>
   );
 }

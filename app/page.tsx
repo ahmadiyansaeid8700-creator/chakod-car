@@ -82,9 +82,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <HomeStories />
       </div>
 
-      <HomePublicListingsClient query={query} />
-
       <HomeFeaturedShowrooms location="همه شهرها" query={query} />
+
+      <HomePublicListingsClient query={query} />
 
       <HomeBusinessLinks />
       <HomeGuides />

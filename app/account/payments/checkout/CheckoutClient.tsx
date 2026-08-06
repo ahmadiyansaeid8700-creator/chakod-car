@@ -6,12 +6,24 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MobileBottomNav from "../../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
-type CheckoutSelection = {
-  type: "wallet_charge" | "promotion" | "subscription";
-  code: string;
+type CheckoutType = "wallet_charge" | "promotion" | "subscription" | "service";
+
+type CommerceService = {
+  service_key: string;
   title: string;
-  description: string;
-  amount: number;
+  audience?: string;
+  amount_toman: number;
+  duration_value?: number;
+  duration_unit?: string;
+  is_active: boolean;
+  settings?: Record<string, unknown>;
+};
+
+type CommerceResponse = {
+  success?: boolean;
+  message?: string;
+  services?: CommerceService[];
+  payment_gateway_ready?: boolean;
 };
 
 type CreateOrderResponse = {
@@ -21,6 +33,7 @@ type CreateOrderResponse = {
     order_no: string;
     amount_toman: number;
     status: string;
+    product_code?: string;
   };
 };
 
@@ -28,48 +41,30 @@ type CreatePaymentResponse = {
   success?: boolean;
   message?: string;
   payment_url?: string;
-  authority?: string;
-  order_id?: string | number;
 };
 
-const promotionProducts: Record<string, Omit<CheckoutSelection, "type" | "code">> = {
-  boost: {
-    title: "بالابر آگهی",
-    description: "انتقال آگهی به ابتدای نتایج مرتبط",
-    amount: 149_000,
-  },
-  featured: {
-    title: "آگهی ویژه",
-    description: "نمایش برجسته‌تر همراه نشان ویژه",
-    amount: 349_000,
-  },
-  story: {
-    title: "استوری منطقه‌ای",
-    description: "نمایش استوری برای کاربران محدوده انتخابی",
-    amount: 690_000,
-  },
-  banner: {
-    title: "بنر صفحه اصلی",
-    description: "مبلغ بنر براساس استان، تاریخ و ظرفیت محاسبه می‌شود.",
-    amount: 0,
-  },
+const legacyServiceKeys: Record<string, string> = {
+  boost: "listing_bump",
+  featured: "listing_featured",
+  story: "listing_story",
+  professional: "professional_profile_6m",
+  dealership: "professional_profile_12m",
 };
 
-const subscriptionPlans: Record<string, Omit<CheckoutSelection, "type" | "code">> = {
-  professional: {
-    title: "اشتراک حرفه‌ای",
-    description: "فعال‌سازی امکانات حرفه‌ای کسب‌وکار برای یک ماه",
-    amount: 1_490_000,
-  },
-  dealership: {
-    title: "اشتراک نمایشگاه حرفه‌ای",
-    description: "مدیریت تیم، موجودی خودرو و گزارش حرفه‌ای برای یک ماه",
-    amount: 2_490_000,
-  },
+const serviceDescriptions: Record<string, string> = {
+  listing_personal_publish: "انتشار آگهی شخصی با تعرفه فعال سایت",
+  listing_personal_renew: "تمدید آگهی شخصی بدون ثبت دوباره",
+  listing_dealer_publish: "انتشار آگهی با تعرفه نمایشگاهی",
+  listing_dealer_renew: "تمدید آگهی نمایشگاه",
+  listing_bump: "انتقال آگهی فعال به ابتدای نتایج مرتبط",
+  listing_featured: "نمایش برجسته‌تر آگهی همراه نشان ویژه",
+  listing_story: "نمایش آگهی در استوری کاربران محدوده مرتبط",
+  professional_profile_6m: "فعال‌سازی امکانات حرفه‌ای مجموعه برای شش ماه",
+  professional_profile_12m: "فعال‌سازی امکانات حرفه‌ای مجموعه برای یک سال",
 };
 
 function formatToman(value: number) {
-  return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+  return `${new Intl.NumberFormat("fa-IR").format(Number(value || 0))} تومان`;
 }
 
 function normalizeAmount(value: string) {
@@ -99,8 +94,22 @@ async function readJson<T>(response: Response): Promise<T | null> {
   }
 }
 
+function checkoutType(value: string | null): CheckoutType {
+  if (value === "promotion" || value === "subscription" || value === "service") return value;
+  return "wallet_charge";
+}
+
+function typeTitle(type: CheckoutType) {
+  if (type === "wallet_charge") return "کیف پول";
+  if (type === "promotion") return "تبلیغات";
+  if (type === "subscription") return "اشتراک";
+  return "خدمات";
+}
+
 export default function CheckoutClient() {
   const [query, setQuery] = useState("");
+  const [catalog, setCatalog] = useState<CommerceResponse | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [walletAmount, setWalletAmount] = useState("500000");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -109,41 +118,63 @@ export default function CheckoutClient() {
   useEffect(() => {
     setQuery(window.location.search);
     requestKeyRef.current = crypto.randomUUID();
+
+    async function loadCatalog() {
+      setCatalogLoading(true);
+      try {
+        const response = await fetch("/api/auth/commerce", {
+          cache: "no-store",
+          credentials: "include",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const result = await readJson<CommerceResponse>(response);
+        if (!response.ok || !result?.success) {
+          setError(result?.message || "تعرفه‌های فعال دریافت نشد.");
+          return;
+        }
+        setCatalog(result);
+      } catch {
+        setError("ارتباط با سامانه تعرفه‌ها برقرار نشد.");
+      } finally {
+        setCatalogLoading(false);
+      }
+    }
+
+    void loadCatalog();
   }, []);
 
   const queryParams = useMemo(() => new URLSearchParams(query), [query]);
+  const type = checkoutType(queryParams.get("type"));
   const listingId = queryParams.get("listing_id") || "";
+  const dealerId = queryParams.get("dealer_id") || "";
+  const province = queryParams.get("province") || "";
+  const discountCode = queryParams.get("discount_code") || "";
+  const requestedCode =
+    queryParams.get("service_key") ||
+    queryParams.get("product") ||
+    queryParams.get("plan") ||
+    "";
+  const serviceKey = legacyServiceKeys[requestedCode] || requestedCode;
+  const service = useMemo(
+    () => (catalog?.services || []).find(
+      (item) => item.service_key === serviceKey && item.is_active,
+    ) || null,
+    [catalog?.services, serviceKey],
+  );
 
-  const selection = useMemo<CheckoutSelection>(() => {
-    const type = queryParams.get("type") || "wallet_charge";
-
-    if (type === "promotion") {
-      const code = queryParams.get("product") || "boost";
-      const product = promotionProducts[code] || promotionProducts.boost;
-      return { type: "promotion", code, ...product };
-    }
-
-    if (type === "subscription") {
-      const code = queryParams.get("plan") || "professional";
-      const plan = subscriptionPlans[code] || subscriptionPlans.professional;
-      return { type: "subscription", code, ...plan };
-    }
-
-    return {
-      type: "wallet_charge",
-      code: "wallet_charge",
-      title: "افزایش موجودی کیف پول",
-      description: "مبلغ دلخواه را برای شارژ کیف پول چاکود وارد کنید.",
-      amount: normalizeAmount(walletAmount),
-    };
-  }, [queryParams, walletAmount]);
-
-  const requiresBannerConfiguration = selection.type === "promotion" && selection.code === "banner";
-  const requiresListing = selection.type === "promotion" && selection.code !== "banner";
+  const isWallet = type === "wallet_charge";
+  const requiresBannerConfiguration = !isWallet && /banner/.test(serviceKey || requestedCode);
+  const requiresListing = !isWallet && serviceKey.startsWith("listing_");
+  const requiresDealer = !isWallet && serviceKey.startsWith("professional_profile_");
   const hasValidListing = /^\d+$/.test(listingId) && Number(listingId) > 0;
-  const amountLabel = requiresBannerConfiguration
-    ? "پس از انتخاب استان و تاریخ"
-    : formatToman(selection.amount);
+  const hasValidDealer = /^\d+$/.test(dealerId) && Number(dealerId) > 0;
+  const amount = isWallet ? normalizeAmount(walletAmount) : Number(service?.amount_toman || 0);
+  const title = isWallet ? "افزایش موجودی کیف پول" : service?.title || "خدمت انتخاب‌شده";
+  const description = isWallet
+    ? "مبلغ دلخواه را برای شارژ کیف پول چاکود وارد کنید."
+    : serviceDescriptions[serviceKey] || "تعرفه و مدت این خدمت از پنل مدیریت چاکود خوانده می‌شود.";
+  const gatewayReady = isWallet ? true : catalog?.payment_gateway_ready !== false;
+  const serviceUnavailable = !isWallet && !catalogLoading && !service && !requiresBannerConfiguration;
 
   async function startPayment() {
     setError("");
@@ -158,7 +189,22 @@ export default function CheckoutClient() {
       return;
     }
 
-    if (selection.amount < 10_000) {
+    if (requiresDealer && !hasValidDealer) {
+      window.location.assign("/account/business");
+      return;
+    }
+
+    if (serviceUnavailable) {
+      setError("این خدمت در تنظیمات فعلی سایت فعال نیست.");
+      return;
+    }
+
+    if (!gatewayReady) {
+      setError("درگاه پرداخت هنوز در تنظیمات محیط فعال نشده است.");
+      return;
+    }
+
+    if (amount < 10_000) {
       setError("مبلغ پرداخت باید حداقل ۱۰ هزار تومان باشد.");
       return;
     }
@@ -186,10 +232,13 @@ export default function CheckoutClient() {
           ...authHeaders(),
         },
         body: JSON.stringify({
-          type: selection.type,
-          code: selection.code,
-          amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
+          type,
+          service_key: isWallet ? "wallet_charge" : serviceKey,
+          amount_toman: isWallet ? amount : undefined,
           listing_id: requiresListing ? Number(listingId) : undefined,
+          dealer_id: requiresDealer ? Number(dealerId) : undefined,
+          province: province || undefined,
+          discount_code: discountCode || undefined,
           idempotency_key: idempotencyKey,
         }),
       });
@@ -210,8 +259,8 @@ export default function CheckoutClient() {
           ...authHeaders(),
         },
         body: JSON.stringify({
-          type: selection.type,
-          code: selection.code,
+          type,
+          service_key: isWallet ? "wallet_charge" : serviceKey,
           order_no: orderResult.order.order_no,
           idempotency_key: idempotencyKey,
           callback_path: "/account/payments/callback",
@@ -232,13 +281,21 @@ export default function CheckoutClient() {
     }
   }
 
+  const missingTarget =
+    (requiresListing && !hasValidListing) || (requiresDealer && !hasValidDealer);
   const actionLabel = submitting
     ? "در حال اتصال به درگاه..."
     : requiresBannerConfiguration
       ? "تکمیل اطلاعات بنر"
       : requiresListing && !hasValidListing
         ? "انتخاب آگهی"
-        : `پرداخت ${formatToman(selection.amount)}`;
+        : requiresDealer && !hasValidDealer
+          ? "انتخاب مجموعه"
+          : serviceUnavailable
+            ? "خدمت غیرفعال است"
+            : !gatewayReady
+              ? "درگاه در انتظار تنظیم"
+              : `پرداخت ${formatToman(amount)}`;
 
   return (
     <main className={styles.page} dir="rtl">
@@ -253,10 +310,10 @@ export default function CheckoutClient() {
         <section className={styles.checkoutGrid}>
           <div className={styles.checkoutCard}>
             <span className={styles.eyebrow}>تسویه حساب امن</span>
-            <h1>{selection.title}</h1>
-            <p>{selection.description}</p>
+            <h1>{catalogLoading && !isWallet ? "در حال دریافت تعرفه..." : title}</h1>
+            <p>{description}</p>
 
-            {selection.type === "wallet_charge" && (
+            {isWallet && (
               <label className={styles.amountField}>
                 <span>مبلغ افزایش موجودی</span>
                 <div>
@@ -285,7 +342,7 @@ export default function CheckoutClient() {
             {requiresListing && !hasValidListing && (
               <div className={styles.securityNote}>
                 <span>۱</span>
-                <p>برای خرید این محصول ابتدا یکی از آگهی‌های قابل مدیریت خود را انتخاب کنید.</p>
+                <p>برای خرید این خدمت ابتدا یکی از آگهی‌های قابل مدیریت خود را انتخاب کنید.</p>
               </div>
             )}
 
@@ -296,47 +353,49 @@ export default function CheckoutClient() {
               </div>
             )}
 
+            {serviceUnavailable && (
+              <div className={styles.securityNote}>
+                <span>!</span>
+                <p>این خدمت در فهرست تعرفه‌های فعال Commerce وجود ندارد و تا فعال‌سازی مدیر قابل خرید نیست.</p>
+              </div>
+            )}
+
             {error && <div className={styles.error}>{error}</div>}
 
             <button
               className={styles.payButton}
               type="button"
-              disabled={submitting}
+              disabled={submitting || catalogLoading || serviceUnavailable || !gatewayReady}
               onClick={() => void startPayment()}
             >
               {actionLabel}
             </button>
 
-            {!requiresBannerConfiguration && (!requiresListing || hasValidListing) && (
+            {!requiresBannerConfiguration && !missingTarget && !serviceUnavailable && (
               <div className={styles.securityNote}>
                 <span>✓</span>
-                <p>تراکنش فقط پس از ساخت سفارش، بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
+                <p>مبلغ از Commerce خوانده می‌شود و تراکنش فقط پس از تأیید سمت سرور نهایی خواهد شد.</p>
               </div>
             )}
           </div>
 
           <aside className={styles.summaryCard}>
             <span>خلاصه سفارش</span>
-            <div><small>عنوان</small><strong>{selection.title}</strong></div>
-            <div>
-              <small>نوع سفارش</small>
-              <strong>
-                {selection.type === "wallet_charge"
-                  ? "کیف پول"
-                  : selection.type === "promotion"
-                    ? "تبلیغات"
-                    : "اشتراک"}
-              </strong>
-            </div>
+            <div><small>عنوان</small><strong>{title}</strong></div>
+            <div><small>نوع سفارش</small><strong>{typeTitle(type)}</strong></div>
+            {!isWallet && <div><small>کد خدمت</small><strong dir="ltr">{serviceKey || "—"}</strong></div>}
             {requiresListing && (
               <div>
                 <small>آگهی هدف</small>
                 <strong>{hasValidListing ? `#${new Intl.NumberFormat("fa-IR").format(Number(listingId))}` : "انتخاب نشده"}</strong>
               </div>
             )}
-            <div><small>مبلغ</small><strong>{amountLabel}</strong></div>
+            <div><small>مبلغ</small><strong>{catalogLoading && !isWallet ? "در حال دریافت" : formatToman(amount)}</strong></div>
             <hr />
-            <div className={styles.total}><small>مبلغ قابل پرداخت</small><strong>{amountLabel}</strong></div>
+            <div className={styles.total}>
+              <small>مبلغ قابل پرداخت</small>
+              <strong>{catalogLoading && !isWallet ? "—" : formatToman(amount)}</strong>
+            </div>
             <Link href="/account/invoices">مشاهده فاکتورها</Link>
           </aside>
         </section>

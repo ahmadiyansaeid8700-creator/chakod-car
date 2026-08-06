@@ -49,6 +49,7 @@ export const walletTransactions = sqliteTable("wallet_transactions", {
 export const commerceOrders = sqliteTable("commerce_orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   orderNo: text("order_no").notNull().unique(),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
   ownerKey: text("owner_key").notNull(),
   orderType: text("order_type").notNull(),
   productCode: text("product_code").notNull(),

@@ -10,15 +10,21 @@ type Props = {
 
 function Placeholder() {
   return (
-    <div className={styles.placeholder} aria-label="تصویر خودرو ثبت نشده است">
-      <svg viewBox="0 0 160 80" aria-hidden="true">
-        <path d="M24 53h112l-8-21c-2-5-7-8-12-8H55c-5 0-10 3-13 8L24 53Z" />
-        <path d="M17 54h126v10H17z" />
-        <circle cx="48" cy="65" r="10" />
-        <circle cx="116" cy="65" r="10" />
-        <path d="M52 30h55l10 23H38l14-23Z" />
-      </svg>
-      <span>تصویر خودرو در حال تکمیل است</span>
+    <div className={styles.placeholder} aria-label="تصویر برای این آگهی ثبت نشده است">
+      <img
+        src="/brand/chakod-symbol.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          width: 58,
+          height: 68,
+          objectFit: "contain",
+          opacity: 0.92,
+          filter: "drop-shadow(0 10px 18px rgba(15, 8, 26, 0.28))",
+        }}
+      />
+      <strong style={{ fontSize: 12, color: "#fff" }}>چاکود</strong>
+      <span>تصویر برای این آگهی ثبت نشده</span>
     </div>
   );
 }

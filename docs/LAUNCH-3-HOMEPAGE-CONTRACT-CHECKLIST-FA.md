@@ -72,8 +72,10 @@ Rollback point: af175a0b2c6dce2d39e6139964bf1c9dc97cd577
 - [x] مسیر `نمایش همه` خودروهای منطقه آزاد در Runtime باز شد و صفحه `/cars/free-zone` آگهی‌ها را به صورت چندردیفه/عمودی همراه با فیلترها نمایش داد.
 - [x] مالک ظاهر و ساختار صفحه مقصد خودروهای منطقه آزاد را تایید کرد.
 - [x] مسیر `/cars/luxury` در Runtime باز شد و بنر، تب‌ها، فیلترها و Grid چندردیفه صفحه درست رندر شدند.
-- [~] کارت‌های واقعی خودروهای لوکس در زمان بررسی روی Skeleton باقی ماندند؛ بارگذاری داده و ظاهر نهایی کارت‌ها هنوز تایید نشده است.
+- [x] بعد از `Ctrl + F5`، صفحه لوکس از Skeleton خارج شد و حالت خطای کنترل‌شده `ارتباط با بازار خودرو برقرار نشد` همراه با دکمه تلاش دوباره نمایش داده شد.
+- [!] داده واقعی خودروهای لوکس هنوز تایید نشده است؛ درخواست بازار خودرو در Runtime شکست می‌خورد.
 - [!] Console در Runtime پاسخ‌های `502` و `522` برای API کسب‌وکارها، استوری‌ها، ذخیره آگهی و API عمومی چاکود نشان داد؛ این مورد مربوط به پایداری بک‌اند است و با ریسپانسیو اشتباه گرفته نشود.
+- [~] بررسی مستقیم endpoint بالادست `https://api.chakod.com/api/listings.php` باقی مانده است تا مشخص شود خطا پیش از پراکسی محلی رخ می‌دهد یا در لایه محلی.
 
 ## Commitها
 
@@ -102,8 +104,9 @@ Mobile safe-spacing regression test:
 
 ## اقدام بعدی
 
-```text
-Runtime retry:
-/cars/luxury
-Goal: replace Skeleton with actual listing cards or capture API failure evidence.
+```powershell
+# Terminal: PowerShell
+# Folder: C:\Users\Computer Bartar\chakod-car
+
+curl.exe -i --max-time 15 "https://api.chakod.com/api/listings.php?segment=luxury&limit=12&page=1&sort=vip"
 ```

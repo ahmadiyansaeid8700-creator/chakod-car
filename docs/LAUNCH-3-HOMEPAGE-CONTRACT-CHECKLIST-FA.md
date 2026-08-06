@@ -73,9 +73,11 @@ Rollback point: af175a0b2c6dce2d39e6139964bf1c9dc97cd577
 - [x] مالک ظاهر و ساختار صفحه مقصد خودروهای منطقه آزاد را تایید کرد.
 - [x] مسیر `/cars/luxury` در Runtime باز شد و بنر، تب‌ها، فیلترها و Grid چندردیفه صفحه درست رندر شدند.
 - [x] بعد از `Ctrl + F5`، صفحه لوکس از Skeleton خارج شد و حالت خطای کنترل‌شده `ارتباط با بازار خودرو برقرار نشد` همراه با دکمه تلاش دوباره نمایش داده شد.
-- [!] داده واقعی خودروهای لوکس هنوز تایید نشده است؛ درخواست بازار خودرو در Runtime شکست می‌خورد.
+- [x] درخواست مستقیم معتبر با `curl.exe` به endpoint لوکس اجرا شد و بعد از `15015ms` با `Connection timed out` و بدون دریافت داده پایان یافت.
+- [!] داده واقعی خودروهای لوکس هنوز تایید نشده است؛ اتصال مستقیم به `api.chakod.com:443` پیش از دریافت پاسخ Timeout می‌شود.
 - [!] Console در Runtime پاسخ‌های `502` و `522` برای API کسب‌وکارها، استوری‌ها، ذخیره آگهی و API عمومی چاکود نشان داد؛ این مورد مربوط به پایداری بک‌اند است و با ریسپانسیو اشتباه گرفته نشود.
-- [~] بررسی مستقیم endpoint بالادست `https://api.chakod.com/api/listings.php` باقی مانده است تا مشخص شود خطا پیش از پراکسی محلی رخ می‌دهد یا در لایه محلی.
+- [!] پراکسی محلی و رابط کاربری علت اصلی این Timeout نیستند؛ مسیر بالادست مستقیما هم پاسخ نداده است.
+- [~] تست مستقل DNS و TCP پورت `443` باقی مانده تا دامنه تشخیص بین DNS، مسیر شبکه و دسترس‌پذیری سرور محدودتر شود.
 
 ## Commitها
 
@@ -105,8 +107,8 @@ Mobile safe-spacing regression test:
 ## اقدام بعدی
 
 ```powershell
-# Terminal: PowerShell
+# Terminal: PowerShell دوم
 # Folder: C:\Users\Computer Bartar\chakod-car
 
-curl.exe -i --max-time 15 "https://api.chakod.com/api/listings.php?segment=luxury&limit=12&page=1&sort=vip"
+Test-NetConnection api.chakod.com -Port 443
 ```

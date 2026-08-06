@@ -38,6 +38,19 @@ type ListingCardProps = {
   showActions?: boolean;
 };
 
+const SPEC_LABELS: Record<string, string> = {
+  automatic: "اتوماتیک",
+  auto: "اتوماتیک",
+  at: "اتوماتیک",
+  manual: "دستی",
+  mt: "دستی",
+  clean: "بدون رنگ",
+  original: "بدون رنگ",
+  painted: "رنگ شدگی",
+  accident: "تصادفی",
+  damaged: "آسیب دیده",
+};
+
 function getImageUrl(path?: string | null) {
   if (!path) return "";
   if (path.startsWith("http")) return path;
@@ -73,6 +86,16 @@ function formatMileage(mileage?: number | null) {
   return `${new Intl.NumberFormat("fa-IR").format(Number(mileage))} کیلومتر`;
 }
 
+function formatYear(year?: number | null) {
+  if (!year) return "سال نامشخص";
+  return new Intl.NumberFormat("fa-IR", { useGrouping: false }).format(year);
+}
+
+function formatSpec(value?: string | null) {
+  const normalized = value?.trim().toLowerCase() || "";
+  return SPEC_LABELS[normalized] || value?.trim() || "مشخصات تکمیلی";
+}
+
 function getSellerLabel(listing: ListingCardData) {
   if (listing.dealer_name?.trim()) return listing.dealer_name.trim();
 
@@ -103,11 +126,12 @@ export default function ListingCard({
     .filter(Boolean)
     .join("، ");
   const displayBadge = badge || listing.category_name || "آگهی خودرو";
+  const displayTitle = listing.title?.trim() || "آگهی خودرو";
 
   const specs = [
-    listing.production_year ? String(listing.production_year) : "سال نامشخص",
+    formatYear(listing.production_year),
     formatMileage(listing.mileage_km),
-    listing.transmission || listing.body_status || "مشخصات تکمیلی",
+    formatSpec(listing.transmission || listing.body_status),
   ];
 
   return (
@@ -117,8 +141,8 @@ export default function ListingCard({
       }`}
     >
       <div className={styles.media}>
-        <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${listing.title}`}>
-          <ListingCardImage src={imageUrl} alt={listing.title} />
+        <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${displayTitle}`}>
+          <ListingCardImage src={imageUrl} alt={displayTitle} />
         </Link>
 
         <span className={styles.badge}>{displayBadge}</span>
@@ -133,9 +157,9 @@ export default function ListingCard({
       <div className={styles.body}>
         <Link href={href} prefetch={false} className={styles.mainLink}>
           <div className={styles.titleRow}>
-            <h3>{listing.title}</h3>
+            <h3>{displayTitle}</h3>
             {listing.production_year ? (
-              <span>{listing.production_year}</span>
+              <span>{formatYear(listing.production_year)}</span>
             ) : null}
           </div>
 
@@ -171,14 +195,14 @@ export default function ListingCard({
               <strong>{sellerLabel}</strong>
               <small>
                 {dealerVerified
-                  ? "نمایشگاه تأییدشده"
+                  ? "نمایشگاه تایید شده"
                   : listing.dealer_name
                     ? "فروشنده نمایشگاهی"
                     : "فروشنده شخصی"}
               </small>
             </span>
             {dealerVerified ? (
-              <span className={styles.verified} title="نمایشگاه تأییدشده">
+              <span className={styles.verified} title="نمایشگاه تایید شده">
                 ✓
               </span>
             ) : null}
@@ -195,7 +219,7 @@ export default function ListingCard({
         {showActions ? (
           <ListingCardActions
             listingId={listing.id}
-            title={listing.title}
+            title={displayTitle}
             href={href}
           />
         ) : null}

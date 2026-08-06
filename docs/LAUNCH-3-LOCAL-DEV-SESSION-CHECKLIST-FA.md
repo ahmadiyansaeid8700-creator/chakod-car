@@ -41,7 +41,7 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 
 ## تست های لازم
 
-- [ ] Pull امن پچ روی لپ تاپ.
+- [x] Pull امن پچ روی لپ تاپ با Fast-forward تا Commit `60e33d22baf2a7108f7519a17079489180c91bcc` انجام شد.
 - [ ] اجرای `node --test tests/local-development-session.test.mjs`.
 - [ ] اجرای `node --test tests/route-access.test.mjs`.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
@@ -55,6 +55,6 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده ولی هنوز روی لپ تاپ Pull و تست نشده است
+Status: پیاده سازی شده و روی لپ تاپ Pull شده است؛ در انتظار تست محلی
 Published commit: هنوز ادغام نشده
 ```

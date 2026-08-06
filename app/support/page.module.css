@@ -1,0 +1,227 @@
+.page {
+  min-height: 70vh;
+  background:
+    radial-gradient(circle at top right, rgba(109, 40, 217, 0.1), transparent 30%),
+    linear-gradient(180deg, #fbf9ff 0%, #f7f6fb 62%, #fff 100%);
+  color: #21172f;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 44px 0 80px;
+}
+
+.hero {
+  border-radius: 28px;
+  background: linear-gradient(135deg, #32104f, #6d28d9 62%, #8b5cf6);
+  padding: 38px 40px;
+  color: #fff;
+  box-shadow: 0 24px 56px rgba(73, 34, 120, 0.22);
+}
+
+.hero > span,
+.faq header span,
+.footerCard span {
+  color: #ddd0ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.hero h1 {
+  margin: 9px 0 12px;
+  font-size: clamp(32px, 5vw, 52px);
+}
+
+.hero p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255,255,255,.82);
+  line-height: 2;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.heroActions a {
+  display: inline-flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 13px;
+  background: rgba(255,255,255,.1);
+  padding: 0 16px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.heroActions a:first-child {
+  background: #fff;
+  color: #6424bd;
+}
+
+.topicGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.topicGrid article {
+  display: flex;
+  min-height: 270px;
+  flex-direction: column;
+  border: 1px solid rgba(78,54,103,.12);
+  border-radius: 22px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 15px 38px rgba(57,37,78,.06);
+}
+
+.topicGrid article > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 14px;
+  background: #f0e8ff;
+  color: #6d28d9;
+  font-weight: 900;
+}
+
+.topicGrid h2 {
+  margin: 18px 0 8px;
+  font-size: 20px;
+}
+
+.topicGrid p {
+  margin: 0;
+  color: #73657c;
+  line-height: 1.9;
+}
+
+.topicGrid a {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  border-radius: 12px;
+  background: #f1eafd;
+  padding: 0 14px;
+  color: #6424bd;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.faq {
+  margin-top: 18px;
+  border: 1px solid rgba(78,54,103,.12);
+  border-radius: 24px;
+  background: #fff;
+  padding: 26px;
+  box-shadow: 0 16px 40px rgba(57,37,78,.06);
+}
+
+.faq header span,
+.footerCard span {
+  color: #7c3aed;
+}
+
+.faq header h2 {
+  margin: 6px 0 18px;
+}
+
+.faq > div {
+  display: grid;
+  gap: 9px;
+}
+
+.faq details {
+  border: 1px solid #e9e2ee;
+  border-radius: 15px;
+  background: #fcfbfd;
+  padding: 0 16px;
+}
+
+.faq summary {
+  padding: 15px 0;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.faq details p {
+  margin: 0;
+  border-top: 1px solid #ece6f1;
+  padding: 14px 0 16px;
+  color: #6f6278;
+  line-height: 1.9;
+}
+
+.footerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-top: 18px;
+  border: 1px solid rgba(109,40,217,.22);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff, #f4edff);
+  padding: 24px;
+}
+
+.footerCard h2 {
+  margin: 6px 0 7px;
+}
+
+.footerCard p {
+  margin: 0;
+  color: #74667d;
+  line-height: 1.8;
+}
+
+.footerCard a {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: #6d28d9;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .topicGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 650px) {
+  .shell {
+    width: calc(100% - 20px);
+    padding-top: 24px;
+  }
+
+  .hero {
+    padding: 28px 22px;
+    border-radius: 23px;
+  }
+
+  .topicGrid { grid-template-columns: 1fr; }
+  .topicGrid article { min-height: 230px; }
+  .footerCard { align-items: flex-start; flex-direction: column; }
+  .footerCard a { width: 100%; }
+}

@@ -25,12 +25,12 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [~] ادمین تاییدشده اجازه ورود دارد.
 - [~] کاربر واردشده ولی غیرادمین به `/` برمی گردد.
 - [~] مهمان بدون Session به `/login?returnTo=%2Fadmin` منتقل می شود.
-- [~] تست Regression برای هر سه حالت در `tests/route-access.test.mjs` اضافه شد.
+- [x] تست Regression برای هر سه حالت در `tests/route-access.test.mjs` اضافه و با موفقیت اجرا شد.
 
 ## تست های لازم
 
 - [x] آخرین Commitهای شاخه با Fast-forward روی لپ تاپ دریافت شدند و HEAD محلی تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` به روز شد.
-- [ ] اجرای `node --test tests/route-access.test.mjs`.
+- [x] `node --test tests/route-access.test.mjs` اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [ ] اجرای TypeScript محدوده Launch.
 - [ ] اجرای سرور محلی پس از تغییر.
 - [ ] تایید مهمان ناشناس: `/admin/affiliate` به `/login?returnTo=%2Fadmin` برسد.
@@ -46,6 +46,12 @@ Implementation commits:
 - 68a016e27d2e1d3916a4ece57a3cb4d2000bf38f
 - f8fa8cb82ed05fc031f3be6aa06c7c17bce4f1f4
 
-Status: پیاده سازی شده و روی لپ تاپ دریافت شده؛ در انتظار تست محلی
+Local regression result:
+- tests: 4
+- pass: 4
+- fail: 0
+- duration_ms: 5533.182
+
+Status: پیاده سازی شده، روی لپ تاپ دریافت شده و تست واحد موفق است؛ در انتظار TypeScript و Smoke Test
 Published commit: هنوز ادغام نشده
 ```

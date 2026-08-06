@@ -76,12 +76,13 @@ Rollback point: af175a0b2c6dce2d39e6139964bf1c9dc97cd577
 - [x] درخواست مستقیم معتبر با `curl.exe` به endpoint لوکس اجرا شد و بعد از `15015ms` با `Connection timed out` و بدون دریافت داده پایان یافت.
 - [x] تست `Test-NetConnection api.chakod.com -Port 443` اجرا شد؛ دامنه به `10.10.34.35` Resolve شد و `TcpTestSucceeded` برابر `False` بود.
 - [x] تست DNS عمومی با Resolver مستقل `1.1.1.1` اجرا شد و دامنه به IPهای عمومی Cloudflare یعنی `172.67.204.1` و `104.21.77.33` Resolve شد.
+- [x] DNS فعال کارت `Wi-Fi` بررسی شد و `ServerAddresses` برابر `192.168.1.1` بود.
 - [!] داده واقعی خودروهای لوکس هنوز تایید نشده است؛ اتصال مستقیم به `api.chakod.com:443` پیش از دریافت پاسخ Timeout می‌شود.
 - [!] آدرس `10.10.34.35` در محدوده خصوصی `10.0.0.0/8` قرار دارد و از مسیر اینترنت عمومی قابل دسترسی نیست.
-- [!] اختلاف پاسخ DNS محلی با DNS عمومی نشان می‌دهد مسیر DNS فعال سیستم، مودم، VPN یا DNS سازمانی دامنه را به IP خصوصی هدایت می‌کند.
+- [!] DNS فعال سیستم از مودم با آدرس `192.168.1.1` دریافت می‌شود و مودم یا Resolver بالادستی آن برای دامنه API پاسخ خصوصی اشتباه برمی‌گرداند.
 - [!] Console در Runtime پاسخ‌های `502` و `522` برای API کسب‌وکارها، استوری‌ها، ذخیره آگهی و API عمومی چاکود نشان داد؛ این مورد مربوط به پایداری بک‌اند است و با ریسپانسیو اشتباه گرفته نشود.
 - [!] پراکسی محلی و رابط کاربری علت اصلی این Timeout نیستند؛ مسیر بالادست مستقیما هم پاسخ نداده است.
-- [~] باید DNS فعال کارت `Wi-Fi` شناسایی شود تا منبع پاسخ خصوصی مشخص شود.
+- [~] DNS کارت `Wi-Fi` باید موقتا روی Resolver عمومی تنظیم و سپس Cache ویندوز پاک شود تا مسیر API دوباره آزمایش شود.
 
 ## Commitها
 
@@ -111,8 +112,8 @@ Mobile safe-spacing regression test:
 ## اقدام بعدی
 
 ```powershell
-# Terminal: PowerShell دوم
-# Folder: C:\Users\Computer Bartar\chakod-car
+# Terminal: Windows PowerShell (Run as administrator)
+# Folder: هر مسیر
 
-Get-DnsClientServerAddress -InterfaceAlias "Wi-Fi" -AddressFamily IPv4 | Format-List InterfaceAlias,ServerAddresses
+Set-DnsClientServerAddress -InterfaceAlias "Wi-Fi" -ServerAddresses ("1.1.1.1","1.0.0.1"); Clear-DnsClientCache
 ```

@@ -43,7 +43,7 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 
 - [x] Pull امن پچ روی لپ تاپ با Fast-forward تا Commit `60e33d22baf2a7108f7519a17079489180c91bcc` انجام شد.
 - [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
-- [ ] اجرای `node --test tests/route-access.test.mjs`.
+- [x] `node --test tests/route-access.test.mjs` پس از پچ دوباره اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
 - [ ] اجرای Vite پس از Pull.
 - [ ] باز کردن `/api/auth/dev-session` و تایید انتقال به `/account?complete=1`.
@@ -63,9 +63,20 @@ Skipped: 0
 Duration_ms: 162.4838
 ```
 
+## نتیجه Regression دسترسی
+
+```text
+Command: node --test tests/route-access.test.mjs
+Tests: 4
+Pass: 4
+Fail: 0
+Skipped: 0
+Duration_ms: 145.3869
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده، روی لپ تاپ Pull شده و تست مستقل موفق است؛ در انتظار Regression، TypeScript و Smoke Test Runtime
+Status: پیاده سازی شده، روی لپ تاپ Pull شده و هر دو مجموعه تست مستقل و Regression موفق هستند؛ در انتظار TypeScript و Smoke Test Runtime
 Published commit: هنوز ادغام نشده
 ```

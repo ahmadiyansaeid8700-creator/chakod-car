@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  DEFAULT_HOME_LOCATION,
+  HOME_LOCATION_EVENT,
+  getHomeLocationScopes,
+  loadHomeLocation,
+  type HomeLocationSelection,
+} from "./home-location";
 
-type BusinessType = "car_service" | "repair_shop" | "parts_store";
+type BusinessType = "car_service" | "parts_store" | "repair_shop";
 
 type PublicBusiness = {
   id: number;
@@ -42,18 +49,10 @@ const SECTIONS: SectionConfig[] = [
   {
     type: "car_service",
     kicker: "خدمات خودرویی",
-    title: "خدمات خودرویی منتخب",
+    title: "خدمات خودرویی برتر",
     description: "کارواش، دیتیلینگ، سرامیک، شیشه دودی و خدمات تخصصی خودرو.",
     allHref: "/businesses?type=car_service",
     fallbackLabels: ["کارواش و دیتیلینگ", "سرامیک و محافظ رنگ", "خدمات تخصصی خودرو"],
-  },
-  {
-    type: "repair_shop",
-    kicker: "تعمیر و نگهداری",
-    title: "تعمیرکاران برتر",
-    description: "مکانیکی، برق خودرو، سرویس دوره‌ای و تعمیرگاه‌های منتخب چاکود.",
-    allHref: "/businesses?type=repair_shop",
-    fallbackLabels: ["مکانیکی خودرو", "برق خودرو", "سرویس و نگهداری"],
   },
   {
     type: "parts_store",
@@ -63,7 +62,25 @@ const SECTIONS: SectionConfig[] = [
     allHref: "/businesses?type=parts_store",
     fallbackLabels: ["قطعات یدکی", "لاستیک و باتری", "لوازم جانبی خودرو"],
   },
+  {
+    type: "repair_shop",
+    kicker: "تعمیر و نگهداری",
+    title: "تعمیرکاران برتر",
+    description: "مکانیکی، برق خودرو، سرویس دوره‌ای و تعمیرگاه‌های منتخب چاکود.",
+    allHref: "/businesses?type=repair_shop",
+    fallbackLabels: ["مکانیکی خودرو", "برق خودرو", "سرویس و نگهداری"],
+  },
 ];
+
+function normalizeText(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fa")
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/[\u200c\u200f\s_-]+/g, "");
+}
 
 function businessLocation(business: PublicBusiness) {
   return [business.neighborhood, business.city, business.province]
@@ -77,46 +94,83 @@ function businessTags(business: PublicBusiness) {
     .slice(0, 3);
 }
 
-function FeaturedBusinessSection({ config }: { config: SectionConfig }) {
-  const [items, setItems] = useState<PublicBusiness[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+function businessMatchesLocation(
+  business: PublicBusiness,
+  location: HomeLocationSelection,
+) {
+  if (location.mode === "all") return true;
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const params = new URLSearchParams({ type: config.type, limit: "6" });
+  const province = normalizeText(business.province);
+  const city = normalizeText(business.city);
+  const neighborhood = normalizeText(business.neighborhood);
 
-    fetch(`/api/businesses?${params.toString()}`, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const payload = (await response.json()) as ApiResponse;
-        if (!response.ok || !payload.success) throw new Error("Business request failed");
-        const nextItems = Array.isArray(payload.items) ? payload.items : [];
-        setItems(
-          [...nextItems]
-            .sort((a, b) => Number(b.is_verified) - Number(a.is_verified))
-            .slice(0, 6),
-        );
-        setStatus("ready");
-      })
-      .catch((error: unknown) => {
-        if ((error as Error).name !== "AbortError") setStatus("error");
-      });
+  return getHomeLocationScopes(location).some((scope) => {
+    if (normalizeText(scope.province) !== province) return false;
+    if (scope.allCities) return true;
 
-    return () => controller.abort();
-  }, [config.type]);
+    if (scope.cities.some((item) => normalizeText(item) === city)) {
+      return true;
+    }
 
-  const hasItems = status === "ready" && items.length > 0;
+    return (scope.areas || []).some((area) => {
+      if (normalizeText(area.city) !== city) return false;
+      if (area.allNeighborhoods) return true;
+      return area.neighborhoods.some(
+        (item) => normalizeText(item) === neighborhood,
+      );
+    });
+  });
+}
+
+function buildBusinessQueries(location: HomeLocationSelection) {
+  const scopes = getHomeLocationScopes(location);
+
+  if (location.mode === "all" || scopes.length === 0) {
+    return [new URLSearchParams({ limit: "100" })];
+  }
+
+  return scopes.map(
+    (scope) =>
+      new URLSearchParams({
+        limit: "100",
+        province: scope.province,
+      }),
+  );
+}
+
+function FeaturedBusinessSection({
+  config,
+  items,
+  status,
+  locationLabel,
+}: {
+  config: SectionConfig;
+  items: PublicBusiness[];
+  status: "loading" | "ready" | "error";
+  locationLabel: string;
+}) {
+  const sectionItems = items
+    .filter((item) => item.business_type === config.type)
+    .sort(
+      (a, b) =>
+        Number(b.is_verified) - Number(a.is_verified) ||
+        a.name.localeCompare(b.name, "fa"),
+    )
+    .slice(0, 8);
+  const hasItems = status === "ready" && sectionItems.length > 0;
 
   return (
-    <section className="featuredBusinessSection" aria-labelledby={`featured-${config.type}`}>
+    <section
+      className="featuredBusinessSection"
+      aria-labelledby={`featured-${config.type}`}
+    >
       <div className="featuredBusinessHeader">
         <div>
           <span>{config.kicker}</span>
           <h2 id={`featured-${config.type}`}>{config.title}</h2>
-          <p>{config.description}</p>
+          <p>
+            {config.description} <b>{locationLabel}</b>
+          </p>
         </div>
         <Link href={config.allHref}>
           مشاهده همه
@@ -126,7 +180,7 @@ function FeaturedBusinessSection({ config }: { config: SectionConfig }) {
 
       <div className="featuredBusinessRail">
         {hasItems
-          ? items.map((business) => (
+          ? sectionItems.map((business) => (
               <Link
                 className="featuredBusinessCard"
                 href={`/businesses/${business.slug}`}
@@ -134,43 +188,79 @@ function FeaturedBusinessSection({ config }: { config: SectionConfig }) {
               >
                 <span className="featuredBusinessMedia">
                   {business.cover_url ? (
-                    <img src={business.cover_url} alt="" loading="lazy" decoding="async" />
+                    <img
+                      src={business.cover_url}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
-                    <span className="featuredBusinessCoverFallback" aria-hidden="true">چ</span>
+                    <span
+                      className="featuredBusinessCoverFallback"
+                      aria-hidden="true"
+                    >
+                      چ
+                    </span>
                   )}
                   <span className="featuredBusinessIdentity">
                     {business.logo_url ? (
-                      <img src={business.logo_url} alt="" loading="lazy" decoding="async" />
+                      <img
+                        src={business.logo_url}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <b>{business.name.slice(0, 1)}</b>
                     )}
                   </span>
-                  {business.is_verified ? <em>تایید چاکود</em> : null}
+                  {business.is_verified ? <em>تأیید چاکود</em> : null}
                 </span>
 
                 <span className="featuredBusinessCopy">
                   <strong>{business.name}</strong>
-                  <small>{businessLocation(business) || "اطلاعات کامل در پروفایل"}</small>
+                  <small>
+                    {businessLocation(business) || "اطلاعات کامل در پروفایل"}
+                  </small>
                   <span className="featuredBusinessTags">
                     {businessTags(business).map((tag) => (
                       <i key={tag}>{tag}</i>
                     ))}
                     {business.mobile_service ? <i>خدمات در محل</i> : null}
                   </span>
-                  <b>مشاهده اطلاعات کامل <span aria-hidden="true">←</span></b>
+                  <b>
+                    مشاهده اطلاعات کامل <span aria-hidden="true">←</span>
+                  </b>
                 </span>
               </Link>
             ))
           : config.fallbackLabels.map((label, index) => (
-              <Link className="featuredBusinessCard featuredBusinessFallback" href={config.allHref} key={label}>
+              <Link
+                className="featuredBusinessCard featuredBusinessFallback"
+                href={config.allHref}
+                key={label}
+              >
                 <span className="featuredBusinessMedia">
-                  <span className="featuredBusinessCoverFallback" aria-hidden="true">چ</span>
-                  <span className="featuredBusinessIdentity"><b>{index + 1}</b></span>
+                  <span
+                    className="featuredBusinessCoverFallback"
+                    aria-hidden="true"
+                  >
+                    چ
+                  </span>
+                  <span className="featuredBusinessIdentity">
+                    <b>{index + 1}</b>
+                  </span>
                 </span>
                 <span className="featuredBusinessCopy">
                   <strong>{label}</strong>
-                  <small>{status === "loading" ? "در حال دریافت گزینه‌های منتخب" : "مشاهده فهرست کامل کسب‌وکارها"}</small>
-                  <b>ورود به بخش <span aria-hidden="true">←</span></b>
+                  <small>
+                    {status === "loading"
+                      ? `در حال دریافت گزینه‌های ${locationLabel}`
+                      : `مشاهده فهرست کامل ${locationLabel}`}
+                  </small>
+                  <b>
+                    ورود به بخش <span aria-hidden="true">←</span>
+                  </b>
                 </span>
               </Link>
             ))}
@@ -180,12 +270,80 @@ function FeaturedBusinessSection({ config }: { config: SectionConfig }) {
 }
 
 export default function HomeFeaturedBusinesses() {
-  const sections = useMemo(() => SECTIONS, []);
+  const [location, setLocation] = useState<HomeLocationSelection>(
+    DEFAULT_HOME_LOCATION,
+  );
+  const [locationReady, setLocationReady] = useState(false);
+  const [items, setItems] = useState<PublicBusiness[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+
+  useEffect(() => {
+    setLocation(loadHomeLocation());
+    setLocationReady(true);
+
+    const handleLocationChange = (event: Event) => {
+      const customEvent = event as CustomEvent<HomeLocationSelection>;
+      setLocation(customEvent.detail || loadHomeLocation());
+    };
+
+    window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
+    return () => window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
+  }, []);
+
+  useEffect(() => {
+    if (!locationReady) return;
+
+    const controller = new AbortController();
+    setStatus("loading");
+    setItems([]);
+
+    Promise.all(
+      buildBusinessQueries(location).map(async (params) => {
+        const response = await fetch(`/api/businesses?${params.toString()}`, {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as ApiResponse;
+        if (!response.ok || !payload.success) {
+          throw new Error("Business request failed");
+        }
+        return Array.isArray(payload.items) ? payload.items : [];
+      }),
+    )
+      .then((responses) => {
+        const merged = new Map<number, PublicBusiness>();
+        responses.flat().forEach((item) => merged.set(item.id, item));
+        setItems(Array.from(merged.values()));
+        setStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if ((error as Error).name !== "AbortError") {
+          setItems([]);
+          setStatus("error");
+        }
+      });
+
+    return () => controller.abort();
+  }, [location, locationReady]);
+
+  const filteredItems = useMemo(
+    () => items.filter((item) => businessMatchesLocation(item, location)),
+    [items, location],
+  );
 
   return (
     <div className="featuredBusinesses" dir="rtl">
-      {sections.map((config) => (
-        <FeaturedBusinessSection config={config} key={config.type} />
+      {SECTIONS.map((config) => (
+        <FeaturedBusinessSection
+          config={config}
+          items={filteredItems}
+          status={status}
+          locationLabel={location.label}
+          key={config.type}
+        />
       ))}
 
       <style>{`
@@ -218,6 +376,7 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessHeader span { color: #6d28d9; font-size: 9px; font-weight: 950; }
         .featuredBusinessHeader h2 { margin: 5px 0 0; color: #21152f; font-size: clamp(21px, 2vw, 29px); line-height: 1.5; }
         .featuredBusinessHeader p { margin: 6px 0 0; color: #81758b; font-size: 10px; line-height: 1.85; }
+        .featuredBusinessHeader p b { color: #5b21b6; font-weight: 900; }
         .featuredBusinessHeader > a {
           min-height: 39px;
           padding: 0 13px;
@@ -234,21 +393,31 @@ export default function HomeFeaturedBusinesses() {
         }
 
         .featuredBusinessRail {
+          min-width: 0;
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(280px, calc((100% - 24px) / 3));
           gap: 12px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 2px 1px 10px;
+          scroll-snap-type: inline mandatory;
+          scrollbar-width: thin;
+          scrollbar-color: #d7cce8 transparent;
         }
 
         .featuredBusinessCard {
           min-width: 0;
+          min-height: 300px;
           overflow: hidden;
           border: 1px solid #e7ddf0;
           border-radius: 20px;
           display: grid;
-          grid-template-rows: 132px minmax(0, 1fr);
+          grid-template-rows: 142px minmax(0, 1fr);
           color: #251735;
           background: #fff;
           box-shadow: 0 11px 28px rgba(48, 30, 70, 0.05);
+          scroll-snap-align: start;
           transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
         }
 
@@ -298,18 +467,17 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessTags { min-height: 27px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
         .featuredBusinessTags i { min-height: 23px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; color: #604878; background: #f3edfa; font-size: 7px; font-style: normal; font-weight: 850; }
         .featuredBusinessCopy > b { margin-top: auto; padding-top: 13px; color: #5b21b6; font-size: 8px; font-weight: 950; }
-        .featuredBusinessFallback { min-height: 250px; }
 
         @media (max-width: 900px) {
-          .featuredBusinessRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .featuredBusinessRail { grid-auto-columns: min(330px, 78vw); }
         }
 
         @media (max-width: 620px) {
           .featuredBusinesses { width: calc(100% - 20px); gap: 18px; }
           .featuredBusinessSection { padding: 18px 14px; border-radius: 22px; }
           .featuredBusinessHeader { align-items: flex-start; flex-direction: column; gap: 10px; }
-          .featuredBusinessRail { grid-auto-flow: column; grid-auto-columns: min(285px, 82vw); grid-template-columns: none; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
-          .featuredBusinessCard { scroll-snap-align: start; }
+          .featuredBusinessRail { grid-auto-columns: min(285px, 82vw); }
+          .featuredBusinessCard { min-height: 276px; }
         }
       `}</style>
     </div>

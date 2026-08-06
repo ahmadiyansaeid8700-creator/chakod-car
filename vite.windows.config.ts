@@ -12,6 +12,14 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
+    proxy: {
+      "/chakod-api": {
+        target: "https://api.chakod.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/chakod-api/, ""),
+      },
+    },
   },
   plugins: [vinext()],
 });

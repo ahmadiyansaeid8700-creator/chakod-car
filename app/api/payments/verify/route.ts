@@ -6,6 +6,7 @@ import {
   commerceOrders,
   invoices,
   paymentAttempts,
+  wallets,
   walletTransactions,
 } from "../../../../db/schema";
 import {
@@ -143,46 +144,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const verifiedPayload = payload as Record<string, unknown>;
     const invoiceNo = createPublicReference("INV");
-    const gatewayReference = readGatewayReference(payload);
-    const gateway = cleanText(payload.gateway, 32) || "primary";
+    const gatewayReference = readGatewayReference(verifiedPayload);
+    const gateway = cleanText(verifiedPayload.gateway, 32) || "primary";
     const responseJson = JSON.stringify({
       reference_id: gatewayReference,
       gateway,
       verified: true,
     });
-
-    const statements = [
-      db
-        .update(commerceOrders)
-        .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
-        .where(eq(commerceOrders.id, order.id)),
-      db.insert(paymentAttempts).values({
-        orderId: order.id,
-        gateway,
-        authority,
-        gatewayTransactionId: gatewayReference,
-        idempotencyKey: order.idempotencyKey,
-        amountToman: order.finalAmountToman,
-        status: "paid",
-        responseJson,
-        paidAt: new Date().toISOString(),
-      }),
-      db.insert(invoices).values({
-        invoiceNo,
-        orderId: order.id,
-        ownerKey,
-        amountToman: order.finalAmountToman,
-        status: "paid",
-      }),
-    ] as const;
+    const paidAt = new Date().toISOString();
 
     if (order.orderType === "wallet_charge") {
       const wallet = await ensureWallet(ownerKey);
       const nextBalance = wallet.availableBalanceToman + order.finalAmountToman;
 
       await db.batch([
-        ...statements,
+        db
+          .update(commerceOrders)
+          .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+          .where(eq(commerceOrders.id, order.id)),
+        db.insert(paymentAttempts).values({
+          orderId: order.id,
+          gateway,
+          authority,
+          gatewayTransactionId: gatewayReference,
+          idempotencyKey: order.idempotencyKey,
+          amountToman: order.finalAmountToman,
+          status: "paid",
+          responseJson,
+          paidAt,
+        }),
+        db.insert(invoices).values({
+          invoiceNo,
+          orderId: order.id,
+          ownerKey,
+          amountToman: order.finalAmountToman,
+          status: "paid",
+        }),
         db
           .update(wallets)
           .set({
@@ -203,7 +202,30 @@ export async function POST(request: NextRequest) {
         }),
       ]);
     } else {
-      await db.batch([...statements]);
+      await db.batch([
+        db
+          .update(commerceOrders)
+          .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+          .where(eq(commerceOrders.id, order.id)),
+        db.insert(paymentAttempts).values({
+          orderId: order.id,
+          gateway,
+          authority,
+          gatewayTransactionId: gatewayReference,
+          idempotencyKey: order.idempotencyKey,
+          amountToman: order.finalAmountToman,
+          status: "paid",
+          responseJson,
+          paidAt,
+        }),
+        db.insert(invoices).values({
+          invoiceNo,
+          orderId: order.id,
+          ownerKey,
+          amountToman: order.finalAmountToman,
+          status: "paid",
+        }),
+      ]);
     }
 
     return jsonResponse({

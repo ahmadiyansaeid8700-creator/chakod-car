@@ -218,15 +218,17 @@ export default function HomeFeaturedShowrooms({
     [listings, location, query],
   );
 
+  if (status === "error") return null;
+
   return (
     <section className={styles.dealerSection} id="dealers">
       <div className={styles.sectionIntro}>
         <div>
-          <span className={styles.eyebrow}>SHOWROOMS OF CHAKOD</span>
-          <h2>نمایشگاه‌های منتخب</h2>
+          <span className={styles.eyebrow}>نمایشگاه های چاکود</span>
+          <h2>نمایشگاه های منتخب</h2>
         </div>
         <div className={styles.sectionActions}>
-          <a href="/dealerships">
+          <a href="/showrooms">
             نمایش همه
             <span aria-hidden="true">←</span>
           </a>
@@ -236,7 +238,7 @@ export default function HomeFeaturedShowrooms({
       {status === "loading" ? (
         <div
           className={styles.skeletonRail}
-          aria-label="در حال دریافت نمایشگاه‌ها"
+          aria-label="در حال دریافت نمایشگاه ها"
           aria-live="polite"
         >
           {[0, 1, 2].map((item) => (
@@ -250,11 +252,6 @@ export default function HomeFeaturedShowrooms({
             </div>
           ))}
         </div>
-      ) : status === "error" ? (
-        <div className={styles.compactEmpty} role="status">
-          <strong>ویترین نمایشگاه‌ها موقتاً در دسترس نیست</strong>
-          <span>از صفحهٔ همه نمایشگاه‌ها دوباره تلاش کن.</span>
-        </div>
       ) : dealers.length ? (
         <div className={styles.dealerRail}>
           {dealers.map((dealer) => (
@@ -264,7 +261,7 @@ export default function HomeFeaturedShowrooms({
       ) : (
         <div className={styles.compactEmpty}>
           <strong>نمایشگاهی در این محدوده پیدا نشد</strong>
-          <span>لوکیشن یا عبارت جست‌وجو را تغییر بده.</span>
+          <span>محدوده یا عبارت جستجو را تغییر بده.</span>
         </div>
       )}
     </section>

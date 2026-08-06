@@ -1,6 +1,7 @@
 import Link from "next/link";
 import "./home.css";
 import AuthStatus from "./components/AuthStatus";
+import HomeStories from "./components/HomeStories";
 import HomeFeaturedShowrooms from "./components/HomeFeaturedShowrooms";
 import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeMarketSearch from "./components/HomeMarketSearch";
@@ -76,6 +77,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </header>
 
       <HomeBannerSlot />
+
+      <div className="masterStoriesWrap">
+        <HomeStories />
+      </div>
 
       <HomePublicListingsClient query={query} />
 

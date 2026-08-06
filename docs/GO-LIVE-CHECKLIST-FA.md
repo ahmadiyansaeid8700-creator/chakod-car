@@ -39,8 +39,8 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [!] دریافت اطلاعات پنل `/account/affiliate` در محیط Local شکست خورد و پیام `دریافت اطلاعات انجام نشد` نمایش داده شد.
 - [x] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد و مرورگر به `/` برگشت.
 - [x] دسترسی مهمان واقعی بدون Session در Incognito به `/admin/affiliate` مسدود شد.
-- [!] مهمان واقعی پیش از پچ به اشتباه به `/` برگشت؛ رفتار مورد انتظار `/login?returnTo=%2Fadmin` است.
-- [~] پچ تفکیک مهمان، کاربر عادی و ادمین روی لپ تاپ دریافت شد؛ تست واحد و TypeScript آن موفق هستند و Smoke Test Runtime باقی مانده است.
+- [x] پس از پچ، مهمان واقعی به `/login?returnTo=%2Fadmin` منتقل شد.
+- [~] پچ تفکیک مهمان، کاربر عادی و ادمین روی لپ تاپ دریافت شد؛ تست واحد، TypeScript و Smoke Test مهمان موفق هستند و تست دوباره کاربر عادی باقی مانده است.
 - [~] بررسی Console مرورگر و ترمینال برای خطاهای Runtime.
 - [ ] توقف صحیح سرور و ثبت نتیجه در این فایل.
 
@@ -86,9 +86,9 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [ ] ثبت نام کاربر جدید.
 - [ ] ورود و خروج.
 - [ ] بازیابی یا تغییر رمز در صورت وجود قابلیت.
-- [~] منطق امن `returnTo` برای مهمان ادمین در تست واحد تایید شد ولی Runtime هنوز تست نشده است.
-- [~] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد.
-- [!] Redirect مهمان ادمین پیش از پچ اشتباه بود و باید بعد از اجرای سرور دوباره تست شود.
+- [x] منطق امن `returnTo` برای مهمان ادمین در تست واحد و Runtime تایید شد.
+- [~] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد؛ باید یک بار پس از پچ دوباره تایید شود.
+- [x] Redirect اشتباه مهمان ادمین اصلاح شد و مقصد نهایی `/login?returnTo=%2Fadmin` تایید شد.
 - [ ] جلوگیری از دسترسی غیرمجاز به `/dealers/*` و صفحات حساب دیگران.
 - [ ] انقضای Session و رفتار Token نامعتبر.
 - [!] دکمه `ورود آزمایشی لوکال` فقط برای توسعه مجاز است و باید پیش از Production غیرفعال یا از خروجی تولید حذف شود.
@@ -109,7 +109,7 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 
 - [~] پنل Affiliate کاربر، فرم مشخصات و کانال های معرفی در محیط Local رندر شدند.
 - [!] API یا اتصال داده پنل Affiliate کاربر در Local پاسخ موفق نداد؛ علت باید از Network، Console، Session و تنظیمات محیط مشخص شود.
-- [~] کنترل دسترسی Affiliate ادمین برای کاربر عادی و مهمان مانع رندر صفحه شد؛ مقصد Redirect مهمان نیازمند Smoke Test پچ جدید است.
+- [~] کنترل دسترسی Affiliate ادمین برای مهمان تایید شد؛ تست دوباره کاربر عادی و تست نقش ادمین واقعی باقی مانده است.
 - [ ] پنل Affiliate با نقش ادمین واقعی تست شود.
 - [ ] دستیار AI بدون کلید ابری با هسته مستقل.
 - [ ] Fallback هنگام Timeout یا خطای مدل ابری.
@@ -151,7 +151,7 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [~] در انتهای فهرست یک کارت تنها و فضای خالی زیاد دیده می شود؛ چیدمان Grid برای تعداد فرد باید اصلاح یا توجیه شود.
 - [~] صفحه `/login` در Chrome و زوم ۱۰۰ درصد بررسی شد؛ چیدمان، لوگو و فرم اصلی پایدار دیده شدند.
 - [~] صفحه `/account/affiliate` ابتدا Loading Card و سپس فرم کامل را نشان داد؛ پیام خطای دریافت داده برای کاربر قابل مشاهده و نیازمند اصلاح است.
-- [~] مراجعه کاربر عادی و مهمان به `/admin/affiliate` صفحه ادمین را باز نکرد؛ مقصد مهمان پیش از پچ اشتباه بود و باید بعد از اجرای سرور دوباره بررسی شود.
+- [x] مراجعه مهمان به `/admin/affiliate` صفحه ادمین را باز نکرد و او را به صفحه ورود با `returnTo` امن منتقل کرد.
 - [ ] بررسی RTL، فونت فارسی و شکست خطوط در همه صفحات.
 - [ ] بررسی فرم ها با صفحه کلید و Focus قابل مشاهده.
 - [ ] متن جایگزین تصاویر مهم.
@@ -214,23 +214,23 @@ Session handoff commit:
 f72d69dc5c171eaecc2cb23168ef30275b0443dc
 ```
 
-- [~] پیاده سازی روی GitHub ذخیره شده، تست واحد و TypeScript آن موفق هستند؛ Runtime هنوز کامل نشده است.
+- [~] پیاده سازی روی GitHub ذخیره شده، تست واحد، TypeScript و Smoke Test مهمان آن موفق هستند؛ تست کاربر عادی و Console باقی مانده است.
 - [x] Pull روی لپ تاپ با Fast-forward تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` انجام شد.
 - [x] تست واحد Route access با ۴ تست موفق و صفر شکست اجرا شد.
 - [x] TypeScript محدوده Launch بدون خطا اجرا شد.
-- [ ] Smoke Test مهمان Incognito.
-- [ ] Smoke Test کاربر عادی.
-- [ ] ثبت نتیجه و ساخت PR فقط پس از موفقیت.
+- [x] Smoke Test مهمان Incognito به `/login?returnTo=%2Fadmin` رسید.
+- [ ] Smoke Test کاربر عادی پس از پچ.
+- [ ] ثبت نتیجه نهایی و ساخت PR فقط پس از موفقیت.
 
 ## گزارش اجرای جاری
 
 ```text
-Date: 2026-08-06 14:30 +03:30
+Date: 2026-08-06 14:41 +03:30
 Phase: Launch-3 — Local Baseline
 Patch: Admin guest redirect
-Completed: Pull امن شاخه، اجرای موفق ۴ تست Regression و TypeScript محدوده Launch
-Tests: node --test tests/route-access.test.mjs — pass 4، fail 0؛ npx.cmd tsc --noEmit -p tsconfig.launch.json — موفق و بدون Diagnostic
-Saved state: نتیجه تست ها در چک لیست اختصاصی پچ و چک لیست Go-Live روی GitHub ثبت شد
-Open blockers: Smoke Test پچ Redirect، شکست دریافت داده Affiliate، ورود آزمایشی لوکال در Production، تصاویر Placeholder، Build Cloudflare و امنیت وابستگی ها
-Next action: اجرای Vite و Smoke Test مهمان Incognito و کاربر عادی
+Completed: Pull امن شاخه، ۴ تست Regression، TypeScript محدوده Launch، اجرای Vite و Smoke Test موفق مهمان Incognito
+Tests: route-access pass 4/fail 0؛ TypeScript بدون Diagnostic؛ مهمان از /admin/affiliate به /login?returnTo=%2Fadmin منتقل شد
+Saved state: نتیجه مهمان در چک لیست اختصاصی پچ و چک لیست Go-Live روی GitHub ثبت شد
+Open blockers: تست دوباره کاربر عادی، بررسی Console، شکست دریافت داده Affiliate، ورود آزمایشی لوکال در Production، تصاویر Placeholder، Build Cloudflare و امنیت وابستگی ها
+Next action: در پنجره عادی با کاربر آزمایشی واردشده، /admin/affiliate باید همچنان به / برگردد
 ```

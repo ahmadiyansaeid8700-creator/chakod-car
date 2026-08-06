@@ -1,0 +1,72 @@
+.layout {
+  min-height: 100%;
+}
+
+.navigationShell {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid rgba(99, 58, 184, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.navigation {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 58px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navigation::-webkit-scrollbar {
+  display: none;
+}
+
+.navigationLink,
+.primaryLink {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navigationLink {
+  color: #4d4263;
+  background: #f7f4fc;
+  border: 1px solid #ece4f8;
+}
+
+.navigationLink:hover {
+  color: #5f23c8;
+  background: #f1eafd;
+}
+
+.primaryLink {
+  margin-right: auto;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6f2bd3, #48208f);
+}
+
+@media (max-width: 760px) {
+  .navigation {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 12px;
+  }
+
+  .navigationLink,
+  .primaryLink {
+    padding: 8px 11px;
+    font-size: 12px;
+  }
+
+  .primaryLink {
+    margin-right: 0;
+  }
+}

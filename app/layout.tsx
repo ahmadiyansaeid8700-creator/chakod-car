@@ -25,9 +25,6 @@ export const metadata: Metadata = {
     "نمایشگاه خودرو",
     "خدمات خودرو",
   ],
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: "fa_IR",
@@ -43,7 +40,7 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "چاکود | پلتفرم رشد کسب و کار خودرو",
     description: SITE_DESCRIPTION,
     images: ["/brand/chakod-logo-horizontal.png"],
@@ -63,9 +60,6 @@ export const metadata: Metadata = {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
     apple: "/brand/chakod-symbol.png",
-  },
-  other: {
-    "codex-preview": "development",
   },
 };
 

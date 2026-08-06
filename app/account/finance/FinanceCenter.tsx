@@ -23,6 +23,50 @@ type ModeConfig = {
   eyebrow: string;
 };
 
+type WalletSummary = {
+  available_balance_toman: number;
+  blocked_balance_toman: number;
+  status: string;
+};
+
+type WalletTransaction = {
+  id: number;
+  direction: string;
+  transactionType: string;
+  amountToman: number;
+  balanceAfterToman: number;
+  status: string;
+  description: string;
+  createdAt: string;
+};
+
+type FinanceOrder = {
+  id: number;
+  orderNo: string;
+  orderType: string;
+  productCode: string;
+  finalAmountToman: number;
+  status: string;
+  createdAt: string;
+};
+
+type FinanceInvoice = {
+  id: number;
+  invoiceNo: string;
+  amountToman: number;
+  status: string;
+  issuedAt: string;
+};
+
+type FinanceSummaryResponse = {
+  success?: boolean;
+  message?: string;
+  wallet?: WalletSummary;
+  transactions?: WalletTransaction[];
+  orders?: FinanceOrder[];
+  invoices?: FinanceInvoice[];
+};
+
 const modeConfig: Record<FinanceMode, ModeConfig> = {
   wallet: {
     title: "کیف پول چاکود",
@@ -59,25 +103,77 @@ const navItems: Array<{ mode: FinanceMode; label: string; href: string }> = [
   { mode: "subscriptions", label: "اشتراک‌ها", href: "/account/subscriptions" },
 ];
 
+const statusTitles: Record<string, string> = {
+  pending_payment: "در انتظار پرداخت",
+  payment_failed: "پرداخت ناموفق",
+  paid: "پرداخت‌شده",
+  issued: "صادرشده",
+  completed: "تکمیل‌شده",
+  active: "فعال",
+};
+
 function formatToman(value: number) {
-  return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+  return `${new Intl.NumberFormat("fa-IR").format(Number(value || 0))} تومان`;
 }
 
-function WalletView() {
+function formatDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem("chakod_session_token") || "";
+  return token
+    ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
+    : {};
+}
+
+async function readJson<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  try {
+    return text ? (JSON.parse(text) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function StatePanel({ loading, error }: { loading: boolean; error: string }) {
+  if (!loading && !error) return null;
+
+  return (
+    <section className={styles.panel}>
+      <div className={styles.emptyState}>
+        <span>{loading ? "…" : "!"}</span>
+        <h3>{loading ? "در حال دریافت اطلاعات مالی" : "اطلاعات مالی در دسترس نیست"}</h3>
+        <p>{loading ? "موجودی، سفارش‌ها و فاکتورها در حال دریافت هستند." : error}</p>
+      </div>
+    </section>
+  );
+}
+
+function WalletView({ summary }: { summary: FinanceSummaryResponse | null }) {
+  const wallet = summary?.wallet;
+  const transactions = summary?.transactions || [];
+
   return (
     <div className={styles.contentGrid}>
       <section className={`${styles.panel} ${styles.walletPanel}`}>
         <div>
           <span className={styles.panelEyebrow}>موجودی قابل استفاده</span>
-          <strong className={styles.balance}>۰ تومان</strong>
-          <p>موجودی نهایی پس از اتصال سرویس مالی حساب از سرور دریافت می‌شود.</p>
+          <strong className={styles.balance}>{formatToman(wallet?.available_balance_toman || 0)}</strong>
+          <p>
+            موجودی مسدودشده: {formatToman(wallet?.blocked_balance_toman || 0)} · وضعیت: {statusTitles[wallet?.status || ""] || wallet?.status || "نامشخص"}
+          </p>
         </div>
         <div className={styles.actionRow}>
-          <Link className={styles.primaryButton} href="/account/payments?intent=wallet_charge">
+          <Link className={styles.primaryButton} href="/account/payments/checkout?type=wallet_charge">
             افزایش موجودی
           </Link>
           <Link className={styles.secondaryButton} href="/account/payments">
-            مشاهده تراکنش‌ها
+            مشاهده سفارش‌ها
           </Link>
         </div>
       </section>
@@ -85,21 +181,41 @@ function WalletView() {
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
-            <span className={styles.panelEyebrow}>کاربرد کیف پول</span>
-            <h2>پرداخت سریع خدمات چاکود</h2>
+            <span className={styles.panelEyebrow}>گردش کیف پول</span>
+            <h2>آخرین تراکنش‌ها</h2>
           </div>
         </div>
-        <div className={styles.featureList}>
-          <div><b>۱</b><span><strong>ارتقای آگهی</strong><small>بالابر، ویژه و نمایش بالاتر</small></span></div>
-          <div><b>۲</b><span><strong>رزرو تبلیغات</strong><small>استوری، بنر و جایگاه منطقه‌ای</small></span></div>
-          <div><b>۳</b><span><strong>خرید اشتراک</strong><small>پلن حرفه‌ای کسب‌وکار و نمایشگاه</small></span></div>
-        </div>
+        {transactions.length ? (
+          <div className={styles.featureList}>
+            {transactions.slice(0, 8).map((item) => (
+              <div key={item.id}>
+                <b>{item.direction === "credit" ? "+" : "−"}</b>
+                <span>
+                  <strong>{item.description || item.transactionType}</strong>
+                  <small>{formatToman(item.amountToman)} · {formatDate(item.createdAt)}</small>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <span>⌁</span>
+            <h3>هنوز تراکنشی ثبت نشده است</h3>
+            <p>بعد از اولین شارژ یا خرید با کیف پول، گردش حساب در این بخش نمایش داده می‌شود.</p>
+          </div>
+        )}
       </section>
     </div>
   );
 }
 
-function PaymentsView({ selectedIntent }: { selectedIntent: string }) {
+function PaymentsView({
+  selectedIntent,
+  orders,
+}: {
+  selectedIntent: string;
+  orders: FinanceOrder[];
+}) {
   const items = [
     {
       code: "wallet_charge",
@@ -122,24 +238,54 @@ function PaymentsView({ selectedIntent }: { selectedIntent: string }) {
   ];
 
   return (
-    <div className={styles.cardGrid}>
-      {items.map((item) => (
-        <Link
-          key={item.code}
-          className={`${styles.serviceCard} ${selectedIntent === item.code ? styles.serviceCardActive : ""}`}
-          href={item.href}
-        >
-          <span className={styles.serviceIcon}>↗</span>
-          <h2>{item.title}</h2>
-          <p>{item.text}</p>
-          <strong>ادامه فرایند</strong>
-        </Link>
-      ))}
-    </div>
+    <>
+      <div className={styles.cardGrid}>
+        {items.map((item) => (
+          <Link
+            key={item.code}
+            className={`${styles.serviceCard} ${selectedIntent === item.code ? styles.serviceCardActive : ""}`}
+            href={item.href}
+          >
+            <span className={styles.serviceIcon}>↗</span>
+            <h2>{item.title}</h2>
+            <p>{item.text}</p>
+            <strong>ادامه فرایند</strong>
+          </Link>
+        ))}
+      </div>
+
+      <section className={styles.panel} style={{ marginTop: 18 }}>
+        <div className={styles.panelHeader}>
+          <div>
+            <span className={styles.panelEyebrow}>سوابق سفارش</span>
+            <h2>آخرین پرداخت‌ها و سفارش‌ها</h2>
+          </div>
+        </div>
+        {orders.length ? (
+          <div className={styles.featureList}>
+            {orders.map((order) => (
+              <div key={order.id}>
+                <b>س</b>
+                <span>
+                  <strong>{order.orderNo} · {statusTitles[order.status] || order.status}</strong>
+                  <small>{formatToman(order.finalAmountToman)} · {formatDate(order.createdAt)}</small>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <span>⌁</span>
+            <h3>هنوز سفارشی ساخته نشده است</h3>
+            <p>سفارش‌های کیف پول، تبلیغات و اشتراک در این بخش نمایش داده می‌شوند.</p>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 
-function InvoicesView() {
+function InvoicesView({ invoiceRows }: { invoiceRows: FinanceInvoice[] }) {
   return (
     <section className={styles.panel}>
       <div className={styles.panelHeader}>
@@ -149,11 +295,25 @@ function InvoicesView() {
         </div>
         <Link className={styles.secondaryButton} href="/account/payments">رفتن به پرداخت‌ها</Link>
       </div>
-      <div className={styles.emptyState}>
-        <span>⌁</span>
-        <h3>هنوز فاکتوری صادر نشده است</h3>
-        <p>بعد از ثبت اولین سفارش، فاکتور و وضعیت پرداخت آن در این بخش نمایش داده می‌شود.</p>
-      </div>
+      {invoiceRows.length ? (
+        <div className={styles.featureList}>
+          {invoiceRows.map((invoice) => (
+            <div key={invoice.id}>
+              <b>ف</b>
+              <span>
+                <strong>{invoice.invoiceNo} · {statusTitles[invoice.status] || invoice.status}</strong>
+                <small>{formatToman(invoice.amountToman)} · {formatDate(invoice.issuedAt)}</small>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          <span>⌁</span>
+          <h3>هنوز فاکتوری صادر نشده است</h3>
+          <p>بعد از تأیید اولین پرداخت، فاکتور رسمی آن در این بخش نمایش داده می‌شود.</p>
+        </div>
+      )}
     </section>
   );
 }
@@ -163,7 +323,7 @@ function PromotionsView() {
     { code: "boost", title: "بالابر آگهی", price: 149_000, text: "انتقال آگهی به ابتدای نتایج مرتبط" },
     { code: "featured", title: "آگهی ویژه", price: 349_000, text: "نمایش برجسته‌تر و نشان ویژه" },
     { code: "story", title: "استوری منطقه‌ای", price: 690_000, text: "نمایش در استوری کاربران محدوده انتخابی" },
-    { code: "banner", title: "بنر صفحه اصلی", price: 1_000_000, text: "رزرو جایگاه بنر براساس شهر و تعداد روز" },
+    { code: "banner", title: "بنر صفحه اصلی", price: 0, text: "محاسبه براساس استان، ظرفیت و تعداد روز" },
   ];
 
   return (
@@ -173,9 +333,13 @@ function PromotionsView() {
           <span className={styles.productBadge}>قابل سفارش</span>
           <h2>{product.title}</h2>
           <p>{product.text}</p>
-          <strong>{formatToman(product.price)}</strong>
-          <Link href={`/account/payments/checkout?type=promotion&product=${product.code}`}>
-            انتخاب و پرداخت
+          <strong>{product.price ? formatToman(product.price) : "محاسبه در فرم رزرو"}</strong>
+          <Link
+            href={product.code === "banner"
+              ? "/account/ads"
+              : `/account/payments/checkout?type=promotion&product=${product.code}`}
+          >
+            {product.code === "banner" ? "انتخاب استان و تاریخ" : "انتخاب و پرداخت"}
           </Link>
         </article>
       ))}
@@ -228,16 +392,45 @@ function SubscriptionsView() {
 
 export default function FinanceCenter({ mode }: FinanceCenterProps) {
   const [query, setQuery] = useState("");
+  const [summary, setSummary] = useState<FinanceSummaryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const config = modeConfig[mode];
 
   useEffect(() => {
     setQuery(window.location.search);
+
+    async function loadFinance() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch("/api/finance/summary", {
+          cache: "no-store",
+          credentials: "include",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const result = await readJson<FinanceSummaryResponse>(response);
+        if (!response.ok || !result?.success) {
+          setError(result?.message || "دریافت اطلاعات مالی انجام نشد.");
+          return;
+        }
+        setSummary(result);
+      } catch {
+        setError("ارتباط با سرویس مالی برقرار نشد.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadFinance();
   }, []);
 
   const selectedIntent = useMemo(() => {
     if (!query) return "";
     return new URLSearchParams(query).get("intent") || "";
   }, [query]);
+
+  const needsSummary = mode === "wallet" || mode === "payments" || mode === "invoices";
 
   return (
     <main className={styles.page} dir="rtl">
@@ -270,9 +463,14 @@ export default function FinanceCenter({ mode }: FinanceCenterProps) {
           ))}
         </nav>
 
-        {mode === "wallet" && <WalletView />}
-        {mode === "payments" && <PaymentsView selectedIntent={selectedIntent} />}
-        {mode === "invoices" && <InvoicesView />}
+        {needsSummary && <StatePanel loading={loading} error={error} />}
+        {mode === "wallet" && !loading && !error && <WalletView summary={summary} />}
+        {mode === "payments" && !loading && !error && (
+          <PaymentsView selectedIntent={selectedIntent} orders={summary?.orders || []} />
+        )}
+        {mode === "invoices" && !loading && !error && (
+          <InvoicesView invoiceRows={summary?.invoices || []} />
+        )}
         {mode === "promotions" && <PromotionsView />}
         {mode === "subscriptions" && <SubscriptionsView />}
       </div>

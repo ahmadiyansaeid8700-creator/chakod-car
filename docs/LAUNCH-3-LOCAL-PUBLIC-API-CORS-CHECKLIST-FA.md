@@ -54,10 +54,12 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [~] هشدار قدیمی و غیرمسدودکننده Node با کد `DEP0205` هنگام Startup همچنان مشاهده شد.
 - [x] صفحه اصلی پس از Hard Reload در مرورگر Render شد.
 - [x] کارت های خودرو و داده های Listing در صفحه اصلی نمایش داده شدند؛ بنابراین مسیر Runtime برای داده های عمومی حداقل در این بخش پاسخ داده است.
-- [~] بارگذاری صفحه از دید کاربر کند بود و باید جداگانه بررسی شود.
+- [~] زمان Render صفحه ناپایدار بود: دو درخواست نخست `96.1s` و `104.1s`، سپس `21.9s` و در اجرای گرم تر `1.1s` ثبت شد.
 - [x] Console تایید کرد درخواست های قبلی CORS اکنون از Origin محلی و مسیر `/chakod-api` عبور می کنند و هیچ خطای CORS مربوط به `api.chakod.com` باقی نمانده است.
-- [!] سه درخواست Proxy شده از Upstream پاسخ ناموفق گرفتند: یک پاسخ `502 Bad Gateway` و دو پاسخ `522`؛ این خطاها CORS نیستند و باید جداگانه به عنوان مشکل دسترسی یا پایداری Upstream بررسی شوند.
+- [!] سه درخواست Proxy شده در Console پاسخ ناموفق گرفتند: یک پاسخ `502 Bad Gateway` و دو پاسخ `522`؛ این خطاها CORS نیستند.
+- [!] ترمینال Vite قطع اتصال TLS و `socket hang up` را برای `save-listing.php` و `listings.php` ثبت کرد؛ مشکل باقی مانده در مسیر شبکه یا پایداری Upstream است.
 - [x] پنج هشدار preload به صورت جداگانه ثبت شدند و با خطاهای CORS مخلوط نشدند.
+- [ ] اجرای تست مستقیم HTTPS به Upstream از PowerShell برای تفکیک مشکل Proxy از مشکل خود API.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
 ## نتیجه تست مستقل
@@ -119,12 +121,33 @@ Local bridge path: /chakod-api
 CORS errors for api.chakod.com: none observed
 Remaining red errors: upstream 502 and 522 responses through local proxy
 Preload warnings: 5
-User-observed performance: slow
+Observed render times: 96.1s, 104.1s, 21.9s, 1.1s
+```
+
+## لاگ Runtime Proxy
+
+```text
+GET / 200 in 96.1s
+GET / 200 in 104.1s
+GET / 200 in 21.9s
+GET / 200 in 1.1s
+
+/api/save-listing.php?listing_id=2
+Client network socket disconnected before secure TLS connection was established
+
+/api/listings.php?limit=50&sort=vip
+Client network socket disconnected before secure TLS connection was established
+
+/api/listings.php?limit=100&sort=vip
+socket hang up
+
+/api/save-listing.php?listing_id=10
+Client network socket disconnected before secure TLS connection was established
 ```
 
 ## وضعیت
 
 ```text
-Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ مشکل باقی مانده مربوط به پاسخ های 502 و 522 Upstream و کندی بارگذاری است، نه CORS
+Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ مشکل باقی مانده مربوط به ناپایداری HTTPS/TLS یا پاسخ Upstream و کندی بارگذاری است، نه CORS
 Published commit: هنوز ادغام نشده
 ```

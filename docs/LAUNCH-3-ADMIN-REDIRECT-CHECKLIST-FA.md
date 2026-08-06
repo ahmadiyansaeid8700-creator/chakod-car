@@ -10,7 +10,7 @@ Affected route: /admin/*
 Login route: /login?returnTo=/admin
 Database impact: ندارد
 Environment impact: ندارد
-Rollback point: 3be38a804d6639e0594d2395c5e3238d4cb8ec0
+Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 ```
 
 ## شواهد پیش از اصلاح

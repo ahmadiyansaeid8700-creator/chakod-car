@@ -21,19 +21,19 @@ Database impact: ندارد
 
 ## پیاده سازی
 
-- [~] Helper جدید `lib/local-development-login.ts` برای فراخوانی امن Endpoint محلی اضافه شد.
-- [~] صفحه `app/login/page.tsx` فقط بعد از پاسخ موفق Endpoint، اطلاعات نمایشی Local را در `localStorage` ذخیره می کند.
-- [~] Redirect نهایی همچنان از `safeReturnTo` عبور می کند.
-- [~] هنگام خطای Endpoint، Redirect و ثبت Local Storage انجام نمی شود و پیام خطا نمایش داده می شود.
-- [~] متن دکمه هنگام درخواست به `در حال ورود...` تغییر می کند.
+- [~] Helper جدید `lib/local-development-login.ts` برای فراخوانی امن Endpoint محلی اضافه شد؛ تست مستقل موفق است و Smoke Test مرورگر باقی مانده است.
+- [~] صفحه `app/login/page.tsx` فقط بعد از پاسخ موفق Endpoint، اطلاعات نمایشی Local را در `localStorage` ذخیره می کند؛ تست Runtime مرورگر باقی مانده است.
+- [~] Redirect نهایی همچنان از `safeReturnTo` عبور می کند؛ تست مستقل Helper موفق و Smoke Test مسیر واقعی باقی مانده است.
+- [~] هنگام خطای Endpoint، Redirect و ثبت Local Storage انجام نمی شود و پیام خطا نمایش داده می شود؛ رفتار Helper تست شده و رفتار UI هنوز Smoke Test نشده است.
+- [~] متن دکمه هنگام درخواست به `در حال ورود...` تغییر می کند؛ بررسی دیداری مرورگر باقی مانده است.
 - [x] رفتار Production تغییر داده نشد؛ دکمه همچنان فقط با `NODE_ENV=development` رندر می شود.
 
 ## تست های اضافه شده
 
-- [~] فایل `tests/local-development-login.test.mjs` اضافه شد.
-- [ ] تایید ارسال `POST` به `/api/auth/dev-session` با `credentials: include` روی لپ تاپ.
-- [ ] تایید عبور Redirect موفق از پاسخ Endpoint روی لپ تاپ.
-- [ ] تایید نمایش پیام خطای Server و جلوگیری از Redirect روی لپ تاپ.
+- [x] فایل `tests/local-development-login.test.mjs` اضافه و روی لپ تاپ اجرا شد.
+- [x] تست مستقل تایید کرد درخواست `POST` به `/api/auth/dev-session` با `credentials: include` ارسال می شود.
+- [x] تست مستقل تایید کرد Redirect موفق از پاسخ Endpoint خوانده می شود.
+- [x] تست مستقل تایید کرد پیام خطای Server برگردانده می شود و برای پاسخ نامعتبر یا قطع ارتباط، نتیجه شکست امن تولید می شود.
 
 ## Commitها
 
@@ -48,7 +48,7 @@ a0ed755bf438b0f9e497cd912eb030d1e5995d47
 - [x] توقف Vite با `Ctrl + C` و بازگشت ترمینال به PowerShell تایید شد.
 - [x] Pull امن شاخه با Fast-forward از `d6a0e50` تا `8ab6831` انجام شد و ۶ فایل پچ روی لپ تاپ دریافت شدند.
 - [x] `git status --short --branch` شاخه `agent/launch-3-local-baseline`، Working tree تمیز و هماهنگی با Origin را تایید کرد.
-- [ ] اجرای `node --test tests/local-development-login.test.mjs`.
+- [x] `node --test tests/local-development-login.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip، مدت `248.4479ms`.
 - [ ] اجرای مجدد `node --test tests/local-development-session.test.mjs`.
 - [ ] اجرای مجدد `node --test tests/route-access.test.mjs`.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
@@ -57,9 +57,28 @@ a0ed755bf438b0f9e497cd912eb030d1e5995d47
 - [ ] تایید اینکه مهمان همچنان به `/login?returnTo=%2Fadmin` منتقل می شود.
 - [ ] ثبت نتیجه نهایی در اسناد اصلی پروژه.
 
+## نتیجه تست مستقل ورود لوکال
+
+```text
+Command: node --test tests/local-development-login.test.mjs
+Tests: 3
+Pass: 3
+Fail: 0
+Cancelled: 0
+Skipped: 0
+Todo: 0
+Duration_ms: 248.4479
+Verified:
+- POST /api/auth/dev-session
+- credentials: include
+- موفقیت و redirect پاسخ Endpoint
+- پیام خطای Server
+- شکست امن برای پاسخ نامعتبر یا ارتباط ناموفق
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی روی GitHub ذخیره و روی لپ تاپ Pull شده است؛ شاخه و Working tree تایید شدند و در انتظار اجرای تست ها است
+Status: پیاده سازی روی GitHub ذخیره و روی لپ تاپ Pull شده است؛ شاخه تمیز و تست مستقل ورود لوکال موفق است. در انتظار Regression Session، Route access، TypeScript و Smoke Test مرورگر
 Published commit: هنوز ادغام نشده
 ```

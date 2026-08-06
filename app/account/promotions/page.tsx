@@ -1,5 +1,5 @@
-import FinanceCenter from "../finance/FinanceCenter";
+import CommerceProductsPage from "../finance/CommerceProductsPage";
 
 export default function AccountPromotionsPage() {
-  return <FinanceCenter mode="promotions" />;
+  return <CommerceProductsPage mode="promotions" />;
 }

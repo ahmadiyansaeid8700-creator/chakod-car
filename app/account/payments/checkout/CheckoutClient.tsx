@@ -111,18 +111,20 @@ export default function CheckoutClient() {
     requestKeyRef.current = crypto.randomUUID();
   }, []);
 
+  const queryParams = useMemo(() => new URLSearchParams(query), [query]);
+  const listingId = queryParams.get("listing_id") || "";
+
   const selection = useMemo<CheckoutSelection>(() => {
-    const params = new URLSearchParams(query);
-    const type = params.get("type") || "wallet_charge";
+    const type = queryParams.get("type") || "wallet_charge";
 
     if (type === "promotion") {
-      const code = params.get("product") || "boost";
+      const code = queryParams.get("product") || "boost";
       const product = promotionProducts[code] || promotionProducts.boost;
       return { type: "promotion", code, ...product };
     }
 
     if (type === "subscription") {
-      const code = params.get("plan") || "professional";
+      const code = queryParams.get("plan") || "professional";
       const plan = subscriptionPlans[code] || subscriptionPlans.professional;
       return { type: "subscription", code, ...plan };
     }
@@ -134,16 +136,25 @@ export default function CheckoutClient() {
       description: "مبلغ دلخواه را برای شارژ کیف پول چاکود وارد کنید.",
       amount: normalizeAmount(walletAmount),
     };
-  }, [query, walletAmount]);
+  }, [queryParams, walletAmount]);
 
-  const requiresConfiguration = selection.type === "promotion" && selection.code === "banner";
-  const amountLabel = requiresConfiguration ? "پس از انتخاب استان و تاریخ" : formatToman(selection.amount);
+  const requiresBannerConfiguration = selection.type === "promotion" && selection.code === "banner";
+  const requiresListing = selection.type === "promotion" && selection.code !== "banner";
+  const hasValidListing = /^\d+$/.test(listingId) && Number(listingId) > 0;
+  const amountLabel = requiresBannerConfiguration
+    ? "پس از انتخاب استان و تاریخ"
+    : formatToman(selection.amount);
 
   async function startPayment() {
     setError("");
 
-    if (requiresConfiguration) {
+    if (requiresBannerConfiguration) {
       window.location.assign("/account/ads");
+      return;
+    }
+
+    if (requiresListing && !hasValidListing) {
+      window.location.assign("/account/listings");
       return;
     }
 
@@ -178,6 +189,7 @@ export default function CheckoutClient() {
           type: selection.type,
           code: selection.code,
           amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
+          listing_id: requiresListing ? Number(listingId) : undefined,
           idempotency_key: idempotencyKey,
         }),
       });
@@ -200,7 +212,6 @@ export default function CheckoutClient() {
         body: JSON.stringify({
           type: selection.type,
           code: selection.code,
-          amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
           order_no: orderResult.order.order_no,
           idempotency_key: idempotencyKey,
           callback_path: "/account/payments/callback",
@@ -220,6 +231,14 @@ export default function CheckoutClient() {
       setSubmitting(false);
     }
   }
+
+  const actionLabel = submitting
+    ? "در حال اتصال به درگاه..."
+    : requiresBannerConfiguration
+      ? "تکمیل اطلاعات بنر"
+      : requiresListing && !hasValidListing
+        ? "انتخاب آگهی"
+        : `پرداخت ${formatToman(selection.amount)}`;
 
   return (
     <main className={styles.page} dir="rtl">
@@ -256,10 +275,24 @@ export default function CheckoutClient() {
               </label>
             )}
 
-            {requiresConfiguration && (
+            {requiresBannerConfiguration && (
               <div className={styles.securityNote}>
                 <span>۱</span>
                 <p>ابتدا استان، تاریخ، تصاویر و مقصد بنر را مشخص کنید؛ سپس پیش‌فاکتور واقعی ساخته می‌شود.</p>
+              </div>
+            )}
+
+            {requiresListing && !hasValidListing && (
+              <div className={styles.securityNote}>
+                <span>۱</span>
+                <p>برای خرید این محصول ابتدا یکی از آگهی‌های قابل مدیریت خود را انتخاب کنید.</p>
+              </div>
+            )}
+
+            {requiresListing && hasValidListing && (
+              <div className={styles.securityNote}>
+                <span>✓</span>
+                <p>این سفارش به آگهی شماره {new Intl.NumberFormat("fa-IR").format(Number(listingId))} متصل می‌شود.</p>
               </div>
             )}
 
@@ -271,14 +304,10 @@ export default function CheckoutClient() {
               disabled={submitting}
               onClick={() => void startPayment()}
             >
-              {submitting
-                ? "در حال اتصال به درگاه..."
-                : requiresConfiguration
-                  ? "تکمیل اطلاعات بنر"
-                  : `پرداخت ${formatToman(selection.amount)}`}
+              {actionLabel}
             </button>
 
-            {!requiresConfiguration && (
+            {!requiresBannerConfiguration && (!requiresListing || hasValidListing) && (
               <div className={styles.securityNote}>
                 <span>✓</span>
                 <p>تراکنش فقط پس از ساخت سفارش، بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
@@ -299,6 +328,12 @@ export default function CheckoutClient() {
                     : "اشتراک"}
               </strong>
             </div>
+            {requiresListing && (
+              <div>
+                <small>آگهی هدف</small>
+                <strong>{hasValidListing ? `#${new Intl.NumberFormat("fa-IR").format(Number(listingId))}` : "انتخاب نشده"}</strong>
+              </div>
+            )}
             <div><small>مبلغ</small><strong>{amountLabel}</strong></div>
             <hr />
             <div className={styles.total}><small>مبلغ قابل پرداخت</small><strong>{amountLabel}</strong></div>

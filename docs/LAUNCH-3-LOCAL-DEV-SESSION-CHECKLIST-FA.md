@@ -45,12 +45,11 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ دوباره اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` پس از پچ بدون خطا و بدون Diagnostic اجرا شد.
-- [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` در `1383ms` آماده شد.
+- [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` آماده شد؛ اجرای نهایی در `1277ms` انجام شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
 - [x] مسیر `/api/auth/dev-session` در پنجره عادی باز شد و انتقال نهایی به `/account?complete=1` تایید شد؛ Cookie آزمایشی سمت سرور ساخته شد.
 - [x] `/admin/affiliate` با Session آزمایشی کاربر عادی باز نشد و انتقال نهایی به `/` تایید شد.
-- [!] بازآزمایی مهمان در پنجره ای که به عنوان Incognito استفاده شد به `/` رسید؛ این نتیجه نشان می دهد آن فضای مرورگر Cookie کاربر عادی داشته و تست مهمان پاک محسوب نمی شود. همه پنجره های Incognito باید بسته و یک Session ناشناس تازه ایجاد شود.
-- [ ] تایید مهمان پاک پس از بستن همه پنجره های Incognito: `/admin/affiliate` باید به `/login?returnTo=%2Fadmin` برسد.
+- [x] مهمان پاک بدون Cookie با `curl.exe` پاسخ `307` دریافت کرد و Header مقصد دقیقا `http://127.0.0.1:5173/login?returnTo=%2Fadmin` بود.
 - [ ] بررسی Console و ترمینال برای خطای جدید.
 - [ ] ثبت نتیجه نهایی در چک لیست Go-Live و فایل های Handoff.
 
@@ -89,7 +88,7 @@ Diagnostics: none
 ```text
 Command: npm.cmd run dev
 Vite: 8.0.13
-Ready_ms: 1383
+Ready_ms: 1277
 Local_url: http://127.0.0.1:5173/
 Warning: DEP0205 module.register() deprecation; non-blocking
 ```
@@ -111,19 +110,19 @@ Final_url: http://127.0.0.1:5173/
 Result: success; admin page blocked and no admin access granted
 ```
 
-## بازآزمایی مهمان نیازمند پاک سازی
+## نتیجه Runtime مهمان پاک
 
 ```text
-Input: http://127.0.0.1:5173/admin/affiliate
-Reported window: Incognito
-Final_url: http://127.0.0.1:5173/
-Interpretation: authenticated non-admin Cookie was present; not a clean guest result
-Status: blocked until all Incognito windows are closed and a fresh Incognito session is used
+Command: curl.exe -sS --max-time 10 -D - -o NUL http://127.0.0.1:5173/admin/affiliate
+HTTP_status: 307
+Location: http://127.0.0.1:5173/login?returnTo=%2Fadmin
+Cookie: none
+Result: success; guest redirected to login with safe returnTo
 ```
 
 ## وضعیت
 
 ```text
-Status: پیاده سازی، تست ها و Smoke Test کاربر عادی موفق هستند؛ تست مهمان پاک به دلیل وجود Cookie در فضای Incognito استفاده شده باید تکرار شود
+Status: پیاده سازی، تست مستقل، Regression، TypeScript، اجرای Vite، ساخت Session سمت سرور و Smoke Test کاربر عادی و مهمان پاک موفق هستند؛ در انتظار بررسی Console/ترمینال و ثبت Handoff نهایی
 Published commit: هنوز ادغام نشده
 ```

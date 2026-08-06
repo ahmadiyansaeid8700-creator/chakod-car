@@ -61,7 +61,8 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [x] پنج هشدار preload به صورت جداگانه ثبت شدند و با خطاهای CORS مخلوط نشدند.
 - [x] تست مستقیم HTTPS به Upstream از PowerShell اجرا شد: درخواست اول `522` و درخواست بلافاصله بعدی `200 OK` با JSON معتبر و ۱۰ Listing برگشت؛ در نتیجه ناپایداری مستقیما در خود مسیر Upstream/Cloudflare نیز مشاهده شد و منحصر به Vite Proxy نیست.
 - [~] خطای `curl: (6) Could not resolve host: curl.exe` ناشی از دوبار چسبیدن دستور در همان خط بود و به وضعیت API ارتباطی ندارد.
-- [ ] اجرای تست مستقیم از مسیر Proxy محلی `/chakod-api` برای ثبت نتیجه نهایی عبور درخواست از Vite.
+- [x] تست مستقیم مسیر Proxy محلی `/chakod-api` اجرا شد و پاسخ واقعی `522` Cloudflare را برگرداند؛ بنابراین مسیر Vite Proxy فعال است و پاسخ Upstream را عبور می دهد.
+- [!] در نخستین تست مستقیم Proxy محلی پاسخ موفق `200` دریافت نشد؛ برای ثبت عبور موفق JSON از Proxy یک تکرار کنترل شده لازم است.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
 ## نتیجه تست مستقل
@@ -157,9 +158,19 @@ Payload: success=true, total=10, data and facets returned
 Conclusion: Upstream/Cloudflare is intermittently unstable; the failure is not limited to the local Vite proxy
 ```
 
+## تست مستقیم Proxy محلی
+
+```text
+Command: curl.exe -sS --connect-timeout 15 --max-time 30 -D - -o NUL "http://127.0.0.1:5173/chakod-api/api/listings.php?limit=50&sort=vip"
+Attempt 1: HTTP 522 from Cloudflare
+Proxy path: active
+Response propagation: upstream status and headers reached the local client
+Conclusion: Vite proxy is functioning, while the upstream request was unsuccessful in this attempt
+```
+
 ## وضعیت
 
 ```text
-Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ ناپایداری 522/TLS مستقیما در Upstream/Cloudflare نیز تایید شد. در انتظار یک تست نهایی از مسیر Proxy محلی و سپس به روزرسانی اسناد اصلی پروژه
+Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup، Runtime مرورگر و فعال بودن مسیر Proxy موفق است؛ ناپایداری 522/TLS مستقیما در Upstream/Cloudflare تایید شده است. در انتظار یک تکرار کنترل شده برای ثبت پاسخ 200 از مسیر Proxy محلی و سپس به روزرسانی اسناد اصلی پروژه
 Published commit: هنوز ادغام نشده
 ```

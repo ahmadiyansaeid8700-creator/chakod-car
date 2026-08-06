@@ -22,6 +22,15 @@
     box-shadow 200ms ease;
 }
 
+.rail,
+.grid {
+  width: 100%;
+}
+
+.withActions {
+  isolation: isolate;
+}
+
 .card:hover {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--listing-accent) 30%, #ffffff);

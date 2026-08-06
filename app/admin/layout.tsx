@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { resolveAdminRouteAccess } from "../../lib/route-access";
 import { readServerIdentity } from "../../lib/server-route-access";
+import AdminSectionNav from "./AdminSectionNav";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,12 @@ export default async function AdminLayout({
   const adminIdentity = await readServerIdentity("/api/admin-me.php");
 
   if (adminIdentity?.success === true && adminIdentity.is_admin === true) {
-    return children;
+    return (
+      <>
+        <AdminSectionNav />
+        {children}
+      </>
+    );
   }
 
   const userIdentity = await readServerIdentity("/api/me.php");
@@ -22,5 +28,10 @@ export default async function AdminLayout({
   if (resolution === "login") redirect("/login?returnTo=%2Fadmin");
   if (resolution === "home") redirect("/");
 
-  return children;
+  return (
+    <>
+      <AdminSectionNav />
+      {children}
+    </>
+  );
 }

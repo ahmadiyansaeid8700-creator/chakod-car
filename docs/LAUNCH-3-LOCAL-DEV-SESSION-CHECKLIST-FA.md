@@ -23,10 +23,10 @@ Rollback point: 93bc971782c8db21cba4b952adb1486b7083c798
 
 ## پیاده سازی
 
-- [~] Helper تشخیص Session محلی در `lib/local-development-session.ts` اضافه شد.
-- [~] Endpoint محلی `GET/POST /api/auth/dev-session` برای ساخت Cookie توسعه اضافه شد.
-- [~] `lib/server-route-access.ts` فقط روی localhost و فقط در Development این Session را به عنوان کاربر عادی می شناسد.
-- [~] Session آزمایشی برای `/api/admin-me.php` صراحتا غیرادمین باقی می ماند.
+- [x] Helper تشخیص Session محلی در `lib/local-development-session.ts` اضافه و با تست مستقل تایید شد.
+- [x] Endpoint محلی `GET/POST /api/auth/dev-session` برای ساخت Cookie توسعه اضافه و در Runtime تایید شد.
+- [x] `lib/server-route-access.ts` فقط روی localhost و فقط در Development این Session را به عنوان کاربر عادی می شناسد.
+- [x] Session آزمایشی برای `/api/admin-me.php` صراحتا غیرادمین باقی ماند و مسیر ادمین در Runtime باز نشد.
 - [x] تست مستقل `tests/local-development-session.test.mjs` اضافه و با موفقیت اجرا شد.
 - [x] Logout موجود Cookie `chakod_session` را پاک می کند و با این پچ سازگار است.
 
@@ -48,8 +48,8 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` در `1383ms` آماده شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
 - [x] مسیر `/api/auth/dev-session` در پنجره عادی باز شد و انتقال نهایی به `/account?complete=1` تایید شد؛ Cookie آزمایشی سمت سرور ساخته شد.
-- [ ] باز کردن `/admin/affiliate` و تایید انتقال کاربر عادی به `/`.
-- [ ] تایید مجدد مهمان Incognito به `/login?returnTo=%2Fadmin`.
+- [x] `/admin/affiliate` با Session آزمایشی کاربر عادی باز نشد و انتقال نهایی به `/` تایید شد.
+- [ ] تایید مجدد مهمان Incognito به `/login?returnTo=%2Fadmin` پس از اضافه شدن Session bridge.
 - [ ] بررسی Console و ترمینال برای خطای جدید.
 - [ ] ثبت نتیجه نهایی در چک لیست Go-Live و فایل های Handoff.
 
@@ -101,9 +101,18 @@ Final_url: http://127.0.0.1:5173/account?complete=1
 Result: success; local development server Session established
 ```
 
+## نتیجه Runtime کاربر عادی روی مسیر ادمین
+
+```text
+Input: http://127.0.0.1:5173/admin/affiliate
+Identity: local development signed-in non-admin user
+Final_url: http://127.0.0.1:5173/
+Result: success; admin page blocked and no admin access granted
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript، اجرای Vite و ساخت Session سمت سرور موفق هستند؛ در انتظار Smoke Test کاربر عادی روی /admin/affiliate
+Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript، اجرای Vite، ساخت Session سمت سرور و Smoke Test کاربر عادی موفق هستند؛ در انتظار بازآزمایی مهمان Incognito و بررسی Console/ترمینال
 Published commit: هنوز ادغام نشده
 ```

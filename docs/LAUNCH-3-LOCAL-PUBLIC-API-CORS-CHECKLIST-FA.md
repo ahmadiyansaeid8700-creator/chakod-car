@@ -48,7 +48,7 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [x] `git status --short --branch` شاخه درست و Working tree تمیز و هماهنگ با Origin را تایید کرد.
 - [~] Git هنگام پاک سازی Pack قدیمی برای دو فایل `.idx` و `.pack` هشدار `Unlink failed` داد؛ Fast-forward و فایل های پروژه سالم ماندند.
 - [x] `node --test tests/local-public-api.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
-- [ ] اجرای دوباره `node --test tests/route-access.test.mjs` برای اطمینان از نبود Regression دسترسی.
+- [x] `node --test tests/route-access.test.mjs` پس از پچ اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
 - [ ] اجرای دوباره Vite با `npm.cmd run dev`.
 - [ ] باز کردن صفحه اصلی و تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com`.
@@ -71,9 +71,25 @@ Verified:
 - Fetch bridge خارج از Local Development غیرفعال می ماند
 ```
 
+## نتیجه Regression دسترسی
+
+```text
+Command: node --test tests/route-access.test.mjs
+Tests: 4
+Pass: 4
+Fail: 0
+Skipped: 0
+Duration_ms: 160.5285
+Verified:
+- مسیرهای خصوصی Dealer همچنان Session تاییدشده می خواهند
+- مسیرهای Admin همچنان هویت ادمین تاییدشده می خواهند
+- تفکیک Admin، کاربر عادی و مهمان بدون Regression باقی ماند
+- ادمین بودن به تنهایی Commerce را فعال نمی کند
+```
+
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده و تست مستقل موفق است؛ در انتظار Regression دسترسی، TypeScript و تست Runtime مرورگر
+Status: پچ روی لپ تاپ Pull شده و تست مستقل و Regression دسترسی موفق هستند؛ در انتظار TypeScript و تست Runtime مرورگر
 Published commit: هنوز ادغام نشده
 ```

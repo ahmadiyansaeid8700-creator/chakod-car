@@ -24,10 +24,10 @@ Rollback point: 4d81124a3a94cd5236ec2bc36cca13c7240b0583
 
 ## پیاده سازی
 
-- [~] Helper بازنویسی امن URL در `lib/local-public-api.ts` اضافه شد.
-- [~] Bridge سمت Client در `app/components/LocalPublicApiBridge.tsx` اضافه شد.
-- [~] Bridge در `app/layout.tsx` پیش از محتوای صفحه Mount شد.
-- [~] Proxy مسیر `/chakod-api` به `https://api.chakod.com` در `vite.windows.config.ts` اضافه شد.
+- [x] Helper بازنویسی امن URL در `lib/local-public-api.ts` اضافه و با تست مستقل تایید شد.
+- [x] Bridge سمت Client در `app/components/LocalPublicApiBridge.tsx` اضافه و در Runtime مرورگر فعال شد.
+- [x] Bridge در `app/layout.tsx` پیش از محتوای صفحه Mount شد.
+- [x] Proxy مسیر `/chakod-api` به `https://api.chakod.com` در `vite.windows.config.ts` اضافه و در Runtime مرورگر استفاده شد.
 - [x] تست مستقل تایید کرد Production و Hostهای غیرمحلی بدون بازنویسی باقی می مانند.
 - [x] تست مستقل `tests/local-public-api.test.mjs` اضافه و با موفقیت اجرا شد.
 
@@ -55,8 +55,9 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [x] صفحه اصلی پس از Hard Reload در مرورگر Render شد.
 - [x] کارت های خودرو و داده های Listing در صفحه اصلی نمایش داده شدند؛ بنابراین مسیر Runtime برای داده های عمومی حداقل در این بخش پاسخ داده است.
 - [~] بارگذاری صفحه از دید کاربر کند بود و باید جداگانه بررسی شود.
-- [ ] تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com` در Console.
-- [ ] ثبت جداگانه هشدارهای preload باقی مانده بدون مخلوط کردن آن ها با CORS.
+- [x] Console تایید کرد درخواست های قبلی CORS اکنون از Origin محلی و مسیر `/chakod-api` عبور می کنند و هیچ خطای CORS مربوط به `api.chakod.com` باقی نمانده است.
+- [!] سه درخواست Proxy شده از Upstream پاسخ ناموفق گرفتند: یک پاسخ `502 Bad Gateway` و دو پاسخ `522`؛ این خطاها CORS نیستند و باید جداگانه به عنوان مشکل دسترسی یا پایداری Upstream بررسی شوند.
+- [x] پنج هشدار preload به صورت جداگانه ثبت شدند و با خطاهای CORS مخلوط نشدند.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
 ## نتیجه تست مستقل
@@ -114,13 +115,16 @@ Warning: DEP0205 module.register() deprecation; non-blocking
 Route: /
 Render: success
 Listings data: visible
+Local bridge path: /chakod-api
+CORS errors for api.chakod.com: none observed
+Remaining red errors: upstream 502 and 522 responses through local proxy
+Preload warnings: 5
 User-observed performance: slow
-Console CORS verification: pending
 ```
 
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی، TypeScript، Startup محلی و نمایش داده های صفحه اصلی موفق هستند؛ در انتظار تایید Console و بررسی کندی
+Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ مشکل باقی مانده مربوط به پاسخ های 502 و 522 Upstream و کندی بارگذاری است، نه CORS
 Published commit: هنوز ادغام نشده
 ```

@@ -52,8 +52,10 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون Diagnostic اجرا شد.
 - [x] Vite با `npm.cmd run dev` دوباره اجرا شد و نسخه `8.0.13` در `1568ms` روی `http://127.0.0.1:5173/` آماده شد.
 - [~] هشدار قدیمی و غیرمسدودکننده Node با کد `DEP0205` هنگام Startup همچنان مشاهده شد.
-- [ ] باز کردن صفحه اصلی و تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com`.
-- [ ] تایید اینکه داده های صفحه اصلی در صورت پاسخ موفق Upstream نمایش داده می شوند.
+- [x] صفحه اصلی پس از Hard Reload در مرورگر Render شد.
+- [x] کارت های خودرو و داده های Listing در صفحه اصلی نمایش داده شدند؛ بنابراین مسیر Runtime برای داده های عمومی حداقل در این بخش پاسخ داده است.
+- [~] بارگذاری صفحه از دید کاربر کند بود و باید جداگانه بررسی شود.
+- [ ] تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com` در Console.
 - [ ] ثبت جداگانه هشدارهای preload باقی مانده بدون مخلوط کردن آن ها با CORS.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
@@ -106,9 +108,19 @@ Local_url: http://127.0.0.1:5173/
 Warning: DEP0205 module.register() deprecation; non-blocking
 ```
 
+## شواهد Runtime صفحه اصلی
+
+```text
+Route: /
+Render: success
+Listings data: visible
+User-observed performance: slow
+Console CORS verification: pending
+```
+
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی، TypeScript و Startup محلی موفق هستند؛ در انتظار بازآزمایی Console صفحه اصلی
+Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی، TypeScript، Startup محلی و نمایش داده های صفحه اصلی موفق هستند؛ در انتظار تایید Console و بررسی کندی
 Published commit: هنوز ادغام نشده
 ```

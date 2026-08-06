@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useState } from "react";
 
+import { createLocalDevelopmentSession } from "../../lib/local-development-login";
 import { safeReturnTo } from "./return-to";
 
 const RESEND_SECONDS = 90;
-const LOCAL_DEV_SESSION_TOKEN = "chakod-local-dev-session";
+const LOCAL_DEV_SESSION_MARKER = "chakod-local-dev-session";
 const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
 
 type Step = "mobile" | "code" | "done";
@@ -124,40 +125,58 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [resendCountdown]);
 
-  function loginForLocalDevelopment() {
-    if (!IS_LOCAL_DEV) return;
+  async function loginForLocalDevelopment() {
+    if (!IS_LOCAL_DEV || loading) return;
 
-    const devUser: LoginUser = {
-      id: 0,
-      mobile: "09120000000",
-      full_name: null,
-      account_type: "personal",
-      business_name: null,
-      business_city: null,
-      display_name: "کاربر آزمایشی چاکود",
-      profile_completed: false,
-      phone_verified: true,
-      mobile_verified: true,
-      terms_accepted: true,
-      accepted_terms: true,
-    };
+    setLoading(true);
+    setError("");
+    setMessage("");
 
-    localStorage.setItem("chakod_session_token", LOCAL_DEV_SESSION_TOKEN);
-    localStorage.setItem("chakod_user", JSON.stringify(devUser));
-    localStorage.setItem(
-      "chakod_identity",
-      JSON.stringify({
-        primary_role: "user",
-        role_title: "کاربر آزمایشی",
-        redirect_to: "/account?complete=1",
-        roles: ["user"],
-        permissions: [],
-        is_site_owner: false,
-        local_development: true,
-      }),
-    );
-    window.dispatchEvent(new Event("chakod:auth-changed"));
-    window.location.assign(postLoginDestination("/account?complete=1"));
+    try {
+      const session = await createLocalDevelopmentSession();
+
+      if (!session.success) {
+        setError(session.message);
+        return;
+      }
+
+      const devUser: LoginUser = {
+        id: 0,
+        mobile: "09120000000",
+        full_name: null,
+        account_type: "personal",
+        business_name: null,
+        business_city: null,
+        display_name: "کاربر آزمایشی چاکود",
+        profile_completed: false,
+        phone_verified: true,
+        mobile_verified: true,
+        terms_accepted: true,
+        accepted_terms: true,
+      };
+
+      localStorage.setItem("chakod_session_token", LOCAL_DEV_SESSION_MARKER);
+      localStorage.setItem("chakod_user", JSON.stringify(devUser));
+      localStorage.setItem(
+        "chakod_identity",
+        JSON.stringify({
+          primary_role: "user",
+          role_title: "کاربر آزمایشی",
+          redirect_to: session.redirectTo,
+          roles: ["user"],
+          permissions: [],
+          is_site_owner: false,
+          local_development: true,
+        }),
+      );
+      window.dispatchEvent(new Event("chakod:auth-changed"));
+      setMessage("ورود آزمایشی موفق بود. در حال انتقال...");
+      window.location.assign(postLoginDestination(session.redirectTo));
+    } catch {
+      setError("ورود آزمایشی لوکال انجام نشد. دوباره تلاش کنید.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function sendCode(isResend = false) {
@@ -364,7 +383,7 @@ export default function LoginPage() {
                     disabled={loading}
                     onClick={loginForLocalDevelopment}
                   >
-                    ورود آزمایشی لوکال
+                    {loading ? "در حال ورود..." : "ورود آزمایشی لوکال"}
                   </button>
                 </div>
               )}

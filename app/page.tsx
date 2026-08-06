@@ -5,7 +5,6 @@ import HomeStories from "./components/HomeStories";
 import HomeFeaturedShowrooms from "./components/HomeFeaturedShowrooms";
 import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeMarketSearch from "./components/HomeMarketSearch";
-import HomeBannerSlot from "./components/HomeBannerSlot";
 import HomePublicListingsClient from "./components/HomePublicListingsClient";
 import HomeFeaturedBusinesses from "./components/HomeFeaturedBusinesses";
 import HomeGuides from "./components/HomeGuides";
@@ -76,17 +75,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </header>
 
-      <HomeBannerSlot />
-
       <div className="masterStoriesWrap">
         <HomeStories />
       </div>
 
-      <HomeFeaturedShowrooms location="همه شهرها" query={query} />
+      <HomeFeaturedShowrooms query={query} />
 
       <HomePublicListingsClient query={query} />
 
       <HomeFeaturedBusinesses />
+
       <HomeGuides />
 
       <footer className="masterFooter">

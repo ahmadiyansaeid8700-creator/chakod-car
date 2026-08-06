@@ -49,7 +49,8 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
 - [x] مسیر `/api/auth/dev-session` در پنجره عادی باز شد و انتقال نهایی به `/account?complete=1` تایید شد؛ Cookie آزمایشی سمت سرور ساخته شد.
 - [x] `/admin/affiliate` با Session آزمایشی کاربر عادی باز نشد و انتقال نهایی به `/` تایید شد.
-- [ ] تایید مجدد مهمان Incognito به `/login?returnTo=%2Fadmin` پس از اضافه شدن Session bridge.
+- [!] بازآزمایی مهمان در پنجره ای که به عنوان Incognito استفاده شد به `/` رسید؛ این نتیجه نشان می دهد آن فضای مرورگر Cookie کاربر عادی داشته و تست مهمان پاک محسوب نمی شود. همه پنجره های Incognito باید بسته و یک Session ناشناس تازه ایجاد شود.
+- [ ] تایید مهمان پاک پس از بستن همه پنجره های Incognito: `/admin/affiliate` باید به `/login?returnTo=%2Fadmin` برسد.
 - [ ] بررسی Console و ترمینال برای خطای جدید.
 - [ ] ثبت نتیجه نهایی در چک لیست Go-Live و فایل های Handoff.
 
@@ -110,9 +111,19 @@ Final_url: http://127.0.0.1:5173/
 Result: success; admin page blocked and no admin access granted
 ```
 
+## بازآزمایی مهمان نیازمند پاک سازی
+
+```text
+Input: http://127.0.0.1:5173/admin/affiliate
+Reported window: Incognito
+Final_url: http://127.0.0.1:5173/
+Interpretation: authenticated non-admin Cookie was present; not a clean guest result
+Status: blocked until all Incognito windows are closed and a fresh Incognito session is used
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript، اجرای Vite، ساخت Session سمت سرور و Smoke Test کاربر عادی موفق هستند؛ در انتظار بازآزمایی مهمان Incognito و بررسی Console/ترمینال
+Status: پیاده سازی، تست ها و Smoke Test کاربر عادی موفق هستند؛ تست مهمان پاک به دلیل وجود Cookie در فضای Incognito استفاده شده باید تکرار شود
 Published commit: هنوز ادغام نشده
 ```

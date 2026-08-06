@@ -47,7 +47,7 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` پس از پچ بدون خطا و بدون Diagnostic اجرا شد.
 - [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` در `1383ms` آماده شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
-- [ ] باز کردن `/api/auth/dev-session` و تایید انتقال به `/account?complete=1`.
+- [x] مسیر `/api/auth/dev-session` در پنجره عادی باز شد و انتقال نهایی به `/account?complete=1` تایید شد؛ Cookie آزمایشی سمت سرور ساخته شد.
 - [ ] باز کردن `/admin/affiliate` و تایید انتقال کاربر عادی به `/`.
 - [ ] تایید مجدد مهمان Incognito به `/login?returnTo=%2Fadmin`.
 - [ ] بررسی Console و ترمینال برای خطای جدید.
@@ -93,9 +93,17 @@ Local_url: http://127.0.0.1:5173/
 Warning: DEP0205 module.register() deprecation; non-blocking
 ```
 
+## نتیجه Runtime Session محلی
+
+```text
+Input: http://127.0.0.1:5173/api/auth/dev-session
+Final_url: http://127.0.0.1:5173/account?complete=1
+Result: success; local development server Session established
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript و اجرای Vite موفق هستند؛ در انتظار Smoke Test Runtime مسیر Session محلی
+Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript، اجرای Vite و ساخت Session سمت سرور موفق هستند؛ در انتظار Smoke Test کاربر عادی روی /admin/affiliate
 Published commit: هنوز ادغام نشده
 ```

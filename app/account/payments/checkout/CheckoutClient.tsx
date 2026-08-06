@@ -40,8 +40,8 @@ const promotionProducts: Record<string, Omit<CheckoutSelection, "type" | "code">
   },
   banner: {
     title: "بنر صفحه اصلی",
-    description: "رزرو اولیه جایگاه بنر صفحه اصلی",
-    amount: 1_000_000,
+    description: "مبلغ بنر براساس استان، تاریخ و ظرفیت محاسبه می‌شود.",
+    amount: 0,
   },
 };
 
@@ -115,8 +115,16 @@ export default function CheckoutClient() {
     };
   }, [query, walletAmount]);
 
+  const requiresConfiguration = selection.type === "promotion" && selection.code === "banner";
+  const amountLabel = requiresConfiguration ? "پس از انتخاب استان و تاریخ" : formatToman(selection.amount);
+
   async function startPayment() {
     setError("");
+
+    if (requiresConfiguration) {
+      window.location.assign("/account/ads");
+      return;
+    }
 
     if (selection.amount < 10_000) {
       setError("مبلغ پرداخت باید حداقل ۱۰ هزار تومان باشد.");
@@ -145,8 +153,7 @@ export default function CheckoutClient() {
         body: JSON.stringify({
           type: selection.type,
           code: selection.code,
-          amount_toman: selection.amount,
-          description: selection.title,
+          amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
           callback_path: "/account/payments/callback",
         }),
       });
@@ -204,6 +211,13 @@ export default function CheckoutClient() {
               </label>
             )}
 
+            {requiresConfiguration && (
+              <div className={styles.securityNote}>
+                <span>۱</span>
+                <p>ابتدا استان، تاریخ، تصاویر و مقصد بنر را مشخص کنید؛ سپس پیش‌فاکتور واقعی ساخته می‌شود.</p>
+              </div>
+            )}
+
             {error && <div className={styles.error}>{error}</div>}
 
             <button
@@ -212,22 +226,37 @@ export default function CheckoutClient() {
               disabled={submitting}
               onClick={() => void startPayment()}
             >
-              {submitting ? "در حال اتصال به درگاه..." : `پرداخت ${formatToman(selection.amount)}`}
+              {submitting
+                ? "در حال اتصال به درگاه..."
+                : requiresConfiguration
+                  ? "تکمیل اطلاعات بنر"
+                  : `پرداخت ${formatToman(selection.amount)}`}
             </button>
 
-            <div className={styles.securityNote}>
-              <span>✓</span>
-              <p>تراکنش فقط پس از بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
-            </div>
+            {!requiresConfiguration && (
+              <div className={styles.securityNote}>
+                <span>✓</span>
+                <p>تراکنش فقط پس از بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
+              </div>
+            )}
           </div>
 
           <aside className={styles.summaryCard}>
             <span>خلاصه سفارش</span>
             <div><small>عنوان</small><strong>{selection.title}</strong></div>
-            <div><small>نوع سفارش</small><strong>{selection.type === "wallet_charge" ? "کیف پول" : selection.type === "promotion" ? "تبلیغات" : "اشتراک"}</strong></div>
-            <div><small>مبلغ</small><strong>{formatToman(selection.amount)}</strong></div>
+            <div>
+              <small>نوع سفارش</small>
+              <strong>
+                {selection.type === "wallet_charge"
+                  ? "کیف پول"
+                  : selection.type === "promotion"
+                    ? "تبلیغات"
+                    : "اشتراک"}
+              </strong>
+            </div>
+            <div><small>مبلغ</small><strong>{amountLabel}</strong></div>
             <hr />
-            <div className={styles.total}><small>مبلغ قابل پرداخت</small><strong>{formatToman(selection.amount)}</strong></div>
+            <div className={styles.total}><small>مبلغ قابل پرداخت</small><strong>{amountLabel}</strong></div>
             <Link href="/account/invoices">مشاهده فاکتورها</Link>
           </aside>
         </section>

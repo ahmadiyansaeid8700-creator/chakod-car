@@ -59,7 +59,9 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [!] سه درخواست Proxy شده در Console پاسخ ناموفق گرفتند: یک پاسخ `502 Bad Gateway` و دو پاسخ `522`؛ این خطاها CORS نیستند.
 - [!] ترمینال Vite قطع اتصال TLS و `socket hang up` را برای `save-listing.php` و `listings.php` ثبت کرد؛ مشکل باقی مانده در مسیر شبکه یا پایداری Upstream است.
 - [x] پنج هشدار preload به صورت جداگانه ثبت شدند و با خطاهای CORS مخلوط نشدند.
-- [ ] اجرای تست مستقیم HTTPS به Upstream از PowerShell برای تفکیک مشکل Proxy از مشکل خود API.
+- [x] تست مستقیم HTTPS به Upstream از PowerShell اجرا شد: درخواست اول `522` و درخواست بلافاصله بعدی `200 OK` با JSON معتبر و ۱۰ Listing برگشت؛ در نتیجه ناپایداری مستقیما در خود مسیر Upstream/Cloudflare نیز مشاهده شد و منحصر به Vite Proxy نیست.
+- [~] خطای `curl: (6) Could not resolve host: curl.exe` ناشی از دوبار چسبیدن دستور در همان خط بود و به وضعیت API ارتباطی ندارد.
+- [ ] اجرای تست مستقیم از مسیر Proxy محلی `/chakod-api` برای ثبت نتیجه نهایی عبور درخواست از Vite.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
 ## نتیجه تست مستقل
@@ -145,9 +147,19 @@ socket hang up
 Client network socket disconnected before secure TLS connection was established
 ```
 
+## تست مستقیم Upstream
+
+```text
+Command: curl.exe -sS --connect-timeout 15 --max-time 30 -D - -o NUL "https://api.chakod.com/api/listings.php?limit=50&sort=vip"
+Attempt 1: HTTP 522 from Cloudflare
+Attempt 2: HTTP 200 OK
+Payload: success=true, total=10, data and facets returned
+Conclusion: Upstream/Cloudflare is intermittently unstable; the failure is not limited to the local Vite proxy
+```
+
 ## وضعیت
 
 ```text
-Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ مشکل باقی مانده مربوط به ناپایداری HTTPS/TLS یا پاسخ Upstream و کندی بارگذاری است، نه CORS
+Status: پچ CORS محلی از نظر تست مستقل، Regression دسترسی، TypeScript، Startup و Runtime مرورگر موفق است؛ ناپایداری 522/TLS مستقیما در Upstream/Cloudflare نیز تایید شد. در انتظار یک تست نهایی از مسیر Proxy محلی و سپس به روزرسانی اسناد اصلی پروژه
 Published commit: هنوز ادغام نشده
 ```

@@ -140,9 +140,7 @@ async function readJson<T>(response: Response): Promise<T> {
 export default function CommerceCenter() {
   const [data, setData] = useState<CommerceResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [workingKey, setWorkingKey] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [listingId, setListingId] = useState<number>(0);
   const [dealerId, setDealerId] = useState<number>(0);
   const [province, setProvince] = useState("");
@@ -166,9 +164,9 @@ export default function CommerceCenter() {
       const firstListing = payload.listings?.[0];
       const firstDealer = payload.dealers?.[0];
       const firstProvince = payload.provinces?.[0];
-      if (!listingId && firstListing) setListingId(firstListing.id);
-      if (!dealerId && firstDealer) setDealerId(firstDealer.dealer_id);
-      if (!province && firstProvince) setProvince(firstProvince.province);
+      setListingId((current) => current || firstListing?.id || 0);
+      setDealerId((current) => current || firstDealer?.dealer_id || 0);
+      setProvince((current) => current || firstProvince?.province || "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "خطای ناشناخته");
     } finally {
@@ -177,6 +175,23 @@ export default function CommerceCenter() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    if (requestedTab === "profile" || requestedTab === "orders" || requestedTab === "listing") {
+      setActiveTab(requestedTab);
+    }
+
+    const requestedListingId = Number(params.get("listing_id") || 0);
+    const requestedDealerId = Number(params.get("dealer_id") || 0);
+    if (Number.isSafeInteger(requestedListingId) && requestedListingId > 0) {
+      setListingId(requestedListingId);
+    }
+    if (Number.isSafeInteger(requestedDealerId) && requestedDealerId > 0) {
+      setDealerId(requestedDealerId);
+    }
+    setProvince(params.get("province") || "");
+    setDiscountCode((params.get("discount_code") || "").toUpperCase());
+
     void load();
   }, []);
 
@@ -190,7 +205,7 @@ export default function CommerceCenter() {
   );
 
   const listingServices = useMemo(() => {
-    const services = data?.services || [];
+    const services = (data?.services || []).filter((item) => item.is_active);
     if (!selectedListing) return services.filter((item) => item.service_key === "listing_bump");
     const dealerListing = Boolean(selectedListing.dealer_id) || selectedListing.listing_owner_type === "dealer";
     const isActive = selectedListing.status === "active";
@@ -202,62 +217,44 @@ export default function CommerceCenter() {
 
   const profileServices = useMemo(
     () =>
-      (data?.services || []).filter((item) =>
-        ["professional_profile_6m", "professional_profile_12m"].includes(item.service_key),
+      (data?.services || []).filter(
+        (item) =>
+          item.is_active &&
+          ["professional_profile_6m", "professional_profile_12m"].includes(item.service_key),
       ),
     [data?.services],
   );
 
-  async function createOrder(serviceKey: string, override?: { province?: string }) {
-    setWorkingKey(serviceKey);
+  function continueToCheckout(serviceKey: string, override?: { province?: string }) {
     setError("");
-    setNotice("");
-    try {
-      const response = await fetch("/api/auth/commerce", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...authHeaders(),
-        },
-        body: JSON.stringify({
-          action: "create_order",
-          service_key: serviceKey,
-          listing_id: listingId || undefined,
-          dealer_id: serviceKey.startsWith("professional_profile_")
-            ? dealerId || undefined
-            : selectedListing?.dealer_id || undefined,
-          province: override?.province || province || undefined,
-          discount_code: discountCode.trim() || undefined,
-        }),
-      });
-      const payload = await readJson<{
-        success?: boolean;
-        message?: string;
-        order?: { order_no: string; amount_toman: number; original_amount_toman?: number; discount_amount_toman?: number; discount_code?: string | null };
-        payment_gateway_ready?: boolean;
-      }>(response);
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.message || "ایجاد سفارش انجام نشد.");
+
+    const params = new URLSearchParams({
+      type: serviceKey.startsWith("professional_profile_") ? "subscription" : "service",
+      service_key: serviceKey,
+    });
+
+    if (serviceKey.startsWith("listing_")) {
+      if (!selectedListing) {
+        setError("ابتدا یک آگهی را انتخاب کنید.");
+        return;
       }
-      const discountText = payload.order && Number(payload.order.discount_amount_toman || 0) > 0
-        ? ` تخفیف ${formatToman(Number(payload.order.discount_amount_toman || 0))} با کد ${payload.order.discount_code}.`
-        : "";
-      const orderText = payload.order
-        ? ` شماره سفارش ${payload.order.order_no} به مبلغ ${formatToman(payload.order.amount_toman)}.${discountText}`
-        : "";
-      setNotice(
-        `${payload.message || "پیش‌فاکتور ساخته شد."}${orderText} اتصال نهایی درگاه بعد از ثبت مشخصات درگاه فعال می‌شود.`,
-      );
-      setDiscountCode("");
-      await load();
-      setActiveTab("orders");
-    } catch (orderError) {
-      setError(orderError instanceof Error ? orderError.message : "خطای ناشناخته");
-    } finally {
-      setWorkingKey("");
+      params.set("listing_id", String(selectedListing.id));
+      if (selectedListing.dealer_id) params.set("dealer_id", String(selectedListing.dealer_id));
     }
+
+    if (serviceKey.startsWith("professional_profile_")) {
+      if (!dealerId) {
+        setError("ابتدا یک مجموعه حرفه‌ای را انتخاب کنید.");
+        return;
+      }
+      params.set("dealer_id", String(dealerId));
+    }
+
+    const targetProvince = override?.province || province;
+    if (targetProvince) params.set("province", targetProvince);
+    if (discountCode.trim()) params.set("discount_code", discountCode.trim());
+
+    window.location.assign(`/account/payments/checkout?${params.toString()}`);
   }
 
   if (loading) {
@@ -278,9 +275,9 @@ export default function CommerceCenter() {
         <header className={styles.header}>
           <div>
             <Link href="/account" className={styles.backLink}>← حساب من</Link>
-            <span className={styles.eyebrow}>مرکز مالی چاکود</span>
+            <span className={styles.eyebrow}>مرکز خدمات و مالی چاکود</span>
             <h1>انتشار، تمدید و تبلیغات</h1>
-            <p>قیمت و مدت هر خدمت از پنل مدیریت سایت کنترل می‌شود.</p>
+            <p>محصول را انتخاب کنید؛ سفارش و پرداخت در Checkout واحد ساخته می‌شوند.</p>
           </div>
           <Link href="/" className={styles.logoLink} aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
@@ -288,7 +285,11 @@ export default function CommerceCenter() {
         </header>
 
         {error && <div className={styles.error}>{error}</div>}
-        {notice && <div className={styles.notice}>{notice}</div>}
+        {data?.payment_gateway_ready === false && (
+          <div className={styles.notice}>
+            تعرفه‌ها فعال‌اند، اما انتقال بانکی پس از ثبت تنظیمات درگاه در محیط Production انجام می‌شود.
+          </div>
+        )}
 
         <nav className={styles.tabs} aria-label="بخش‌های خدمات">
           <button className={activeTab === "listing" ? styles.activeTab : ""} onClick={() => setActiveTab("listing")}>خدمات آگهی</button>
@@ -298,7 +299,7 @@ export default function CommerceCenter() {
 
         {activeTab !== "orders" && (
           <section className={styles.couponBar}>
-            <div><span>کد تخفیف دارید؟</span><small>کد هنگام ساخت پیش‌فاکتور بررسی و مبلغ نهایی محاسبه می‌شود.</small></div>
+            <div><span>کد تخفیف دارید؟</span><small>کد در زمان ساخت سفارش Commerce بررسی می‌شود.</small></div>
             <input dir="ltr" value={discountCode} onChange={(event)=>setDiscountCode(event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g,""))} placeholder="مثلاً CHAKOD20" />
             {discountCode && <button type="button" onClick={()=>setDiscountCode("")}>حذف کد</button>}
           </section>
@@ -347,10 +348,10 @@ export default function CommerceCenter() {
                     <p>{serviceDescriptions[service.service_key] || "خدمت حرفه‌ای چاکود"}</p>
                     <strong>{formatToman(service.amount_toman)}</strong>
                     <button
-                      disabled={!selectedListing || workingKey === service.service_key}
-                      onClick={() => void createOrder(service.service_key)}
+                      disabled={!selectedListing}
+                      onClick={() => continueToCheckout(service.service_key)}
                     >
-                      {workingKey === service.service_key ? "در حال ایجاد..." : "ساخت پیش‌فاکتور"}
+                      ادامه به پرداخت
                     </button>
                   </article>
                 ))}
@@ -366,10 +367,13 @@ export default function CommerceCenter() {
                   </select>
                   <strong>{formatToman(selectedProvince?.story_price_toman || 0)}</strong>
                   <button
-                    disabled={!selectedListing || !selectedProvince || workingKey.startsWith("listing_story_")}
-                    onClick={() => void createOrder(selectedProvince?.is_large ? "listing_story_large" : "listing_story_regular", { province })}
+                    disabled={!selectedListing || !selectedProvince}
+                    onClick={() => continueToCheckout(
+                      selectedProvince?.is_large ? "listing_story_large" : "listing_story_regular",
+                      { province },
+                    )}
                   >
-                    {workingKey.startsWith("listing_story_") ? "در حال ایجاد..." : "رزرو استوری"}
+                    ادامه رزرو استوری
                   </button>
                 </article>
               </div>
@@ -411,8 +415,8 @@ export default function CommerceCenter() {
                     <li>گالری و خدمات مجموعه</li>
                     <li>حفظ اطلاعات پس از انقضا</li>
                   </ul>
-                  <button disabled={!dealerId || workingKey === service.service_key} onClick={() => void createOrder(service.service_key)}>
-                    {workingKey === service.service_key ? "در حال ایجاد..." : "انتخاب و پرداخت"}
+                  <button disabled={!dealerId} onClick={() => continueToCheckout(service.service_key)}>
+                    انتخاب و ادامه پرداخت
                   </button>
                 </article>
               ))}
@@ -460,7 +464,7 @@ export default function CommerceCenter() {
                 </table>
               </div>
             ) : (
-              <div className={styles.emptyState}><strong>سفارشی ثبت نشده است</strong><span>پس از انتخاب یکی از خدمات، پیش‌فاکتور اینجا نمایش داده می‌شود.</span></div>
+              <div className={styles.emptyState}><strong>سفارشی ثبت نشده است</strong><span>پس از انتخاب یکی از خدمات، سفارش Commerce در اینجا نمایش داده می‌شود.</span></div>
             )}
           </section>
         )}

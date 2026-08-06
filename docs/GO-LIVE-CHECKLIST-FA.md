@@ -40,13 +40,13 @@ Main branch: تا Build موفق تولید و تایید صریح مالک تغ
 - [x] دسترسی کاربر آزمایشی عادی به `/admin/affiliate` مسدود شد و مرورگر به `/` برگشت.
 - [x] دسترسی مهمان واقعی بدون Session در Incognito به `/admin/affiliate` مسدود شد.
 - [!] مهمان واقعی پیش از پچ به اشتباه به `/` برگشت؛ رفتار مورد انتظار `/login?returnTo=%2Fadmin` است.
-- [~] پچ تفکیک مهمان، کاربر عادی و ادمین روی لپ تاپ دریافت و تست واحد آن موفق شد؛ Smoke Test Runtime هنوز باقی مانده است.
+- [~] پچ تفکیک مهمان، کاربر عادی و ادمین روی لپ تاپ دریافت شد؛ تست واحد و TypeScript آن موفق هستند و Smoke Test Runtime باقی مانده است.
 - [~] بررسی Console مرورگر و ترمینال برای خطاهای Runtime.
 - [ ] توقف صحیح سرور و ثبت نتیجه در این فایل.
 
 ## فاز ۲ — سلامت کد و Regression
 
-- [ ] اجرای TypeScript محدوده Launch پس از Pull پچ Redirect.
+- [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا اجرا شد.
 - [ ] اجرای TypeScript اختصاصی Affiliate.
 - [x] تست Regression جدید `tests/route-access.test.mjs` اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [ ] تعیین تکلیف دو import تست با پسوند `.ts`.
@@ -214,10 +214,10 @@ Session handoff commit:
 f72d69dc5c171eaecc2cb23168ef30275b0443dc
 ```
 
-- [~] پیاده سازی روی GitHub ذخیره شده و تست واحد آن موفق است؛ Runtime هنوز کامل نشده است.
+- [~] پیاده سازی روی GitHub ذخیره شده، تست واحد و TypeScript آن موفق هستند؛ Runtime هنوز کامل نشده است.
 - [x] Pull روی لپ تاپ با Fast-forward تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` انجام شد.
 - [x] تست واحد Route access با ۴ تست موفق و صفر شکست اجرا شد.
-- [ ] TypeScript محدوده Launch.
+- [x] TypeScript محدوده Launch بدون خطا اجرا شد.
 - [ ] Smoke Test مهمان Incognito.
 - [ ] Smoke Test کاربر عادی.
 - [ ] ثبت نتیجه و ساخت PR فقط پس از موفقیت.
@@ -225,12 +225,12 @@ f72d69dc5c171eaecc2cb23168ef30275b0443dc
 ## گزارش اجرای جاری
 
 ```text
-Date: 2026-08-06 13:49 +03:30
+Date: 2026-08-06 14:30 +03:30
 Phase: Launch-3 — Local Baseline
 Patch: Admin guest redirect
-Completed: Pull امن شاخه و اجرای موفق ۴ تست Regression دسترسی ادمین
-Tests: node --test tests/route-access.test.mjs — pass 4، fail 0، skipped 0، duration_ms 5533.182
-Saved state: نتیجه تست در چک لیست اختصاصی پچ و چک لیست Go-Live روی GitHub ثبت شد
-Open blockers: TypeScript و Smoke Test پچ Redirect، شکست دریافت داده Affiliate، ورود آزمایشی لوکال در Production، تصاویر Placeholder، Build Cloudflare و امنیت وابستگی ها
-Next action: اجرای TypeScript محدوده Launch، سپس اجرای Vite و Smoke Test مهمان و کاربر عادی
+Completed: Pull امن شاخه، اجرای موفق ۴ تست Regression و TypeScript محدوده Launch
+Tests: node --test tests/route-access.test.mjs — pass 4، fail 0؛ npx.cmd tsc --noEmit -p tsconfig.launch.json — موفق و بدون Diagnostic
+Saved state: نتیجه تست ها در چک لیست اختصاصی پچ و چک لیست Go-Live روی GitHub ثبت شد
+Open blockers: Smoke Test پچ Redirect، شکست دریافت داده Affiliate، ورود آزمایشی لوکال در Production، تصاویر Placeholder، Build Cloudflare و امنیت وابستگی ها
+Next action: اجرای Vite و Smoke Test مهمان Incognito و کاربر عادی
 ```

@@ -31,7 +31,7 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 
 - [x] آخرین Commitهای شاخه با Fast-forward روی لپ تاپ دریافت شدند و HEAD محلی تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` به روز شد.
 - [x] `node --test tests/route-access.test.mjs` اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
-- [ ] اجرای TypeScript محدوده Launch.
+- [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون خروجی اجرا شد.
 - [ ] اجرای سرور محلی پس از تغییر.
 - [ ] تایید مهمان ناشناس: `/admin/affiliate` به `/login?returnTo=%2Fadmin` برسد.
 - [ ] تایید کاربر عادی: `/admin/affiliate` باز نشود و به `/` برگردد.
@@ -52,6 +52,10 @@ Local regression result:
 - fail: 0
 - duration_ms: 5533.182
 
-Status: پیاده سازی شده، روی لپ تاپ دریافت شده و تست واحد موفق است؛ در انتظار TypeScript و Smoke Test
+TypeScript result:
+- command: npx.cmd tsc --noEmit -p tsconfig.launch.json
+- result: success; no diagnostics printed
+
+Status: پیاده سازی شده، روی لپ تاپ دریافت شده، تست واحد و TypeScript موفق هستند؛ در انتظار Smoke Test Runtime
 Published commit: هنوز ادغام نشده
 ```

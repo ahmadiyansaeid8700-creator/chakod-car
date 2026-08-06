@@ -10,7 +10,6 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
-import { getCommerceCatalogItem } from "../../../../lib/commerce-catalog";
 import {
   createPublicReference,
   getFinanceOwnerKey,
@@ -20,19 +19,26 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
+const SERVICE_KEY_PATTERN = /^[a-z0-9_-]{3,80}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
 
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
-function publicOrder(order: typeof commerceOrders.$inferSelect) {
-  let metadata: Record<string, unknown> = {};
+function parseMetadata(value: string) {
   try {
-    metadata = JSON.parse(order.metadataJson) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(value);
+    return isRecord(parsed) ? parsed : {};
   } catch {
-    metadata = {};
+    return {};
   }
+}
 
+function publicOrder(order: typeof commerceOrders.$inferSelect) {
   return {
     id: order.id,
     order_no: order.orderNo,
@@ -40,7 +46,7 @@ function publicOrder(order: typeof commerceOrders.$inferSelect) {
     product_code: order.productCode,
     amount_toman: order.finalAmountToman,
     status: order.status,
-    metadata,
+    metadata: parseMetadata(order.metadataJson),
   };
 }
 
@@ -71,11 +77,9 @@ async function verifyManagedListing(request: NextRequest, listingId: number) {
 
   const direct = payload.listing;
   const collection = Array.isArray(payload.data) ? payload.data : [];
-  const candidates = [direct, ...collection].filter(
-    (item): item is Record<string, unknown> =>
-      Boolean(item && typeof item === "object" && !Array.isArray(item)),
-  );
-  const listing = candidates.find((item) => Number(item.id) === listingId);
+  const listing = [direct, ...collection]
+    .filter(isRecord)
+    .find((item) => Number(item.id) === listingId);
 
   if (!listing) {
     return {
@@ -91,12 +95,79 @@ async function verifyManagedListing(request: NextRequest, listingId: number) {
       id: listingId,
       title: cleanText(listing.title, 180),
       status: cleanText(
-        listing.status && typeof listing.status === "object"
-          ? (listing.status as Record<string, unknown>).code
-          : listing.status,
+        isRecord(listing.status) ? listing.status.code : listing.status,
         40,
       ),
+      dealerId: Number(listing.dealer_id || 0) || null,
     },
+  };
+}
+
+async function createCommerceOrder(
+  request: NextRequest,
+  input: {
+    serviceKey: string;
+    listingId?: number;
+    dealerId?: number;
+    province?: string;
+    discountCode?: string;
+  },
+) {
+  const payload: Record<string, unknown> = {
+    action: "create_order",
+    service_key: input.serviceKey,
+  };
+
+  if (input.listingId) payload.listing_id = input.listingId;
+  if (input.dealerId) payload.dealer_id = input.dealerId;
+  if (input.province) payload.province = input.province;
+  if (input.discountCode) payload.discount_code = input.discountCode;
+
+  const referralCode = request.cookies.get("chakod_affiliate_ref")?.value?.trim();
+  if (referralCode) payload.affiliate_code = referralCode;
+
+  const upstream = await fetch(authApiUrl("/api/commerce.php"), {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      ...requestIdentityHeaders(request),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const result = await parseJsonResponse(upstream);
+  const order = isRecord(result?.order) ? result.order : null;
+
+  if (!upstream.ok || result?.success !== true || !order) {
+    return {
+      ok: false as const,
+      status: upstream.status >= 400 ? upstream.status : 502,
+      message: cleanText(result?.message, 240) || "ساخت سفارش در سامانه تجاری انجام نشد.",
+    };
+  }
+
+  const orderNo = cleanText(order.order_no, 80);
+  const amountToman = Math.round(
+    Number(order.amount_toman || order.total_amount_toman || order.final_amount_toman || 0),
+  );
+
+  if (!orderNo || !Number.isSafeInteger(amountToman) || amountToman < 0) {
+    return {
+      ok: false as const,
+      status: 502,
+      message: "اطلاعات سفارش تجاری معتبر نیست.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    orderNo,
+    amountToman,
+    originalAmountToman: Math.round(Number(order.original_amount_toman || amountToman)),
+    discountToman: Math.round(Number(order.discount_amount_toman || 0)),
+    discountCode: cleanText(order.discount_code, 80),
+    message: cleanText(result?.message, 240),
   };
 }
 
@@ -112,57 +183,17 @@ export async function POST(request: NextRequest) {
   let input: Record<string, unknown>;
   try {
     const parsed: unknown = await request.json();
-    input = parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+    input = isRecord(parsed) ? parsed : {};
   } catch {
     return jsonResponse({ success: false, message: "اطلاعات سفارش معتبر نیست." }, 400);
   }
 
   const orderType = cleanText(input.type, 32);
-  const productCode = cleanText(input.code, 64);
   const idempotencyKey = cleanText(input.idempotency_key, 100);
+  const requestedServiceKey = cleanText(input.service_key || input.code, 80);
 
   if (!IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
     return jsonResponse({ success: false, message: "شناسه امن سفارش معتبر نیست." }, 400);
-  }
-
-  let amountToman = 0;
-  let metadata: Record<string, unknown> = {};
-
-  if (orderType === "wallet_charge") {
-    amountToman = Math.round(Number(input.amount_toman || 0));
-    if (!Number.isSafeInteger(amountToman) || amountToman < 10_000 || amountToman > 500_000_000) {
-      return jsonResponse({ success: false, message: "مبلغ افزایش موجودی معتبر نیست." }, 400);
-    }
-  } else {
-    const product = getCommerceCatalogItem(orderType, productCode);
-    if (!product) {
-      return jsonResponse({ success: false, message: "محصول انتخاب‌شده معتبر نیست." }, 400);
-    }
-    amountToman = product.amountToman;
-
-    if (orderType === "promotion") {
-      const listingId = Math.round(Number(input.listing_id || 0));
-      if (!Number.isSafeInteger(listingId) || listingId <= 0) {
-        return jsonResponse({ success: false, message: "برای این محصول باید آگهی معتبر انتخاب شود." }, 400);
-      }
-
-      const ownership = await verifyManagedListing(request, listingId);
-      if (!ownership.ok) {
-        return jsonResponse(
-          { success: false, message: ownership.message },
-          ownership.status,
-        );
-      }
-
-      metadata = {
-        target_type: "listing",
-        listing_id: ownership.listing.id,
-        listing_title: ownership.listing.title,
-        listing_status: ownership.listing.status,
-      };
-    }
   }
 
   try {
@@ -177,48 +208,111 @@ export async function POST(request: NextRequest) {
       if (existing.ownerKey !== ownerKey) {
         return jsonResponse({ success: false, message: "شناسه سفارش قابل استفاده نیست." }, 409);
       }
-
-      let existingMetadata: Record<string, unknown> = {};
-      try {
-        existingMetadata = JSON.parse(existing.metadataJson) as Record<string, unknown>;
-      } catch {
-        existingMetadata = {};
-      }
-
-      if (
-        orderType === "promotion" &&
-        Number(existingMetadata.listing_id || 0) !== Number(metadata.listing_id || 0)
-      ) {
-        return jsonResponse({ success: false, message: "شناسه سفارش برای آگهی دیگری ساخته شده است." }, 409);
-      }
-
       return jsonResponse({ success: true, reused: true, order: publicOrder(existing) });
     }
 
-    const orderNo = createPublicReference("CHK");
+    if (orderType === "wallet_charge") {
+      const amountToman = Math.round(Number(input.amount_toman || 0));
+      if (!Number.isSafeInteger(amountToman) || amountToman < 10_000 || amountToman > 500_000_000) {
+        return jsonResponse({ success: false, message: "مبلغ افزایش موجودی معتبر نیست." }, 400);
+      }
+
+      const orderNo = createPublicReference("CHK");
+      const [order] = await db
+        .insert(commerceOrders)
+        .values({
+          orderNo,
+          idempotencyKey,
+          ownerKey,
+          orderType,
+          productCode: "wallet_charge",
+          amountToman,
+          finalAmountToman: amountToman,
+          status: "pending_payment",
+          metadataJson: JSON.stringify({ source: "wallet" }),
+        })
+        .returning();
+
+      return jsonResponse({ success: true, reused: false, order: publicOrder(order) }, 201);
+    }
+
+    if (!["promotion", "subscription", "service"].includes(orderType)) {
+      return jsonResponse({ success: false, message: "نوع سفارش معتبر نیست." }, 400);
+    }
+
+    if (!SERVICE_KEY_PATTERN.test(requestedServiceKey)) {
+      return jsonResponse({ success: false, message: "کد خدمت معتبر نیست." }, 400);
+    }
+
+    const listingId = Math.round(Number(input.listing_id || 0));
+    const dealerIdInput = Math.round(Number(input.dealer_id || 0));
+    const province = cleanText(input.province, 80);
+    const discountCode = cleanText(input.discount_code, 80);
+    let verifiedListing:
+      | { id: number; title: string; status: string; dealerId: number | null }
+      | null = null;
+
+    if (requestedServiceKey.startsWith("listing_")) {
+      if (!Number.isSafeInteger(listingId) || listingId <= 0) {
+        return jsonResponse({ success: false, message: "برای این خدمت باید یک آگهی معتبر انتخاب شود." }, 400);
+      }
+
+      const ownership = await verifyManagedListing(request, listingId);
+      if (!ownership.ok) {
+        return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+      }
+      verifiedListing = ownership.listing;
+    }
+
+    const dealerId = dealerIdInput > 0 ? dealerIdInput : verifiedListing?.dealerId || 0;
+    const commerceResult = await createCommerceOrder(request, {
+      serviceKey: requestedServiceKey,
+      listingId: verifiedListing?.id,
+      dealerId: dealerId || undefined,
+      province: province || undefined,
+      discountCode: discountCode || undefined,
+    });
+
+    if (!commerceResult.ok) {
+      return jsonResponse(
+        { success: false, message: commerceResult.message },
+        commerceResult.status,
+      );
+    }
+
+    const metadata = {
+      source: "commerce",
+      service_key: requestedServiceKey,
+      target_type: verifiedListing ? "listing" : dealerId ? "dealer" : "account",
+      listing_id: verifiedListing?.id || null,
+      listing_title: verifiedListing?.title || "",
+      listing_status: verifiedListing?.status || "",
+      dealer_id: dealerId || null,
+      province: province || "",
+      discount_code: commerceResult.discountCode || "",
+      upstream_message: commerceResult.message || "",
+    };
+
     const [order] = await db
       .insert(commerceOrders)
       .values({
-        orderNo,
+        orderNo: commerceResult.orderNo,
         idempotencyKey,
         ownerKey,
         orderType,
-        productCode,
-        amountToman,
-        finalAmountToman: amountToman,
+        productCode: requestedServiceKey,
+        amountToman: commerceResult.originalAmountToman,
+        discountToman: commerceResult.discountToman,
+        finalAmountToman: commerceResult.amountToman,
         status: "pending_payment",
         metadataJson: JSON.stringify(metadata),
       })
       .returning();
 
-    return jsonResponse({
-      success: true,
-      reused: false,
-      order: publicOrder(order),
-    }, 201);
+    return jsonResponse({ success: true, reused: false, order: publicOrder(order) }, 201);
   } catch {
     return jsonResponse(
-      { success: false, message: "ساخت سفارش در دیتابیس انجام نشد." },
+      { success: false, message: "ساخت یا ثبت سفارش مالی انجام نشد." },
       503,
     );
   }

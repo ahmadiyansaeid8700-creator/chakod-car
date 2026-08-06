@@ -27,7 +27,7 @@ Rollback point: 93bc971782c8db21cba4b952adb1486b7083c798
 - [~] Endpoint محلی `GET/POST /api/auth/dev-session` برای ساخت Cookie توسعه اضافه شد.
 - [~] `lib/server-route-access.ts` فقط روی localhost و فقط در Development این Session را به عنوان کاربر عادی می شناسد.
 - [~] Session آزمایشی برای `/api/admin-me.php` صراحتا غیرادمین باقی می ماند.
-- [~] تست مستقل `tests/local-development-session.test.mjs` اضافه شد.
+- [x] تست مستقل `tests/local-development-session.test.mjs` اضافه و با موفقیت اجرا شد.
 - [x] Logout موجود Cookie `chakod_session` را پاک می کند و با این پچ سازگار است.
 
 ## Commitها
@@ -42,7 +42,7 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 ## تست های لازم
 
 - [x] Pull امن پچ روی لپ تاپ با Fast-forward تا Commit `60e33d22baf2a7108f7519a17079489180c91bcc` انجام شد.
-- [ ] اجرای `node --test tests/local-development-session.test.mjs`.
+- [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [ ] اجرای `node --test tests/route-access.test.mjs`.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
 - [ ] اجرای Vite پس از Pull.
@@ -52,9 +52,20 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [ ] بررسی Console و ترمینال برای خطای جدید.
 - [ ] ثبت نتیجه نهایی در چک لیست Go-Live و فایل های Handoff.
 
+## نتیجه تست مستقل
+
+```text
+Command: node --test tests/local-development-session.test.mjs
+Tests: 3
+Pass: 3
+Fail: 0
+Skipped: 0
+Duration_ms: 162.4838
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده و روی لپ تاپ Pull شده است؛ در انتظار تست محلی
+Status: پیاده سازی شده، روی لپ تاپ Pull شده و تست مستقل موفق است؛ در انتظار Regression، TypeScript و Smoke Test Runtime
 Published commit: هنوز ادغام نشده
 ```

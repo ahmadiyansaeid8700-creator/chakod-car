@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
@@ -15,8 +16,21 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
+
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function publicOrder(order: typeof commerceOrders.$inferSelect) {
+  return {
+    id: order.id,
+    order_no: order.orderNo,
+    type: order.orderType,
+    product_code: order.productCode,
+    amount_toman: order.finalAmountToman,
+    status: order.status,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -40,6 +54,12 @@ export async function POST(request: NextRequest) {
 
   const orderType = cleanText(input.type, 32);
   const productCode = cleanText(input.code, 64);
+  const idempotencyKey = cleanText(input.idempotency_key, 100);
+
+  if (!IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
+    return jsonResponse({ success: false, message: "شناسه امن سفارش معتبر نیست." }, 400);
+  }
+
   let amountToman = 0;
 
   if (orderType === "wallet_charge") {
@@ -56,11 +76,27 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const db = getDb();
+    const [existing] = await db
+      .select()
+      .from(commerceOrders)
+      .where(eq(commerceOrders.idempotencyKey, idempotencyKey))
+      .limit(1);
+
+    if (existing) {
+      if (existing.ownerKey !== ownerKey) {
+        return jsonResponse({ success: false, message: "شناسه سفارش قابل استفاده نیست." }, 409);
+      }
+
+      return jsonResponse({ success: true, reused: true, order: publicOrder(existing) });
+    }
+
     const orderNo = createPublicReference("CHK");
-    const [order] = await getDb()
+    const [order] = await db
       .insert(commerceOrders)
       .values({
         orderNo,
+        idempotencyKey,
         ownerKey,
         orderType,
         productCode,
@@ -72,14 +108,8 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse({
       success: true,
-      order: {
-        id: order.id,
-        order_no: order.orderNo,
-        type: order.orderType,
-        product_code: order.productCode,
-        amount_toman: order.finalAmountToman,
-        status: order.status,
-      },
+      reused: false,
+      order: publicOrder(order),
     }, 201);
   } catch {
     return jsonResponse(

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import MobileBottomNav from "../../../components/MobileBottomNav";
 import styles from "./page.module.css";
@@ -12,6 +12,16 @@ type CheckoutSelection = {
   title: string;
   description: string;
   amount: number;
+};
+
+type CreateOrderResponse = {
+  success?: boolean;
+  message?: string;
+  order?: {
+    order_no: string;
+    amount_toman: number;
+    status: string;
+  };
 };
 
 type CreatePaymentResponse = {
@@ -80,14 +90,25 @@ function authHeaders(): Record<string, string> {
     : {};
 }
 
+async function readJson<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  try {
+    return text ? (JSON.parse(text) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CheckoutClient() {
   const [query, setQuery] = useState("");
   const [walletAmount, setWalletAmount] = useState("500000");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const requestKeyRef = useRef("");
 
   useEffect(() => {
     setQuery(window.location.search);
+    requestKeyRef.current = crypto.randomUUID();
   }, []);
 
   const selection = useMemo<CheckoutSelection>(() => {
@@ -141,6 +162,32 @@ export default function CheckoutClient() {
     setSubmitting(true);
 
     try {
+      const idempotencyKey = requestKeyRef.current || crypto.randomUUID();
+      requestKeyRef.current = idempotencyKey;
+
+      const orderResponse = await fetch("/api/finance/orders", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          type: selection.type,
+          code: selection.code,
+          amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
+          idempotency_key: idempotencyKey,
+        }),
+      });
+      const orderResult = await readJson<CreateOrderResponse>(orderResponse);
+
+      if (!orderResponse.ok || !orderResult?.success || !orderResult.order?.order_no) {
+        setError(orderResult?.message || "ساخت سفارش انجام نشد. دوباره تلاش کنید.");
+        return;
+      }
+
       const response = await fetch("/api/payments/create", {
         method: "POST",
         credentials: "include",
@@ -154,17 +201,12 @@ export default function CheckoutClient() {
           type: selection.type,
           code: selection.code,
           amount_toman: selection.type === "wallet_charge" ? selection.amount : undefined,
+          order_no: orderResult.order.order_no,
+          idempotency_key: idempotencyKey,
           callback_path: "/account/payments/callback",
         }),
       });
-
-      const text = await response.text();
-      let result: CreatePaymentResponse | null = null;
-      try {
-        result = text ? (JSON.parse(text) as CreatePaymentResponse) : null;
-      } catch {
-        result = null;
-      }
+      const result = await readJson<CreatePaymentResponse>(response);
 
       if (!response.ok || !result?.success || !result.payment_url) {
         setError(result?.message || "ساخت درخواست پرداخت انجام نشد. دوباره تلاش کنید.");
@@ -202,7 +244,10 @@ export default function CheckoutClient() {
                   <input
                     inputMode="numeric"
                     value={walletAmount}
-                    onChange={(event) => setWalletAmount(event.target.value)}
+                    onChange={(event) => {
+                      setWalletAmount(event.target.value);
+                      requestKeyRef.current = crypto.randomUUID();
+                    }}
                     aria-label="مبلغ افزایش موجودی"
                   />
                   <b>تومان</b>
@@ -236,7 +281,7 @@ export default function CheckoutClient() {
             {!requiresConfiguration && (
               <div className={styles.securityNote}>
                 <span>✓</span>
-                <p>تراکنش فقط پس از بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
+                <p>تراکنش فقط پس از ساخت سفارش، بازگشت موفق از درگاه و تأیید سمت سرور نهایی می‌شود.</p>
               </div>
             )}
           </div>

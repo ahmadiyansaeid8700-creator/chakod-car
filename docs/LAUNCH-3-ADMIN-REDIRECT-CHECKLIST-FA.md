@@ -29,7 +29,7 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 
 ## تست های لازم
 
-- [ ] دریافت آخرین Commitهای شاخه روی لپ تاپ.
+- [x] آخرین Commitهای شاخه با Fast-forward روی لپ تاپ دریافت شدند و HEAD محلی تا `08cfcb904529276bc53afa1a1a7bf4646447b6d8` به روز شد.
 - [ ] اجرای `node --test tests/route-access.test.mjs`.
 - [ ] اجرای TypeScript محدوده Launch.
 - [ ] اجرای سرور محلی پس از تغییر.
@@ -46,6 +46,6 @@ Implementation commits:
 - 68a016e27d2e1d3916a4ece57a3cb4d2000bf38f
 - f8fa8cb82ed05fc031f3be6aa06c7c17bce4f1f4
 
-Status: پیاده سازی شده، در انتظار تست محلی
+Status: پیاده سازی شده و روی لپ تاپ دریافت شده؛ در انتظار تست محلی
 Published commit: هنوز ادغام نشده
 ```

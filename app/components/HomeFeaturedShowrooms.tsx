@@ -7,8 +7,15 @@ import ShowroomCard, {
   type ShowroomCardData,
   type ShowroomListingPreview,
 } from "./ShowroomCard";
+import {
+  DEFAULT_HOME_LOCATION,
+  HOME_LOCATION_EVENT,
+  getHomeLocationScopes,
+  loadHomeLocation,
+  type HomeLocationSelection,
+} from "./home-location";
 
-const API_URL = "https://api.chakod.com/api/listings.php?limit=100&sort=vip";
+const API_BASE_URL = "https://api.chakod.com/api/listings.php";
 
 type ApiListing = {
   id: number | string;
@@ -38,29 +45,28 @@ type DealerPreview = ShowroomCardData & {
 };
 
 type Props = {
-  location: string;
   query: string;
 };
 
 const FALLBACK_CARDS = [
   {
     title: "نمایشگاه‌های منتخب چاکود",
-    description: "مجموعه‌های حرفه‌ای با ویترین اختصاصی و آگهی‌های فعال",
+    description: "ویترین نمایشگاه‌های حرفه‌ای و خودروهای فعال هر مجموعه",
     label: "مشاهده نمایشگاه‌ها",
   },
   {
-    title: "فروشندگان حرفه‌ای خودرو",
-    description: "دسترسی مستقیم به خودروها و اطلاعات هر مجموعه",
+    title: "خودروهای موجود نمایشگاه‌ها",
+    description: "پیش‌نمایش خودروها داخل کارت تبلیغاتی هر نمایشگاه",
     label: "ورود به ویترین‌ها",
   },
   {
-    title: "همکاری با نمایشگاه‌ها",
-    description: "ساخت ویترین حرفه‌ای و معرفی بهتر خودروهای موجود",
+    title: "ثبت نمایشگاه در چاکود",
+    description: "ساخت ویترین حرفه‌ای برای معرفی مجموعه و خودروهای موجود",
     label: "ثبت نمایشگاه",
   },
 ] as const;
 
-function normalizeText(value: string) {
+function normalizeText(value: unknown) {
   return String(value || "")
     .trim()
     .toLocaleLowerCase("fa")
@@ -82,6 +88,51 @@ function listingPreview(listing: ApiListing): ShowroomListingPreview {
     title: listing.title || "آگهی خودرو",
     image: listing.cover_image || null,
   };
+}
+
+function listingMatchesLocation(
+  listing: ApiListing,
+  location: HomeLocationSelection,
+) {
+  if (location.mode === "all") return true;
+
+  const province = normalizeText(listing.province);
+  const city = normalizeText(listing.city);
+
+  return getHomeLocationScopes(location).some((scope) => {
+    if (normalizeText(scope.province) !== province) return false;
+    if (scope.allCities) return true;
+
+    if (scope.cities.some((item) => normalizeText(item) === city)) {
+      return true;
+    }
+
+    return (scope.areas || []).some(
+      (area) => normalizeText(area.city) === city,
+    );
+  });
+}
+
+function buildListingUrls(location: HomeLocationSelection) {
+  const scopes = getHomeLocationScopes(location);
+
+  if (location.mode === "all" || scopes.length === 0) {
+    return [
+      `${API_BASE_URL}?${new URLSearchParams({
+        limit: "100",
+        sort: "vip",
+      }).toString()}`,
+    ];
+  }
+
+  return scopes.map((scope) => {
+    const params = new URLSearchParams({
+      limit: "100",
+      sort: "vip",
+      province: scope.province,
+    });
+    return `${API_BASE_URL}?${params.toString()}`;
+  });
 }
 
 function buildDealers(listings: ApiListing[]): DealerPreview[] {
@@ -156,13 +207,6 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
   );
 }
 
-function matchesLocation(dealer: DealerPreview, location: string) {
-  if (!location || location === "همه شهرها") return true;
-  return normalizeText(`${dealer.province || ""} ${dealer.city}`).includes(
-    normalizeText(location),
-  );
-}
-
 function matchesQuery(dealer: DealerPreview, query: string) {
   if (!query.trim()) return true;
 
@@ -175,48 +219,72 @@ function matchesQuery(dealer: DealerPreview, query: string) {
   ).includes(normalizeText(query));
 }
 
-export default function HomeFeaturedShowrooms({ location, query }: Props) {
+export default function HomeFeaturedShowrooms({ query }: Props) {
+  const [location, setLocation] = useState<HomeLocationSelection>(
+    DEFAULT_HOME_LOCATION,
+  );
+  const [locationReady, setLocationReady] = useState(false);
   const [listings, setListings] = useState<ApiListing[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
 
   useEffect(() => {
-    const controller = new AbortController();
+    setLocation(loadHomeLocation());
+    setLocationReady(true);
 
-    async function load() {
-      try {
-        const response = await fetch(API_URL, {
+    const handleLocationChange = (event: Event) => {
+      const customEvent = event as CustomEvent<HomeLocationSelection>;
+      setLocation(customEvent.detail || loadHomeLocation());
+    };
+
+    window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
+    return () => window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
+  }, []);
+
+  useEffect(() => {
+    if (!locationReady) return;
+
+    const controller = new AbortController();
+    setStatus("loading");
+    setListings([]);
+
+    Promise.all(
+      buildListingUrls(location).map(async (url) => {
+        const response = await fetch(url, {
           cache: "no-store",
           signal: controller.signal,
           headers: { Accept: "application/json" },
         });
-
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
         const payload = (await response.json()) as ApiResponse;
-        if (!payload.success || !Array.isArray(payload.data)) {
-          throw new Error("Invalid listings response");
-        }
-
-        setListings(payload.data);
+        return payload.success && Array.isArray(payload.data) ? payload.data : [];
+      }),
+    )
+      .then((responses) => {
+        const merged = new Map<number | string, ApiListing>();
+        responses.flat().forEach((item) => merged.set(item.id, item));
+        setListings(Array.from(merged.values()));
         setStatus("ready");
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") setStatus("error");
-      }
-    }
+      })
+      .catch((error: unknown) => {
+        if ((error as Error).name !== "AbortError") {
+          setListings([]);
+          setStatus("error");
+        }
+      });
 
-    void load();
     return () => controller.abort();
-  }, []);
+  }, [location, locationReady]);
 
   const dealers = useMemo(
     () =>
-      buildDealers(listings)
-        .filter(
-          (dealer) =>
-            matchesLocation(dealer, location) && matchesQuery(dealer, query),
-        )
+      buildDealers(
+        listings.filter((listing) =>
+          listingMatchesLocation(listing, location),
+        ),
+      )
+        .filter((dealer) => matchesQuery(dealer, query))
         .slice(0, 8),
     [listings, location, query],
   );
@@ -229,6 +297,7 @@ export default function HomeFeaturedShowrooms({ location, query }: Props) {
         <div>
           <span className={styles.eyebrow}>نمایشگاه‌های چاکود</span>
           <h2>نمایشگاه‌های منتخب</h2>
+          <p className="featuredShowroomLocation">{location.label}</p>
         </div>
 
         <div className={styles.sectionActions}>
@@ -274,11 +343,25 @@ export default function HomeFeaturedShowrooms({ location, query }: Props) {
       )}
 
       <style>{`
+        .featuredShowroomLocation {
+          margin: 5px 0 0;
+          color: #6d28d9;
+          font-size: 9px;
+          font-weight: 900;
+        }
+
         .featuredShowroomFallbackRail {
+          min-width: 0;
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(300px, calc((100% - 32px) / 3));
           gap: 16px;
-          padding-bottom: 24px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 2px 1px 24px;
+          scroll-snap-type: inline mandatory;
+          scrollbar-width: thin;
+          scrollbar-color: #d7cce8 transparent;
         }
 
         .featuredShowroomFallbackCard {
@@ -295,6 +378,7 @@ export default function HomeFeaturedShowrooms({ location, query }: Props) {
             radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.12), transparent 14rem),
             linear-gradient(145deg, #ffffff, #faf7ff);
           box-shadow: 0 16px 42px rgba(42, 26, 68, 0.075);
+          scroll-snap-align: start;
           transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
         }
 
@@ -359,18 +443,18 @@ export default function HomeFeaturedShowrooms({ location, query }: Props) {
           font-weight: 900;
         }
 
-        @media (max-width: 960px) {
+        @media (max-width: 900px) {
           .featuredShowroomFallbackRail {
-            grid-template-columns: 1fr;
-            gap: 11px;
-          }
-
-          .featuredShowroomFallbackCard {
-            min-height: 150px;
+            grid-auto-columns: min(340px, 82vw);
           }
         }
 
         @media (max-width: 560px) {
+          .featuredShowroomFallbackRail {
+            grid-auto-columns: min(300px, 84vw);
+            gap: 11px;
+          }
+
           .featuredShowroomFallbackCard {
             min-height: 128px;
             padding: 14px;

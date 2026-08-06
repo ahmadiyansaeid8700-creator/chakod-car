@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ChakodAiAssistant from "./components/ChakodAiAssistant";
+import LocalPublicApiBridge from "./components/LocalPublicApiBridge";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
+        <LocalPublicApiBridge />
         {children}
         <ChakodAiAssistant />
       </body>

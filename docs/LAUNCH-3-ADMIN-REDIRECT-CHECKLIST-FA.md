@@ -35,10 +35,11 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [x] سرور محلی پس از تغییر با Vite `8.0.13` روی `http://127.0.0.1:5173/` در `3246ms` آماده شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام استارت دیده شد و نیازمند بررسی منبع است.
 - [x] مهمان ناشناس در Incognito از `/admin/affiliate` به `/login?returnTo=%2Fadmin` منتقل شد.
-- [~] تلاش برای تست کاربر عادی نیز به `/login?returnTo=%2Fadmin` رسید؛ این نتیجه نشان می دهد Session معتبر کاربر عادی وجود نداشت و این اجرا دوباره فقط رفتار مهمان را تایید کرد.
-- [ ] کاربر آزمایشی عادی باید دوباره وارد شود و سپس تایید شود که `/admin/affiliate` باز نمی شود و به `/` برمی گردد.
+- [~] تلاش نخست برای تست کاربر عادی نیز به `/login?returnTo=%2Fadmin` رسید؛ این نتیجه نشان داد Session معتبر وجود نداشت و دوباره فقط رفتار مهمان را تایید کرد.
+- [x] ورود آزمایشی لوکال در پنجره عادی انجام شد و مرورگر به `/account?complete=1` رسید؛ Session کاربر عادی برای Smoke Test نهایی فعال شد.
+- [ ] تایید کاربر عادی: `/admin/affiliate` باز نشود و به `/` برگردد.
 - [ ] بررسی نبود خطای جدید در ترمینال و Console.
-- [~] نتیجه مهمان در `docs/GO-LIVE-CHECKLIST-FA.md` ثبت شد؛ نتیجه نهایی پچ پس از تست کاربر عادی ثبت می شود.
+- [~] نتیجه مهمان و ورود دوباره کاربر عادی در `docs/GO-LIVE-CHECKLIST-FA.md` ثبت شد؛ نتیجه نهایی پچ پس از Smoke Test کاربر عادی ثبت می شود.
 
 ## وضعیت انتشار
 
@@ -70,10 +71,10 @@ Guest smoke result:
 - final_url: http://127.0.0.1:5173/login?returnTo=%2Fadmin
 - result: success
 
-Signed-in user smoke attempt:
-- final_url: http://127.0.0.1:5173/login?returnTo=%2Fadmin
-- interpretation: no valid signed-in Session was present; result is not valid evidence for the non-admin signed-in branch
+Signed-in user preparation:
+- local test login final_url: http://127.0.0.1:5173/account?complete=1
+- result: signed-in local Session established for the normal browser window
 
-Status: تست مهمان، تست واحد و TypeScript موفق هستند؛ در انتظار ورود دوباره کاربر آزمایشی، تست Runtime کاربر عادی و بررسی Console
+Status: تست مهمان، تست واحد، TypeScript و ورود دوباره کاربر عادی موفق هستند؛ در انتظار Smoke Test Runtime کاربر عادی و بررسی Console
 Published commit: هنوز ادغام نشده
 ```

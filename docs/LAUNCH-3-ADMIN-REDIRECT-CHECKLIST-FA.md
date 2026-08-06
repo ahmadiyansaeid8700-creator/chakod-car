@@ -32,15 +32,15 @@ Rollback point: 3be38a804d6639e863c5f0b7f562566f4d7d130b
 - [x] آخرین Commitهای شاخه با Fast-forward روی لپ تاپ دریافت شدند.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ Session محلی نیز اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] TypeScript محدوده Launch با `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون خروجی اجرا شد.
-- [x] سرور محلی پس از تغییر با Vite `8.0.13` روی `http://127.0.0.1:5173/` در `1383ms` آماده شد.
+- [x] سرور محلی پس از تغییر با Vite `8.0.13` روی `http://127.0.0.1:5173/` آماده شد؛ اجرای نهایی در `1277ms` انجام شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام استارت دیده شد و نیازمند بررسی منبع است.
 - [x] مهمان ناشناس در Incognito پیش از اضافه شدن Session bridge از `/admin/affiliate` به `/login?returnTo=%2Fadmin` منتقل شد.
 - [x] تلاش نخست برای تست کاربر عادی به `/login?returnTo=%2Fadmin` رسید و نشان داد ورود آزمایشی قبلی فقط `localStorage` را تنظیم کرده بود.
 - [x] مسیر محلی `/api/auth/dev-session` در پنجره عادی باز شد و مرورگر به `/account?complete=1` رسید؛ Session سمت سرور برای کاربر عادی ساخته شد.
 - [x] کاربر عادی دارای Session سمت سرور از `/admin/affiliate` به `/` برگشت و صفحه ادمین باز نشد.
-- [ ] بازآزمایی مهمان Incognito پس از اضافه شدن Session bridge.
+- [x] مهمان پاک بدون Cookie با `curl.exe` پاسخ `307` گرفت و Header مقصد دقیقا `http://127.0.0.1:5173/login?returnTo=%2Fadmin` بود.
 - [ ] بررسی نبود خطای جدید در ترمینال و Console.
-- [~] نتیجه کاربر عادی در چک لیست اختصاصی Session ثبت شد؛ ثبت نهایی Go-Live و Handoff پس از بازآزمایی مهمان و بررسی خطا انجام می شود.
+- [~] نتایج کاربر عادی و مهمان پاک در چک لیست اختصاصی Session ثبت شدند؛ ثبت نهایی Go-Live و Handoff پس از بررسی خطا انجام می شود.
 
 ## وضعیت انتشار
 
@@ -69,7 +69,7 @@ TypeScript result:
 Runtime result:
 - command: npm.cmd run dev
 - Vite: 8.0.13
-- ready_ms: 1383
+- ready_ms: 1277
 - local_url: http://127.0.0.1:5173/
 - warning: DEP0205 module.register() deprecation; non-blocking
 
@@ -88,6 +88,12 @@ Signed-in non-admin smoke result:
 - final_url: http://127.0.0.1:5173/
 - result: success; admin page blocked
 
-Status: تست واحد، TypeScript، مهمان پیش از Session bridge و کاربر عادی پس از Session bridge موفق هستند؛ در انتظار بازآزمایی مهمان و بررسی Console/ترمینال
+Clean guest smoke result after Session bridge:
+- command: curl.exe -sS --max-time 10 -D - -o NUL http://127.0.0.1:5173/admin/affiliate
+- HTTP_status: 307
+- location: http://127.0.0.1:5173/login?returnTo=%2Fadmin
+- result: success; no Cookie sent
+
+Status: تست واحد، TypeScript، کاربر عادی و مهمان پاک موفق هستند؛ در انتظار بررسی Console/ترمینال و Runtime با نقش ادمین واقعی
 Published commit: هنوز ادغام نشده
 ```

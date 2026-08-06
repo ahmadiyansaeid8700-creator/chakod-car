@@ -45,7 +45,8 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ دوباره اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` پس از پچ بدون خطا و بدون Diagnostic اجرا شد.
-- [ ] اجرای Vite پس از Pull.
+- [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` در `1383ms` آماده شد.
+- [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
 - [ ] باز کردن `/api/auth/dev-session` و تایید انتقال به `/account?complete=1`.
 - [ ] باز کردن `/admin/affiliate` و تایید انتقال کاربر عادی به `/`.
 - [ ] تایید مجدد مهمان Incognito به `/login?returnTo=%2Fadmin`.
@@ -82,9 +83,19 @@ Result: success
 Diagnostics: none
 ```
 
+## نتیجه اجرای Vite
+
+```text
+Command: npm.cmd run dev
+Vite: 8.0.13
+Ready_ms: 1383
+Local_url: http://127.0.0.1:5173/
+Warning: DEP0205 module.register() deprecation; non-blocking
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده، روی لپ تاپ Pull شده و تست مستقل، Regression و TypeScript موفق هستند؛ در انتظار Smoke Test Runtime
+Status: پیاده سازی، Pull، تست مستقل، Regression، TypeScript و اجرای Vite موفق هستند؛ در انتظار Smoke Test Runtime مسیر Session محلی
 Published commit: هنوز ادغام نشده
 ```

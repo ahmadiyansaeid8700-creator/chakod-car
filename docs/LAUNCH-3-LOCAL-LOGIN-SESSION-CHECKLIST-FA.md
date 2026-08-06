@@ -45,7 +45,7 @@ a0ed755bf438b0f9e497cd912eb030d1e5995d47
 
 ## تست های لازم روی لپ تاپ
 
-- [ ] توقف Vite با `Ctrl + C`.
+- [x] توقف Vite با `Ctrl + C` و بازگشت ترمینال به PowerShell تایید شد.
 - [ ] Pull امن شاخه با `git pull --ff-only origin agent/launch-3-local-baseline`.
 - [ ] تایید شاخه و Working tree با `git status --short --branch`.
 - [ ] اجرای `node --test tests/local-development-login.test.mjs`.
@@ -60,6 +60,6 @@ a0ed755bf438b0f9e497cd912eb030d1e5995d47
 ## وضعیت
 
 ```text
-Status: پیاده سازی روی GitHub ذخیره شده؛ در انتظار Pull و تست لپ تاپ
+Status: پیاده سازی روی GitHub ذخیره شده؛ Vite روی لپ تاپ متوقف شده و در انتظار Pull و تست لپ تاپ است
 Published commit: هنوز ادغام نشده
 ```

@@ -49,7 +49,7 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [~] Git هنگام پاک سازی Pack قدیمی برای دو فایل `.idx` و `.pack` هشدار `Unlink failed` داد؛ Fast-forward و فایل های پروژه سالم ماندند.
 - [x] `node --test tests/local-public-api.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
-- [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
+- [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون Diagnostic اجرا شد.
 - [ ] اجرای دوباره Vite با `npm.cmd run dev`.
 - [ ] باز کردن صفحه اصلی و تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com`.
 - [ ] تایید اینکه داده های صفحه اصلی در صورت پاسخ موفق Upstream نمایش داده می شوند.
@@ -87,9 +87,17 @@ Verified:
 - ادمین بودن به تنهایی Commerce را فعال نمی کند
 ```
 
+## نتیجه TypeScript محدوده Launch
+
+```text
+Command: npx.cmd tsc --noEmit -p tsconfig.launch.json
+Result: success
+Diagnostics: none
+```
+
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده و تست مستقل و Regression دسترسی موفق هستند؛ در انتظار TypeScript و تست Runtime مرورگر
+Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی و TypeScript محدوده Launch موفق هستند؛ در انتظار تست Runtime مرورگر
 Published commit: هنوز ادغام نشده
 ```

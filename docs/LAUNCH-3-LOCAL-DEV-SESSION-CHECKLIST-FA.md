@@ -45,12 +45,13 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ دوباره اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` پس از پچ بدون خطا و بدون Diagnostic اجرا شد.
-- [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` آماده شد؛ اجرای نهایی در `1277ms` انجام شد.
+- [x] Vite پس از Pull با نسخه `8.0.13` روی `http://127.0.0.1:5173/` آماده شد؛ اجرای نهایی در `869ms` انجام شد.
 - [~] هشدار غیرمسدودکننده Node با کد `DEP0205` هنگام اجرای Vite همچنان مشاهده شد.
 - [x] مسیر `/api/auth/dev-session` در پنجره عادی باز شد و انتقال نهایی به `/account?complete=1` تایید شد؛ Cookie آزمایشی سمت سرور ساخته شد.
 - [x] `/admin/affiliate` با Session آزمایشی کاربر عادی باز نشد و انتقال نهایی به `/` تایید شد.
 - [x] مهمان پاک بدون Cookie با `curl.exe` پاسخ `307` دریافت کرد و Header مقصد دقیقا `http://127.0.0.1:5173/login?returnTo=%2Fadmin` بود.
-- [ ] بررسی Console و ترمینال برای خطای جدید.
+- [x] پس از تست مهمان، ترمینال Vite فقط اتصال RSC و `GET /admin/affiliate 307` را ثبت کرد و هیچ Error جدیدی نداشت.
+- [ ] بررسی Console مرورگر برای خطای جدید.
 - [ ] ثبت نتیجه نهایی در چک لیست Go-Live و فایل های Handoff.
 
 ## نتیجه تست مستقل
@@ -88,7 +89,7 @@ Diagnostics: none
 ```text
 Command: npm.cmd run dev
 Vite: 8.0.13
-Ready_ms: 1277
+Ready_ms: 869
 Local_url: http://127.0.0.1:5173/
 Warning: DEP0205 module.register() deprecation; non-blocking
 ```
@@ -120,9 +121,19 @@ Cookie: none
 Result: success; guest redirected to login with safe returnTo
 ```
 
+## نتیجه ترمینال پس از Smoke Test
+
+```text
+RSC: connected
+Request: GET /admin/affiliate
+HTTP_status: 307
+Duration: 4.1s
+New_runtime_errors: none
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی، تست مستقل، Regression، TypeScript، اجرای Vite، ساخت Session سمت سرور و Smoke Test کاربر عادی و مهمان پاک موفق هستند؛ در انتظار بررسی Console/ترمینال و ثبت Handoff نهایی
+Status: پیاده سازی، تست مستقل، Regression، TypeScript، اجرای Vite، ساخت Session سمت سرور، Smoke Test کاربر عادی و مهمان پاک و بررسی ترمینال موفق هستند؛ در انتظار بررسی Console مرورگر و ثبت Handoff نهایی
 Published commit: هنوز ادغام نشده
 ```

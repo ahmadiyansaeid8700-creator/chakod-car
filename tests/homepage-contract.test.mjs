@@ -117,6 +117,7 @@ test("keeps show-all catalog pages on their multi-row grid", () => {
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const homeCss = read("app/home.css");
   const vehicleCardCss = read("app/components/HomeVehicleCard.module.css");
+  const mobileNavCss = read("app/components/MobileBottomNav.module.css");
 
   assert.match(
     homeCss,
@@ -131,5 +132,13 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
   assert.match(
     vehicleCardCss,
     /@media\s*\(max-width:\s*640px\)[\s\S]*?\.card\s*\{/,
+  );
+  assert.match(
+    mobileNavCss,
+    /\.pageSpacer\s*\{[\s\S]*?height:\s*calc\(118px\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\);/,
+  );
+  assert.match(
+    mobileNavCss,
+    /\.navigationShell\s*\{[\s\S]*?bottom:\s*max\(12px,\s*env\(safe-area-inset-bottom,\s*0px\)\);/,
   );
 });

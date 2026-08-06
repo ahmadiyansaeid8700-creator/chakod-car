@@ -8,6 +8,13 @@
       "when": 1785065288775,
       "tag": "0000_curvy_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786055040000,
+      "tag": "0001_finance_core",
+      "breakpoints": true
     }
   ]
 }

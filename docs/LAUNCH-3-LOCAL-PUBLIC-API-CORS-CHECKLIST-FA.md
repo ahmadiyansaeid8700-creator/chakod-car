@@ -28,8 +28,8 @@ Rollback point: 4d81124a3a94cd5236ec2bc36cca13c7240b0583
 - [~] Bridge سمت Client در `app/components/LocalPublicApiBridge.tsx` اضافه شد.
 - [~] Bridge در `app/layout.tsx` پیش از محتوای صفحه Mount شد.
 - [~] Proxy مسیر `/chakod-api` به `https://api.chakod.com` در `vite.windows.config.ts` اضافه شد.
-- [~] Production و Hostهای غیرمحلی بدون تغییر باقی می مانند.
-- [~] تست مستقل `tests/local-public-api.test.mjs` اضافه شد.
+- [x] تست مستقل تایید کرد Production و Hostهای غیرمحلی بدون بازنویسی باقی می مانند.
+- [x] تست مستقل `tests/local-public-api.test.mjs` اضافه و با موفقیت اجرا شد.
 
 ## Commitها
 
@@ -45,8 +45,9 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 
 - [x] Vite پیش از Pull با `Ctrl + C` متوقف شد و ترمینال به PowerShell برگشت.
 - [x] Pull امن با Fast-forward تا Commit `d6a0e50cbd5fc8025298176fc61296dbdbc2b36c` روی لپ تاپ انجام شد و ۸ فایل پچ دریافت شدند.
-- [~] Git هنگام پاک سازی Pack قدیمی برای دو فایل `.idx` و `.pack` هشدار `Unlink failed` داد؛ Fast-forward و به روزرسانی فایل های پروژه کامل شد و سلامت Working tree باید جداگانه تایید شود.
-- [ ] اجرای `node --test tests/local-public-api.test.mjs`.
+- [x] `git status --short --branch` شاخه درست و Working tree تمیز و هماهنگ با Origin را تایید کرد.
+- [~] Git هنگام پاک سازی Pack قدیمی برای دو فایل `.idx` و `.pack` هشدار `Unlink failed` داد؛ Fast-forward و فایل های پروژه سالم ماندند.
+- [x] `node --test tests/local-public-api.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [ ] اجرای دوباره `node --test tests/route-access.test.mjs` برای اطمینان از نبود Regression دسترسی.
 - [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
 - [ ] اجرای دوباره Vite با `npm.cmd run dev`.
@@ -55,9 +56,24 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [ ] ثبت جداگانه هشدارهای preload باقی مانده بدون مخلوط کردن آن ها با CORS.
 - [ ] ثبت نتیجه نهایی در `docs/GO-LIVE-CHECKLIST-FA.md`، `PROJECT_CONTEXT.md`، `TODO.md` و `AI_HANDOFF.md`.
 
+## نتیجه تست مستقل
+
+```text
+Command: node --test tests/local-public-api.test.mjs
+Tests: 3
+Pass: 3
+Fail: 0
+Skipped: 0
+Duration_ms: 179.7501
+Verified:
+- Proxy فقط روی Host محلی و Development فعال می شود
+- URL و Query درخواست های Chakod API درست بازنویسی می شوند
+- Fetch bridge خارج از Local Development غیرفعال می ماند
+```
+
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده است؛ در انتظار تایید Working tree و اجرای تست مستقل
+Status: پچ روی لپ تاپ Pull شده و تست مستقل موفق است؛ در انتظار Regression دسترسی، TypeScript و تست Runtime مرورگر
 Published commit: هنوز ادغام نشده
 ```

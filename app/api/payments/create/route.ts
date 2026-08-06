@@ -100,7 +100,9 @@ export async function POST(request: NextRequest) {
     const safeCallbackPath = callbackPath.startsWith("/account/payments/")
       ? callbackPath
       : "/account/payments/callback";
-    const callbackUrl = new URL(safeCallbackPath, request.nextUrl.origin).toString();
+    const callbackUrl = new URL(safeCallbackPath, request.nextUrl.origin);
+    callbackUrl.searchParams.set("order_no", order.orderNo);
+    callbackUrl.searchParams.set("request_key", order.idempotencyKey);
 
     return proxyAuthenticatedJson(request, "/api/payments/create.php", {
       method: "POST",
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
         code: order.productCode,
         amount_toman: order.finalAmountToman,
         description,
-        callback_url: callbackUrl,
+        callback_url: callbackUrl.toString(),
       }),
     });
   } catch {

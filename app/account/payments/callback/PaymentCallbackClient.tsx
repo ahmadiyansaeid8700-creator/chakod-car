@@ -11,6 +11,7 @@ type VerifyResponse = {
   message?: string;
   reference_id?: string | number;
   invoice_id?: string | number;
+  invoice_no?: string;
 };
 
 function authHeaders(): Record<string, string> {
@@ -37,10 +38,12 @@ export default function PaymentCallbackClient() {
         params.get("token") ||
         "";
       const status = params.get("Status") || params.get("status") || "";
+      const orderNo = params.get("order_no") || "";
+      const requestKey = params.get("request_key") || "";
 
-      if (!authority) {
+      if (!authority || !orderNo || !requestKey) {
         setState("failed");
-        setMessage("شناسه بازگشت درگاه دریافت نشد.");
+        setMessage("اطلاعات بازگشت درگاه یا سفارش کامل دریافت نشد.");
         return;
       }
 
@@ -54,7 +57,12 @@ export default function PaymentCallbackClient() {
             "Content-Type": "application/json",
             ...authHeaders(),
           },
-          body: JSON.stringify({ authority, status }),
+          body: JSON.stringify({
+            authority,
+            status,
+            order_no: orderNo,
+            idempotency_key: requestKey,
+          }),
         });
 
         const text = await response.text();
@@ -73,7 +81,9 @@ export default function PaymentCallbackClient() {
 
         setState("success");
         setMessage(result.message || "پرداخت با موفقیت تأیید شد.");
-        setReferenceId(String(result.reference_id || result.invoice_id || authority));
+        setReferenceId(
+          String(result.invoice_no || result.reference_id || result.invoice_id || authority),
+        );
       } catch {
         setState("failed");
         setMessage("ارتباط با سرویس تأیید پرداخت برقرار نشد.");
@@ -103,7 +113,7 @@ export default function PaymentCallbackClient() {
         <p>{message}</p>
         {referenceId && (
           <div className={styles.reference}>
-            <small>شناسه پیگیری</small>
+            <small>شناسه پیگیری یا فاکتور</small>
             <strong>{referenceId}</strong>
           </div>
         )}

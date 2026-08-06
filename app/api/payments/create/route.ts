@@ -5,6 +5,7 @@ import {
   proxyAuthenticatedJson,
   rejectCrossSiteMutation,
 } from "../../../../lib/chakod-auth-proxy";
+import { getCommerceCatalogItem } from "../../../../lib/commerce-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,9 +33,7 @@ export async function POST(request: NextRequest) {
 
   const type = cleanText(input.type, 32);
   const code = cleanText(input.code, 64);
-  const description = cleanText(input.description, 160);
   const callbackPath = cleanText(input.callback_path, 160);
-  const amountToman = Math.round(Number(input.amount_toman || 0));
 
   if (!ALLOWED_TYPES.has(type)) {
     return jsonResponse({ success: false, message: "نوع سفارش معتبر نیست." }, 400);
@@ -44,12 +43,24 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "کد محصول معتبر نیست." }, 400);
   }
 
-  if (!Number.isSafeInteger(amountToman) || amountToman < 10_000 || amountToman > 500_000_000) {
-    return jsonResponse({ success: false, message: "مبلغ پرداخت معتبر نیست." }, 400);
-  }
+  let amountToman = 0;
+  let description = "";
 
-  if (!description) {
-    return jsonResponse({ success: false, message: "شرح سفارش الزامی است." }, 400);
+  if (type === "wallet_charge") {
+    amountToman = Math.round(Number(input.amount_toman || 0));
+    description = "افزایش موجودی کیف پول چاکود";
+
+    if (!Number.isSafeInteger(amountToman) || amountToman < 10_000 || amountToman > 500_000_000) {
+      return jsonResponse({ success: false, message: "مبلغ افزایش موجودی معتبر نیست." }, 400);
+    }
+  } else {
+    const product = getCommerceCatalogItem(type, code);
+    if (!product) {
+      return jsonResponse({ success: false, message: "محصول انتخاب‌شده معتبر یا فعال نیست." }, 400);
+    }
+
+    amountToman = product.amountToman;
+    description = product.title;
   }
 
   const safeCallbackPath = callbackPath.startsWith("/account/payments/")

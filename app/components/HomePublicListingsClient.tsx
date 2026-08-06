@@ -1,4 +1,4 @@
-// CHAKOD_HOME_LOCATION_MULTI_REGION_V3
+// CHAKOD_HOME_LOCATION_MULTI_REGION_V4
 "use client";
 
 import Link from "next/link";
@@ -40,7 +40,7 @@ type Listing = ListingCardData & {
 
 type ApiResponse = { success?: boolean; data?: Listing[] };
 type Tone = "luxury" | "freezone";
-
+type LoadStatus = "loading" | "ready" | "error";
 
 const luxuryBrands = [
   "porsche",
@@ -78,7 +78,6 @@ const luxuryBrands = [
   "maybach",
   "مایباخ",
   "tesla",
-  "تسلا",
   "genesis",
   "جنسیس",
   "infiniti",
@@ -96,6 +95,11 @@ const luxuryBrands = [
   "lucano",
   "لوکانو",
 ];
+
+const FALLBACKS: Record<Tone, string[]> = {
+  luxury: ["خودروهای لوکس منتخب", "خودروهای وارداتی ممتاز", "جدیدترین آگهی‌های لوکس"],
+  freezone: ["خودروهای منطقه آزاد", "تازه‌های مناطق آزاد", "آگهی‌های ویژه منطقه آزاد"],
+};
 
 function normalizeText(value: string) {
   return String(value || "")
@@ -125,6 +129,7 @@ function isFreezone(listing: Listing) {
     listing.province,
     listing.city,
   ].join(" ");
+
   return (
     listing.market_segment === "freezone" ||
     includesAny(text, [
@@ -170,11 +175,8 @@ function matchesQuery(listing: Listing, query: string) {
     listing.dealer_name || "",
     listing.category_name,
   ].join(" ");
-  return normalizeText(text).includes(normalizeText(query));
-}
 
-function normalizeLocationValue(value: string) {
-  return normalizeText(String(value || ""));
+  return normalizeText(text).includes(normalizeText(query));
 }
 
 function listingMatchesLocation(
@@ -183,17 +185,25 @@ function listingMatchesLocation(
 ) {
   if (location.mode === "all") return true;
 
-  const scopes = getHomeLocationScopes(location);
-  const listingProvince = normalizeLocationValue(listing.province);
-  const listingCity = normalizeLocationValue(listing.city);
+  const listingProvince = normalizeText(listing.province);
+  const listingCity = normalizeText(listing.city);
+  const listingNeighborhood = normalizeText(listing.neighborhood);
 
-  return scopes.some((scope) => {
-    if (normalizeLocationValue(scope.province) !== listingProvince) return false;
+  return getHomeLocationScopes(location).some((scope) => {
+    if (normalizeText(scope.province) !== listingProvince) return false;
     if (scope.allCities) return true;
 
-    return scope.cities.some(
-      (city) => normalizeLocationValue(city) === listingCity,
-    );
+    if (scope.cities.some((city) => normalizeText(city) === listingCity)) {
+      return true;
+    }
+
+    return (scope.areas || []).some((area) => {
+      if (normalizeText(area.city) !== listingCity) return false;
+      if (area.allNeighborhoods) return true;
+      return area.neighborhoods.some(
+        (neighborhood) => normalizeText(neighborhood) === listingNeighborhood,
+      );
+    });
   });
 }
 
@@ -203,7 +213,7 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
   if (location.mode === "all" || scopes.length === 0) {
     return [
       `${API_BASE_URL}?${new URLSearchParams({
-        limit: "50",
+        limit: "100",
         sort: "vip",
       }).toString()}`,
     ];
@@ -212,11 +222,10 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
   return Array.from(new Set(scopes.map((scope) => scope.province))).map(
     (province) => {
       const params = new URLSearchParams({
-        limit: "50",
+        limit: "100",
         sort: "vip",
         province,
       });
-
       return `${API_BASE_URL}?${params.toString()}`;
     },
   );
@@ -231,6 +240,8 @@ function ShowcaseSection({
   badge,
   tone,
   allHref,
+  status,
+  locationLabel,
 }: {
   id: string;
   kicker: string;
@@ -240,8 +251,11 @@ function ShowcaseSection({
   badge: string;
   tone: Tone;
   allHref: string;
+  status: LoadStatus;
+  locationLabel: string;
 }) {
-  if (listings.length === 0) return null;
+  const hasListings = listings.length > 0;
+
   return (
     <section
       className={`masterSection masterSection--${tone} masterSectionWithAll`}
@@ -252,33 +266,65 @@ function ShowcaseSection({
           <span>{kicker}</span>
           <div className="masterSectionTitleRow">
             <h2>{title}</h2>
-            <a
+            <Link
               className="masterShowAllLink"
               href={allHref}
               aria-label={`نمایش همه ${title}`}
             >
               نمایش همه <span aria-hidden="true">←</span>
-            </a>
+            </Link>
           </div>
         </div>
+
         <div className="masterSectionHeaderSide">
-          <p>{description}</p>
+          <p>
+            {description} <b>{locationLabel}</b>
+          </p>
         </div>
       </div>
+
       <HomeHorizontalRail
         ariaLabel={title}
         className={`homeRailShell--${tone}`}
-        showControls={listings.length > 3}
+        showControls={hasListings && listings.length > 3}
       >
-        {listings.map((listing) => (
-          <ListingCard
-            key={listing.id}
-            listing={listing}
-            badge={badge}
-            tone={tone}
-            variant="rail"
-          />
-        ))}
+        {hasListings
+          ? listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                badge={badge}
+                tone={tone}
+                variant="rail"
+              />
+            ))
+          : FALLBACKS[tone].map((label, index) => (
+              <Link
+                className={`homeVehicleFallbackCard homeVehicleFallbackCard--${tone}`}
+                href={allHref}
+                key={label}
+              >
+                <span className="homeVehicleFallbackVisual">
+                  <img
+                    src="/brand/chakod-symbol.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                </span>
+                <span className="homeVehicleFallbackCopy">
+                  <strong>{label}</strong>
+                  <small>
+                    {status === "loading"
+                      ? `در حال دریافت آگهی‌های ${locationLabel}`
+                      : `مشاهده آگهی‌های موجود در ${locationLabel}`}
+                  </small>
+                  <b>
+                    ورود به ویترین <span aria-hidden="true">←</span>
+                  </b>
+                </span>
+              </Link>
+            ))}
       </HomeHorizontalRail>
     </section>
   );
@@ -290,9 +336,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     DEFAULT_HOME_LOCATION,
   );
   const [locationReady, setLocationReady] = useState(false);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<LoadStatus>("loading");
 
   useEffect(() => {
     setLocation(loadHomeLocation());
@@ -304,10 +348,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     };
 
     window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
-
-    return () => {
+    return () =>
       window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
-    };
   }, []);
 
   useEffect(() => {
@@ -316,6 +358,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const controller = new AbortController();
 
     async function load() {
+      setListings([]);
       setStatus("loading");
 
       try {
@@ -347,42 +390,27 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
         setListings(Array.from(merged.values()));
         setStatus("ready");
       } catch (error) {
-        if ((error as Error).name !== "AbortError") setStatus("error");
+        if ((error as Error).name !== "AbortError") {
+          setListings([]);
+          setStatus("error");
+        }
       }
     }
 
     void load();
-
     return () => controller.abort();
   }, [location, locationReady]);
 
   const data = useMemo(() => {
     const sorted = [...listings].sort(byNewest);
-    const freezone = sorted.filter(isFreezone).slice(0, 9);
-    const luxury = sorted.filter(isLuxury).slice(0, 9);
-    const searchResults = query
-      ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
-      : [];
     return {
-      freezone,
-      luxury,
-      searchResults,
+      luxury: sorted.filter(isLuxury).slice(0, 9),
+      freezone: sorted.filter(isFreezone).slice(0, 9),
+      searchResults: query
+        ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
+        : [],
     };
   }, [listings, query]);
-
-  if (status === "loading") {
-    return (
-      <div className="masterHomeDataLoading" aria-live="polite">
-        <span />
-        <span />
-        <span />
-      </div>
-    );
-  }
-
-  if (status === "error" || listings.length === 0) {
-    return null;
-  }
 
   return (
     <>
@@ -397,7 +425,12 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
               پاک‌کردن جست‌وجو
             </Link>
           </div>
-          {data.searchResults.length === 0 ? (
+
+          {status === "loading" ? (
+            <div className="masterEmptyShowcase">
+              <strong>در حال دریافت نتایج…</strong>
+            </div>
+          ) : data.searchResults.length === 0 ? (
             <div className="masterEmptyShowcase">
               <span>⌕</span>
               <strong>نتیجه‌ای پیدا نشد</strong>
@@ -423,26 +456,139 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
         <>
           <ShowcaseSection
             id="luxury"
-            kicker="CHAKOD LUXURY"
-            title="منتخب خودروهای لوکس"
+            kicker="خودروهای لوکس"
+            title="خودروهای لوکس منتخب"
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
             listings={data.luxury}
             badge="منتخب لوکس"
             tone="luxury"
             allHref="/cars/luxury"
+            status={status}
+            locationLabel={location.label || "سراسر ایران"}
           />
+
           <ShowcaseSection
             id="freezone"
-            kicker="FREE ZONE"
-            title="تازه‌های منطقه آزاد"
-            description="ویترین اختصاصی خودروهای منطقه آزاد؛ جدا از بازار عمومی و قابل بررسی سریع."
+            kicker="خودروهای منطقه آزاد"
+            title="خودروهای منطقه آزاد"
+            description="ویترین اختصاصی خودروهای مناطق آزاد با امکان بررسی سریع آگهی‌ها."
             listings={data.freezone}
             badge="منطقه آزاد"
             tone="freezone"
             allHref="/cars/free-zone"
+            status={status}
+            locationLabel={location.label || "سراسر ایران"}
           />
         </>
       )}
+
+      <style>{`
+        .homeVehicleFallbackCard {
+          width: min(340px, 82vw);
+          min-width: min(340px, 82vw);
+          min-height: 210px;
+          padding: 20px;
+          border: 1px solid #e4d8f1;
+          border-radius: 23px;
+          display: grid;
+          grid-template-columns: 90px minmax(0, 1fr);
+          align-items: center;
+          gap: 17px;
+          color: #251735;
+          background: linear-gradient(145deg, #ffffff, #faf7ff);
+          box-shadow: 0 14px 36px rgba(42, 26, 68, 0.07);
+          scroll-snap-align: start;
+        }
+
+        .homeVehicleFallbackCard--freezone {
+          border-color: #d7e9ee;
+          background: linear-gradient(145deg, #ffffff, #f2fbfc);
+        }
+
+        .homeVehicleFallbackVisual {
+          position: relative;
+          width: 90px;
+          height: 116px;
+          border-radius: 21px;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(150deg, #efe7ff, #ffffff);
+          box-shadow: inset 0 0 0 1px rgba(109, 40, 217, 0.1);
+        }
+
+        .homeVehicleFallbackCard--freezone .homeVehicleFallbackVisual {
+          background: linear-gradient(150deg, #e5f7fa, #ffffff);
+        }
+
+        .homeVehicleFallbackVisual img {
+          width: 50px;
+          height: 62px;
+          object-fit: contain;
+        }
+
+        .homeVehicleFallbackVisual i {
+          position: absolute;
+          left: 8px;
+          bottom: 7px;
+          color: #7c3aed;
+          font-size: 8px;
+          font-style: normal;
+          font-weight: 950;
+        }
+
+        .homeVehicleFallbackCopy,
+        .homeVehicleFallbackCopy strong,
+        .homeVehicleFallbackCopy small {
+          display: block;
+          min-width: 0;
+        }
+
+        .homeVehicleFallbackCopy strong {
+          color: #251735;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .homeVehicleFallbackCopy small {
+          margin-top: 7px;
+          color: #81758b;
+          font-size: 9px;
+          line-height: 1.9;
+        }
+
+        .homeVehicleFallbackCopy b {
+          margin-top: 16px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: #6d28d9;
+          font-size: 8px;
+          font-weight: 950;
+        }
+
+        @media (max-width: 560px) {
+          .homeVehicleFallbackCard {
+            width: min(292px, 84vw);
+            min-width: min(292px, 84vw);
+            min-height: 170px;
+            padding: 14px;
+            grid-template-columns: 70px minmax(0, 1fr);
+            gap: 12px;
+            border-radius: 19px;
+          }
+
+          .homeVehicleFallbackVisual {
+            width: 70px;
+            height: 92px;
+            border-radius: 17px;
+          }
+
+          .homeVehicleFallbackVisual img {
+            width: 40px;
+            height: 50px;
+          }
+        }
+      `}</style>
     </>
   );
 }

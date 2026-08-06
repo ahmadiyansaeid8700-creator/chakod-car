@@ -113,3 +113,23 @@ test("keeps show-all catalog pages on their multi-row grid", () => {
   assert.ok(catalogClient.includes("styles.grid"));
   assert.match(catalogCss, /\.grid\s*\{[\s\S]*?grid-template-columns:/);
 });
+
+test("keeps homepage rails horizontal and responsive on small screens", () => {
+  const homeCss = read("app/home.css");
+  const vehicleCardCss = read("app/components/HomeVehicleCard.module.css");
+
+  assert.match(
+    homeCss,
+    /\.homeRailTrack\s*\{[\s\S]*?grid-auto-flow:\s*column;/,
+  );
+  assert.match(
+    homeCss,
+    /\.homeRailTrack\s*\{[\s\S]*?overflow-x:\s*auto;/,
+  );
+  assert.match(homeCss, /@media\s*\(max-width:\s*\d+px\)/);
+  assert.match(vehicleCardCss, /@media\s*\(max-width:\s*640px\)/);
+  assert.match(
+    vehicleCardCss,
+    /@media\s*\(max-width:\s*640px\)[\s\S]*?\.card\s*\{/,
+  );
+});

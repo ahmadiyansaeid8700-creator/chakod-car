@@ -25,7 +25,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ORDER_PATTERN = /^CHK-\d{10,}-[A-Z0-9]{10}$/;
+const ORDER_PATTERN = /^[a-z0-9_-]{6,100}$/i;
 const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
 
 function cleanText(value: unknown, maxLength: number) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   const authority = cleanText(input.authority, 128);
   const status = cleanText(input.status, 32).toUpperCase();
-  const orderNo = cleanText(input.order_no, 80);
+  const orderNo = cleanText(input.order_no, 100);
   const idempotencyKey = cleanText(input.idempotency_key, 100);
 
   if (!authority || !/^[a-z0-9_-]{6,128}$/i.test(authority)) {
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
         authority,
         status,
         order_no: order.orderNo,
+        service_key: order.productCode,
         amount_toman: order.finalAmountToman,
       }),
       signal: AbortSignal.timeout(20_000),

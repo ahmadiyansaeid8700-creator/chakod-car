@@ -50,7 +50,8 @@ ecf920e709804d9f4befca2c8d85fe1aeb04938d
 - [x] `node --test tests/local-public-api.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
 - [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` بدون خطا و بدون Diagnostic اجرا شد.
-- [ ] اجرای دوباره Vite با `npm.cmd run dev`.
+- [x] Vite با `npm.cmd run dev` دوباره اجرا شد و نسخه `8.0.13` در `1568ms` روی `http://127.0.0.1:5173/` آماده شد.
+- [~] هشدار قدیمی و غیرمسدودکننده Node با کد `DEP0205` هنگام Startup همچنان مشاهده شد.
 - [ ] باز کردن صفحه اصلی و تایید حذف خطاهای قرمز CORS مربوط به `api.chakod.com`.
 - [ ] تایید اینکه داده های صفحه اصلی در صورت پاسخ موفق Upstream نمایش داده می شوند.
 - [ ] ثبت جداگانه هشدارهای preload باقی مانده بدون مخلوط کردن آن ها با CORS.
@@ -95,9 +96,19 @@ Result: success
 Diagnostics: none
 ```
 
+## نتیجه اجرای Vite پس از پچ
+
+```text
+Command: npm.cmd run dev
+Vite: 8.0.13
+Ready_ms: 1568
+Local_url: http://127.0.0.1:5173/
+Warning: DEP0205 module.register() deprecation; non-blocking
+```
+
 ## وضعیت
 
 ```text
-Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی و TypeScript محدوده Launch موفق هستند؛ در انتظار تست Runtime مرورگر
+Status: پچ روی لپ تاپ Pull شده و تست مستقل، Regression دسترسی، TypeScript و Startup محلی موفق هستند؛ در انتظار بازآزمایی Console صفحه اصلی
 Published commit: هنوز ادغام نشده
 ```

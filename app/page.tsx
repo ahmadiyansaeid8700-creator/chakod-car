@@ -7,7 +7,7 @@ import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeMarketSearch from "./components/HomeMarketSearch";
 import HomeBannerSlot from "./components/HomeBannerSlot";
 import HomePublicListingsClient from "./components/HomePublicListingsClient";
-import HomeBusinessLinks from "./components/HomeBusinessLinks";
+import HomeFeaturedBusinesses from "./components/HomeFeaturedBusinesses";
 import HomeGuides from "./components/HomeGuides";
 import MobileBottomNav from "./components/MobileBottomNav";
 
@@ -86,7 +86,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <HomePublicListingsClient query={query} />
 
-      <HomeBusinessLinks />
+      <HomeFeaturedBusinesses />
       <HomeGuides />
 
       <footer className="masterFooter">

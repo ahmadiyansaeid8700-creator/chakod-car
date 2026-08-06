@@ -44,7 +44,7 @@ f07ff9495d79bd2e01ac447fd6d897580719a63c
 - [x] Pull امن پچ روی لپ تاپ با Fast-forward تا Commit `60e33d22baf2a7108f7519a17079489180c91bcc` انجام شد.
 - [x] `node --test tests/local-development-session.test.mjs` اجرا شد: ۳ تست موفق، صفر شکست، صفر Skip.
 - [x] `node --test tests/route-access.test.mjs` پس از پچ دوباره اجرا شد: ۴ تست موفق، صفر شکست، صفر Skip.
-- [ ] اجرای `npx.cmd tsc --noEmit -p tsconfig.launch.json`.
+- [x] `npx.cmd tsc --noEmit -p tsconfig.launch.json` پس از پچ بدون خطا و بدون Diagnostic اجرا شد.
 - [ ] اجرای Vite پس از Pull.
 - [ ] باز کردن `/api/auth/dev-session` و تایید انتقال به `/account?complete=1`.
 - [ ] باز کردن `/admin/affiliate` و تایید انتقال کاربر عادی به `/`.
@@ -74,9 +74,17 @@ Skipped: 0
 Duration_ms: 145.3869
 ```
 
+## نتیجه TypeScript
+
+```text
+Command: npx.cmd tsc --noEmit -p tsconfig.launch.json
+Result: success
+Diagnostics: none
+```
+
 ## وضعیت
 
 ```text
-Status: پیاده سازی شده، روی لپ تاپ Pull شده و هر دو مجموعه تست مستقل و Regression موفق هستند؛ در انتظار TypeScript و Smoke Test Runtime
+Status: پیاده سازی شده، روی لپ تاپ Pull شده و تست مستقل، Regression و TypeScript موفق هستند؛ در انتظار Smoke Test Runtime
 Published commit: هنوز ادغام نشده
 ```

@@ -29,34 +29,114 @@ jobs:
           cache: npm
 
       - name: Install current lockfile
+        id: install_current
+        continue-on-error: true
         run: npm ci
 
       - name: Upgrade Next.js and React Server DOM security patches
+        id: upgrade
+        if: steps.install_current.outcome == 'success'
+        continue-on-error: true
         run: npm install --save-exact next@16.3.0 react-server-dom-webpack@19.2.8
 
       - name: Launch source checks
+        id: source_checks
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
         run: npm run check:launch
 
       - name: Critical dependency audit gate
+        id: critical_audit
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
         run: npm audit --audit-level=critical
 
       - name: Portable Vinext build preflight
+        id: build_preflight
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
         run: npm run build:preflight
 
       - name: Portable runtime smoke
+        id: runtime_smoke
+        if: steps.build_preflight.outcome == 'success'
+        continue-on-error: true
         run: npm run smoke:portable
 
-      - name: Show remaining audit summary
-        run: npm audit || true
+      - name: Capture audit JSON
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
+        run: npm audit --json > /tmp/chakod-audit-after.json || true
 
-      - name: Commit verified dependency update
+      - name: Write durable upgrade report
+        if: always()
+        env:
+          INSTALL_CURRENT: ${{ steps.install_current.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          CRITICAL_AUDIT: ${{ steps.critical_audit.outcome }}
+          BUILD_PREFLIGHT: ${{ steps.build_preflight.outcome }}
+          RUNTIME_SMOKE: ${{ steps.runtime_smoke.outcome }}
         run: |
-          if git diff --quiet -- package.json package-lock.json; then
-            echo "No dependency changes to commit."
-            exit 0
+          mkdir -p docs
+          NEXT_VERSION="$(node -p "require('./package.json').dependencies.next" 2>/dev/null || echo unavailable)"
+          RSC_VERSION="$(node -p "require('./package.json').devDependencies['react-server-dom-webpack']" 2>/dev/null || echo unavailable)"
+          AUDIT_SUMMARY="unavailable"
+          if [ -f /tmp/chakod-audit-after.json ]; then
+            AUDIT_SUMMARY="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('/tmp/chakod-audit-after.json','utf8')); const v=j.metadata?.vulnerabilities||{}; console.log('critical='+(v.critical??'?')+', high='+(v.high??'?')+', moderate='+(v.moderate??'?')+', low='+(v.low??'?'))" 2>/dev/null || echo unavailable)"
+          fi
+          VERIFIED=false
+          if [ "$INSTALL_CURRENT" = success ] && [ "$UPGRADE" = success ] && [ "$SOURCE_CHECKS" = success ] && [ "$CRITICAL_AUDIT" = success ] && [ "$BUILD_PREFLIGHT" = success ] && [ "$RUNTIME_SMOKE" = success ]; then
+            VERIFIED=true
+          fi
+          cat > docs/SECURITY-UPGRADE-NEXT-RSC-RESULT.md <<EOF
+          # نتیجه ارتقای امنیتی Next / React Server DOM
+
+          - Target Next: 16.3.0
+          - Target react-server-dom-webpack: 19.2.8
+          - Resolved Next in package.json: $NEXT_VERSION
+          - Resolved RSC in package.json: $RSC_VERSION
+          - Verified for commit: $VERIFIED
+          - npm ci: $INSTALL_CURRENT
+          - dependency upgrade: $UPGRADE
+          - source/type/contracts: $SOURCE_CHECKS
+          - critical audit: $CRITICAL_AUDIT
+          - portable build: $BUILD_PREFLIGHT
+          - portable runtime smoke: $RUNTIME_SMOKE
+          - audit summary after upgrade: $AUDIT_SUMMARY
+
+          اگر Verified برابر true نباشد، package.json/package-lock.json نباید به عنوان ارتقای تاییدشده ثبت شوند.
+          EOF
+
+      - name: Commit verified update and report
+        if: always()
+        env:
+          INSTALL_CURRENT: ${{ steps.install_current.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          CRITICAL_AUDIT: ${{ steps.critical_audit.outcome }}
+          BUILD_PREFLIGHT: ${{ steps.build_preflight.outcome }}
+          RUNTIME_SMOKE: ${{ steps.runtime_smoke.outcome }}
+        run: |
+          VERIFIED=false
+          if [ "$INSTALL_CURRENT" = success ] && [ "$UPGRADE" = success ] && [ "$SOURCE_CHECKS" = success ] && [ "$CRITICAL_AUDIT" = success ] && [ "$BUILD_PREFLIGHT" = success ] && [ "$RUNTIME_SMOKE" = success ]; then
+            VERIFIED=true
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "security: upgrade Next and RSC after launch gates"
+          git add docs/SECURITY-UPGRADE-NEXT-RSC-RESULT.md
+          if [ "$VERIFIED" = true ]; then
+            git add package.json package-lock.json
+          else
+            git restore package.json package-lock.json 2>/dev/null || true
+          fi
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          if [ "$VERIFIED" = true ]; then
+            git commit -m "security: verify Next and RSC upgrade"
+          else
+            git commit -m "docs: record rejected Next and RSC upgrade"
+          fi
           git push origin HEAD:agent/launch-3-local-baseline

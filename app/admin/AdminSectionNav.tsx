@@ -4,6 +4,7 @@ import styles from "./AdminSectionNav.module.css";
 
 const links = [
   { href: "/admin", label: "داشبورد" },
+  { href: "/admin/users", label: "کاربران" },
   { href: "/admin/listings", label: "آگهی‌ها" },
   { href: "/admin/businesses", label: "کسب‌وکارها" },
   { href: "/admin/articles", label: "مقالات" },

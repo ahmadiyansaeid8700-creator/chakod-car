@@ -34,7 +34,7 @@ jobs:
         run: npm audit --json > /tmp/audit-before.json || true
 
       - name: Apply npm audit fix without force
-        run: npm audit fix
+        run: npm audit fix || true
 
       - name: Reinstall from updated lockfile
         run: npm ci

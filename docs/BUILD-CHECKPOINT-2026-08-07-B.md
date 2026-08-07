@@ -14,7 +14,7 @@ Main: بدون تایید مالک تغییر نکند
 ## روش کار قطعی
 
 - ابتدا خود سایت کامل ساخته و صفحات/دکمه ها به هم متصل شوند.
-- سپس Pull محلی، TypeScript/Build و تست جامع انجام شود.
+- سپس Pull محلی، Migration، TypeScript/Build و تست جامع انجام شود.
 - موارد ساخته شده ولی تست نشده `[~]` هستند.
 - صفحه اصلی از نظر ترتیب و Responsive قفل است.
 
@@ -42,118 +42,80 @@ Top Repair Shops
 ## ساخته شده در Launch-3
 
 ### مدیریت آگهی
-
 - [~] مدیریت، ویرایش، تصاویر و ارتقا
-- [~] فروخته شد (`mark_sold`)
-- [~] توقف موقت (`disable_listing`)
-- [~] بازیابی/بازفعال سازی (`reactivate_listing`)
-- [~] حذف/بایگانی (`delete_listing`)
+- [~] فروخته شد، توقف موقت، بازیابی/بازفعال سازی، حذف/بایگانی
 - [~] تمدید از Commerce
-- [~] CSS چرخه آگهی به ماژول واقعی صفحه متصل شده است
+- [~] مدیریت تصاویر و کاور با APIهای موجود
 
 ### مرکز مالی
-
-- [~] کیف پول
-- [~] سفارش امن و idempotency
-- [~] پرداخت بانکی
-- [~] Callback/Verify
-- [~] فاکتور و صفحه جزئیات/چاپ
-- [~] Checkout سفارش از قبل ساخته شده
+- [~] کیف پول، سفارش امن و idempotency
+- [~] پرداخت بانکی و Callback/Verify
+- [~] فاکتور، جزئیات و چاپ
+- [~] Checkout سفارش جدید و سفارش از قبل ساخته شده
 - [~] Retry امن پرداخت کیف پول
-- [~] فهرست فاکتورها به جزئیات و چاپ متصل شده
 - [~] قیمت های ثابت تبلیغات/اشتراک از FinanceCenter حذف شده اند
-- [~] FinanceCenter فقط به جریان canonical Commerce و محصولات واقعی متصل است
+- [~] FinanceCenter فقط به جریان canonical Commerce متصل است
 - [!] Wallet Settlement نیازمند Backend خارجی و Environment است
 
 ### نمایشگاه منتخب
-
 - [~] `featured_showroom_placements`
-- [~] `/account/business/promotions/featured`
-- [~] `/api/finance/featured-showrooms`
-- [~] `/api/featured-showrooms`
-- [~] `/admin/featured-showrooms`
-- [~] `/api/admin/featured-showrooms`
-- [~] `/account/ads` فقط Redirect قدیمی است
+- [~] رزرو کاربر، پرداخت، Verify، صف بررسی و تایید/رد مدیر
 - [~] HomeFeaturedShowrooms فقط جایگاه تاییدشده/فعال را وارد Rail می کند
-- [~] Verify بانکی و Finance Summary رزرو پرداخت شده را وارد `pending_review` می کنند
+- [~] مشاهده همه مستقیم به `/dealerships` می رود
+- [~] کارت fallback ثبت نمایشگاه مستقیم به `/account/business/new` می رود
+- [~] کارت واقعی نمایشگاه به `/businesses/[slug]` می رود
 
 ### بازپرداخت
-
-- [~] `/account/refunds`
-- [~] `/api/finance/refunds`
-- [~] `/admin/refunds`
-- [~] `/api/admin/refunds/manage`
-- [~] بازپرداخت کامل یا جزئی
-- [~] سقف بازپرداخت از مبلغ واقعی پرداخت بیشتر نمی شود
+- [~] درخواست کاربر + تایید/رد/اجرای مدیر
+- [~] کامل یا جزئی با سقف مبلغ واقعی پرداخت
 - [~] بازپرداخت کیف پول با قفل ضد دوباره واریز
 - [~] بازپرداخت بانکی از Adapter سروری
 - [!] Gateway refund نیازمند `CHAKOD_REFUND_ENDPOINT/ACTION/SECRET`
 
 ### پشتیبانی واقعی
+- [~] تیکت کاربر و مهمان، گفت و گو، شماره پیگیری و پنل ادمین
+- [~] توکن مهمان هش شده در DB ذخیره می شود
+- [~] `/contact` به فرم تیکت واقعی وصل است
 
-- [~] `support_tickets`, `support_replies`
-- [~] `/support` فرم تیکت واقعی + FAQ + تاریخچه حساب
-- [~] مهمان می تواند برای مشکل ورود تیکت بسازد
-- [~] لینک مهمان توکن تصادفی دارد و فقط SHA-256 آن در DB ذخیره می شود
-- [~] `/support/tickets/[ticketNo]` گفت و گوی کاربر/پشتیبانی
-- [~] `/api/support/requests`
-- [~] `/api/support/requests/[ticketNo]`
-- [~] `/admin/support`
-- [~] `/api/admin/support/requests`
-- [~] ادمین پاسخ، اولویت، وضعیت، بستن و بازکردن تیکت دارد
-- [~] `/contact` به `/support#request` متصل شده و دیگر بن بست نیست
-
-### صفحات عمومی/سازمانی
-
-- [~] `/about`
-- [~] `/privacy`
-- [~] `/terms`
-- [~] `/refund-policy`
-- [~] `/legal`
-- [~] `/support`
-- [~] Footer به مسیر canonical راهنمای قیمت `/cars/price-guide` وصل شده
-
-### تبلیغات عمومی
-
-- [~] `/advertising`
-- [~] `/advertising/stories`
-- [~] `/advertising/business-placement`
-- [~] `/advertising/dealership-placement`
-- [~] هیچ صفحه تبلیغاتی بنر نمایشگاهی صفحه اول را تبلیغ نمی کند
-- [~] CTAها به جریان واقعی حساب/Commerce می روند
+### صفحات عمومی و تبلیغات
+- [~] `/about`, `/privacy`, `/terms`, `/refund-policy`, `/legal`, `/support`
+- [~] `/advertising`, `/advertising/stories`, `/advertising/business-placement`, `/advertising/dealership-placement`
+- [~] هیچ محصول کاربری برای بنر نمایشگاهی صفحه اول وجود ندارد
 
 ### ابزارهای بازار خودرو
-
-- [~] `/cars/price-guide`
-  - آمار قیمت آگهی های واقعی بازار
-  - median, 25–75%, min/max
-  - تاکید: راهنمای بازار، نه کارشناسی قیمت
-- [~] `/cars/compare`
-  - انتخاب تا 3 آگهی
-  - API عمومی امن `/api/compare-listings`
-  - مقایسه قیمت/کارکرد/فنی/بدنه/پلاک/موقعیت
-  - دکمه مقایسه به صفحه جزئیات خودرو اضافه شده
-- [~] `/cars/saved-searches`
-  - ذخیره URL واقعی فیلترهای بازار در مرورگر
-  - تغییر نام/باز کردن/حذف
-  - دکمه ذخیره جست و جو روی `/cars`
-  - اعلان سروری هنوز ساخته نشده و به دروغ فعال نمایش داده نمی شود
+- [~] `/cars/price-guide` براساس قیمت آگهی های واقعی
+- [~] `/cars/compare` تا سه خودرو + دکمه مقایسه در صفحه آگهی
+- [~] `/cars/saved-searches` ذخیره/تغییر نام/بازکردن/حذف جست و جو
+- [~] اعلان سروری saved search ساخته نشده و به دروغ فعال نمایش داده نمی شود
 
 ### حساب و تیم نمایشگاه
-
 - [~] منوی حساب به مالی، بازپرداخت، نمایشگاه منتخب و پشتیبانی وصل است
-- [~] `DealerCommandCenter` از قبل دعوت عضو، نقش، Permission و آمار تیم را به API واقعی متصل دارد
-- [~] `/account/business/team` از همان DealerCommandCenter استفاده می کند و سیستم موازی ساخته نشده است
+- [~] `DealerCommandCenter` از API واقعی برای دعوت عضو، نقش، Permission و آمار تیم استفاده می کند
+- [~] `ProfileEditor` تبدیل نوع حساب به dealer/parts_store/repair_shop/car_service را دارد
+- [~] `ProfessionalProfileEditor` پروفایل حرفه ای، خدمات، ساعات، نقشه، تصاویر و گالری را ذخیره می کند
 
 ### مدیریت
+- [~] پنل مالی، Commerce، نمایشگاه منتخب، بازپرداخت و پشتیبانی
+- [~] `/admin/admins`, `/admin/roles`, `/admin/permissions`, `/admin/audit-logs` به Access Manager واقعی Commerce وصل شده اند
+- [~] `/admin/advertising` هاب canonical مدیریت تبلیغات است
+- [~] `/admin/stories`, `/admin/capacity` به Commerce و `/admin/placements` به نمایشگاه منتخب وصل شده اند
+- [~] `/admin/banners` فقط Route سازگاری سوابق Legacy است
+- [~] AdminSectionNav به تبلیغات، نمایشگاه منتخب، پشتیبانی، مالی و دسترسی مدیران وصل است
+- [!] `/admin/users` هنوز قرارداد API قطعی فهرست همه کاربران ندارد و صفحه ساختگی ایجاد نشده است
 
-- [~] `/admin/commerce` به نمایشگاه منتخب، بازپرداخت و پشتیبانی متصل است
-- [~] مدیریت مالی D1 برای سفارش، پرداخت، فاکتور، بازپرداخت، اشتراک و قیمت گذاری canonical وجود دارد
+### ناوبری و Route cleanup
+- [~] Shared internal Header و CSS responsive ساخته شده است
+- [~] هدر و فوتر صفحه اول نمایشگاه ها را مستقیم به `/dealerships` می فرستند
+- [~] `/showrooms` Redirect سازگاری به `/dealerships` است
+- [~] `/showrooms/[id]` dealer_id قدیمی را به پروفایل canonical کسب و کار resolve می کند و در قطع API به `/dealerships` برمی گردد
+- [~] Hero قدیمی، HomeBannerSlot و HomeNearbyBusinesses placeholder حذف شده اند
+- [~] صفحه اول از نظر ترتیب و ظاهر دست نخورده باقی مانده است
 
 ### SEO
-
-- [~] Static Sitemap با `/cars/compare`, `/cars/price-guide`, `/advertising/*`, `/about`, `/privacy` همگام شده است
-- [~] صفحات خصوصی `/account/*`, تیکت ها و saved-searches وارد Sitemap عمومی نشده اند
+- [~] Static Sitemap با صفحات عمومی جدید همگام شده است
+- [~] صفحات خصوصی حساب، تیکت و saved-searches از Sitemap خارج هستند
+- [~] robots مسیرهای خصوصی جدید را block می کند
+- [~] `app/robots.ts` و `app/sitemap.ts` قدیمی حذف شدند تا با Routeهای canonical `robots.txt` و `sitemap.xml` تداخل نداشته باشند
 
 ## مدل های D1 فعلی
 
@@ -171,30 +133,22 @@ support_replies
 ```
 
 ## Migration Drizzle
-
 - [~] `drizzle/0001_launch_finance_support.sql`
 - [~] `drizzle/meta/_journal.json` دارای entry شماره 1 است
 - [~] `drizzle/meta/0001_snapshot.json` با Schema فعلی همگام شده است
-- Migration هنوز روی محیط واقعی اجرا نشده؛ اجرای آن در مرحله استقرار/تست انجام می شود.
+- Migration هنوز روی محیط واقعی اجرا نشده است.
 
 ## Legacy
-
 - [~] `/account/ads` فقط Redirect سازگاری به نمایشگاه منتخب است
 - [~] `/help` به `/support` می رود
-- [!] `/dealers` هنوز پنل قدیمی ثبت/مدیریت نمایشگاه دارد؛ تا انتقال کامل قابلیت ثبت به مسیر canonical حذف نشود
-- [~] هیچ لینک جدیدی نباید به `/dealers` اضافه شود؛ مسیر canonical پنل `/account/business` است
-
-## اسناد
-
-- `docs/MASTER-SITEMAP-FA.md` با تصمیم جدید نمایشگاه منتخب همگام شده است.
-- `docs/LATEST-WORK-SNAPSHOT-FA.md` Snapshot قدیمی تر است.
-- این فایل (`BUILD-CHECKPOINT-2026-08-07-B.md`) مرجع جدیدتر است.
+- [!] `/dealers` هنوز پنل قدیمی چندنمایشگاهی دارد؛ چون ممکن است قابلیت اضافه ای نسبت به پروفایل canonical داشته باشد، تا انتقال امن حذف نمی شود
+- [~] هیچ لینک جدیدی نباید به `/dealers` اضافه شود
 
 ## موارد مهم باقی مانده قبل از تست جامع
 
-1. [ ] انتقال امن قابلیت ثبت نمایشگاه از Legacy `/dealers` به مسیر canonical کسب و کار و سپس Redirect مسیر قدیمی
-2. [ ] ممیزی نهایی لینک ها و دکمه های باقی مانده عمومی/حساب/ادمین
-3. [ ] پاکسازی متن ها/CTAهای Legacy باقی مانده بدون حذف قراردادهای سازگاری Backend
+1. [ ] ممیزی نهایی باقی لینک ها و CTAهای Legacy
+2. [ ] تعیین تکلیف امن قابلیت چندنمایشگاهی Legacy `/dealers`
+3. [!] قرارداد API مدیریت همه کاربران برای `/admin/users`
 4. [!] تکمیل Wallet Settlement در Backend اصلی
 5. [!] تنظیم Adapter بازپرداخت بانکی در Environment
 6. [ ] Pull روی لپ تاپ
@@ -204,7 +158,6 @@ support_replies
 10. [ ] رفع خطا و Launch
 
 ## قوانین بازیابی
-
 - Branch همان `agent/launch-3-local-baseline` است.
 - `main` دست نخورد.
 - صفحه اول دست نخورد مگر مالک صریحا بگوید.

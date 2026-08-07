@@ -43,3 +43,18 @@ test("moves a paid featured showroom reservation to review after gateway verific
   assert.match(verify, /moveFeaturedShowroomToReview/);
   assert.match(verify, /status:\s*"pending_review"/);
 });
+
+test("keeps retired homepage banner routes out of the launch product", async () => {
+  const legacyUserApi = await source("app/api/banner-reservations/route.ts");
+  const legacyAdminApi = await source("app/api/admin/banner-reservations/route.ts");
+  const legacyHomepageAdmin = await source("app/admin/homepage-banners/page.tsx");
+  const legacyReservationsAdmin = await source("app/admin/banner-reservations/page.tsx");
+
+  assert.match(legacyUserApi, /LEGACY_BANNER_RESERVATION_RETIRED/);
+  assert.match(legacyUserApi, /status:\s*410/);
+  assert.match(legacyAdminApi, /LEGACY_BANNER_RESERVATION_RETIRED/);
+  assert.match(legacyAdminApi, /status:\s*410/);
+  assert.match(legacyHomepageAdmin, /\/admin\/featured-showrooms/);
+  assert.match(legacyReservationsAdmin, /\/admin\/featured-showrooms/);
+  assert.doesNotMatch(legacyUserApi, /demo_paid/);
+});

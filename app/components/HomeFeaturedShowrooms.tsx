@@ -68,16 +68,19 @@ const FALLBACK_CARDS = [
     title: "نمایشگاه‌های منتخب چاکود",
     description: "ویترین نمایشگاه‌های حرفه‌ای و خودروهای فعال هر مجموعه",
     label: "مشاهده نمایشگاه‌ها",
+    href: "/dealerships",
   },
   {
     title: "خودروهای موجود نمایشگاه‌ها",
-    description: "پیش‌نمایش خودروها داخل کارت تبلیغاتی هر نمایشگاه",
+    description: "پیش‌نمایش خودروها داخل کارت منتخب هر نمایشگاه",
     label: "ورود به ویترین‌ها",
+    href: "/dealerships",
   },
   {
     title: "ثبت نمایشگاه در چاکود",
     description: "ساخت ویترین حرفه‌ای برای معرفی مجموعه و خودروهای موجود",
     label: "ثبت نمایشگاه",
+    href: "/account/business/new",
   },
 ] as const;
 
@@ -364,7 +367,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         </div>
 
         <div className={styles.sectionActions}>
-          <Link href="/showrooms">
+          <Link href="/dealerships">
             مشاهده همه
             <span aria-hidden="true">←</span>
           </Link>
@@ -379,7 +382,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           {FALLBACK_CARDS.map((card, index) => (
             <Link
               className="featuredShowroomFallbackCard"
-              href="/showrooms"
+              href={card.href}
               key={card.title}
             >
               <span className="featuredShowroomFallbackVisual">

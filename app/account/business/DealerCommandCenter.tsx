@@ -317,8 +317,8 @@ export default function DealerCommandCenter() {
       <main className={styles.page} dir="rtl">
         <section className={styles.loadingCard}>
           <h1>نمایشگاهی به حساب متصل نیست</h1>
-          <p>{error || "ابتدا پروفایل نمایشگاهی را در صفحه حساب تکمیل کنید."}</p>
-          <Link href="/account">بازگشت به حساب</Link>
+          <p>{error || "ابتدا یک نمایشگاه را به حساب خود متصل کنید."}</p>
+          <Link href="/account/business/dealers">افزودن نمایشگاه</Link>
         </section>
       </main>
     );
@@ -344,7 +344,8 @@ export default function DealerCommandCenter() {
             <Link href="/account" className={styles.back}>← حساب من</Link>
             <div className={styles.heroActions}>
               <Link href="/account/services">خدمات و پرداخت</Link>
-              <Link href="/account/ads">رزرو بنر</Link>
+              <Link href="/account/business/dealers">نمایشگاه‌های من</Link>
+              <Link href="/account/ads">نمایشگاه منتخب</Link>
             </div>
           </div>
           <div className={styles.identity}>

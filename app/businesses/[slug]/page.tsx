@@ -174,15 +174,21 @@ export default function BusinessDetailPage() {
   const location = [business.neighborhood, business.city, business.province]
     .filter(Boolean)
     .join("، ");
-  const mapHref =
-    business.latitude !== null && business.longitude !== null
-      ? `https://www.google.com/maps?q=${business.latitude},${business.longitude}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-          `${business.address} ${location}`,
-        )}`;
-  const whatsapp = business.whatsapp_phone
+  const phone = String(business.phone || "").trim();
+  const whatsapp = String(business.whatsapp_phone || "")
     .replace(/\D/g, "")
     .replace(/^0/, "98");
+  const hasCoordinates =
+    typeof business.latitude === "number" &&
+    typeof business.longitude === "number" &&
+    Number.isFinite(business.latitude) &&
+    Number.isFinite(business.longitude);
+  const locationQuery = [business.address, location].filter(Boolean).join(" ").trim();
+  const mapHref = hasCoordinates
+    ? `https://www.google.com/maps?q=${business.latitude},${business.longitude}`
+    : locationQuery
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery)}`
+      : "";
 
   return (
     <main className={styles.page} dir="rtl">
@@ -325,9 +331,11 @@ export default function BusinessDetailPage() {
               <strong>{business.price_range_text}</strong>
             </div>
           )}
-          <a className={styles.primary} href={`tel:${business.phone}`}>
-            تماس با مجموعه
-          </a>
+          {phone ? (
+            <a className={styles.primary} href={`tel:${phone}`}>
+              تماس با مجموعه
+            </a>
+          ) : null}
           {whatsapp && (
             <a
               href={`https://wa.me/${whatsapp}`}
@@ -337,9 +345,11 @@ export default function BusinessDetailPage() {
               ارتباط در واتساپ
             </a>
           )}
-          <a href={mapHref} target="_blank" rel="noreferrer">
-            مسیریابی روی نقشه
-          </a>
+          {mapHref ? (
+            <a href={mapHref} target="_blank" rel="noreferrer">
+              مسیریابی روی نقشه
+            </a>
+          ) : null}
           {business.instagram_url && (
             <a href={business.instagram_url} target="_blank" rel="noreferrer">
               اینستاگرام

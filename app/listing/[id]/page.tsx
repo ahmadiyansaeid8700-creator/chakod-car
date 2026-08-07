@@ -1,4 +1,5 @@
 import { notFound, permanentRedirect } from "next/navigation";
+import CompareListingButton from "./CompareListingButton";
 import ListingDetailClient from "./ListingDetailClient";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 import { carDetailPath } from "../../../lib/car-routes";
@@ -36,9 +37,12 @@ export default async function ListingDetailPage({
   const initialResponse = await getInitialListing(listingId);
 
   return (
-    <ListingDetailClient
-      listingId={listingId}
-      initialResponse={initialResponse}
-    />
+    <>
+      <ListingDetailClient
+        listingId={listingId}
+        initialResponse={initialResponse}
+      />
+      <CompareListingButton listingId={listingId} />
+    </>
   );
 }

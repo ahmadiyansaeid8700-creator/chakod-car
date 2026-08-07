@@ -33,6 +33,9 @@ jobs:
       - name: Launch source checks
         run: npm run check:launch
 
+      - name: Verify Drizzle migrations on local D1
+        run: npm run d1:verify
+
       - name: Critical dependency audit gate
         run: npm audit --audit-level=critical
 

@@ -7,9 +7,10 @@
 - Repository: `ahmadiyansaeid8700-creator/chakod-car`
 - Working branch: `agent/launch-3-local-baseline`
 - Base: `backup-latest-2026-08-03`
+- Draft CI PR: `#6` فقط برای اجرای Checkها؛ Merge نشود.
 - `main` بدون تایید مالک تغییر نکند.
-- ابتدا ساخت کامل سایت، سپس Pull محلی، Migration، TypeScript/Build و تست جامع.
-- تمام قابلیت های ساخته شده و هنوز تست نشده با `[~]` ثبت می شوند.
+- ابتدا ساخت کامل سایت، سپس Migration/Build/Staging و تست جامع.
+- تمام قابلیت های ساخته شده و هنوز Runtime تست نشده با `[~]` ثبت می شوند.
 
 ## قرارداد قطعی صفحه اول
 
@@ -57,21 +58,32 @@
 - [~] لینک خراب قدیمی `/dealers/[id]` از جریان canonical حذف شد؛ مرکز فرمان خودش بین نمایشگاه های کاربر سوییچ می کند.
 - [~] متن Legacy «رزرو بنر» از مرکز فرمان حذف و CTAهای «نمایشگاه های من» و «نمایشگاه منتخب» جایگزین شدند.
 - [~] «هوش چاکود» سراسری است و `/api/ai/assistant` دارای Offline fallback، Cloud fallback، Rate Limit، محدودیت اندازه درخواست و no-store است.
-- [~] Contract Test مستقل برای چندنمایشگاهی و هوش چاکود ساخته شده است.
-- [~] Workflow `Launch 3 checks` روی شاخه لانچ ساخته شده است.
-- [~] دستور واحد `npm run check:launch` برای TypeScript و تمام Contract Testهای Launch ساخته شده است.
+- [~] Workflow `Launch 3 checks` و دستور واحد `npm run check:launch` ساخته شدند.
 
 ## CI و Contractهای Launch
+
+Contractهای فعلی:
 
 - `tests/homepage-contract.test.mjs`
 - `tests/dealer-directory-contract.test.mjs`
 - `tests/ai-assistant-contract.test.mjs`
+- `tests/finance-commerce-contract.test.mjs`
+- `tests/featured-showroom-contract.test.mjs`
 - `tests/local-development-login.test.mjs`
 - `tests/local-development-session.test.mjs`
 - `tests/local-public-api.test.mjs`
 - `tests/route-access.test.mjs`
 
-GitHub Actions فایل `.github/workflows/launch-3-checks.yml` را روی Push شاخه Launch و PR به main اجرا می کند. نتیجه کامل Runtime/Build هنوز تایید نهایی نشده است.
+### نتیجه واقعی GitHub Actions
+
+- [x] TypeScript با `tsconfig.launch.json` بدون خطا اجرا شد.
+- [x] Contract Testهای Homepage، چندنمایشگاهی، هوش چاکود، مالی/Commerce و نمایشگاه منتخب اجرا و موفق شدند.
+- [x] تست Homepage با Route canonical `/dealerships` همگام شد و تست قدیمی `/showrooms` حذف شد.
+- [x] تست های قدیمی TypeScript با Node 22 و `--experimental-strip-types` قابل اجرا شدند.
+- [x] خطای TypeScript دسترسی CMS مقاله با Narrowing صریح Identity اصلاح شد.
+- [x] Run شماره 22 GitHub Actions برای `Launch 3 checks` با نتیجه `success` بسته شد.
+
+Runtime/Build/Staging هنوز در این نتیجه پوشش داده نشده اند.
 
 ## موارد Backend-dependent که نباید حدسی پیاده شوند
 
@@ -83,19 +95,20 @@ GitHub Actions فایل `.github/workflows/launch-3-checks.yml` را روی Push
 
 ## وضعیت فعلی فاز
 
-ساخت قابلیت های اصلی داخل این Repository تقریبا بسته شده است. از این نقطه تغییرات جدید باید یا:
+ساخت قابلیت های اصلی داخل این Repository تقریبا بسته شده و Source/TypeScript Contract Gate سبز است. از این نقطه تغییرات جدید باید یا:
 
-1. Hardening کم ریسک و Contract Test باشند؛ یا
-2. نتیجه خطای واقعی TypeScript/Build/Runtime را رفع کنند؛ یا
+1. Hardening امنیتی کم ریسک باشند؛ یا
+2. نتیجه خطای واقعی Migration/Build/Runtime را رفع کنند؛ یا
 3. وابستگی Backend خارجی قطعی و مستند داشته باشند.
 
 صفحه اصلی قفل است و برای Hardening طراحی یا ترتیب آن تغییر نکند.
 
 ## گام بعدی
 
-- [ ] اجرای `npm run check:launch` و رفع خطاهای واقعی Source/TypeScript.
+- [x] `npm run check:launch` روی GitHub Actions سبز شد.
+- [ ] Gate آسیب پذیری Critical وابستگی ها در CI.
 - [ ] بررسی Migration روی دیتابیس غیرتولیدی.
-- [ ] سپس Build/Staging و تست جامع جریان های محصول.
+- [ ] Build/Staging و تست جامع جریان های محصول.
 
 ## قانون ادامه
 

@@ -1,0 +1,88 @@
+name: One-shot nonbreaking npm audit fix
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/security-nonbreaking-audit-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/launch-3-local-baseline
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install current lockfile
+        run: npm ci
+
+      - name: Capture before audit
+        run: npm audit --json > /tmp/audit-before.json || true
+
+      - name: Apply npm audit fix without force
+        run: npm audit fix
+
+      - name: Reinstall from updated lockfile
+        run: npm ci
+
+      - name: Launch source checks
+        run: npm run check:launch
+
+      - name: Portable build
+        run: npm run build:preflight
+
+      - name: Portable runtime smoke
+        run: npm run smoke:portable
+
+      - name: Capture after audit
+        run: npm audit --json > /tmp/audit-after.json || true
+
+      - name: Write verification report
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const before = JSON.parse(fs.readFileSync('/tmp/audit-before.json', 'utf8'));
+          const after = JSON.parse(fs.readFileSync('/tmp/audit-after.json', 'utf8'));
+          const b = before.metadata?.vulnerabilities || {};
+          const a = after.metadata?.vulnerabilities || {};
+          fs.writeFileSync('docs/SECURITY-NONBREAKING-AUDIT-FIX-RESULT.md', [
+            '# نتیجه npm audit fix بدون force',
+            '',
+            `- before: critical=${b.critical ?? '?'}, high=${b.high ?? '?'}, moderate=${b.moderate ?? '?'}, low=${b.low ?? '?'}`,
+            `- after: critical=${a.critical ?? '?'}, high=${a.high ?? '?'}, moderate=${a.moderate ?? '?'}, low=${a.low ?? '?'}`,
+            '- TypeScript/contracts: success',
+            '- portable build: success',
+            '- portable runtime smoke: success',
+            '- npm audit fix --force: NOT USED',
+            '',
+          ].join('\n'));
+          if ((a.critical ?? 0) > 0) process.exit(1);
+          NODE
+
+      - name: Commit verified lockfile fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json docs/SECURITY-NONBREAKING-AUDIT-FIX-RESULT.md
+          if git diff --cached --quiet; then
+            echo "No nonbreaking dependency changes available."
+            exit 0
+          fi
+          git commit -m "security: apply verified nonbreaking audit fixes"
+          git fetch origin agent/launch-3-local-baseline
+          git rebase origin/agent/launch-3-local-baseline
+          git push origin HEAD:agent/launch-3-local-baseline

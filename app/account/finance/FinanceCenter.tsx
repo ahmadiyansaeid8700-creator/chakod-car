@@ -85,12 +85,12 @@ const modeConfig: Record<FinanceMode, ModeConfig> = {
   },
   promotions: {
     title: "تبلیغات و ارتقای نمایش",
-    description: "جایگاه مناسب را انتخاب کنید و آگهی یا کسب‌وکار خود را بیشتر دیده کنید.",
+    description: "محصول مناسب را انتخاب کنید؛ مبلغ نهایی فقط از تعرفه فعال Commerce خوانده می‌شود.",
     eyebrow: "PROMOTIONS",
   },
   subscriptions: {
     title: "اشتراک‌ها",
-    description: "پلن مناسب حساب شخصی، نمایشگاه یا کسب‌وکار خودرویی را مدیریت کنید.",
+    description: "اشتراک‌های فعال نمایشگاه و کسب‌وکار را با تعرفه واقعی Commerce مدیریت کنید.",
     eyebrow: "SUBSCRIPTIONS",
   },
 };
@@ -106,10 +106,13 @@ const navItems: Array<{ mode: FinanceMode; label: string; href: string }> = [
 const statusTitles: Record<string, string> = {
   pending_payment: "در انتظار پرداخت",
   payment_failed: "پرداخت ناموفق",
+  wallet_processing: "در حال نهایی‌سازی کیف پول",
   paid: "پرداخت‌شده",
   issued: "صادرشده",
   completed: "تکمیل‌شده",
   active: "فعال",
+  refunded: "بازپرداخت‌شده",
+  partially_refunded: "بازپرداخت جزئی",
 };
 
 function formatToman(value: number) {
@@ -226,13 +229,13 @@ function PaymentsView({
     {
       code: "promotion",
       title: "پرداخت تبلیغات و ارتقا",
-      text: "هزینه ویژه‌کردن، استوری، بنر و نمایش بالاتر را پرداخت کنید.",
+      text: "بالابر، ویژه، استوری، نمایشگاه منتخب و جایگاه کسب‌وکار از مسیرهای واقعی خودشان سفارش داده می‌شوند.",
       href: "/account/promotions",
     },
     {
       code: "subscription",
       title: "پرداخت اشتراک",
-      text: "اشتراک حرفه‌ای حساب تجاری یا نمایشگاه را فعال کنید.",
+      text: "اشتراک حرفه‌ای حساب تجاری یا نمایشگاه را از Commerce فعال کنید.",
       href: "/account/subscriptions",
     },
   ];
@@ -304,6 +307,9 @@ function InvoicesView({ invoiceRows }: { invoiceRows: FinanceInvoice[] }) {
                 <strong>{invoice.invoiceNo} · {statusTitles[invoice.status] || invoice.status}</strong>
                 <small>{formatToman(invoice.amountToman)} · {formatDate(invoice.issuedAt)}</small>
               </span>
+              <Link className={styles.secondaryButton} href={`/account/invoices/${encodeURIComponent(invoice.invoiceNo)}`}>
+                مشاهده و چاپ
+              </Link>
             </div>
           ))}
         </div>
@@ -311,7 +317,7 @@ function InvoicesView({ invoiceRows }: { invoiceRows: FinanceInvoice[] }) {
         <div className={styles.emptyState}>
           <span>⌁</span>
           <h3>هنوز فاکتوری صادر نشده است</h3>
-          <p>بعد از تأیید اولین پرداخت، فاکتور رسمی آن در این بخش نمایش داده می‌شود.</p>
+          <p>بعد از تأیید اولین پرداخت، فاکتور آن در این بخش نمایش داده می‌شود.</p>
         </div>
       )}
     </section>
@@ -320,27 +326,45 @@ function InvoicesView({ invoiceRows }: { invoiceRows: FinanceInvoice[] }) {
 
 function PromotionsView() {
   const products = [
-    { code: "boost", title: "بالابر آگهی", price: 149_000, text: "انتقال آگهی به ابتدای نتایج مرتبط" },
-    { code: "featured", title: "آگهی ویژه", price: 349_000, text: "نمایش برجسته‌تر و نشان ویژه" },
-    { code: "story", title: "استوری منطقه‌ای", price: 690_000, text: "نمایش در استوری کاربران محدوده انتخابی" },
-    { code: "banner", title: "بنر صفحه اصلی", price: 0, text: "محاسبه براساس استان، ظرفیت و تعداد روز" },
+    {
+      code: "listing",
+      title: "ارتقای آگهی خودرو",
+      text: "بالابر، ویژه و استوری را برای همان آگهی از صفحه مدیریت آگهی انتخاب کنید.",
+      href: "/account/listings",
+      action: "انتخاب آگهی",
+    },
+    {
+      code: "featured-showroom",
+      title: "نمایشگاه منتخب",
+      text: "نمایشگاه، استان و بازه نمایش را انتخاب کنید؛ ظرفیت و مبلغ از Commerce بررسی می‌شوند.",
+      href: "/account/business/promotions/featured",
+      action: "رزرو جایگاه",
+    },
+    {
+      code: "business-placement",
+      title: "جایگاه کسب‌وکار",
+      text: "برای خدمات، تعمیرگاه یا فروشگاه قطعات جایگاه حرفه‌ای مرتبط را انتخاب کنید.",
+      href: "/advertising/business-placement",
+      action: "مشاهده جایگاه‌ها",
+    },
+    {
+      code: "stories",
+      title: "استوری چاکود",
+      text: "استوری آگهی و کمپین‌های منطقه‌ای از مسیر تبلیغات رسمی چاکود مدیریت می‌شوند.",
+      href: "/advertising/stories",
+      action: "مشاهده استوری",
+    },
   ];
 
   return (
     <div className={styles.cardGrid}>
       {products.map((product) => (
         <article className={styles.productCard} key={product.code}>
-          <span className={styles.productBadge}>قابل سفارش</span>
+          <span className={styles.productBadge}>تعرفه از Commerce</span>
           <h2>{product.title}</h2>
           <p>{product.text}</p>
-          <strong>{product.price ? formatToman(product.price) : "محاسبه در فرم رزرو"}</strong>
-          <Link
-            href={product.code === "banner"
-              ? "/account/ads"
-              : `/account/payments/checkout?type=promotion&product=${product.code}`}
-          >
-            {product.code === "banner" ? "انتخاب استان و تاریخ" : "انتخاب و پرداخت"}
-          </Link>
+          <strong>مبلغ در زمان ساخت سفارش قفل می‌شود</strong>
+          <Link href={product.href}>{product.action}</Link>
         </article>
       ))}
     </div>
@@ -348,44 +372,22 @@ function PromotionsView() {
 }
 
 function SubscriptionsView() {
-  const plans = [
-    {
-      code: "starter",
-      title: "پایه",
-      price: 0,
-      features: ["پروفایل عمومی", "مدیریت اطلاعات", "نمایش در جست‌وجوی محلی"],
-    },
-    {
-      code: "professional",
-      title: "حرفه‌ای",
-      price: 1_490_000,
-      features: ["جایگاه بالاتر", "آمار حرفه‌ای", "نمونه‌کار بیشتر", "پشتیبانی اولویت‌دار"],
-    },
-    {
-      code: "dealership",
-      title: "نمایشگاه حرفه‌ای",
-      price: 2_490_000,
-      features: ["مدیریت تیم", "موجودی خودرو", "گزارش تماس", "امکانات تبلیغاتی"],
-    },
-  ];
-
   return (
-    <div className={styles.planGrid}>
-      {plans.map((plan) => (
-        <article className={`${styles.planCard} ${plan.code === "professional" ? styles.planFeatured : ""}`} key={plan.code}>
-          <span>{plan.code === "professional" ? "پیشنهاد چاکود" : "پلن حساب"}</span>
-          <h2>{plan.title}</h2>
-          <strong>{plan.price ? `${formatToman(plan.price)} / ماه` : "رایگان"}</strong>
-          <ul>
-            {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
-          </ul>
-          {plan.price ? (
-            <Link href={`/account/payments/checkout?type=subscription&plan=${plan.code}`}>انتخاب اشتراک</Link>
-          ) : (
-            <Link href="/account">پلن فعلی</Link>
-          )}
-        </article>
-      ))}
+    <div className={styles.cardGrid}>
+      <article className={styles.productCard}>
+        <span className={styles.productBadge}>Commerce</span>
+        <h2>اشتراک حرفه‌ای کسب‌وکار</h2>
+        <p>تعرفه، مدت و فعال بودن هر پلن مستقیماً از Commerce اصلی خوانده می‌شود.</p>
+        <strong>بدون قیمت ثابت در Frontend</strong>
+        <Link href="/account/services?tab=profile">مشاهده پلن‌های فعال</Link>
+      </article>
+      <article className={styles.productCard}>
+        <span className={styles.productBadge}>مدیریت مجموعه</span>
+        <h2>وضعیت اشتراک فعلی</h2>
+        <p>اشتراک فعال و تاریخ انقضا در مرکز فرمان نمایشگاه یا کسب‌وکار نمایش داده می‌شود.</p>
+        <strong>همگام با حساب تجاری</strong>
+        <Link href="/account/business">رفتن به مرکز فرمان</Link>
+      </article>
     </div>
   );
 }

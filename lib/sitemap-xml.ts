@@ -62,7 +62,10 @@ export async function safeJson(url: string): Promise<Record<string, unknown> | n
   try {
     const response = await fetch(url, {
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      // Search engines should still receive a valid sitemap when the canonical
+      // backend is slow. Dynamic collections gracefully fall back to their
+      // public index route, so do not hold the XML response for 12+ seconds.
+      signal: AbortSignal.timeout(3_500),
       headers: { Accept: "application/json" },
     });
     if (!response.ok) return null;

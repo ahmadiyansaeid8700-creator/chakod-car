@@ -18,7 +18,8 @@ const PLACEHOLDER_TEXT = [
   /not\s+implemented/i,
   /به\s*زودی/,
   /در\s*دست\s*ساخت/,
-  /در\s*حال\s*ساخت/,
+  /(?:این\s*(?:بخش|صفحه|قابلیت|امکان)|بخش|صفحه)\s+در\s*حال\s*ساخت/,
+  />\s*در\s*حال\s*ساخت\s*</,
 ];
 
 function walk(dir) {
@@ -240,7 +241,7 @@ section('Discovered page routes', routes.sort((a,b) => a.route.localeCompare(b.r
 
 fs.mkdirSync(REPORT_DIR, { recursive: true });
 fs.writeFileSync(REPORT_PATH, lines.join('\n') + '\n');
-console.log(lines.slice(0, 9).join('\n'));
+console.log(lines.slice(0, 10).join('\n'));
 console.log(`Report: ${path.relative(ROOT, REPORT_PATH)}`);
 
 if (

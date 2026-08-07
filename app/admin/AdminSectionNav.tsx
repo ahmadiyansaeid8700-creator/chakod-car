@@ -6,6 +6,9 @@ const links = [
   { href: "/admin", label: "داشبورد" },
   { href: "/admin/listings", label: "آگهی‌ها" },
   { href: "/admin/businesses", label: "کسب‌وکارها" },
+  { href: "/admin/advertising", label: "تبلیغات" },
+  { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب" },
+  { href: "/admin/support", label: "پشتیبانی" },
   { href: "/admin/commerce", label: "Commerce" },
   { href: "/admin/orders", label: "سفارش‌ها" },
   { href: "/admin/payments", label: "پرداخت‌ها" },
@@ -13,6 +16,8 @@ const links = [
   { href: "/admin/refunds", label: "بازپرداخت" },
   { href: "/admin/subscriptions", label: "اشتراک‌ها" },
   { href: "/admin/pricing", label: "تعرفه‌ها" },
+  { href: "/admin/admins", label: "دسترسی مدیران" },
+  { href: "/admin/audit-logs", label: "گزارش تغییرات" },
   { href: "/", label: "مشاهده سایت" },
 ];
 

@@ -42,7 +42,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
           <div className="masterNavLinks">
             <Link href="/cars">خودروها</Link>
-            <Link href="/showrooms">نمایشگاه‌ها</Link>
+            <Link href="/dealerships">نمایشگاه‌ها</Link>
             <Link href="/businesses">کسب‌وکارها</Link>
           </div>
 
@@ -109,7 +109,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <div>
             <Link href="/cars/luxury">خودروهای لوکس</Link>
             <Link href="/cars/free-zone">منطقه آزاد</Link>
-            <Link href="/showrooms">نمایشگاه‌ها</Link>
+            <Link href="/dealerships">نمایشگاه‌ها</Link>
             <Link href="/businesses">خدمات خودرو</Link>
             <Link href="/rules">قوانین</Link>
           </div>

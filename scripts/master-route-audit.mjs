@@ -5,7 +5,10 @@ const ROOT = process.cwd();
 const APP = path.join(ROOT, 'app');
 const SITEMAP = path.join(ROOT, 'docs', 'MASTER-SITEMAP-FA.md');
 const REPORT = path.join(ROOT, 'artifacts', 'master-route-audit.md');
-const PAGE_NAMES = new Set(['page.tsx', 'page.ts', 'page.jsx', 'page.js']);
+const ROUTE_FILES = new Set([
+  'page.tsx', 'page.ts', 'page.jsx', 'page.js',
+  'route.ts', 'route.tsx', 'route.js', 'route.jsx',
+]);
 
 function walk(dir) {
   const out = [];
@@ -21,7 +24,7 @@ function posix(value) {
   return value.split(path.sep).join('/');
 }
 
-function routeFromPage(file) {
+function routeFromFile(file) {
   const rel = posix(path.relative(APP, path.dirname(file)));
   if (!rel || rel === '.') return '/';
   const parts = rel.split('/').filter(Boolean).filter((segment) => {
@@ -43,8 +46,8 @@ function toRegex(route) {
   return new RegExp('^/' + body + '/?$');
 }
 
-const pages = walk(APP).filter((file) => PAGE_NAMES.has(path.basename(file)));
-const actualRoutes = pages.map((file) => ({ route: routeFromPage(file), file: posix(path.relative(ROOT, file)) }));
+const routeFiles = walk(APP).filter((file) => ROUTE_FILES.has(path.basename(file)));
+const actualRoutes = routeFiles.map((file) => ({ route: routeFromFile(file), file: posix(path.relative(ROOT, file)) }));
 const actualMatchers = actualRoutes.map((x) => ({ ...x, regex: toRegex(x.route) }));
 
 const doc = fs.readFileSync(SITEMAP, 'utf8');
@@ -74,7 +77,7 @@ const lines = [
   '# Master sitemap route audit',
   '',
   `- Required routes extracted: ${required.length}`,
-  `- Actual page routes discovered: ${actualRoutes.length}`,
+  `- Actual page/route handlers discovered: ${actualRoutes.length}`,
   `- Missing required routes: ${missing.length}`,
   '',
   '## Missing required routes',

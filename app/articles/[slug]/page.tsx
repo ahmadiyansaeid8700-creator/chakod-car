@@ -4,11 +4,14 @@ import { notFound } from "next/navigation";
 
 import Footer from "../../components/layout/Footer";
 import Header from "../../components/layout/Header";
-import { articles, findArticle } from "../article-data";
+import { articles as fallbackArticles } from "../article-data";
+import { getPublishedArticle } from "../../../lib/content-articles";
 import styles from "./page.module.css";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
-  return articles.map((article) => ({ slug: article.slug }));
+  return fallbackArticles.map((article) => ({ slug: article.slug }));
 }
 
 export async function generateMetadata({
@@ -17,12 +20,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = findArticle(slug);
+  const article = await getPublishedArticle(slug);
   if (!article) return { title: "مقاله پیدا نشد | چاکود" };
 
   return {
-    title: `${article.title} | چاکود`,
-    description: article.excerpt,
+    title: article.seoTitle || `${article.title} | چاکود`,
+    description: article.seoDescription || article.excerpt,
   };
 }
 
@@ -32,7 +35,7 @@ export default async function ArticleDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = findArticle(slug);
+  const article = await getPublishedArticle(slug);
   if (!article) notFound();
 
   return (
@@ -58,12 +61,14 @@ export default async function ArticleDetailPage({
             </header>
 
             <div className={styles.content}>
-              {article.sections.map((section) => (
-                <section className={styles.section} key={section.heading}>
+              {article.sections.map((section, sectionIndex) => (
+                <section className={styles.section} key={`${sectionIndex}-${section.heading}`}>
                   <h2>{section.heading}</h2>
-                  {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <p key={`${paragraphIndex}-${paragraph}`}>{paragraph}</p>
+                  ))}
                   {section.items?.length ? (
-                    <ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul>
+                    <ul>{section.items.map((item, itemIndex) => <li key={`${itemIndex}-${item}`}>{item}</li>)}</ul>
                   ) : null}
                 </section>
               ))}

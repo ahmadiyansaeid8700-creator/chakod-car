@@ -14,7 +14,7 @@ Main: بدون تایید مالک تغییر نکند
 ## روش کار قطعی
 
 - ابتدا خود سایت کامل ساخته و صفحات/دکمه ها به هم متصل شوند.
-- سپس Migration، Pull محلی، TypeScript/Build و تست جامع انجام شود.
+- سپس Pull محلی، TypeScript/Build و تست جامع انجام شود.
 - موارد ساخته شده ولی تست نشده `[~]` هستند.
 - صفحه اصلی از نظر ترتیب و Responsive قفل است.
 
@@ -57,9 +57,12 @@ Top Repair Shops
 - [~] سفارش امن و idempotency
 - [~] پرداخت بانکی
 - [~] Callback/Verify
-- [~] فاکتور
+- [~] فاکتور و صفحه جزئیات/چاپ
 - [~] Checkout سفارش از قبل ساخته شده
 - [~] Retry امن پرداخت کیف پول
+- [~] فهرست فاکتورها به جزئیات و چاپ متصل شده
+- [~] قیمت های ثابت تبلیغات/اشتراک از FinanceCenter حذف شده اند
+- [~] FinanceCenter فقط به جریان canonical Commerce و محصولات واقعی متصل است
 - [!] Wallet Settlement نیازمند Backend خارجی و Environment است
 
 ### نمایشگاه منتخب
@@ -136,15 +139,26 @@ Top Repair Shops
   - دکمه ذخیره جست و جو روی `/cars`
   - اعلان سروری هنوز ساخته نشده و به دروغ فعال نمایش داده نمی شود
 
-### حساب و ادمین
+### حساب و تیم نمایشگاه
 
 - [~] منوی حساب به مالی، بازپرداخت، نمایشگاه منتخب و پشتیبانی وصل است
-- [~] `/admin/commerce` لینک سریع به نمایشگاه منتخب، بازپرداخت و پشتیبانی دارد
+- [~] `DealerCommandCenter` از قبل دعوت عضو، نقش، Permission و آمار تیم را به API واقعی متصل دارد
+- [~] `/account/business/team` از همان DealerCommandCenter استفاده می کند و سیستم موازی ساخته نشده است
+
+### مدیریت
+
+- [~] `/admin/commerce` به نمایشگاه منتخب، بازپرداخت و پشتیبانی متصل است
+- [~] مدیریت مالی D1 برای سفارش، پرداخت، فاکتور، بازپرداخت، اشتراک و قیمت گذاری canonical وجود دارد
+
+### SEO
+
+- [~] Static Sitemap با `/cars/compare`, `/cars/price-guide`, `/advertising/*`, `/about`, `/privacy` همگام شده است
+- [~] صفحات خصوصی `/account/*`, تیکت ها و saved-searches وارد Sitemap عمومی نشده اند
 
 ## مدل های D1 فعلی
 
 ```text
-banner_reservations (legacy only)
+banner_reservations (legacy compatibility only)
 wallets
 wallet_transactions
 commerce_orders
@@ -156,25 +170,38 @@ support_tickets
 support_replies
 ```
 
+## Migration Drizzle
+
+- [~] `drizzle/0001_launch_finance_support.sql`
+- [~] `drizzle/meta/_journal.json` دارای entry شماره 1 است
+- [~] `drizzle/meta/0001_snapshot.json` با Schema فعلی همگام شده است
+- Migration هنوز روی محیط واقعی اجرا نشده؛ اجرای آن در مرحله استقرار/تست انجام می شود.
+
+## Legacy
+
+- [~] `/account/ads` فقط Redirect سازگاری به نمایشگاه منتخب است
+- [~] `/help` به `/support` می رود
+- [!] `/dealers` هنوز پنل قدیمی ثبت/مدیریت نمایشگاه دارد؛ تا انتقال کامل قابلیت ثبت به مسیر canonical حذف نشود
+- [~] هیچ لینک جدیدی نباید به `/dealers` اضافه شود؛ مسیر canonical پنل `/account/business` است
+
 ## اسناد
 
-- `docs/MASTER-SITEMAP-FA.md` با تصمیم جدید نمایشگاه منتخب بازنویسی و همگام شده است.
-- `docs/LATEST-WORK-SNAPSHOT-FA.md` Snapshot قبلی است.
+- `docs/MASTER-SITEMAP-FA.md` با تصمیم جدید نمایشگاه منتخب همگام شده است.
+- `docs/LATEST-WORK-SNAPSHOT-FA.md` Snapshot قدیمی تر است.
 - این فایل (`BUILD-CHECKPOINT-2026-08-07-B.md`) مرجع جدیدتر است.
 
 ## موارد مهم باقی مانده قبل از تست جامع
 
-1. [ ] بررسی/تکمیل قابلیت های تیم و نقش های نمایشگاه براساس API قطعی موجود
-2. [ ] ممیزی لینک ها و دکمه های باقی مانده عمومی/حساب/ادمین
-3. [ ] همگام سازی Static Sitemap با صفحات عمومی جدید
-4. [ ] حذف فایل ها و مسیرهای Legacy بلااستفاده بدون حذف قراردادهای سازگاری لازم
-5. [ ] تولید Migration استاندارد Drizzle برای تمام جدول های جدید
-6. [!] تکمیل Wallet Settlement در Backend اصلی
-7. [!] تنظیم Adapter بازپرداخت بانکی در Environment
-8. [ ] Pull روی لپ تاپ
-9. [ ] TypeScript + Build
-10. [ ] تست جامع جریان های کاربر/نمایشگاه/کسب و کار/مدیر/مالی
-11. [ ] رفع خطا و Launch
+1. [ ] انتقال امن قابلیت ثبت نمایشگاه از Legacy `/dealers` به مسیر canonical کسب و کار و سپس Redirect مسیر قدیمی
+2. [ ] ممیزی نهایی لینک ها و دکمه های باقی مانده عمومی/حساب/ادمین
+3. [ ] پاکسازی متن ها/CTAهای Legacy باقی مانده بدون حذف قراردادهای سازگاری Backend
+4. [!] تکمیل Wallet Settlement در Backend اصلی
+5. [!] تنظیم Adapter بازپرداخت بانکی در Environment
+6. [ ] Pull روی لپ تاپ
+7. [ ] اجرای Migration روی محیط تست
+8. [ ] TypeScript + Build
+9. [ ] تست جامع جریان های کاربر/نمایشگاه/کسب و کار/مدیر/مالی
+10. [ ] رفع خطا و Launch
 
 ## قوانین بازیابی
 
@@ -182,4 +209,5 @@ support_replies
 - `main` دست نخورد.
 - صفحه اول دست نخورد مگر مالک صریحا بگوید.
 - بنر نمایشگاهی صفحه اول برنگردد.
+- قیمت خدمات در Frontend هاردکد نشود؛ Commerce منبع canonical تعرفه است.
 - اول ساخت سایت ادامه پیدا کند؛ تست جامع در انتها.

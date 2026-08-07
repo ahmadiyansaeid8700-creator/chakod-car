@@ -19,7 +19,7 @@ const accountLinks = [
   { href: "/account/invoices", label: "فاکتورها" },
   { href: "/account/promotions", label: "تبلیغات" },
   { href: "/account/subscriptions", label: "اشتراک‌ها" },
-  { href: "/account/ads", label: "رزرو بنر" },
+  { href: "/account/business/promotions/featured", label: "نمایشگاه منتخب" },
   { href: "/account/notifications", label: "اعلان‌ها" },
   { href: "/account/security", label: "امنیت" },
   { href: "/account/payments/wallet-retry", label: "پیگیری پرداخت" },

@@ -3,8 +3,10 @@ import Link from "next/link";
 
 import Footer from "../components/layout/Footer";
 import Header from "../components/layout/Header";
-import { articleCategories, articles } from "./article-data";
+import { getPublishedArticles } from "../../lib/content-articles";
 import styles from "./page.module.css";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "مجله و راهنماهای چاکود",
@@ -21,6 +23,8 @@ export default async function ArticlesPage({
   const query = (await searchParams) || {};
   const rawCategory = query.category;
   const category = Array.isArray(rawCategory) ? rawCategory[0] || "" : rawCategory || "";
+  const articles = await getPublishedArticles();
+  const categories = Array.from(new Set(articles.map((article) => article.category))).filter(Boolean);
   const visible = category ? articles.filter((article) => article.category === category) : articles;
 
   return (
@@ -36,7 +40,7 @@ export default async function ArticlesPage({
 
           <nav className={styles.filters} aria-label="دسته‌بندی مقالات">
             <Link className={!category ? styles.active : undefined} href="/articles">همه</Link>
-            {articleCategories.map((item) => (
+            {categories.map((item) => (
               <Link
                 key={item}
                 className={category === item ? styles.active : undefined}

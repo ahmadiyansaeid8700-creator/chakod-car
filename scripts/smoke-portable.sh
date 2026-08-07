@@ -90,7 +90,11 @@ check_redirect() {
 check_redirect "/showrooms" "/dealerships"
 check_redirect "/help" "/support"
 check_redirect "/advertising/banners" "/advertising/dealership-placement"
-check_redirect "/dealers" "/account/business/dealers"
+
+# `/dealers` is a legacy private entry point. The auth guard intentionally runs
+# before the page-level compatibility redirect, so guests must first authenticate.
+# After login, the page source contract redirects it to `/account/business/dealers`.
+check_redirect "/dealers" "/login?returnTo=/dealers"
 
 AI_RESPONSE="$(curl --silent --show-error --fail --max-time 12 \
   -H 'Content-Type: application/json' \

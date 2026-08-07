@@ -32,3 +32,6 @@ jobs:
 
       - name: Launch source checks
         run: npm run check:launch
+
+      - name: Critical dependency audit gate
+        run: npm audit --audit-level=critical

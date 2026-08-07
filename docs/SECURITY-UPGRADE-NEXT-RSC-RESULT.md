@@ -1,8 +1,10 @@
 # نتیجه ارتقای امنیتی Next / React Server DOM
 
-- Target Next: 16.3.0
+- Target Next: 16.2.12
+- Target eslint-config-next: 16.2.12
 - Target react-server-dom-webpack: 19.2.8
 - Resolved Next in package.json: 16.2.6
+- Resolved eslint-config-next in package.json: 16.2.6
 - Resolved RSC in package.json: 19.2.6
 - Verified for commit: false
 - npm ci: success

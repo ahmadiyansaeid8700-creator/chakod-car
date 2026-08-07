@@ -114,15 +114,125 @@
   color: #8b7f94;
 }
 
-.error {
+.paymentMethods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.paymentMethods button {
+  display: grid;
+  gap: 6px;
+  min-height: 118px;
+  padding: 16px;
+  border: 1px solid rgba(83, 64, 105, 0.14);
+  border-radius: 18px;
+  background: #fbfaff;
+  color: #332343;
+  cursor: pointer;
+  text-align: right;
+  font: inherit;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.paymentMethods button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(109, 40, 217, 0.28);
+}
+
+.paymentMethods button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.paymentMethods button span {
+  color: #776781;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.paymentMethods button strong {
+  color: #2b193b;
+  font-size: 17px;
+}
+
+.paymentMethods button small {
+  color: #8d8097;
+  line-height: 1.65;
+}
+
+.paymentMethods .paymentMethodActive {
+  border-color: rgba(109, 40, 217, 0.48);
+  background: linear-gradient(145deg, #f6f0ff, #ffffff);
+  box-shadow: 0 12px 28px rgba(109, 40, 217, 0.11);
+}
+
+.paymentMethods .paymentMethodActive strong {
+  color: #6d28d9;
+}
+
+.walletTopUpNote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -8px 0 18px;
+  padding: 14px 15px;
+  border: 1px solid rgba(217, 119, 6, 0.17);
+  border-radius: 15px;
+  background: #fffbeb;
+}
+
+.walletTopUpNote > div {
+  display: grid;
+  gap: 4px;
+}
+
+.walletTopUpNote strong {
+  color: #92400e;
+  font-size: 13px;
+}
+
+.walletTopUpNote span {
+  color: #a16207;
+  font-size: 12px;
+}
+
+.walletTopUpNote a {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: #fff;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.error,
+.notice {
   margin: 14px 0;
   padding: 13px 15px;
-  border: 1px solid rgba(220, 38, 38, 0.16);
   border-radius: 14px;
-  background: #fff1f2;
-  color: #b91c1c;
   font-size: 13px;
   line-height: 1.8;
+}
+
+.error {
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.notice {
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .payButton {
@@ -140,8 +250,8 @@
 }
 
 .payButton:disabled {
-  cursor: wait;
-  opacity: 0.65;
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .securityNote {
@@ -234,7 +344,8 @@
     padding-bottom: 126px;
   }
 
-  .checkoutGrid {
+  .checkoutGrid,
+  .paymentMethods {
     grid-template-columns: 1fr;
   }
 
@@ -254,5 +365,18 @@
 
   .header > a:first-child {
     font-size: 12px;
+  }
+
+  .paymentMethods button {
+    min-height: 98px;
+  }
+
+  .walletTopUpNote {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .walletTopUpNote a {
+    text-align: center;
   }
 }

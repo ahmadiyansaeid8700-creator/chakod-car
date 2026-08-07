@@ -12,7 +12,7 @@ const footerLinkGroups = [
       { label: "خودروهای لوکس", href: "/cars/luxury" },
       { label: "خودروهای منطقه آزاد", href: "/cars/free-zone" },
       { label: "ثبت رایگان آگهی", href: "/account/listings/new" },
-      { label: "راهنمای قیمت", href: "/valuation" },
+      { label: "راهنمای قیمت", href: "/cars/price-guide" },
     ],
   },
   {

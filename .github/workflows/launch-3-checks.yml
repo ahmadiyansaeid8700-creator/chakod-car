@@ -36,6 +36,9 @@ jobs:
       - name: Homepage contract
         run: node --test tests/homepage-contract.test.mjs
 
+      - name: Multi-dealer contract
+        run: node --test tests/dealer-directory-contract.test.mjs
+
       - name: Local development login contract
         run: node --test tests/local-development-login.test.mjs
 

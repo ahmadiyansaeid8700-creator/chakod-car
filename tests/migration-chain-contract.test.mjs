@@ -37,7 +37,7 @@ test("keeps finance and support tables in migration 0001", async () => {
     "support_tickets",
     "support_replies",
   ]) {
-    assert.match(sql, new RegExp(`CREATE TABLE \\`${table}\\``));
+    assert.ok(sql.includes(`CREATE TABLE \`${table}\``), `migration 0001 must create ${table}`);
   }
   assert.match(sql, /order_no` text NOT NULL UNIQUE/);
   assert.match(sql, /idempotency_key` text NOT NULL UNIQUE/);

@@ -6,6 +6,9 @@ on:
       - agent/launch-3-local-baseline
     paths:
       - .github/workflows/launch-full-readiness-audit.yml
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:

@@ -1,5 +1,7 @@
-import AdminFinanceCenter from "../finance/AdminFinanceCenter";
+import AdminRefundsClient from "./AdminRefundsClient";
+
+export const dynamic = "force-dynamic";
 
 export default function AdminRefundsPage() {
-  return <AdminFinanceCenter mode="refunds" />;
+  return <AdminRefundsClient />;
 }

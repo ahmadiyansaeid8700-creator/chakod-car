@@ -1,9 +1,10 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
 import {
   commerceOrders,
+  featuredShowroomPlacements,
   invoices,
   walletTransactions,
 } from "../../../../db/schema";
@@ -44,6 +45,26 @@ export async function GET(request: NextRequest) {
         .orderBy(desc(invoices.id))
         .limit(30),
     ]);
+
+    const paidOrderIds = orders
+      .filter((order) => order.status === "paid")
+      .map((order) => order.id);
+
+    if (paidOrderIds.length) {
+      await db
+        .update(featuredShowroomPlacements)
+        .set({
+          status: "pending_review",
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(
+          and(
+            eq(featuredShowroomPlacements.ownerKey, ownerKey),
+            eq(featuredShowroomPlacements.status, "pending_payment"),
+            inArray(featuredShowroomPlacements.orderId, paidOrderIds),
+          ),
+        );
+    }
 
     return jsonResponse({
       success: true,

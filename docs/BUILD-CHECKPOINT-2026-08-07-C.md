@@ -1,20 +1,17 @@
 # Checkpoint ساخت سایت چاکود — 2026-08-07 C
 
-این فایل نقطه بازیابی جدید پروژه بعد از انتقال ادامه گفتگوی قبلی است.
+این فایل نقطه بازیابی فعلی پروژه است. گزارش کامل ممیزی لانچ در `docs/LAUNCH-READINESS-AUDIT-2026-08-07.md` نگهداری می‌شود.
 
 ## مرجع ادامه
 
 - Repository: `ahmadiyansaeid8700-creator/chakod-car`
 - Working branch: `agent/launch-3-local-baseline`
 - Base: `backup-latest-2026-08-03`
-- Draft CI PR: `#6` فقط برای اجرای Checkها؛ Merge نشود.
-- `main` بدون تایید مالک تغییر نکند.
-- ابتدا ساخت کامل سایت، سپس Migration/Build/Staging و تست جامع.
-- تمام قابلیت های ساخته شده و هنوز Staging/Production integration نشده با `[~]` ثبت می شوند.
+- Draft CI PR: `#6` فقط برای Checkها؛ Merge نشود.
+- `main` بدون تایید صریح مالک تغییر نکند.
+- لپ‌تاپ تا زمان Staging/Migration/E2E لازم نیست.
 
-## قرارداد قطعی صفحه اول
-
-ترتیب صفحه اصلی از نظر ساختار و Responsive قفل است:
+## قرارداد قفل‌شده صفحه اول
 
 1. Stories
 2. Featured Showrooms
@@ -24,107 +21,111 @@
 6. Top Parts Stores
 7. Top Repair Shops
 
-تمام Railها افقی هستند و `نمایش همه` به صفحه Grid مربوط می رود.
-
-### نمایشگاه منتخب
-
+- Railها افقی و Responsive هستند.
+- `نمایش همه` به Grid مربوط می‌رود.
+- Location مشترک روی سکشن‌های صفحه اول اعمال می‌شود.
 - بنر نمایشگاهی صفحه اول حذف شده و نباید برگردد.
-- محصول پولی جایگزین: `جایگاه نمایشگاه منتخب`.
-- فرایند: نمایشگاه → استان → بازه تاریخ → ظرفیت → مبلغ → تخفیف → سفارش → Checkout → کیف پول/درگاه → Verify → تایید مدیر → نمایش در Rail منتخب.
-- کارت از اطلاعات واقعی نمایشگاه و خودروهای فعال آن ساخته می شود و آپلود بنر وجود ندارد.
+- محصول پولی صفحه اول: `جایگاه نمایشگاه منتخب`.
 
-## وضعیت ساخته شده
+## وضعیت ساخت محصول
 
-- [~] ثبت و مدیریت کامل آگهی، تصاویر، ویرایش، ارتقا، فروخته شد، توقف، بازفعال سازی، حذف/بایگانی و تمدید Commerce
-- [~] گزارش آگهی و گزارش کسب و کار به تیکت واقعی پشتیبانی
-- [~] آگهی های مشابه
-- [~] کیف پول، سفارش امن، idempotency، Checkout، درگاه، Callback/Verify، فاکتور و چاپ
-- [~] نمایشگاه منتخب با رزرو، پرداخت، صف بررسی و تایید/رد مدیر
-- [~] جایگاه کسب و کار با انتخاب مجموعه، کنترل مالکیت و Checkout امن
-- [~] بازپرداخت کاربر و مدیریت مالی، Refund کیف پول و Adapter بانکی
-- [~] پشتیبانی مهمان/کاربر، گفت و گو، شماره پیگیری و پنل ادمین
-- [~] اعلان های حساب برای آگهی، پرداخت، بازپرداخت و پشتیبانی
-- [~] صفحات قانونی و عمومی
-- [~] راهنمای قیمت، مقایسه خودرو و جست و جوهای ذخیره شده
-- [~] پروفایل عمومی کسب و کار، تیم نمایشگاه و ابزارهای حرفه ای موجود
-- [~] همکاری در فروش کاربر و ادمین با API canonical
-- [~] مجله عمومی و CMS مقالات D1 + `/admin/articles`
-- [~] Sitemap/robots canonical و Migrationهای Drizzle تا CMS
-- [~] Route cleanup و Shared Header داخلی
-- [~] هاب های مدیریت مالی، تبلیغات، نمایشگاه منتخب، پشتیبانی، محتوا و Access Manager
-- [~] چندنمایشگاهی از Route قدیمی `/dealers` به مسیر canonical `/account/business/dealers` منتقل شد.
-- [~] API داخلی امن `/api/auth/dealers` قرارداد `my-dealers.php` را نگه می دارد و ورودی ساخت نمایشگاه را سمت سرور محدود می کند.
-- [~] Route قدیمی `/dealers` فقط Redirect سازگاری است؛ Guest ابتدا توسط Auth Guard به Login می رود و پس از احراز هویت مسیر canonical ادامه پیدا می کند.
-- [~] لینک خراب قدیمی `/dealers/[id]` از جریان canonical حذف شد؛ مرکز فرمان خودش بین نمایشگاه های کاربر سوییچ می کند.
-- [~] متن Legacy «رزرو بنر» از مرکز فرمان حذف و CTAهای «نمایشگاه های من» و «نمایشگاه منتخب» جایگزین شدند.
-- [~] «هوش چاکود» سراسری است و `/api/ai/assistant` دارای Offline fallback، Cloud fallback، Rate Limit، محدودیت اندازه درخواست و no-store است.
-- [~] Workflow `Launch 3 checks` و دستور واحد `npm run check:launch` ساخته شدند.
+قابلیت‌های اصلی Repository ساخته شده‌اند و تا زمان Integration نهایی با `[~]` در نظر گرفته می‌شوند:
 
-## CI و Contractهای Launch
+- [~] ثبت/ویرایش/تصاویر/مدیریت lifecycle/ارتقا/تمدید آگهی
+- [~] ذخیره آگهی، گزارش، آگهی مشابه، مقایسه و جست‌وجوی ذخیره‌شده
+- [~] کیف پول، سفارش، idempotency، Checkout، Gateway callback/verify، فاکتور
+- [~] نمایشگاه منتخب: رزرو، ظرفیت، پرداخت، تایید مدیر، نمایش در Rail
+- [~] جایگاه کسب‌وکار
+- [~] Refund کاربر/ادمین و Wallet refund
+- [~] پشتیبانی واقعی مهمان/کاربر/ادمین
+- [~] اعلان‌ها، پروفایل، امنیت، logout/auth callback
+- [~] چندنمایشگاهی canonical زیر `/account/business`
+- [~] Affiliate/Ambassador
+- [~] CMS مقالات و Admin Articles
+- [~] پنل‌های مالی/Commerce/Support/Featured Showrooms/Admin Access
+- [~] SEO/Sitemap/Robots/Manifest
+- [~] هوش چاکود با Offline fallback و محدودیت درخواست
 
-Contractهای فعلی:
+## نتیجه ممیزی کامل Repository
 
-- `tests/homepage-contract.test.mjs`
-- `tests/dealer-directory-contract.test.mjs`
-- `tests/ai-assistant-contract.test.mjs`
-- `tests/finance-commerce-contract.test.mjs`
-- `tests/featured-showroom-contract.test.mjs`
-- `tests/migration-chain-contract.test.mjs`
-- `tests/local-development-login.test.mjs`
-- `tests/local-development-session.test.mjs`
-- `tests/local-public-api.test.mjs`
-- `tests/route-access.test.mjs`
+- 128 page route کشف شد.
+- 288 فایل Source داخل `app/` اسکن شد.
+- 482 مقصد Navigation داخلی literal بررسی شد.
+- Dead internal destination: `0`
+- لینک خالی / `#` / `javascript:`: `0`
+- `type=button` بی‌Handler: `0`
+- `a` / `Link` بدون `href`: `0`
+- Placeholder واقعی لانچ: `0`
+- 104 صفحه Static روی Runtime واقعی Portable Vinext smoke شدند؛ همه 2xx/redirect سالم.
+- 23 Route داینامیک برای E2E واقعی به ID/slug/data Staging نیاز دارند.
+- TypeScript Launch: PASS
+- Contract tests: `43/43 PASS`
+- Portable production bundle: PASS
+- Portable runtime smoke: PASS
+- Manifest/Robots/Sitemap XML: PASS
+- Chakod AI offline runtime: PASS
 
-### نتیجه واقعی GitHub Actions تا Run 58
+## Cleanupهای مهم ممیزی
 
-- [x] TypeScript با `tsconfig.launch.json` بدون خطا اجرا شد.
-- [x] 41 Contract Test فعلی بدون خطا اجرا شدند.
-- [x] Migration journal/SQL/Snapshot chain با Contract Test قفل شد.
-- [x] Gate آسیب پذیری Critical با `npm audit --audit-level=critical` سبز است؛ `fix --force` اجرا نشده است.
-- [x] Portable Vinext Build Preflight کامل سبز است: RSC، SSR، Client و Server Bundle ساخته می شوند.
-- [x] دو Dynamic Route conflict واقعی رفع شدند: `/showrooms/[dealer]` در برابر `/showrooms/[id]` و `/account/listings/[listingId]` در برابر `/account/listings/[id]`.
-- [x] CSS گمشده Shared Footer ساخته شد و Build از آن عبور می کند.
-- [x] Portable Runtime Smoke روی Routeهای عمومی، Redirectهای Legacy و هوش چاکود سبز است.
-- [x] مسیرهای عمومی Smoke شده: `/`, `/about`, `/privacy`, `/terms`, `/refund-policy`, `/legal`, `/support`, `/cars/compare`, `/cars/price-guide`, `/advertising`, `/advertising/dealership-placement`, `/robots.txt`.
-- [x] Redirectهای Runtime تایید شده: `/showrooms` → `/dealerships`, `/help` → `/support`, `/advertising/banners` → `/advertising/dealership-placement`, و Guest `/dealers` → `/login?returnTo=/dealers`.
-- [x] هوش چاکود بدون `OPENAI_API_KEY` در Runtime واقعی با `configured:false` و پاسخ Offline موفق برمی گردد.
-- [x] GitHub Actions Run شماره 58 با Source/TypeScript/Audit/Build/Runtime Smoke همگی `success` بسته شد.
+- Backupهای قدیمی Submit از `app/` حذف شدند.
+- پنل/API بنر صفحه اول Legacy بازنشسته شد؛ API ساخت قدیمی `410 Gone` است و `demo_paid` حذف شد.
+- Commerce UI دیگر محصول/تب فعال بنر صفحه اول نشان نمی‌دهد.
+- `/dashboard` قدیمی به `/account` منتقل شد.
+- `/dealers/[dealerId]` قدیمی به پنل canonical کسب‌وکار منتقل شد.
+- Routeهای Affiliate و صف‌های Admin به هاب‌های canonical وصل شدند.
+- `/admin/legal` و `/admin/locations` ساخته شدند.
+- `/admin/pricing` به Commerce canonical وصل شد.
+- Admin placeholder «در حال ساخت» حذف و به Audit Logs واقعی وصل شد.
+- CTAهای تماس/واتساپ/نقشه پروفایل کسب‌وکار در برابر داده خالی ایمن شدند.
+- Sitemap dynamic fetch به timeout کوتاه و fallback معتبر مجهز شد.
 
-## وضعیت امنیت وابستگی ها
+## امنیت Dependency نهایی
 
-- 0 Critical
-- 13 High
-- 4 Moderate
-- 1 Low
+نسخه‌های تاییدشده:
 
-Highها عمدتا در Next.js، react-server-dom-webpack، Vite و زنجیره Cloudflare/Wrangler/Miniflare و چند dependency ترانزیتی هستند. هیچ ارتقای شکستن دامنه یا `npm audit fix --force` بدون Gate کامل انجام نشود.
+- Next `16.3.0`
+- React `19.2.8`
+- React DOM `19.2.8`
+- react-server-dom-webpack `19.2.8`
+- Vite `8.1.5`
+- `@cloudflare/vite-plugin` `1.51.1`
+- Wrangler `4.120.0`
+- Vinext `0.0.50`
 
-## موارد Backend-dependent که نباید حدسی پیاده شوند
+Audit:
 
-- [!] Wallet Settlement واقعی در Backend خارجی
-- [!] Refund بانکی واقعی در Backend درگاه
-- [!] API فهرست تمام کاربران برای `/admin/users`
-- [!] Track تماس/واتساپ/مسیریابی کسب و کار در Backend
-- [!] Draft سروری آگهی قبل از Submit؛ فرم ثبت موجود بزرگ و حساس است و بدون تست کامل با جایگزینی کامل فایل دستکاری نشود.
+- Critical: `0`
+- High: `0`
+- Moderate: `4`
+- Low: `0`
 
-## وضعیت فعلی فاز
+هیچ `npm audit fix --force` اجرا نشده است.
 
-ساخت قابلیت های اصلی داخل این Repository بسته شده و Source/TypeScript/Contract/Migration metadata/Portable Build/Portable Runtime Smoke سبز هستند.
+## تنها Route مصوب مفقود
 
-صفحه اصلی قفل است و برای Hardening طراحی یا ترتیب آن تغییر نکند.
+- [!] `/admin/users`
 
-## گام بعدی
+این Route در Master Sitemap وجود دارد ولی هیچ Backend contract معتبر برای فهرست همه کاربران در Repository یا شاخه‌های قبلی بررسی‌شده پیدا نشد. صفحه جعلی ساخته نشود. یا Backend واقعی اضافه شود یا مالک محصول صریحا آن را از Scope لانچ حذف کند.
 
-- [x] Source/TypeScript/Contracts سبز
-- [x] Critical audit gate سبز
-- [x] Portable Build Preflight سبز
-- [x] Portable Runtime Smoke سبز
-- [ ] Hardening کنترل شده وابستگی های High، هر خانواده جدا و با Gate کامل بعد از هر تغییر
-- [ ] اعمال Migration روی دیتابیس غیرتولیدی دارای D1 binding
-- [ ] Build رسمی Sites در محیط دارای `.openai/hosting.json` و `build/sites-vite-plugin`
-- [ ] Staging integration برای Wallet/Gateway/Refund/CMS/Featured Showrooms
-- [ ] تست جامع و سپس Launch
+## Blockerهای واقعی قبل از Production Launch
+
+- [!] Wallet Settlement واقعی در Backend خارجی + Secret/Endpoint واقعی
+- [!] Bank Refund واقعی در Backend درگاه + Secret/Endpoint واقعی
+- [!] `/admin/users` یا تصمیم حذف از Scope
+- [ ] اجرای Migration روی D1 غیرتولیدی و بررسی داده
+- [ ] Official Sites Build در محیط واقعی Hosting
+- [ ] Staging E2E با OTP/session، آگهی داینامیک، Gateway، Wallet، Refund، Featured Showrooms، CMS و Admin access
+
+موارد غیرمسدودکننده:
+
+- Event tracking تماس/WhatsApp/مسیریابی
+- Draft server-side آگهی قبل از Submit
+- کاهش 4 Moderate tooling در صورت امکان بدون Breaking Change
+
+## حکم فعلی
+
+Repository از نظر ساختار داخلی، لینک/CTA، TypeScript، Contract، Bundle و Portable Runtime بسیار نزدیک به نهایی است، اما هنوز Production Launch نشود تا Blockerهای بالا بسته شوند.
 
 ## قانون ادامه
 
-اگر گفت و گو قطع شد، ادامه از همین فایل و شاخه `agent/launch-3-local-baseline` انجام شود و هیچ قابلیت ساخته شده دوباره از صفر پیاده نشود.
+اگر گفت‌وگو قطع شد، ادامه از این فایل و `docs/LAUNCH-READINESS-AUDIT-2026-08-07.md` روی شاخه `agent/launch-3-local-baseline` انجام شود و هیچ قابلیت ساخته‌شده از صفر بازسازی نشود.

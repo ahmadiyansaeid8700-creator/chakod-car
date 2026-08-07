@@ -47,8 +47,6 @@ const promotionKeys = new Set([
   "listing_bump",
   "listing_featured",
   "listing_story",
-  "home_banner_regular",
-  "home_banner_large",
   "business_placement",
   "dealership_placement",
 ]);
@@ -57,10 +55,8 @@ const serviceDescriptions: Record<string, string> = {
   listing_bump: "انتقال آگهی فعال به ابتدای نتایج مرتبط",
   listing_featured: "نمایش برجسته‌تر آگهی همراه نشان ویژه",
   listing_story: "نمایش آگهی در استوری کاربران محدوده مرتبط",
-  home_banner_regular: "رزرو بنر صفحه اصلی برای استان‌های عادی",
-  home_banner_large: "رزرو بنر صفحه اصلی برای استان‌های بزرگ",
   business_placement: "نمایش بالاتر کسب‌وکار در شهر و دسته مرتبط",
-  dealership_placement: "جایگاه اسپانسر نمایشگاه همراه برچسب تبلیغ",
+  dealership_placement: "رزرو جایگاه نمایشگاه منتخب صفحه اول با انتخاب استان و بازه زمانی",
   professional_profile_6m: "فعال‌سازی صفحه حرفه‌ای مجموعه برای شش ماه",
   professional_profile_12m: "فعال‌سازی صفحه حرفه‌ای مجموعه برای یک سال",
 };
@@ -95,7 +91,9 @@ function formatDate(value?: string | null) {
 
 function serviceHref(service: CommerceService, dealerId: number) {
   if (service.service_key.startsWith("listing_")) return "/account/listings";
-  if (service.service_key.includes("banner")) return "/account/ads";
+  if (service.service_key === "dealership_placement") {
+    return "/account/business/promotions/featured";
+  }
   if (service.service_key.startsWith("professional_profile_")) {
     return dealerId
       ? `/account/payments/checkout?type=subscription&service_key=${encodeURIComponent(service.service_key)}&dealer_id=${dealerId}`
@@ -233,23 +231,23 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
             {services.map((service) => {
               const href = serviceHref(service, dealerId);
               const listingProduct = service.service_key.startsWith("listing_");
-              const bannerProduct = service.service_key.includes("banner");
+              const featuredShowroomProduct = service.service_key === "dealership_placement";
               const targetMissing = mode === "subscriptions" && !dealerId;
 
               return (
                 <article className={styles.productCard} key={service.service_key}>
                   <span className={styles.badge}>{service.audience || "خدمت فعال"}</span>
-                  <h2>{service.title}</h2>
+                  <h2>{featuredShowroomProduct ? "نمایشگاه منتخب" : service.title}</h2>
                   <p>{serviceDescriptions[service.service_key] || "این محصول براساس تنظیمات فعال چاکود ارائه می‌شود."}</p>
-                  <strong>{formatToman(service.amount_toman)}</strong>
-                  {(service.duration_value || 0) > 0 && (
+                  <strong>{featuredShowroomProduct ? "براساس استان و تعداد روز" : formatToman(service.amount_toman)}</strong>
+                  {!featuredShowroomProduct && (service.duration_value || 0) > 0 && (
                     <small>مدت: {new Intl.NumberFormat("fa-IR").format(Number(service.duration_value))} {service.duration_unit || "روز"}</small>
                   )}
                   <Link className={targetMissing ? styles.disabledLink : ""} href={targetMissing ? "/account/business" : href}>
                     {listingProduct
                       ? "انتخاب آگهی"
-                      : bannerProduct
-                        ? "انتخاب استان و تاریخ"
+                      : featuredShowroomProduct
+                        ? "انتخاب نمایشگاه، استان و تاریخ"
                         : targetMissing
                           ? "ابتدا مجموعه را بسازید"
                           : "انتخاب و ادامه پرداخت"}

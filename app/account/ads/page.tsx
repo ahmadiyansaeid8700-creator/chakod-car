@@ -1,7 +1,5 @@
-import BannerBookingClient from "./BannerBookingClient";
+import { permanentRedirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function BannerBookingPage() {
-  return <BannerBookingClient />;
+export default function LegacyAdsPage() {
+  permanentRedirect("/account/business/promotions/featured");
 }

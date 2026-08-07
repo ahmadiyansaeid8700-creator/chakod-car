@@ -12,6 +12,8 @@
     "build": "bash scripts/build-verified.sh",
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test:contracts": "node --test tests/homepage-contract.test.mjs tests/dealer-directory-contract.test.mjs tests/ai-assistant-contract.test.mjs tests/local-development-login.test.mjs tests/local-development-session.test.mjs tests/local-public-api.test.mjs tests/route-access.test.mjs",
+    "check:launch": "npx tsc --noEmit && npm run test:contracts",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"

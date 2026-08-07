@@ -10,6 +10,7 @@
     "dev": "vite --config vite.windows.config.ts",
     "dev:cloudflare": "vite",
     "build": "bash scripts/build-verified.sh",
+    "build:cloudflare": "vite build --config vite.cloudflare.config.ts",
     "build:preflight": "vite build --config vite.windows.config.ts",
     "start": "vinext start",
     "smoke:portable": "bash scripts/smoke-portable.sh",

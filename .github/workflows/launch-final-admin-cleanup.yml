@@ -131,4 +131,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/admin/page.tsx app/admin/commerce/CommerceAdminClient.tsx
           git commit -m "cleanup: retire remaining admin launch placeholders"
+          git fetch origin agent/launch-3-local-baseline
+          git rebase origin/agent/launch-3-local-baseline
           git push origin HEAD:agent/launch-3-local-baseline

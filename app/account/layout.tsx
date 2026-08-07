@@ -14,6 +14,7 @@ const accountLinks = [
   { href: "/account/listings", label: "آگهی‌های من" },
   { href: "/account/saved", label: "ذخیره‌شده‌ها" },
   { href: "/account/business", label: "کسب‌وکار من" },
+  { href: "/account/business/dealers", label: "نمایشگاه‌های من" },
   { href: "/account/wallet", label: "کیف پول" },
   { href: "/account/payments", label: "پرداخت‌ها" },
   { href: "/account/invoices", label: "فاکتورها" },

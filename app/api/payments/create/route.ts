@@ -13,8 +13,6 @@ import { getFinanceOwnerKey } from "../../../../lib/finance-core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_TYPES = new Set(["wallet_charge", "promotion", "subscription", "service"]);
-const CODE_PATTERN = /^[a-z0-9_-]{2,80}$/i;
 const ORDER_PATTERN = /^[a-z0-9_-]{6,100}$/i;
 const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
 
@@ -27,7 +25,10 @@ function orderDescription(order: typeof commerceOrders.$inferSelect) {
 
   try {
     const metadata = JSON.parse(order.metadataJson) as Record<string, unknown>;
-    const title = cleanText(metadata.service_title || metadata.listing_title, 180);
+    const title = cleanText(
+      metadata.service_title || metadata.banner_title || metadata.listing_title,
+      180,
+    );
     if (title) return title;
   } catch {
     // Product code is a safe fallback when metadata is unavailable.
@@ -55,22 +56,16 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "اطلاعات پرداخت معتبر نیست." }, 400);
   }
 
-  const type = cleanText(input.type, 32);
-  const code = cleanText(input.service_key || input.code, 80);
   const orderNo = cleanText(input.order_no, 100);
-  const idempotencyKey = cleanText(input.idempotency_key, 100);
+  const suppliedIdempotencyKey = cleanText(input.idempotency_key, 100);
   const callbackPath = cleanText(input.callback_path, 160);
 
-  if (!ALLOWED_TYPES.has(type)) {
-    return jsonResponse({ success: false, message: "نوع سفارش معتبر نیست." }, 400);
+  if (!ORDER_PATTERN.test(orderNo)) {
+    return jsonResponse({ success: false, message: "شماره سفارش معتبر نیست." }, 400);
   }
 
-  if (!CODE_PATTERN.test(code)) {
-    return jsonResponse({ success: false, message: "کد خدمت معتبر نیست." }, 400);
-  }
-
-  if (!ORDER_PATTERN.test(orderNo) || !IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
-    return jsonResponse({ success: false, message: "شناسه سفارش معتبر نیست." }, 400);
+  if (suppliedIdempotencyKey && !IDEMPOTENCY_PATTERN.test(suppliedIdempotencyKey)) {
+    return jsonResponse({ success: false, message: "شناسه امن سفارش معتبر نیست." }, 400);
   }
 
   try {
@@ -81,7 +76,6 @@ export async function POST(request: NextRequest) {
         and(
           eq(commerceOrders.orderNo, orderNo),
           eq(commerceOrders.ownerKey, ownerKey),
-          eq(commerceOrders.idempotencyKey, idempotencyKey),
         ),
       )
       .limit(1);
@@ -90,16 +84,16 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "سفارش پیدا نشد یا متعلق به این حساب نیست." }, 404);
     }
 
-    if (order.orderType !== type || order.productCode !== code) {
-      return jsonResponse({ success: false, message: "اطلاعات سفارش با درخواست پرداخت هماهنگ نیست." }, 409);
+    if (suppliedIdempotencyKey && suppliedIdempotencyKey !== order.idempotencyKey) {
+      return jsonResponse({ success: false, message: "شناسه سفارش با اطلاعات ذخیره شده هماهنگ نیست." }, 409);
     }
 
     if (order.status === "paid") {
-      return jsonResponse({ success: false, message: "این سفارش قبلاً پرداخت شده است." }, 409);
+      return jsonResponse({ success: false, message: "این سفارش قبلا پرداخت شده است." }, 409);
     }
 
     if (order.status !== "pending_payment") {
-      return jsonResponse({ success: false, message: "این سفارش در وضعیت قابل پرداخت نیست." }, 409);
+      return jsonResponse({ success: false, message: "این سفارش در وضعیت قابل پرداخت بانکی نیست." }, 409);
     }
 
     const safeCallbackPath = callbackPath.startsWith("/account/payments/")

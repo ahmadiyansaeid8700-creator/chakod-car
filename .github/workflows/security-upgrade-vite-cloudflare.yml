@@ -1,0 +1,147 @@
+name: One-shot security upgrade Vite and Cloudflare
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/security-upgrade-vite-cloudflare.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/launch-3-local-baseline
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install current lockfile
+        id: install_current
+        continue-on-error: true
+        run: npm ci
+
+      - name: Upgrade stable Vite and Cloudflare toolchain
+        id: upgrade
+        if: steps.install_current.outcome == 'success'
+        continue-on-error: true
+        run: npm install --save-exact --save-dev vite@8.1.5 @cloudflare/vite-plugin@1.48.0 wrangler@4.114.0
+
+      - name: Launch source checks
+        id: source_checks
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
+        run: npm run check:launch
+
+      - name: Critical dependency audit gate
+        id: critical_audit
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
+        run: npm audit --audit-level=critical
+
+      - name: Portable Vinext build preflight
+        id: build_preflight
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
+        run: npm run build:preflight
+
+      - name: Portable runtime smoke
+        id: runtime_smoke
+        if: steps.build_preflight.outcome == 'success'
+        continue-on-error: true
+        run: npm run smoke:portable
+
+      - name: Capture audit JSON
+        if: steps.upgrade.outcome == 'success'
+        continue-on-error: true
+        run: npm audit --json > /tmp/chakod-audit-vite-cloudflare.json || true
+
+      - name: Write durable upgrade report
+        if: always()
+        env:
+          INSTALL_CURRENT: ${{ steps.install_current.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          CRITICAL_AUDIT: ${{ steps.critical_audit.outcome }}
+          BUILD_PREFLIGHT: ${{ steps.build_preflight.outcome }}
+          RUNTIME_SMOKE: ${{ steps.runtime_smoke.outcome }}
+        run: |
+          mkdir -p docs
+          VITE_VERSION="$(node -p "require('./package.json').devDependencies.vite" 2>/dev/null || echo unavailable)"
+          CF_VITE_VERSION="$(node -p "require('./package.json').devDependencies['@cloudflare/vite-plugin']" 2>/dev/null || echo unavailable)"
+          WRANGLER_VERSION="$(node -p "require('./package.json').devDependencies.wrangler" 2>/dev/null || echo unavailable)"
+          VINEXT_VERSION="$(node -p "require('./package.json').devDependencies.vinext" 2>/dev/null || echo unavailable)"
+          AUDIT_SUMMARY="unavailable"
+          if [ -f /tmp/chakod-audit-vite-cloudflare.json ]; then
+            AUDIT_SUMMARY="$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('/tmp/chakod-audit-vite-cloudflare.json','utf8')); const v=j.metadata?.vulnerabilities||{}; console.log('critical='+(v.critical??'?')+', high='+(v.high??'?')+', moderate='+(v.moderate??'?')+', low='+(v.low??'?'))" 2>/dev/null || echo unavailable)"
+          fi
+          VERIFIED=false
+          if [ "$INSTALL_CURRENT" = success ] && [ "$UPGRADE" = success ] && [ "$SOURCE_CHECKS" = success ] && [ "$CRITICAL_AUDIT" = success ] && [ "$BUILD_PREFLIGHT" = success ] && [ "$RUNTIME_SMOKE" = success ]; then
+            VERIFIED=true
+          fi
+          cat > docs/SECURITY-UPGRADE-VITE-CLOUDFLARE-RESULT.md <<EOF
+          # نتیجه ارتقای امنیتی Vite / Cloudflare Toolchain
+
+          - Target Vite: 8.1.5
+          - Target @cloudflare/vite-plugin: 1.48.0
+          - Target Wrangler: 4.114.0
+          - Vinext intentionally unchanged: $VINEXT_VERSION
+          - Resolved Vite in package.json: $VITE_VERSION
+          - Resolved @cloudflare/vite-plugin in package.json: $CF_VITE_VERSION
+          - Resolved Wrangler in package.json: $WRANGLER_VERSION
+          - Verified for commit: $VERIFIED
+          - npm ci: $INSTALL_CURRENT
+          - dependency upgrade: $UPGRADE
+          - source/type/contracts: $SOURCE_CHECKS
+          - critical audit: $CRITICAL_AUDIT
+          - portable build: $BUILD_PREFLIGHT
+          - portable runtime smoke: $RUNTIME_SMOKE
+          - audit summary after upgrade: $AUDIT_SUMMARY
+
+          اگر Verified برابر true نباشد، package.json/package-lock.json نباید به عنوان ارتقای تاییدشده ثبت شوند.
+          EOF
+
+      - name: Commit verified update and report
+        if: always()
+        env:
+          INSTALL_CURRENT: ${{ steps.install_current.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          CRITICAL_AUDIT: ${{ steps.critical_audit.outcome }}
+          BUILD_PREFLIGHT: ${{ steps.build_preflight.outcome }}
+          RUNTIME_SMOKE: ${{ steps.runtime_smoke.outcome }}
+        run: |
+          VERIFIED=false
+          if [ "$INSTALL_CURRENT" = success ] && [ "$UPGRADE" = success ] && [ "$SOURCE_CHECKS" = success ] && [ "$CRITICAL_AUDIT" = success ] && [ "$BUILD_PREFLIGHT" = success ] && [ "$RUNTIME_SMOKE" = success ]; then
+            VERIFIED=true
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/SECURITY-UPGRADE-VITE-CLOUDFLARE-RESULT.md
+          if [ "$VERIFIED" = true ]; then
+            git add package.json package-lock.json
+          else
+            git restore package.json package-lock.json 2>/dev/null || true
+          fi
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          if [ "$VERIFIED" = true ]; then
+            git commit -m "security: verify Vite and Cloudflare toolchain upgrade"
+          else
+            git commit -m "docs: record rejected Vite Cloudflare upgrade"
+          fi
+          git push origin HEAD:agent/launch-3-local-baseline

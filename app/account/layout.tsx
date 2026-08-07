@@ -21,6 +21,7 @@ const accountLinks = [
   { href: "/account/promotions", label: "تبلیغات" },
   { href: "/account/subscriptions", label: "اشتراک‌ها" },
   { href: "/account/business/promotions/featured", label: "نمایشگاه منتخب" },
+  { href: "/support", label: "پشتیبانی" },
   { href: "/account/notifications", label: "اعلان‌ها" },
   { href: "/account/security", label: "امنیت" },
   { href: "/account/payments/wallet-retry", label: "پیگیری پرداخت" },

@@ -41,6 +41,39 @@ type FinanceResponse = {
   }>;
 };
 
+type RefundResponse = {
+  success?: boolean;
+  message?: string;
+  refunds?: Array<{
+    id: number;
+    order_no?: string;
+    amount_toman?: number;
+    destination?: string;
+    status?: string;
+    reason?: string;
+    admin_note?: string;
+    updated_at?: string;
+  }>;
+};
+
+type SupportResponse = {
+  success?: boolean;
+  message?: string;
+  tickets?: Array<{
+    ticket_no: string;
+    subject?: string;
+    status?: string;
+    priority?: string;
+    updated_at?: string;
+    replies?: Array<{
+      id: number;
+      author_type?: string;
+      body?: string;
+      created_at?: string;
+    }>;
+  }>;
+};
+
 type Notice = {
   id: string;
   level: "info" | "warning" | "danger" | "success";
@@ -70,10 +103,16 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("fa-IR").format(Number(value || 0));
 }
 
+function formatToman(value: number) {
+  return `${new Intl.NumberFormat("fa-IR").format(Number(value || 0))} تومان`;
+}
+
 export default function AccountNotificationsClient() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [finance, setFinance] = useState<FinanceResponse | null>(null);
+  const [refunds, setRefunds] = useState<RefundResponse | null>(null);
+  const [support, setSupport] = useState<SupportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -87,43 +126,68 @@ export default function AccountNotificationsClient() {
     setLoading(true);
     setError("");
 
-    try {
-      const responses = await Promise.all([
-        fetch("/api/auth/me", {
-          cache: "no-store",
-          credentials: "include",
-          headers: { Accept: "application/json", ...authHeaders() },
-        }),
-        fetch("/api/auth/dashboard-summary", {
-          cache: "no-store",
-          credentials: "include",
-          headers: { Accept: "application/json", ...authHeaders() },
-        }),
-        fetch("/api/finance/summary", {
-          cache: "no-store",
-          credentials: "include",
-          headers: { Accept: "application/json", ...authHeaders() },
-        }),
-      ]);
-      const [mePayload, dashboardPayload, financePayload] = await Promise.all([
-        readJson<MeResponse>(responses[0]),
-        readJson<DashboardResponse>(responses[1]),
-        readJson<FinanceResponse>(responses[2]),
-      ]);
+    const headers = { Accept: "application/json", ...authHeaders() };
+    const endpoints = [
+      "/api/auth/me",
+      "/api/auth/dashboard-summary",
+      "/api/finance/summary",
+      "/api/finance/refunds",
+      "/api/support/requests",
+    ] as const;
 
-      if (responses[0].status === 401 || responses[0].status === 403 || mePayload?.logged_in === false) {
+    try {
+      const results = await Promise.allSettled(
+        endpoints.map((url) =>
+          fetch(url, {
+            cache: "no-store",
+            credentials: "include",
+            headers,
+          }),
+        ),
+      );
+
+      const meResult = results[0];
+      if (meResult.status !== "fulfilled") {
+        setError("وضعیت حساب دریافت نشد.");
+        return;
+      }
+
+      const mePayload = await readJson<MeResponse>(meResult.value);
+      if (
+        meResult.value.status === 401 ||
+        meResult.value.status === 403 ||
+        mePayload?.logged_in === false
+      ) {
         window.location.assign("/login?returnTo=%2Faccount%2Fnotifications");
         return;
       }
 
-      if (!responses[0].ok || !mePayload?.success) {
+      if (!meResult.value.ok || !mePayload?.success) {
         setError(mePayload?.message || "وضعیت حساب دریافت نشد.");
         return;
       }
 
       setMe(mePayload);
-      if (responses[1].ok && dashboardPayload?.success) setDashboard(dashboardPayload);
-      if (responses[2].ok && financePayload?.success) setFinance(financePayload);
+
+      if (results[1].status === "fulfilled") {
+        const payload = await readJson<DashboardResponse>(results[1].value);
+        if (results[1].value.ok && payload?.success) setDashboard(payload);
+      }
+
+      if (results[2].status === "fulfilled") {
+        const payload = await readJson<FinanceResponse>(results[2].value);
+        if (results[2].value.ok && payload?.success) setFinance(payload);
+      }
+
+      if (results[3].status === "fulfilled") {
+        const payload = await readJson<RefundResponse>(results[3].value);
+        if (results[3].value.ok && payload?.success) setRefunds(payload);
+      }
+
+      if (results[4].status === "fulfilled") {
+        const payload = await readJson<SupportResponse>(results[4].value);
+        if (results[4].value.ok && payload?.success) setSupport(payload);
+      }
     } catch {
       setError("ارتباط با سرویس اعلان‌های حساب برقرار نشد.");
     } finally {
@@ -131,13 +195,17 @@ export default function AccountNotificationsClient() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const notices = useMemo<Notice[]>(() => {
     const items: Notice[] = [];
     const user = me?.user;
     const stats = dashboard?.stats || {};
     const orders = finance?.orders || [];
+    const refundRows = refunds?.refunds || [];
+    const tickets = support?.tickets || [];
     const pendingOrders = orders.filter((order) => order.status === "pending_payment").length;
     const failedOrders = orders.filter((order) => order.status === "payment_failed").length;
 
@@ -218,8 +286,82 @@ export default function AccountNotificationsClient() {
       });
     }
 
+    const refundRequested = refundRows.filter((refund) => refund.status === "requested");
+    const refundApproved = refundRows.filter((refund) => refund.status === "approved");
+    const refundProcessing = refundRows.filter((refund) => refund.status === "processing");
+    const refundRejected = refundRows.filter((refund) => refund.status === "rejected");
+
+    if (refundRequested.length > 0) {
+      const total = refundRequested.reduce((sum, refund) => sum + Number(refund.amount_toman || 0), 0);
+      items.push({
+        id: "refund-requested",
+        level: "info",
+        title: `${formatNumber(refundRequested.length)} درخواست بازپرداخت در صف بررسی است`,
+        text: `مجموع ${formatToman(total)} برای بررسی مدیر مالی ثبت شده است.`,
+        href: "/account/refunds",
+        action: "پیگیری بازپرداخت",
+      });
+    }
+
+    if (refundApproved.length > 0 || refundProcessing.length > 0) {
+      items.push({
+        id: "refund-processing",
+        level: "warning",
+        title: "بازپرداخت تأیید شده و در حال اجرا است",
+        text: "وضعیت نهایی و مقصد بازپرداخت را از صفحه بازپرداخت‌ها پیگیری کنید.",
+        href: "/account/refunds",
+        action: "مشاهده وضعیت",
+      });
+    }
+
+    if (refundRejected.length > 0) {
+      const latestRejected = refundRejected[0];
+      items.push({
+        id: `refund-rejected-${latestRejected.id}`,
+        level: "danger",
+        title: "یک درخواست بازپرداخت رد شده است",
+        text: latestRejected.admin_note || "دلیل یا یادداشت مدیر مالی در صفحه بازپرداخت قابل مشاهده است.",
+        href: "/account/refunds",
+        action: "مشاهده نتیجه",
+      });
+    }
+
+    const waitingForUser = tickets.filter((ticket) => ticket.status === "waiting_user");
+    if (waitingForUser.length > 0) {
+      const latest = waitingForUser[0];
+      const adminReplies = (latest.replies || []).filter((reply) => reply.author_type === "admin");
+      const latestReply = adminReplies[adminReplies.length - 1];
+      items.push({
+        id: `support-reply-${latest.ticket_no}`,
+        level: "warning",
+        title: "پشتیبانی چاکود منتظر پاسخ شماست",
+        text: latestReply?.body
+          ? latestReply.body.slice(0, 180)
+          : latest.subject || "برای ادامه رسیدگی، تیکت پشتیبانی را باز کنید.",
+        href: `/support/tickets/${encodeURIComponent(latest.ticket_no)}`,
+        action: "مشاهده و پاسخ",
+      });
+    }
+
+    const urgentOpen = tickets.filter(
+      (ticket) =>
+        (ticket.priority === "urgent" || ticket.priority === "high") &&
+        ["open", "in_progress", "waiting_support"].includes(ticket.status || ""),
+    );
+    if (urgentOpen.length > 0) {
+      const latest = urgentOpen[0];
+      items.push({
+        id: `support-active-${latest.ticket_no}`,
+        level: "info",
+        title: "تیکت پشتیبانی شما در حال پیگیری است",
+        text: latest.subject || "وضعیت این درخواست از صفحه تیکت قابل پیگیری است.",
+        href: `/support/tickets/${encodeURIComponent(latest.ticket_no)}`,
+        action: "پیگیری تیکت",
+      });
+    }
+
     return items;
-  }, [me, dashboard, finance]);
+  }, [me, dashboard, finance, refunds, support]);
 
   return (
     <main className={styles.page} dir="rtl">
@@ -229,7 +371,7 @@ export default function AccountNotificationsClient() {
             <Link href="/account">← حساب من</Link>
             <span>مرکز اعلان‌های چاکود</span>
             <h1>موارد نیازمند توجه</h1>
-            <p>این صفحه از وضعیت واقعی پروفایل، آگهی‌ها و سفارش‌های مالی ساخته می‌شود.</p>
+            <p>این صفحه از وضعیت واقعی پروفایل، آگهی‌ها، پرداخت‌ها، بازپرداخت و پشتیبانی ساخته می‌شود.</p>
           </div>
           <button type="button" onClick={() => void load()}>به‌روزرسانی</button>
         </header>
@@ -271,7 +413,7 @@ export default function AccountNotificationsClient() {
           <section className={styles.successCard}>
             <span>✓</span>
             <h2>همه‌چیز مرتب است</h2>
-            <p>در حال حاضر آگهی، پرداخت یا اطلاعات حسابی که نیازمند اقدام شما باشد پیدا نشد.</p>
+            <p>در حال حاضر آگهی، پرداخت، بازپرداخت، تیکت یا اطلاعات حسابی که نیازمند اقدام شما باشد پیدا نشد.</p>
             <Link href="/account">بازگشت به حساب</Link>
           </section>
         )}

@@ -10,14 +10,19 @@ type AccountLayoutProps = {
 const accountLinks = [
   { href: "/account", label: "حساب من" },
   { href: "/dashboard", label: "داشبورد" },
+  { href: "/account/profile", label: "پروفایل" },
   { href: "/account/listings", label: "آگهی‌های من" },
   { href: "/account/saved", label: "ذخیره‌شده‌ها" },
+  { href: "/account/business", label: "کسب‌وکار من" },
   { href: "/account/wallet", label: "کیف پول" },
   { href: "/account/payments", label: "پرداخت‌ها" },
   { href: "/account/invoices", label: "فاکتورها" },
   { href: "/account/promotions", label: "تبلیغات" },
   { href: "/account/subscriptions", label: "اشتراک‌ها" },
   { href: "/account/ads", label: "رزرو بنر" },
+  { href: "/account/notifications", label: "اعلان‌ها" },
+  { href: "/account/security", label: "امنیت" },
+  { href: "/account/payments/wallet-retry", label: "پیگیری پرداخت" },
 ];
 
 export default function AccountLayout({ children }: AccountLayoutProps) {

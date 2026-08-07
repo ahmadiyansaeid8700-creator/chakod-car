@@ -151,3 +151,19 @@ export const supportReplies = sqliteTable("support_replies", {
   body: text("body").notNull(),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const contentArticles = sqliteTable("content_articles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  excerpt: text("excerpt").notNull().default(""),
+  category: text("category").notNull().default("راهنمای خودرو"),
+  bodyJson: text("body_json").notNull().default("[]"),
+  readingMinutes: integer("reading_minutes").notNull().default(5),
+  status: text("status").notNull().default("draft"),
+  seoTitle: text("seo_title").notNull().default(""),
+  seoDescription: text("seo_description").notNull().default(""),
+  publishedAt: text("published_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

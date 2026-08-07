@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../../db";
 import {
   commerceOrders,
+  featuredShowroomPlacements,
   invoices,
   paymentAttempts,
   wallets,
@@ -37,6 +38,21 @@ function readGatewayReference(payload: Record<string, unknown>) {
     payload.reference_id || payload.ref_id || payload.transaction_id || payload.card_holder,
     128,
   );
+}
+
+async function moveFeaturedShowroomToReview(orderId: number) {
+  await getDb()
+    .update(featuredShowroomPlacements)
+    .set({
+      status: "pending_review",
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    })
+    .where(
+      and(
+        eq(featuredShowroomPlacements.orderId, orderId),
+        eq(featuredShowroomPlacements.status, "pending_payment"),
+      ),
+    );
 }
 
 export async function POST(request: NextRequest) {
@@ -94,6 +110,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (order.status === "paid") {
+      await moveFeaturedShowroomToReview(order.id);
+
       const [existingInvoice] = await db
         .select()
         .from(invoices)
@@ -226,6 +244,15 @@ export async function POST(request: NextRequest) {
           amountToman: order.finalAmountToman,
           status: "paid",
         }),
+        db
+          .update(featuredShowroomPlacements)
+          .set({ status: "pending_review", updatedAt: sql`CURRENT_TIMESTAMP` })
+          .where(
+            and(
+              eq(featuredShowroomPlacements.orderId, order.id),
+              eq(featuredShowroomPlacements.status, "pending_payment"),
+            ),
+          ),
       ]);
     }
 

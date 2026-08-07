@@ -121,3 +121,32 @@ export const featuredShowroomPlacements = sqliteTable("featured_showroom_placeme
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const supportTickets = sqliteTable("support_tickets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ticketNo: text("ticket_no").notNull().unique(),
+  ownerKey: text("owner_key").notNull().default(""),
+  fullName: text("full_name").notNull().default(""),
+  mobile: text("mobile").notNull().default(""),
+  email: text("email").notNull().default(""),
+  topic: text("topic").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  orderNo: text("order_no").notNull().default(""),
+  listingId: integer("listing_id"),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("normal"),
+  adminNote: text("admin_note").notNull().default(""),
+  lastReplyAt: text("last_reply_at"),
+  closedAt: text("closed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const supportReplies = sqliteTable("support_replies", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ticketId: integer("ticket_id").notNull(),
+  authorType: text("author_type").notNull(),
+  body: text("body").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

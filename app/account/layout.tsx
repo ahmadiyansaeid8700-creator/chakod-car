@@ -17,6 +17,7 @@ const accountLinks = [
   { href: "/account/wallet", label: "کیف پول" },
   { href: "/account/payments", label: "پرداخت‌ها" },
   { href: "/account/invoices", label: "فاکتورها" },
+  { href: "/account/refunds", label: "بازپرداخت" },
   { href: "/account/promotions", label: "تبلیغات" },
   { href: "/account/subscriptions", label: "اشتراک‌ها" },
   { href: "/account/business/promotions/featured", label: "نمایشگاه منتخب" },

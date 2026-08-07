@@ -55,11 +55,29 @@ jobs:
         run: npm run check:launch
 
       - name: Dependency audit snapshot
+        id: dependency_audit
         if: steps.install.outcome == 'success'
         continue-on-error: true
         run: |
           mkdir -p artifacts
-          npm audit --json > artifacts/npm-audit.json || true
+          node - <<'NODE'
+          const fs = require('fs');
+          const { spawnSync } = require('child_process');
+          const result = spawnSync('npm', ['audit', '--json'], { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
+          fs.writeFileSync('artifacts/npm-audit.json', result.stdout || '');
+          fs.writeFileSync('artifacts/npm-audit-stderr.txt', result.stderr || '');
+          if (!result.stdout?.trim()) {
+            console.error('npm audit returned an empty JSON payload.');
+            process.exit(1);
+          }
+          try {
+            const parsed = JSON.parse(result.stdout);
+            if (!parsed?.metadata?.vulnerabilities) throw new Error('missing vulnerability metadata');
+          } catch (error) {
+            console.error('npm audit JSON is invalid:', error instanceof Error ? error.message : error);
+            process.exit(1);
+          }
+          NODE
           npm audit --audit-level=critical > artifacts/npm-audit.txt 2>&1 || true
 
       - name: Portable production bundle
@@ -81,6 +99,7 @@ jobs:
           UI_AUDIT: ${{ steps.ui_audit.outcome }}
           MASTER_ROUTES: ${{ steps.master_routes.outcome }}
           SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          DEPENDENCY_AUDIT: ${{ steps.dependency_audit.outcome }}
           BUILD: ${{ steps.build.outcome }}
           SMOKE: ${{ steps.smoke.outcome }}
         run: |
@@ -98,6 +117,7 @@ jobs:
             `- static UI route/CTA audit: ${env.UI_AUDIT}`,
             `- master sitemap route coverage: ${env.MASTER_ROUTES}`,
             `- TypeScript + contract tests: ${env.SOURCE_CHECKS}`,
+            `- dependency audit snapshot: ${env.DEPENDENCY_AUDIT}`,
             `- portable production bundle: ${env.BUILD}`,
             `- portable runtime smoke: ${env.SMOKE}`,
             `- vulnerabilities: critical=${v.critical ?? '?'}, high=${v.high ?? '?'}, moderate=${v.moderate ?? '?'}, low=${v.low ?? '?'}`,
@@ -124,10 +144,11 @@ jobs:
           UI_AUDIT: ${{ steps.ui_audit.outcome }}
           MASTER_ROUTES: ${{ steps.master_routes.outcome }}
           SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          DEPENDENCY_AUDIT: ${{ steps.dependency_audit.outcome }}
           BUILD: ${{ steps.build.outcome }}
           SMOKE: ${{ steps.smoke.outcome }}
         run: |
-          if [ "$INSTALL" != success ] || [ "$UI_AUDIT" != success ] || [ "$MASTER_ROUTES" != success ] || [ "$SOURCE_CHECKS" != success ] || [ "$BUILD" != success ] || [ "$SMOKE" != success ]; then
+          if [ "$INSTALL" != success ] || [ "$UI_AUDIT" != success ] || [ "$MASTER_ROUTES" != success ] || [ "$SOURCE_CHECKS" != success ] || [ "$DEPENDENCY_AUDIT" != success ] || [ "$BUILD" != success ] || [ "$SMOKE" != success ]; then
             echo "At least one launch readiness gate failed."
             exit 1
           fi

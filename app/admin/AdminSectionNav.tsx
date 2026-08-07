@@ -6,6 +6,7 @@ const links = [
   { href: "/admin", label: "داشبورد" },
   { href: "/admin/listings", label: "آگهی‌ها" },
   { href: "/admin/businesses", label: "کسب‌وکارها" },
+  { href: "/admin/articles", label: "مقالات" },
   { href: "/admin/advertising", label: "تبلیغات" },
   { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب" },
   { href: "/admin/support", label: "پشتیبانی" },

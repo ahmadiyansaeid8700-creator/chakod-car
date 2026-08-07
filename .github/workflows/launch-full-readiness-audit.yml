@@ -1,0 +1,130 @@
+name: Full launch readiness audit
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/launch-full-readiness-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/launch-3-local-baseline
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install dependencies
+        id: install
+        continue-on-error: true
+        run: npm ci
+
+      - name: Static UI route and CTA audit
+        id: ui_audit
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/launch-ui-audit.mjs
+
+      - name: Source TypeScript and contract checks
+        id: source_checks
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run check:launch
+
+      - name: Dependency audit snapshot
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          npm audit --json > artifacts/npm-audit.json || true
+          npm audit --audit-level=critical > artifacts/npm-audit.txt 2>&1 || true
+
+      - name: Portable production bundle
+        id: build
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm run build:preflight
+
+      - name: Portable runtime smoke
+        id: smoke
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run smoke:portable
+
+      - name: Create readiness summary
+        if: always()
+        env:
+          INSTALL: ${{ steps.install.outcome }}
+          UI_AUDIT: ${{ steps.ui_audit.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+        run: |
+          mkdir -p artifacts
+          node - <<'NODE'
+          const fs = require('fs');
+          const env = process.env;
+          let audit = {};
+          try { audit = JSON.parse(fs.readFileSync('artifacts/npm-audit.json', 'utf8')); } catch {}
+          const v = audit?.metadata?.vulnerabilities || {};
+          const lines = [
+            '# Chakod full launch readiness audit',
+            '',
+            `- npm ci: ${env.INSTALL}`,
+            `- static UI route/CTA audit: ${env.UI_AUDIT}`,
+            `- TypeScript + contract tests: ${env.SOURCE_CHECKS}`,
+            `- portable production bundle: ${env.BUILD}`,
+            `- portable runtime smoke: ${env.SMOKE}`,
+            `- vulnerabilities: critical=${v.critical ?? '?'}, high=${v.high ?? '?'}, moderate=${v.moderate ?? '?'}, low=${v.low ?? '?'}`,
+            '',
+            'This audit does not claim external payment/wallet/refund/D1 production integrations are live; those require staging credentials and bindings.'
+          ];
+          fs.writeFileSync('artifacts/launch-readiness-summary.md', lines.join('\n') + '\n');
+          NODE
+          cat artifacts/launch-readiness-summary.md
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-readiness-audit
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Enforce repository readiness gates
+        if: always()
+        env:
+          INSTALL: ${{ steps.install.outcome }}
+          UI_AUDIT: ${{ steps.ui_audit.outcome }}
+          SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+        run: |
+          if [ "$INSTALL" != success ] || [ "$UI_AUDIT" != success ] || [ "$SOURCE_CHECKS" != success ] || [ "$BUILD" != success ] || [ "$SMOKE" != success ]; then
+            echo "At least one launch readiness gate failed."
+            exit 1
+          fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const audit = JSON.parse(fs.readFileSync('artifacts/npm-audit.json', 'utf8'));
+          const critical = audit?.metadata?.vulnerabilities?.critical ?? 0;
+          if (critical > 0) {
+            console.error(`Critical vulnerabilities remain: ${critical}`);
+            process.exit(1);
+          }
+          NODE

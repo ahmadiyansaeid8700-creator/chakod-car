@@ -126,6 +126,7 @@ export const supportTickets = sqliteTable("support_tickets", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ticketNo: text("ticket_no").notNull().unique(),
   ownerKey: text("owner_key").notNull().default(""),
+  guestAccessHash: text("guest_access_hash").notNull().default(""),
   fullName: text("full_name").notNull().default(""),
   mobile: text("mobile").notNull().default(""),
   email: text("email").notNull().default(""),

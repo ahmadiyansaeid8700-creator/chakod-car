@@ -36,10 +36,14 @@ if ! grep -q "چاکود" /tmp/chakod-home.html; then
   exit 1
 fi
 
+# Every non-dynamic app page must render or intentionally redirect. Private
+# account/admin pages may redirect to login, but no static page may 4xx/5xx.
+node scripts/smoke-static-routes.mjs "$BASE"
+
 check_200() {
   local path="$1"
   local code
-  code="$(curl --silent --show-error --output /tmp/chakod-smoke-body --write-out '%{http_code}' --max-time 8 "$BASE$path")"
+  code="$(curl --silent --show-error --output /tmp/chakod-smoke-body --write-out '%{http_code}' --max-time 12 "$BASE$path")"
   if [[ "$code" != "200" ]]; then
     echo "Expected 200 for $path, received $code" >&2
     cat /tmp/chakod-smoke-body >&2 || true
@@ -60,8 +64,24 @@ for path in \
   "/cars/price-guide" \
   "/advertising" \
   "/advertising/dealership-placement" \
-  "/robots.txt"; do
+  "/robots.txt" \
+  "/manifest.webmanifest" \
+  "/sitemap.xml" \
+  "/sitemaps/static.xml" \
+  "/sitemaps/cars.xml" \
+  "/sitemaps/businesses.xml" \
+  "/sitemaps/dealerships.xml" \
+  "/sitemaps/articles.xml"; do
   check_200 "$path"
+done
+
+for path in "/sitemap.xml" "/sitemaps/static.xml" "/sitemaps/cars.xml" "/sitemaps/businesses.xml" "/sitemaps/dealerships.xml" "/sitemaps/articles.xml"; do
+  body="$(curl --silent --show-error --fail --max-time 12 "$BASE$path")"
+  if ! printf '%s' "$body" | grep -Eq '<(sitemapindex|urlset)([ >])'; then
+    echo "XML sitemap response is invalid for $path" >&2
+    printf '%s\n' "$body" >&2
+    exit 1
+  fi
 done
 
 check_redirect() {

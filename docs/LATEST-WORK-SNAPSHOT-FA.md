@@ -2,7 +2,7 @@
 
 تاریخ ثبت: 2026-08-07
 
-این فایل برای ادامه پروژه در صورت از بین رفتن چت یا Context ساخته شده است. مبنای ادامه کار، همین فایل به همراه `docs/MASTER-SITEMAP-FA.md` و `docs/PROJECT-CHECKLIST-FA.md` است.
+این فایل مرجع ادامه پروژه در صورت از بین رفتن چت یا Context است. در چت جدید ابتدا همین فایل، سپس `docs/MASTER-SITEMAP-FA.md` و `docs/PROJECT-CHECKLIST-FA.md` خوانده شوند.
 
 ## مخزن و شاخه
 
@@ -10,62 +10,128 @@
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Base branch: backup-latest-2026-08-03
 Working branch: agent/launch-3-local-baseline
-Main: نباید بدون تایید مالک تغییر یا Merge شود
-Latest code commit before this snapshot: ed3d76ce41ee7c543ce15493e7323285db8eb9e1
+Main: بدون تایید مالک تغییر یا Merge نشود
+Backup checkpoint: backup/launch-3-progress-2026-08-07
 ```
 
-## تصمیم قطعی فعلی مالک
+## تصمیم قطعی مالک برای روش کار
 
 - اول خود سایت کامل ساخته شود.
-- صفحات به هم متصل شوند.
-- تمام دکمه های اصلی عملکرد واقعی داشته باشند.
-- کیف پول، سفارش، پرداخت، فاکتور، تبلیغات، اشتراک، پنل کسب و کار و مدیریت تکمیل شوند.
+- صفحات به هم متصل شوند و دکمه های اصلی عملکرد واقعی داشته باشند.
+- کیف پول، پرداخت، فاکتور، تبلیغات، اشتراک، مدیریت آگهی، کسب و کار و ادمین تکمیل شوند.
 - تست جامع بعد از تکمیل ساخت انجام شود.
-- موارد ساخته شده ولی تست نشده با `[~]` ثبت شوند.
-- موارد تاییدشده واقعی با `[x]` ثبت شوند.
-- موارد وابسته به سرویس خارجی با `[!]` ثبت شوند.
+- `[~]` یعنی ساخته شده ولی هنوز تست نهایی نشده.
+- `[x]` یعنی با شواهد واقعی تایید شده.
+- `[!]` یعنی وابسته یا مسدود به سرویس خارجی.
 
-## قرارداد قفل شده صفحه اصلی
+## قرارداد قفل شده صفحه اول
 
 - [x] استوری ها مستقیم زیر هدر
-- [x] نمایشگاه های منتخب همراه خودروهای فعال
+- [x] نمایشگاه های منتخب
 - [x] خودروهای لوکس
 - [x] خودروهای منطقه آزاد
 - [x] خدمات خودرویی برتر
 - [x] فروشگاه های قطعات برتر
 - [x] تعمیرکاران برتر
-- [x] تمام این بخش ها در صفحه اصلی Horizontal Rail هستند
+- [x] تمام ریل های بالا در صفحه اول افقی هستند
 - [x] نمایش همه به صفحه فهرست/Grid مربوط می رود
-- [x] Location پیش فرض سراسر ایران است و انتخاب محل باید تمام محتوای صفحه اصلی را فیلتر کند
-- [x] Responsive دسکتاپ، تبلت و موبایل از نظر ساختار بررسی شده است
+- [x] موقعیت پیش فرض سراسر ایران است و تغییر موقعیت باید محتوای صفحه اول را فیلتر کند
+- [x] ساختار Responsive دسکتاپ/تبلت/موبایل قبلا بررسی شده
+- [x] Hero قبل از استوری وجود ندارد
 
-## بخش های ساخته شده در Launch-3
+## تصمیم بسیار مهم جدید: بنر صفحه اول حذف شده است
 
-### حساب و ناوبری
+این مورد قطعی است و نباید در ادامه دوباره برگردانده شود:
 
-- [~] `/account`
-- [~] `/dashboard`
-- [~] `/account/profile`
-- [~] `/account/notifications`
-- [~] `/account/security`
-- [~] `/logout`
-- [~] `/auth/callback`
-- [~] منوی مشترک حساب به آگهی، کسب و کار، کیف پول، پرداخت، فاکتور، تبلیغات، اشتراک، اعلان، امنیت و پیگیری پرداخت متصل شده است
+```text
+[حذف قطعی از محصول] بنر نمایشگاه در صفحه اول
+[محصول جایگزین] جایگاه نمایشگاه منتخب
+[محل نمایش] همان ریل نمایشگاه های منتخب صفحه اول
+```
 
-### مدیریت آگهی
+### فرایند رزرو جایگاه نمایشگاه منتخب
+
+مالک تایید کرده که ترتیب کار همان فرایند رزرو بنر قبلی باشد، اما خروجی آن نمایشگاه منتخب است:
+
+```text
+نمایشگاه
+↓
+انتخاب استان / محدوده
+↓
+انتخاب تاریخ شروع و پایان
+↓
+بررسی ظرفیت
+↓
+محاسبه مبلغ
+↓
+کد تخفیف
+↓
+ثبت سفارش
+↓
+Checkout واحد
+↓
+کیف پول یا درگاه بانکی
+↓
+Verify پرداخت
+↓
+در انتظار تایید مدیر
+↓
+تایید مدیر
+↓
+نمایش در ریل نمایشگاه های منتخب همان محدوده و بازه
+```
+
+- کارت نمایشگاه منتخب از لوگو، مشخصات واقعی نمایشگاه و خودروهای فعال همان نمایشگاه ساخته می شود.
+- کاربر هیچ تصویر بنر موبایل/دسکتاپ آپلود نمی کند.
+- UI قدیمی رزرو بنر حذف شده است.
+- `/account/ads` فقط Redirect سازگاری به مسیر جدید است.
+- سرویس های `home_banner_*` دیگر در UI محصولات تبلیغاتی نمایش داده نمی شوند.
+- زیرساخت قدیمی قیمت/ظرفیت بنر فقط پشت صحنه و به صورت Legacy برای سازگاری با Commerce فعلی استفاده می شود تا API خارجی دوباره ساخته نشود.
+
+### مسیرهای جدید نمایشگاه منتخب
+
+- [~] `/account/business/promotions/featured`
+- [~] `/api/finance/featured-showrooms`
+- [~] `/api/featured-showrooms`
+- [~] `/admin/featured-showrooms`
+- [~] `/api/admin/featured-showrooms`
+- [~] `/account/payments/checkout/order/[orderNo]`
+- [~] مدل D1 با نام `featured_showroom_placements`
+
+### رفتار ساخته شده
+
+- [~] نمایشگاه و استان از Commerce واقعی حساب خوانده می شوند
+- [~] تاریخ شروع/پایان انتخاب می شود
+- [~] ظرفیت و نرخ استانی از تنظیمات موجود Commerce خوانده می شوند
+- [~] کد تخفیف از همان Commerce بررسی می شود
+- [~] سفارش canonical بک اند ساخته و در D1 آینه می شود
+- [~] سفارش از قبل ساخته شده بدون ساخت سفارش دوم وارد Checkout می شود
+- [~] Checkout سفارش موجود کیف پول و درگاه بانکی دارد
+- [~] Verify بانکی جایگاه را به `pending_review` می برد
+- [~] مدیر می تواند رزرو پرداخت شده را تایید، رد یا لغو کند
+- [~] فقط وضعیت های تاییدشده و در بازه معتبر وارد API عمومی صفحه اول می شوند
+- [~] `HomeFeaturedShowrooms` اکنون نمایشگاه ها را براساس جایگاه های تایید شده فیلتر می کند
+- [~] ظاهر، ترتیب و Horizontal Rail صفحه اول تغییر نکرده است
+
+## مدیریت آگهی
 
 - [~] `/account/listings/[id]`
 - [~] `/account/listings/[id]/edit`
 - [~] `/account/listings/[id]/images`
 - [~] `/account/listings/[id]/promote`
-- [~] بررسی مالکیت آگهی سمت سرور
+- [~] قرارداد واقعی قدیمی `POST /api/listing-manage.php` از تاریخچه پروژه بازیابی شد
+- [~] Action های canonical: `mark_sold`, `disable_listing`, `reactivate_listing`, `delete_listing`
+- [~] Route داخلی امن `/api/auth/listings/manage/[id]` این Action ها را Proxy می کند
+- [~] فروخته شد
+- [~] توقف موقت
+- [~] بازیابی / بازفعال سازی
+- [~] حذف / بایگانی
+- [~] تمدید از Commerce با `listing_personal_renew` یا `listing_dealer_renew`
 - [~] ویرایش مشخصات
-- [~] آپلود تصویر
-- [~] حذف تصویر
-- [~] انتخاب تصویر اصلی
-- [~] ارتقای آگهی با شناسه آگهی
+- [~] مدیریت تصاویر، حذف و انتخاب Cover
+- [~] ارتقای آگهی به Checkout
 
-### مرکز مالی
+## مرکز مالی
 
 - [~] `/account/wallet`
 - [~] `/account/payments`
@@ -75,10 +141,10 @@ Latest code commit before this snapshot: ed3d76ce41ee7c543ce15493e7323285db8eb9e
 - [~] `/account/payments/checkout`
 - [~] `/account/payments/callback`
 - [~] `/account/payments/wallet-retry`
+- [~] Checkout سفارش از قبل ساخته شده
+- [~] `/api/finance/order`
 
 ### مدل مالی D1
-
-در `db/schema.ts` اضافه شده:
 
 - [~] `wallets`
 - [~] `wallet_transactions`
@@ -86,37 +152,35 @@ Latest code commit before this snapshot: ed3d76ce41ee7c543ce15493e7323285db8eb9e
 - [~] `payment_attempts`
 - [~] `invoices`
 - [~] `payment_refunds`
+- [~] `featured_showroom_placements`
 
 ### سفارش و پرداخت
 
-- [~] Commerce اصلی پروژه مرجع تعرفه و سفارش باقی مانده است
-- [~] مبلغ خدمات از Commerce خوانده می شود و از مرورگر قابل تعیین نیست
-- [~] `idempotency` برای جلوگیری از سفارش/پرداخت تکراری وجود دارد
-- [~] درخواست درگاه به سفارش ذخیره شده قفل است
+- [~] Commerce اصلی پروژه مرجع تعرفه و سفارش خدمات است
+- [~] مبلغ خدمات معمولی از مرورگر پذیرفته نمی شود
+- [~] Idempotency برای جلوگیری از سفارش/پرداخت تکراری وجود دارد
+- [~] درخواست درگاه به سفارش ذخیره شده قفل شده است
 - [~] Callback و Verify سمت سرور ساخته شده
-- [~] شارژ کیف پول فقط بعد از Verify موفق درگاه ثبت می شود
-- [~] فاکتور پس از پرداخت موفق صادر می شود
-- [~] Finance Summary فقط DTO عمومی می فرستد و `ownerKey` و `idempotencyKey` داخلی به مرورگر داده نمی شوند
+- [~] شارژ کیف پول فقط بعد از Verify موفق ثبت می شود
+- [~] فاکتور بعد از پرداخت موفق صادر می شود
+- [~] Finance Summary اطلاعات حساس داخلی را به مرورگر نمی دهد
 
-### پرداخت با کیف پول
+## کیف پول
 
-- [~] کاربر در Checkout می تواند روش کیف پول یا درگاه را انتخاب کند
-- [~] موجودی واقعی کیف پول در Checkout نمایش داده می شود
-- [~] کمبود موجودی شناسایی می شود و مسیر شارژ کیف پول ارائه می شود
-- [~] قبل از Settlement مبلغ از موجودی آزاد به موجودی مسدود منتقل می شود
-- [~] چند کلیک یا Refresh باعث برداشت دوباره نمی شود
-- [~] اگر Commerce پاسخ قطعی رد بدهد مبلغ آزاد می شود
-- [~] اگر Timeout یا نتیجه مبهم باشد مبلغ فقط Block می ماند و دوباره برداشت نمی شود
-- [~] صفحه Retry برای ادامه Settlement ساخته شده است
-- [~] بعد از Settlement موفق، سفارش Paid، تراکنش Completed و فاکتور صادر می شود
+- [~] نمایش موجودی واقعی
+- [~] افزایش موجودی از درگاه
+- [~] پرداخت خدمات با کیف پول
+- [~] رزرو مبلغ قبل از Settlement
+- [~] جلوگیری از برداشت دوباره
+- [~] Retry امن بعد از Refresh
+- [~] آزاد شدن مبلغ در رد قطعی Commerce
+- [~] Block ماندن مبلغ در Timeout مبهم
+- [~] صفحه Retry پرداخت
 
-### وابستگی خارجی کیف پول
+### وابستگی کیف پول
 
 - [!] سورس PHP `api.chakod.com` داخل این Repository نیست
-- [!] قرارداد واقعی Wallet Settlement باید در Backend اصلی موجود/ایجاد و در Environment معرفی شود
-- [!] تا زمان تنظیم Settlement، برداشت کیف پول نباید شروع شود
-
-Environment های طراحی شده برای این اتصال و بدون Secret در Git:
+- [!] Wallet Settlement واقعی باید در Backend اصلی وجود داشته باشد و با Environment معرفی شود
 
 ```text
 CHAKOD_WALLET_SETTLEMENT_ENDPOINT
@@ -124,7 +188,20 @@ CHAKOD_WALLET_SETTLEMENT_ACTION
 CHAKOD_WALLET_SETTLEMENT_SECRET
 ```
 
-### پنل کسب و کار
+هیچ Secret واقعی در Git ذخیره نشده است.
+
+## حساب کاربری
+
+- [~] `/account`
+- [~] `/dashboard`
+- [~] `/account/profile`
+- [~] `/account/notifications`
+- [~] `/account/security`
+- [~] `/logout`
+- [~] `/auth/callback`
+- [~] منوی حساب به آگهی، کسب و کار، مالی، نمایشگاه منتخب، اعلان و امنیت متصل است
+
+## پنل کسب و کار
 
 - [~] `/account/business`
 - [~] `/account/business/new`
@@ -137,10 +214,11 @@ CHAKOD_WALLET_SETTLEMENT_SECRET
 - [~] `/account/business/analytics`
 - [~] `/account/business/promotions`
 - [~] `/account/business/billing`
+- [~] `/account/business/promotions/featured`
 
-قابلیت های موجود DealerCommandCenter دوباره ساخته نشده اند و به مسیرهای نقشه مادر متصل شده اند.
+قابلیت های DealerCommandCenter موجود دوباره ساخته نشده اند؛ مسیرها به همان قابلیت های موجود متصل شده اند.
 
-### مدیریت مالی ادمین
+## مدیریت مالی ادمین
 
 - [~] `/admin/orders`
 - [~] `/admin/payments`
@@ -148,91 +226,69 @@ CHAKOD_WALLET_SETTLEMENT_SECRET
 - [~] `/admin/refunds`
 - [~] `/admin/subscriptions`
 - [~] `/admin/pricing`
-- [~] Commerce canonical ادمین حفظ شده و گزارش D1 مکمل آن است
+- [~] `/admin/featured-showrooms`
+- [~] Commerce canonical ادمین حفظ شده است
+- [~] صفحه Commerce به مدیریت نمایشگاه های منتخب لینک دارد
 
-### صفحات قانونی و پشتیبانی
+## صفحات قانونی، پشتیبانی و SEO
 
 - [~] `/terms`
 - [~] `/refund-policy`
 - [~] `/legal`
 - [~] `/support`
 - [~] `/help` به `/support` منتقل شده
-- [~] فوتر به مسیرهای واقعی متصل شده است
+- [~] sitemap index و sitemap های static/cars/businesses/dealerships/articles
+- [~] robots.txt
+- [~] account/admin/api از index خارج شده اند
 
-### SEO
+## Redirect های قدیمی
 
-- [~] `/sitemap.xml`
-- [~] `/sitemaps/static.xml`
-- [~] `/sitemaps/cars.xml`
-- [~] `/sitemaps/businesses.xml`
-- [~] `/sitemaps/dealerships.xml`
-- [~] `/sitemaps/articles.xml`
-- [~] `/robots.txt`
-- [~] مسیرهای account/admin/api از Index خارج شده اند
-
-### Redirect های مسیرهای قدیمی
-
-- [~] `/dealer` و `/dealers` به `/dealerships`
-- [~] `/my-listings` به `/account/listings`
-- [~] `/workshops` به فهرست کسب و کار فیلترشده
-- [~] `/car-services` به فهرست کسب و کار فیلترشده
-- [~] `/parts-stores` به فهرست کسب و کار فیلترشده
+- [~] `/dealer` و `/dealers` → `/dealerships`
+- [~] `/my-listings` → `/account/listings`
+- [~] `/workshops` → `/businesses` فیلترشده
+- [~] `/car-services` → `/businesses` فیلترشده
+- [~] `/parts-stores` → `/businesses` فیلترشده
+- [~] `/account/ads` → `/account/business/promotions/featured`
 - [x] `/listing/[id]` قبلا به مسیر canonical خودرو Redirect می شود
-- [x] صفحه 404 استاندارد وجود دارد
+- [x] 404 استاندارد وجود دارد
 
-## وضعیت شبکه و API در لپ تاپ
+## شبکه و محیط محلی
 
-- [x] DNS قبلی Wi-Fi از Router `192.168.1.1` دامنه `api.chakod.com` را اشتباه به `10.10.34.35` Resolve می کرد
+- [x] DNS قبلی Wi-Fi دامنه `api.chakod.com` را اشتباه به `10.10.34.35` Resolve می کرد
 - [x] DNS ویندوز موقتا روی `1.1.1.1` و `1.0.0.1` تنظیم شد
-- [x] Resolve جدید `api.chakod.com` به `172.67.204.1` و `104.21.77.33` رسید
-- [ ] تست نهایی TCP 443 و API بعد از DNS هنوز باید در مرحله تست جامع بسته شود
+- [x] Resolve جدید به `172.67.204.1` و `104.21.77.33` رسید
+- [ ] تست نهایی TCP/API بعدا در مرحله تست جامع
 
 ## Build و زیرساخت
 
 - [x] `npm ci` قبلا موفق شده
 - [x] Vite محلی قبلا اجرا شده
-- [x] TypeScript محدوده Launch قبلا بدون خطا اجرا شده
+- [x] TypeScript محدوده Launch در مرحله قبلی بدون خطا اجرا شده
 - [!] Production Cloudflare Build هنوز به `.openai/hosting.json` و `build/sites-vite-plugin` محیط Hosting وابسته است
 - [!] 18 آسیب پذیری npm قبلا ثبت شده: 1 low, 4 moderate, 13 high
-- [ ] `npm audit fix --force` نباید کورکورانه اجرا شود
+- [ ] `npm audit fix --force` کورکورانه اجرا نشود
 
-## موارد مهم باقی مانده برای ساخت قبل از تست جامع
+## کارهای مهم باقی مانده قبل از تست جامع
 
-اولویت ادامه:
+ترتیب ادامه فعلی:
 
-1. [ ] چرخه کامل مدیریت آگهی: فروخته شد، حذف، بایگانی، تمدید، بازگردانی و منقضی
-2. [ ] اتصال رزرو بنر موجود به Checkout/فاکتور واحد
-3. [ ] عملیات واقعی Refund توسط مدیر مالی
-4. [ ] تکمیل Support Request واقعی و حذف اطلاعات نمونه
-5. [ ] بررسی همه دکمه های عمومی و حساب برای حذف بن بست ها
-6. [ ] تکمیل جریان های کسب و کار/نمایشگاه در صورت باقی ماندن عملیات ناقص
-7. [ ] تولید Migration استاندارد Drizzle برای جداول مالی
-8. [ ] تکمیل قرارداد Wallet Settlement در Backend اصلی
-9. [ ] سپس Pull روی لپ تاپ، TypeScript، Build، تست جامع، رفع خطا و Launch
+1. [ ] تکمیل همگام سازی پرداخت کیف پول نمایشگاه منتخب با وضعیت `pending_review` در همان لحظه Settlement
+2. [ ] عملیات واقعی Refund توسط مدیر مالی
+3. [ ] ساخت Support Request واقعی و رفع مسیر/اطلاعات تماس نمونه
+4. [ ] ممیزی دکمه ها و لینک های عمومی برای حذف بن بست ها
+5. [ ] تکمیل عملیات ناقص تیم/کسب و کار در صورت وجود
+6. [ ] تولید Migration استاندارد Drizzle برای جداول مالی و `featured_showroom_placements`
+7. [ ] تکمیل Wallet Settlement در Backend اصلی
+8. [ ] سپس Pull روی لپ تاپ، TypeScript، Build، تست جامع، رفع خطا و Launch
 
-## قانون ادامه پس از بازیابی Context
+## قانون بازیابی Context
 
-اگر این پروژه در چت جدید ادامه داده شد:
+در چت جدید:
 
-1. ابتدا این فایل خوانده شود.
-2. سپس `docs/MASTER-SITEMAP-FA.md` و `docs/PROJECT-CHECKLIST-FA.md` خوانده شوند.
-3. Branch کاری همان `agent/launch-3-local-baseline` باشد مگر مالک صریحا تغییر دهد.
-4. هیچ کاری روی `main` انجام نشود.
-5. صفحه اصلی از نظر ساختار قفل است و بدون اجازه مالک تغییر نکند.
-6. اول ساخت محصول ادامه پیدا کند؛ تست جامع در پایان انجام شود.
-7. هیچ Secret واقعی داخل Git قرار نگیرد.
-
-## نقطه ادامه فوری
-
-```text
-NEXT BUILD PHASE:
-Listing lifecycle completion
-
-Routes / features:
-- mark listing as sold
-- archive listing
-- delete listing
-- renew expired listing
-- restore archived listing
-- status transitions and UI actions
-```
+1. این فایل خوانده شود.
+2. Branch همان `agent/launch-3-local-baseline` باشد مگر مالک صریحا تغییر دهد.
+3. `main` دست نخورد.
+4. ساختار صفحه اول قفل است.
+5. بنر نمایشگاه صفحه اول دیگر وجود ندارد و نباید برگردد.
+6. محصول جایگزین «جایگاه نمایشگاه منتخب» با فرایند رزرو استان/تاریخ/ظرفیت/پرداخت/تایید است.
+7. اول ساخت محصول ادامه پیدا کند و تست جامع در پایان انجام شود.

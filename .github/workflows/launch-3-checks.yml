@@ -30,26 +30,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript
-        run: npx tsc --noEmit
-
-      - name: Homepage contract
-        run: node --test tests/homepage-contract.test.mjs
-
-      - name: Multi-dealer contract
-        run: node --test tests/dealer-directory-contract.test.mjs
-
-      - name: Chakod AI contract
-        run: node --test tests/ai-assistant-contract.test.mjs
-
-      - name: Local development login contract
-        run: node --test tests/local-development-login.test.mjs
-
-      - name: Local development session contract
-        run: node --test tests/local-development-session.test.mjs
-
-      - name: Local public API contract
-        run: node --test tests/local-public-api.test.mjs
-
-      - name: Route access contract
-        run: node --test tests/route-access.test.mjs
+      - name: Launch source checks
+        run: npm run check:launch

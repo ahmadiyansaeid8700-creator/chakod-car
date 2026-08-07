@@ -51,6 +51,10 @@
 - [~] Sitemap/robots canonical و Migrationهای Drizzle تا CMS
 - [~] Route cleanup و Shared Header داخلی
 - [~] هاب های مدیریت مالی، تبلیغات، نمایشگاه منتخب، پشتیبانی، محتوا و Access Manager
+- [~] چندنمایشگاهی از Route قدیمی `/dealers` به مسیر canonical `/account/business/dealers` منتقل شد.
+- [~] API داخلی امن `/api/auth/dealers` قرارداد `my-dealers.php` را نگه می دارد و ورودی ساخت نمایشگاه را سمت سرور محدود می کند.
+- [~] Route قدیمی `/dealers` فقط Redirect سازگاری است؛ مدیریت اعضا و عملکرد از `/account/business` انجام می شود.
+- [~] لینک خراب قدیمی `/dealers/[id]` از جریان canonical حذف شد؛ مرکز فرمان خودش بین نمایشگاه های کاربر سوییچ می کند.
 
 ## موارد Backend-dependent که نباید حدسی پیاده شوند
 
@@ -62,7 +66,8 @@
 
 ## مورد داخلی بعدی
 
-- [ ] تعیین تکلیف نهایی معماری چندنمایشگاهی Legacy در `/dealers` و انتقال کامل به فضای canonical حساب، بدون حذف قابلیت قدیمی.
+- [ ] پاکسازی نهایی متن ها و CTAهای Legacy قابل مشاهده در پنل ها، بدون تغییر طراحی صفحه اول.
+- [ ] سپس ورود به مرحله Pull/Migration/TypeScript/Build و تست جامع پس از تایید مالک.
 
 ## قانون ادامه
 

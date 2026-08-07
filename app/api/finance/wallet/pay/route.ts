@@ -94,10 +94,14 @@ export async function POST(request: NextRequest) {
   }
 
   const orderNo = cleanText(input.order_no, 100);
-  const idempotencyKey = cleanText(input.idempotency_key, 100);
+  const suppliedIdempotencyKey = cleanText(input.idempotency_key, 100);
 
-  if (!ORDER_PATTERN.test(orderNo) || !IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
-    return jsonResponse({ success: false, message: "شناسه سفارش معتبر نیست." }, 400);
+  if (!ORDER_PATTERN.test(orderNo)) {
+    return jsonResponse({ success: false, message: "شماره سفارش معتبر نیست." }, 400);
+  }
+
+  if (suppliedIdempotencyKey && !IDEMPOTENCY_PATTERN.test(suppliedIdempotencyKey)) {
+    return jsonResponse({ success: false, message: "شناسه امن سفارش معتبر نیست." }, 400);
   }
 
   const db = getDb();
@@ -110,13 +114,16 @@ export async function POST(request: NextRequest) {
         and(
           eq(commerceOrders.orderNo, orderNo),
           eq(commerceOrders.ownerKey, ownerKey),
-          eq(commerceOrders.idempotencyKey, idempotencyKey),
         ),
       )
       .limit(1);
 
     if (!order) {
       return jsonResponse({ success: false, message: "سفارش متعلق به این حساب پیدا نشد." }, 404);
+    }
+
+    if (suppliedIdempotencyKey && suppliedIdempotencyKey !== order.idempotencyKey) {
+      return jsonResponse({ success: false, message: "شناسه سفارش با این حساب هماهنگ نیست." }, 409);
     }
 
     if (order.orderType === "wallet_charge") {
@@ -239,53 +246,58 @@ export async function POST(request: NextRequest) {
       }
 
       const walletReference = createPublicReference("WAL");
-      const paymentAttemptStatement = attempt
-        ? db
-            .update(paymentAttempts)
-            .set({
+      const walletTransactionInsert = db.insert(walletTransactions).values({
+        walletId: wallet.id,
+        direction: "debit",
+        transactionType: "service_purchase",
+        amountToman: order.finalAmountToman,
+        balanceAfterToman: reservedWallet.availableBalanceToman,
+        status: "reserved",
+        referenceType: "order",
+        referenceId: order.orderNo,
+        description: `رزرو پرداخت خدمت ${order.productCode}`,
+      });
+
+      try {
+        if (attempt) {
+          await db.batch([
+            db
+              .update(paymentAttempts)
+              .set({
+                authority: walletReference,
+                gatewayTransactionId: "",
+                status: "processing",
+                requestJson: JSON.stringify({
+                  order_no: order.orderNo,
+                  service_key: order.productCode,
+                  payment_method: "wallet",
+                }),
+                responseJson: "{}",
+                paidAt: null,
+                updatedAt: sql`CURRENT_TIMESTAMP`,
+              })
+              .where(eq(paymentAttempts.id, attempt.id)),
+            walletTransactionInsert,
+          ]);
+        } else {
+          await db.batch([
+            db.insert(paymentAttempts).values({
+              orderId: order.id,
+              gateway: "wallet",
               authority: walletReference,
               gatewayTransactionId: "",
+              idempotencyKey: attemptKey,
+              amountToman: order.finalAmountToman,
               status: "processing",
               requestJson: JSON.stringify({
                 order_no: order.orderNo,
                 service_key: order.productCode,
                 payment_method: "wallet",
               }),
-              responseJson: "{}",
-              paidAt: null,
-              updatedAt: sql`CURRENT_TIMESTAMP`,
-            })
-            .where(eq(paymentAttempts.id, attempt.id))
-        : db.insert(paymentAttempts).values({
-            orderId: order.id,
-            gateway: "wallet",
-            authority: walletReference,
-            gatewayTransactionId: "",
-            idempotencyKey: attemptKey,
-            amountToman: order.finalAmountToman,
-            status: "processing",
-            requestJson: JSON.stringify({
-              order_no: order.orderNo,
-              service_key: order.productCode,
-              payment_method: "wallet",
             }),
-          });
-
-      try {
-        await db.batch([
-          paymentAttemptStatement,
-          db.insert(walletTransactions).values({
-            walletId: wallet.id,
-            direction: "debit",
-            transactionType: "service_purchase",
-            amountToman: order.finalAmountToman,
-            balanceAfterToman: reservedWallet.availableBalanceToman,
-            status: "reserved",
-            referenceType: "order",
-            referenceId: order.orderNo,
-            description: `رزرو پرداخت خدمت ${order.productCode}`,
-          }),
-        ]);
+            walletTransactionInsert,
+          ]);
+        }
       } catch {
         await db.batch([
           db
@@ -333,6 +345,7 @@ export async function POST(request: NextRequest) {
           success: false,
           code: "wallet_payment_recovery_required",
           message: "پرداخت کیف پول نیاز به بررسی وضعیت رزرو دارد و دوباره برداشت نمی‌شود.",
+          order_no: order.orderNo,
         },
         409,
       );
@@ -405,6 +418,7 @@ export async function POST(request: NextRequest) {
           success: false,
           code: "wallet_settlement_rejected",
           message: settlement.message,
+          order_no: order.orderNo,
         },
         settlement.status >= 400 ? settlement.status : 409,
       );

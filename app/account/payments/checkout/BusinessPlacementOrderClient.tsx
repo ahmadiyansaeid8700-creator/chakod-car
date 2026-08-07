@@ -88,34 +88,47 @@ export default function BusinessPlacementOrderClient({ dealerId }: { dealerId: n
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
-        <section className={styles.hero}>
-          <span>BUSINESS PLACEMENT</span>
-          <h1>تایید سفارش جایگاه کسب‌وکار</h1>
-          <p>شناسه مجموعه در سمت سرور دوباره با فهرست کسب‌وکارهای قابل مدیریت شما تطبیق داده می‌شود؛ مبلغ نیز فقط از Commerce خوانده خواهد شد.</p>
-        </section>
+        <header className={styles.header}>
+          <Link href="/account/business/promotions">← بازگشت به تبلیغات</Link>
+          <Link href="/" className={styles.brand}>
+            <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
+        </header>
 
-        <section className={styles.summaryCard}>
-          <div>
-            <span>مجموعه هدف</span>
-            <strong>شناسه {new Intl.NumberFormat("fa-IR").format(dealerId)}</strong>
-          </div>
-          <div>
-            <span>محصول</span>
-            <strong>جایگاه ویژه کسب‌وکار</strong>
-          </div>
-          <div>
-            <span>قیمت</span>
-            <strong>از تعرفه فعال Commerce</strong>
-          </div>
-        </section>
+        <div className={styles.checkoutGrid}>
+          <section className={styles.checkoutCard}>
+            <span className={styles.eyebrow}>BUSINESS PLACEMENT</span>
+            <h1>تایید سفارش جایگاه کسب‌وکار</h1>
+            <p>شناسه مجموعه در سمت سرور دوباره با فهرست کسب‌وکارهای قابل مدیریت شما تطبیق داده می‌شود؛ مبلغ نیز فقط از Commerce خوانده خواهد شد.</p>
 
-        {error ? <div className={styles.error}>{error}</div> : null}
+            {error ? <div className={styles.error}>{error}</div> : null}
 
-        <div className={styles.actions}>
-          <button type="button" onClick={() => void createOrder()} disabled={working}>
-            {working ? "در حال ساخت سفارش…" : "ساخت سفارش و انتخاب روش پرداخت"}
-          </button>
-          <Link href="/account/business/promotions">بازگشت به تبلیغات</Link>
+            <button className={styles.payButton} type="button" onClick={() => void createOrder()} disabled={working}>
+              {working ? "در حال ساخت سفارش…" : "ساخت سفارش و انتخاب روش پرداخت"}
+            </button>
+
+            <div className={styles.securityNote}>
+              <span>✓</span>
+              <p>هیچ مبلغی از مرورگر پذیرفته نمی‌شود؛ Commerce مبلغ فعال را در سفارش قفل می‌کند.</p>
+            </div>
+          </section>
+
+          <aside className={styles.summaryCard}>
+            <span>خلاصه سفارش</span>
+            <div>
+              <small>مجموعه هدف</small>
+              <strong>شناسه {new Intl.NumberFormat("fa-IR").format(dealerId)}</strong>
+            </div>
+            <div>
+              <small>محصول</small>
+              <strong>جایگاه ویژه کسب‌وکار</strong>
+            </div>
+            <div>
+              <small>قیمت</small>
+              <strong>از تعرفه فعال Commerce</strong>
+            </div>
+            <Link href="/account/business">مدیریت کسب‌وکار</Link>
+          </aside>
         </div>
       </div>
     </main>

@@ -10,7 +10,7 @@
 - Draft CI PR: `#6` فقط برای اجرای Checkها؛ Merge نشود.
 - `main` بدون تایید مالک تغییر نکند.
 - ابتدا ساخت کامل سایت، سپس Migration/Build/Staging و تست جامع.
-- تمام قابلیت های ساخته شده و هنوز Runtime تست نشده با `[~]` ثبت می شوند.
+- تمام قابلیت های ساخته شده و هنوز Staging/Production integration نشده با `[~]` ثبت می شوند.
 
 ## قرارداد قطعی صفحه اول
 
@@ -54,7 +54,7 @@
 - [~] هاب های مدیریت مالی، تبلیغات، نمایشگاه منتخب، پشتیبانی، محتوا و Access Manager
 - [~] چندنمایشگاهی از Route قدیمی `/dealers` به مسیر canonical `/account/business/dealers` منتقل شد.
 - [~] API داخلی امن `/api/auth/dealers` قرارداد `my-dealers.php` را نگه می دارد و ورودی ساخت نمایشگاه را سمت سرور محدود می کند.
-- [~] Route قدیمی `/dealers` فقط Redirect سازگاری است؛ مدیریت اعضا و عملکرد از `/account/business` انجام می شود.
+- [~] Route قدیمی `/dealers` فقط Redirect سازگاری است؛ Guest ابتدا توسط Auth Guard به Login می رود و پس از احراز هویت مسیر canonical ادامه پیدا می کند.
 - [~] لینک خراب قدیمی `/dealers/[id]` از جریان canonical حذف شد؛ مرکز فرمان خودش بین نمایشگاه های کاربر سوییچ می کند.
 - [~] متن Legacy «رزرو بنر» از مرکز فرمان حذف و CTAهای «نمایشگاه های من» و «نمایشگاه منتخب» جایگزین شدند.
 - [~] «هوش چاکود» سراسری است و `/api/ai/assistant` دارای Offline fallback، Cloud fallback، Rate Limit، محدودیت اندازه درخواست و no-store است.
@@ -69,21 +69,35 @@ Contractهای فعلی:
 - `tests/ai-assistant-contract.test.mjs`
 - `tests/finance-commerce-contract.test.mjs`
 - `tests/featured-showroom-contract.test.mjs`
+- `tests/migration-chain-contract.test.mjs`
 - `tests/local-development-login.test.mjs`
 - `tests/local-development-session.test.mjs`
 - `tests/local-public-api.test.mjs`
 - `tests/route-access.test.mjs`
 
-### نتیجه واقعی GitHub Actions
+### نتیجه واقعی GitHub Actions تا Run 58
 
 - [x] TypeScript با `tsconfig.launch.json` بدون خطا اجرا شد.
-- [x] Contract Testهای Homepage، چندنمایشگاهی، هوش چاکود، مالی/Commerce و نمایشگاه منتخب اجرا و موفق شدند.
-- [x] تست Homepage با Route canonical `/dealerships` همگام شد و تست قدیمی `/showrooms` حذف شد.
-- [x] تست های قدیمی TypeScript با Node 22 و `--experimental-strip-types` قابل اجرا شدند.
-- [x] خطای TypeScript دسترسی CMS مقاله با Narrowing صریح Identity اصلاح شد.
-- [x] Run شماره 22 GitHub Actions برای `Launch 3 checks` با نتیجه `success` بسته شد.
+- [x] 41 Contract Test فعلی بدون خطا اجرا شدند.
+- [x] Migration journal/SQL/Snapshot chain با Contract Test قفل شد.
+- [x] Gate آسیب پذیری Critical با `npm audit --audit-level=critical` سبز است؛ `fix --force` اجرا نشده است.
+- [x] Portable Vinext Build Preflight کامل سبز است: RSC، SSR، Client و Server Bundle ساخته می شوند.
+- [x] دو Dynamic Route conflict واقعی رفع شدند: `/showrooms/[dealer]` در برابر `/showrooms/[id]` و `/account/listings/[listingId]` در برابر `/account/listings/[id]`.
+- [x] CSS گمشده Shared Footer ساخته شد و Build از آن عبور می کند.
+- [x] Portable Runtime Smoke روی Routeهای عمومی، Redirectهای Legacy و هوش چاکود سبز است.
+- [x] مسیرهای عمومی Smoke شده: `/`, `/about`, `/privacy`, `/terms`, `/refund-policy`, `/legal`, `/support`, `/cars/compare`, `/cars/price-guide`, `/advertising`, `/advertising/dealership-placement`, `/robots.txt`.
+- [x] Redirectهای Runtime تایید شده: `/showrooms` → `/dealerships`, `/help` → `/support`, `/advertising/banners` → `/advertising/dealership-placement`, و Guest `/dealers` → `/login?returnTo=/dealers`.
+- [x] هوش چاکود بدون `OPENAI_API_KEY` در Runtime واقعی با `configured:false` و پاسخ Offline موفق برمی گردد.
+- [x] GitHub Actions Run شماره 58 با Source/TypeScript/Audit/Build/Runtime Smoke همگی `success` بسته شد.
 
-Runtime/Build/Staging هنوز در این نتیجه پوشش داده نشده اند.
+## وضعیت امنیت وابستگی ها
+
+- 0 Critical
+- 13 High
+- 4 Moderate
+- 1 Low
+
+Highها عمدتا در Next.js، react-server-dom-webpack، Vite و زنجیره Cloudflare/Wrangler/Miniflare و چند dependency ترانزیتی هستند. هیچ ارتقای شکستن دامنه یا `npm audit fix --force` بدون Gate کامل انجام نشود.
 
 ## موارد Backend-dependent که نباید حدسی پیاده شوند
 
@@ -91,24 +105,25 @@ Runtime/Build/Staging هنوز در این نتیجه پوشش داده نشده
 - [!] Refund بانکی واقعی در Backend درگاه
 - [!] API فهرست تمام کاربران برای `/admin/users`
 - [!] Track تماس/واتساپ/مسیریابی کسب و کار در Backend
-- [!] Draft سروری آگهی قبل از Submit؛ فرم ثبت موجود بزرگ و حساس است و بدون تست محلی با جایگزینی کامل فایل دستکاری نشود.
+- [!] Draft سروری آگهی قبل از Submit؛ فرم ثبت موجود بزرگ و حساس است و بدون تست کامل با جایگزینی کامل فایل دستکاری نشود.
 
 ## وضعیت فعلی فاز
 
-ساخت قابلیت های اصلی داخل این Repository تقریبا بسته شده و Source/TypeScript Contract Gate سبز است. از این نقطه تغییرات جدید باید یا:
-
-1. Hardening امنیتی کم ریسک باشند؛ یا
-2. نتیجه خطای واقعی Migration/Build/Runtime را رفع کنند؛ یا
-3. وابستگی Backend خارجی قطعی و مستند داشته باشند.
+ساخت قابلیت های اصلی داخل این Repository بسته شده و Source/TypeScript/Contract/Migration metadata/Portable Build/Portable Runtime Smoke سبز هستند.
 
 صفحه اصلی قفل است و برای Hardening طراحی یا ترتیب آن تغییر نکند.
 
 ## گام بعدی
 
-- [x] `npm run check:launch` روی GitHub Actions سبز شد.
-- [ ] Gate آسیب پذیری Critical وابستگی ها در CI.
-- [ ] بررسی Migration روی دیتابیس غیرتولیدی.
-- [ ] Build/Staging و تست جامع جریان های محصول.
+- [x] Source/TypeScript/Contracts سبز
+- [x] Critical audit gate سبز
+- [x] Portable Build Preflight سبز
+- [x] Portable Runtime Smoke سبز
+- [ ] Hardening کنترل شده وابستگی های High، هر خانواده جدا و با Gate کامل بعد از هر تغییر
+- [ ] اعمال Migration روی دیتابیس غیرتولیدی دارای D1 binding
+- [ ] Build رسمی Sites در محیط دارای `.openai/hosting.json` و `build/sites-vite-plugin`
+- [ ] Staging integration برای Wallet/Gateway/Refund/CMS/Featured Showrooms
+- [ ] تست جامع و سپس Launch
 
 ## قانون ادامه
 

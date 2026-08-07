@@ -239,10 +239,24 @@ export async function POST(request: NextRequest) {
       }
 
       const walletReference = createPublicReference("WAL");
-
-      try {
-        await db.batch([
-          db.insert(paymentAttempts).values({
+      const paymentAttemptStatement = attempt
+        ? db
+            .update(paymentAttempts)
+            .set({
+              authority: walletReference,
+              gatewayTransactionId: "",
+              status: "processing",
+              requestJson: JSON.stringify({
+                order_no: order.orderNo,
+                service_key: order.productCode,
+                payment_method: "wallet",
+              }),
+              responseJson: "{}",
+              paidAt: null,
+              updatedAt: sql`CURRENT_TIMESTAMP`,
+            })
+            .where(eq(paymentAttempts.id, attempt.id))
+        : db.insert(paymentAttempts).values({
             orderId: order.id,
             gateway: "wallet",
             authority: walletReference,
@@ -255,7 +269,11 @@ export async function POST(request: NextRequest) {
               service_key: order.productCode,
               payment_method: "wallet",
             }),
-          }),
+          });
+
+      try {
+        await db.batch([
+          paymentAttemptStatement,
           db.insert(walletTransactions).values({
             walletId: wallet.id,
             direction: "debit",

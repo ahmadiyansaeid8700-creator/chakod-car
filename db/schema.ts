@@ -102,3 +102,22 @@ export const paymentRefunds = sqliteTable("payment_refunds", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const featuredShowroomPlacements = sqliteTable("featured_showroom_placements", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  orderId: integer("order_id").notNull().unique(),
+  ownerKey: text("owner_key").notNull(),
+  dealerId: integer("dealer_id").notNull(),
+  dealerName: text("dealer_name").notNull(),
+  province: text("province").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  reservedDays: integer("reserved_days").notNull(),
+  dailyRateToman: integer("daily_rate_toman").notNull(),
+  totalPriceToman: integer("total_price_toman").notNull(),
+  status: text("status").notNull().default("pending_payment"),
+  adminNote: text("admin_note").notNull().default(""),
+  approvedAt: text("approved_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

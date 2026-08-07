@@ -8,6 +8,7 @@ import {
   walletTransactions,
 } from "../../../../db/schema";
 import { jsonResponse } from "../../../../lib/chakod-auth-proxy";
+import { isWalletSettlementConfigured } from "../../../../lib/commerce-wallet-settlement";
 import { ensureWallet, getFinanceOwnerKey } from "../../../../lib/finance-core";
 
 export const runtime = "nodejs";
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse({
       success: true,
+      wallet_payment_ready: isWalletSettlementConfigured(),
       wallet: {
         available_balance_toman: wallet.availableBalanceToman,
         blocked_balance_toman: wallet.blockedBalanceToman,

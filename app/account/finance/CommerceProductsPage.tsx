@@ -19,7 +19,7 @@ type CommerceService = {
   settings?: Record<string, unknown>;
 };
 
-type Dealer = {
+type ManagedBusiness = {
   dealer_id: number;
   dealer_name: string;
   role: string;
@@ -38,7 +38,7 @@ type CommerceResponse = {
   success?: boolean;
   message?: string;
   services?: CommerceService[];
-  dealers?: Dealer[];
+  dealers?: ManagedBusiness[];
   subscriptions?: Subscription[];
   payment_gateway_ready?: boolean;
 };
@@ -89,25 +89,33 @@ function formatDate(value?: string | null) {
     : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(date);
 }
 
-function serviceHref(service: CommerceService, dealerId: number) {
+function serviceHref(service: CommerceService, businessId: number) {
   if (service.service_key.startsWith("listing_")) return "/account/listings";
+
   if (service.service_key === "dealership_placement") {
     return "/account/business/promotions/featured";
   }
-  if (service.service_key.startsWith("professional_profile_")) {
-    return dealerId
-      ? `/account/payments/checkout?type=subscription&service_key=${encodeURIComponent(service.service_key)}&dealer_id=${dealerId}`
+
+  if (service.service_key === "business_placement") {
+    return businessId
+      ? `/account/payments/checkout?type=service&service_key=${encodeURIComponent(service.service_key)}&dealer_id=${businessId}`
       : "/account/business";
   }
-  if (service.service_key.includes("placement")) return "/account/business";
-  return `/account/payments/checkout?type=service&service_key=${encodeURIComponent(service.service_key)}${dealerId ? `&dealer_id=${dealerId}` : ""}`;
+
+  if (service.service_key.startsWith("professional_profile_")) {
+    return businessId
+      ? `/account/payments/checkout?type=subscription&service_key=${encodeURIComponent(service.service_key)}&dealer_id=${businessId}`
+      : "/account/business";
+  }
+
+  return `/account/payments/checkout?type=service&service_key=${encodeURIComponent(service.service_key)}${businessId ? `&dealer_id=${businessId}` : ""}`;
 }
 
 export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
   const [data, setData] = useState<CommerceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [dealerId, setDealerId] = useState(0);
+  const [businessId, setBusinessId] = useState(0);
 
   async function load() {
     setLoading(true);
@@ -133,7 +141,7 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
       }
 
       setData(payload);
-      if (!dealerId && payload.dealers?.[0]) setDealerId(payload.dealers[0].dealer_id);
+      if (!businessId && payload.dealers?.[0]) setBusinessId(payload.dealers[0].dealer_id);
     } catch {
       setError("ارتباط با سامانه محصولات و تعرفه‌ها برقرار نشد.");
     } finally {
@@ -152,11 +160,16 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
       : active.filter((service) => service.service_key.startsWith("professional_profile_"));
   }, [data?.services, mode]);
 
+  const requiresBusinessTarget = useMemo(
+    () => mode === "subscriptions" || services.some((service) => service.service_key === "business_placement"),
+    [mode, services],
+  );
+
   const currentSubscription = useMemo(
     () => (data?.subscriptions || []).find(
-      (subscription) => subscription.dealer_id === dealerId && subscription.status === "active",
+      (subscription) => subscription.dealer_id === businessId && subscription.status === "active",
     ) || null,
-    [data?.subscriptions, dealerId],
+    [data?.subscriptions, businessId],
   );
 
   const title = mode === "promotions" ? "تبلیغات و دیده‌شدن بیشتر" : "اشتراک‌های حرفه‌ای";
@@ -187,15 +200,19 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
           </div>
         </section>
 
-        {mode === "subscriptions" && (data?.dealers?.length || 0) > 0 && (
+        {requiresBusinessTarget && (data?.dealers?.length || 0) > 0 && (
           <section className={styles.selectorPanel}>
             <div>
               <span>مجموعه هدف</span>
-              <h2>اشتراک برای کدام نمایشگاه یا کسب‌وکار فعال شود؟</h2>
+              <h2>
+                {mode === "subscriptions"
+                  ? "اشتراک برای کدام نمایشگاه یا کسب‌وکار فعال شود؟"
+                  : "جایگاه ویژه برای کدام کسب‌وکار فعال شود؟"}
+              </h2>
             </div>
-            <select value={dealerId} onChange={(event) => setDealerId(Number(event.target.value))}>
-              {data?.dealers?.map((dealer) => (
-                <option key={dealer.dealer_id} value={dealer.dealer_id}>{dealer.dealer_name}</option>
+            <select value={businessId} onChange={(event) => setBusinessId(Number(event.target.value))}>
+              {data?.dealers?.map((business) => (
+                <option key={business.dealer_id} value={business.dealer_id}>{business.dealer_name}</option>
               ))}
             </select>
           </section>
@@ -229,10 +246,12 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
         {!loading && !error && services.length > 0 && (
           <section className={styles.productGrid}>
             {services.map((service) => {
-              const href = serviceHref(service, dealerId);
+              const href = serviceHref(service, businessId);
               const listingProduct = service.service_key.startsWith("listing_");
               const featuredShowroomProduct = service.service_key === "dealership_placement";
-              const targetMissing = mode === "subscriptions" && !dealerId;
+              const businessPlacementProduct = service.service_key === "business_placement";
+              const targetMissing =
+                (mode === "subscriptions" || businessPlacementProduct) && !businessId;
 
               return (
                 <article className={styles.productCard} key={service.service_key}>
@@ -248,9 +267,13 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
                       ? "انتخاب آگهی"
                       : featuredShowroomProduct
                         ? "انتخاب نمایشگاه، استان و تاریخ"
-                        : targetMissing
-                          ? "ابتدا مجموعه را بسازید"
-                          : "انتخاب و ادامه پرداخت"}
+                        : businessPlacementProduct
+                          ? targetMissing
+                            ? "ابتدا مجموعه را بسازید"
+                            : "انتخاب مجموعه و ادامه پرداخت"
+                          : targetMissing
+                            ? "ابتدا مجموعه را بسازید"
+                            : "انتخاب و ادامه پرداخت"}
                   </Link>
                 </article>
               );

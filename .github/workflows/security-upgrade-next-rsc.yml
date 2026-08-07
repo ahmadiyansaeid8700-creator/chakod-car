@@ -1,4 +1,4 @@
-name: One-shot security upgrade Next and RSC
+name: One-shot security upgrade Next and React runtime
 
 on:
   push:
@@ -33,11 +33,11 @@ jobs:
         continue-on-error: true
         run: npm ci
 
-      - name: Upgrade stable Next.js and React Server DOM security patches
+      - name: Upgrade stable Next.js and React runtime security patches
         id: upgrade
         if: steps.install_current.outcome == 'success'
         continue-on-error: true
-        run: npm install --save-exact next@16.2.12 eslint-config-next@16.2.12 react-server-dom-webpack@19.2.8
+        run: npm install --save-exact next@16.2.12 eslint-config-next@16.2.12 react@19.2.8 react-dom@19.2.8 react-server-dom-webpack@19.2.8
 
       - name: Launch source checks
         id: source_checks
@@ -80,6 +80,8 @@ jobs:
         run: |
           mkdir -p docs
           NEXT_VERSION="$(node -p "require('./package.json').dependencies.next" 2>/dev/null || echo unavailable)"
+          REACT_VERSION="$(node -p "require('./package.json').dependencies.react" 2>/dev/null || echo unavailable)"
+          REACT_DOM_VERSION="$(node -p "require('./package.json').dependencies['react-dom']" 2>/dev/null || echo unavailable)"
           ESLINT_NEXT_VERSION="$(node -p "require('./package.json').devDependencies['eslint-config-next']" 2>/dev/null || echo unavailable)"
           RSC_VERSION="$(node -p "require('./package.json').devDependencies['react-server-dom-webpack']" 2>/dev/null || echo unavailable)"
           AUDIT_SUMMARY="unavailable"
@@ -91,13 +93,17 @@ jobs:
             VERIFIED=true
           fi
           cat > docs/SECURITY-UPGRADE-NEXT-RSC-RESULT.md <<EOF
-          # نتیجه ارتقای امنیتی Next / React Server DOM
+          # نتیجه ارتقای امنیتی Next / React Runtime
 
           - Target Next: 16.2.12
           - Target eslint-config-next: 16.2.12
+          - Target React: 19.2.8
+          - Target React DOM: 19.2.8
           - Target react-server-dom-webpack: 19.2.8
           - Resolved Next in package.json: $NEXT_VERSION
           - Resolved eslint-config-next in package.json: $ESLINT_NEXT_VERSION
+          - Resolved React in package.json: $REACT_VERSION
+          - Resolved React DOM in package.json: $REACT_DOM_VERSION
           - Resolved RSC in package.json: $RSC_VERSION
           - Verified for commit: $VERIFIED
           - npm ci: $INSTALL_CURRENT
@@ -138,8 +144,8 @@ jobs:
             exit 0
           fi
           if [ "$VERIFIED" = true ]; then
-            git commit -m "security: verify stable Next and RSC upgrade"
+            git commit -m "security: verify stable Next and React runtime upgrade"
           else
-            git commit -m "docs: record rejected stable Next and RSC upgrade"
+            git commit -m "docs: record rejected stable Next React upgrade"
           fi
           git push origin HEAD:agent/launch-3-local-baseline

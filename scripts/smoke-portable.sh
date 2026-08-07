@@ -108,8 +108,16 @@ if ! printf '%s' "$AI_RESPONSE" | grep -q '"reply"'; then
   exit 1
 fi
 
-if ! printf '%s' "$AI_RESPONSE" | grep -Eq '"source":"(offline|cloud)"'; then
-  echo "AI assistant smoke response has an unexpected source." >&2
+# CI intentionally runs without OPENAI_API_KEY. The assistant must still return
+# a successful offline response instead of failing the public product.
+if ! printf '%s' "$AI_RESPONSE" | grep -q '"success":true'; then
+  echo "AI assistant smoke response is not successful." >&2
+  printf '%s\n' "$AI_RESPONSE" >&2
+  exit 1
+fi
+
+if ! printf '%s' "$AI_RESPONSE" | grep -q '"configured":false'; then
+  echo "AI assistant did not use the expected offline fallback in portable CI." >&2
   printf '%s\n' "$AI_RESPONSE" >&2
   exit 1
 fi

@@ -55,6 +55,23 @@
 - [~] API داخلی امن `/api/auth/dealers` قرارداد `my-dealers.php` را نگه می دارد و ورودی ساخت نمایشگاه را سمت سرور محدود می کند.
 - [~] Route قدیمی `/dealers` فقط Redirect سازگاری است؛ مدیریت اعضا و عملکرد از `/account/business` انجام می شود.
 - [~] لینک خراب قدیمی `/dealers/[id]` از جریان canonical حذف شد؛ مرکز فرمان خودش بین نمایشگاه های کاربر سوییچ می کند.
+- [~] متن Legacy «رزرو بنر» از مرکز فرمان حذف و CTAهای «نمایشگاه های من» و «نمایشگاه منتخب» جایگزین شدند.
+- [~] «هوش چاکود» سراسری است و `/api/ai/assistant` دارای Offline fallback، Cloud fallback، Rate Limit، محدودیت اندازه درخواست و no-store است.
+- [~] Contract Test مستقل برای چندنمایشگاهی و هوش چاکود ساخته شده است.
+- [~] Workflow `Launch 3 checks` روی شاخه لانچ ساخته شده است.
+- [~] دستور واحد `npm run check:launch` برای TypeScript و تمام Contract Testهای Launch ساخته شده است.
+
+## CI و Contractهای Launch
+
+- `tests/homepage-contract.test.mjs`
+- `tests/dealer-directory-contract.test.mjs`
+- `tests/ai-assistant-contract.test.mjs`
+- `tests/local-development-login.test.mjs`
+- `tests/local-development-session.test.mjs`
+- `tests/local-public-api.test.mjs`
+- `tests/route-access.test.mjs`
+
+GitHub Actions فایل `.github/workflows/launch-3-checks.yml` را روی Push شاخه Launch و PR به main اجرا می کند. نتیجه کامل Runtime/Build هنوز تایید نهایی نشده است.
 
 ## موارد Backend-dependent که نباید حدسی پیاده شوند
 
@@ -62,12 +79,23 @@
 - [!] Refund بانکی واقعی در Backend درگاه
 - [!] API فهرست تمام کاربران برای `/admin/users`
 - [!] Track تماس/واتساپ/مسیریابی کسب و کار در Backend
-- [!] Draft سروری آگهی قبل از Submit
+- [!] Draft سروری آگهی قبل از Submit؛ فرم ثبت موجود بزرگ و حساس است و بدون تست محلی با جایگزینی کامل فایل دستکاری نشود.
 
-## مورد داخلی بعدی
+## وضعیت فعلی فاز
 
-- [ ] پاکسازی نهایی متن ها و CTAهای Legacy قابل مشاهده در پنل ها، بدون تغییر طراحی صفحه اول.
-- [ ] سپس ورود به مرحله Pull/Migration/TypeScript/Build و تست جامع پس از تایید مالک.
+ساخت قابلیت های اصلی داخل این Repository تقریبا بسته شده است. از این نقطه تغییرات جدید باید یا:
+
+1. Hardening کم ریسک و Contract Test باشند؛ یا
+2. نتیجه خطای واقعی TypeScript/Build/Runtime را رفع کنند؛ یا
+3. وابستگی Backend خارجی قطعی و مستند داشته باشند.
+
+صفحه اصلی قفل است و برای Hardening طراحی یا ترتیب آن تغییر نکند.
+
+## گام بعدی
+
+- [ ] اجرای `npm run check:launch` و رفع خطاهای واقعی Source/TypeScript.
+- [ ] بررسی Migration روی دیتابیس غیرتولیدی.
+- [ ] سپس Build/Staging و تست جامع جریان های محصول.
 
 ## قانون ادامه
 

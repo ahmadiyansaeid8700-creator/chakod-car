@@ -42,6 +42,12 @@ jobs:
         continue-on-error: true
         run: node scripts/launch-ui-audit.mjs
 
+      - name: Master sitemap route audit
+        id: master_routes
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/master-route-audit.mjs
+
       - name: Source TypeScript and contract checks
         id: source_checks
         if: steps.install.outcome == 'success'
@@ -73,6 +79,7 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           UI_AUDIT: ${{ steps.ui_audit.outcome }}
+          MASTER_ROUTES: ${{ steps.master_routes.outcome }}
           SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
           BUILD: ${{ steps.build.outcome }}
           SMOKE: ${{ steps.smoke.outcome }}
@@ -89,12 +96,13 @@ jobs:
             '',
             `- npm ci: ${env.INSTALL}`,
             `- static UI route/CTA audit: ${env.UI_AUDIT}`,
+            `- master sitemap route coverage: ${env.MASTER_ROUTES}`,
             `- TypeScript + contract tests: ${env.SOURCE_CHECKS}`,
             `- portable production bundle: ${env.BUILD}`,
             `- portable runtime smoke: ${env.SMOKE}`,
             `- vulnerabilities: critical=${v.critical ?? '?'}, high=${v.high ?? '?'}, moderate=${v.moderate ?? '?'}, low=${v.low ?? '?'}`,
             '',
-            'This audit does not claim external payment/wallet/refund/D1 production integrations are live; those require staging credentials and bindings.'
+            'External wallet settlement, bank refund and production D1 bindings still require staging credentials/bindings before launch can be declared.'
           ];
           fs.writeFileSync('artifacts/launch-readiness-summary.md', lines.join('\n') + '\n');
           NODE
@@ -114,11 +122,12 @@ jobs:
         env:
           INSTALL: ${{ steps.install.outcome }}
           UI_AUDIT: ${{ steps.ui_audit.outcome }}
+          MASTER_ROUTES: ${{ steps.master_routes.outcome }}
           SOURCE_CHECKS: ${{ steps.source_checks.outcome }}
           BUILD: ${{ steps.build.outcome }}
           SMOKE: ${{ steps.smoke.outcome }}
         run: |
-          if [ "$INSTALL" != success ] || [ "$UI_AUDIT" != success ] || [ "$SOURCE_CHECKS" != success ] || [ "$BUILD" != success ] || [ "$SMOKE" != success ]; then
+          if [ "$INSTALL" != success ] || [ "$UI_AUDIT" != success ] || [ "$MASTER_ROUTES" != success ] || [ "$SOURCE_CHECKS" != success ] || [ "$BUILD" != success ] || [ "$SMOKE" != success ]; then
             echo "At least one launch readiness gate failed."
             exit 1
           fi

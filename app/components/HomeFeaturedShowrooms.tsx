@@ -40,6 +40,21 @@ type ApiResponse = {
   data?: ApiListing[];
 };
 
+type FeaturedPlacement = {
+  id: number;
+  dealer_id: number;
+  dealer_name?: string;
+  province?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: string;
+};
+
+type FeaturedResponse = {
+  success?: boolean;
+  data?: FeaturedPlacement[];
+};
+
 type DealerPreview = ShowroomCardData & {
   latestAt: number;
 };
@@ -135,6 +150,17 @@ function buildListingUrls(location: HomeLocationSelection) {
   });
 }
 
+function buildFeaturedUrls(location: HomeLocationSelection) {
+  const scopes = getHomeLocationScopes(location);
+  if (location.mode === "all" || scopes.length === 0) {
+    return ["/api/featured-showrooms"];
+  }
+
+  return Array.from(new Set(scopes.map((scope) => scope.province))).map(
+    (province) => `/api/featured-showrooms?province=${encodeURIComponent(province)}`,
+  );
+}
+
 function buildDealers(listings: ApiListing[]): DealerPreview[] {
   const dealers = new Map<string, DealerPreview>();
   const ordered = [...listings].sort(
@@ -207,6 +233,11 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
   );
 }
 
+function dealerIdFromKey(key: string) {
+  const match = /^id:(\d+)$/.exec(key);
+  return match ? Number(match[1]) : 0;
+}
+
 function matchesQuery(dealer: DealerPreview, query: string) {
   if (!query.trim()) return true;
 
@@ -225,6 +256,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
   );
   const [locationReady, setLocationReady] = useState(false);
   const [listings, setListings] = useState<ApiListing[]>([]);
+  const [placements, setPlacements] = useState<FeaturedPlacement[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -248,8 +280,9 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     const controller = new AbortController();
     setStatus("loading");
     setListings([]);
+    setPlacements([]);
 
-    Promise.all(
+    const listingRequest = Promise.all(
       buildListingUrls(location).map(async (url) => {
         const response = await fetch(url, {
           cache: "no-store",
@@ -260,16 +293,41 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         const payload = (await response.json()) as ApiResponse;
         return payload.success && Array.isArray(payload.data) ? payload.data : [];
       }),
-    )
-      .then((responses) => {
-        const merged = new Map<number | string, ApiListing>();
-        responses.flat().forEach((item) => merged.set(item.id, item));
-        setListings(Array.from(merged.values()));
+    );
+
+    const placementRequest = Promise.all(
+      buildFeaturedUrls(location).map(async (url) => {
+        const response = await fetch(url, {
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = (await response.json()) as FeaturedResponse;
+        return payload.success && Array.isArray(payload.data) ? payload.data : [];
+      }),
+    );
+
+    Promise.all([listingRequest, placementRequest])
+      .then(([listingResponses, placementResponses]) => {
+        const mergedListings = new Map<number | string, ApiListing>();
+        listingResponses.flat().forEach((item) => mergedListings.set(item.id, item));
+
+        const mergedPlacements = new Map<number, FeaturedPlacement>();
+        placementResponses.flat().forEach((item) => {
+          if (item.dealer_id && !mergedPlacements.has(item.dealer_id)) {
+            mergedPlacements.set(item.dealer_id, item);
+          }
+        });
+
+        setListings(Array.from(mergedListings.values()));
+        setPlacements(Array.from(mergedPlacements.values()));
         setStatus("ready");
       })
       .catch((error: unknown) => {
         if ((error as Error).name !== "AbortError") {
           setListings([]);
+          setPlacements([]);
           setStatus("error");
         }
       });
@@ -277,17 +335,22 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     return () => controller.abort();
   }, [location, locationReady]);
 
-  const dealers = useMemo(
-    () =>
-      buildDealers(
-        listings.filter((listing) =>
-          listingMatchesLocation(listing, location),
-        ),
+  const dealers = useMemo(() => {
+    const placementOrder = new Map<number, number>();
+    placements.forEach((item, index) => placementOrder.set(Number(item.dealer_id), index));
+
+    return buildDealers(
+      listings.filter((listing) => listingMatchesLocation(listing, location)),
+    )
+      .filter((dealer) => placementOrder.has(dealerIdFromKey(dealer.key)))
+      .filter((dealer) => matchesQuery(dealer, query))
+      .sort(
+        (a, b) =>
+          (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
+          (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
       )
-        .filter((dealer) => matchesQuery(dealer, query))
-        .slice(0, 8),
-    [listings, location, query],
-  );
+      .slice(0, 8);
+  }, [listings, placements, location, query]);
 
   const showFallback = status !== "ready" || dealers.length === 0;
 

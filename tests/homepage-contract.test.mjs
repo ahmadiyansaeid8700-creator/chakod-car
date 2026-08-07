@@ -42,7 +42,7 @@ test("keeps public homepage navigation and show-all destinations stable", () => 
 
   for (const href of [
     'href="/cars"',
-    'href="/showrooms"',
+    'href="/dealerships"',
     'href="/businesses"',
     'href="/account/listings/new"',
   ]) {

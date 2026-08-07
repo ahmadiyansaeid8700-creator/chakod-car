@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { getDb } from "../../../../db";
 import { bannerReservations } from "../../../../db/schema";
@@ -22,6 +22,8 @@ export async function GET() {
     .limit(100);
 
   return Response.json({
+    retired: true,
+    message: "رزرو بنر قدیمی فقط به صورت سابقه خواندنی نگهداری می شود.",
     reservations: rows.map((row) => ({
       ...row,
       cities: JSON.parse(row.citiesJson) as string[],
@@ -29,41 +31,13 @@ export async function GET() {
   });
 }
 
-export async function PATCH(request: Request) {
-  const admin = await requireAdmin();
-  if (!admin) {
-    return Response.json({ error: "دسترسی مدیریت ندارید." }, { status: 403 });
-  }
-
-  const payload = (await request.json()) as {
-    id?: number;
-    reviewStatus?: "approved" | "rejected";
-    adminNote?: string;
-  };
-  const id = Number(payload.id);
-  const reviewStatus = payload.reviewStatus;
-  const adminNote =
-    typeof payload.adminNote === "string"
-      ? payload.adminNote.trim().slice(0, 500)
-      : "";
-
-  if (!Number.isInteger(id) || !["approved", "rejected"].includes(reviewStatus ?? "")) {
-    return Response.json({ error: "درخواست مدیریت معتبر نیست." }, { status: 400 });
-  }
-
-  const [reservation] = await getDb()
-    .update(bannerReservations)
-    .set({
-      reviewStatus,
-      adminNote,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(bannerReservations.id, id))
-    .returning();
-
-  if (!reservation) {
-    return Response.json({ error: "رزرو پیدا نشد." }, { status: 404 });
-  }
-
-  return Response.json({ reservation });
+export async function PATCH() {
+  return Response.json(
+    {
+      error: "مدیریت رزرو بنر قدیمی بازنشسته شده است.",
+      code: "LEGACY_BANNER_RESERVATION_RETIRED",
+      replacement: "/admin/featured-showrooms",
+    },
+    { status: 410 },
+  );
 }

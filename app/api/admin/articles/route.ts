@@ -14,6 +14,10 @@ import { readServerIdentity } from "../../../../lib/server-route-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function clean(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
@@ -24,12 +28,11 @@ function validSlug(value: string) {
 
 async function requireContentAdmin() {
   const identity = await readServerIdentity("/api/admin-me.php");
-  if (!identity?.success || !identity.is_admin) return false;
+  if (!identity || identity.success !== true || identity.is_admin !== true) return false;
 
-  const permissions = Array.isArray(identity.admin?.permissions)
-    ? identity.admin.permissions.map(String)
-    : [];
-  const role = String(identity.admin?.role || identity.admin?.role_key || "");
+  const admin = isRecord(identity.admin) ? identity.admin : {};
+  const permissions = Array.isArray(admin.permissions) ? admin.permissions.map(String) : [];
+  const role = clean(admin.role || admin.role_key, 80);
 
   return (
     identity.is_site_owner === true ||
@@ -83,9 +86,7 @@ export async function POST(request: NextRequest) {
   let input: Record<string, unknown>;
   try {
     const value: unknown = await request.json();
-    input = value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
+    input = isRecord(value) ? value : {};
   } catch {
     return jsonResponse({ success: false, message: "اطلاعات مقاله معتبر نیست." }, 400);
   }

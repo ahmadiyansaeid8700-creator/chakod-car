@@ -1,5 +1,5 @@
-import AdminFinanceCenter from "../finance/AdminFinanceCenter";
+import { redirect } from "next/navigation";
 
 export default function AdminPricingPage() {
-  return <AdminFinanceCenter mode="pricing" />;
+  redirect("/admin/commerce");
 }

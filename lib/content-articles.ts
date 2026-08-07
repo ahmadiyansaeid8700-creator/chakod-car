@@ -5,7 +5,12 @@ import { contentArticles } from "../db/schema";
 import { articles as fallbackArticles, type Article } from "../app/articles/article-data";
 import { parseStoredArticleSections } from "./article-content-format";
 
-function rowToArticle(row: typeof contentArticles.$inferSelect): Article {
+export type PublishedArticle = Article & {
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+function rowToArticle(row: typeof contentArticles.$inferSelect): PublishedArticle {
   return {
     slug: row.slug,
     title: row.title,
@@ -14,10 +19,12 @@ function rowToArticle(row: typeof contentArticles.$inferSelect): Article {
     readingMinutes: Math.max(1, Number(row.readingMinutes || 5)),
     updatedAt: row.publishedAt || row.updatedAt || row.createdAt,
     sections: parseStoredArticleSections(row.bodyJson),
+    seoTitle: row.seoTitle || row.title,
+    seoDescription: row.seoDescription || row.excerpt,
   };
 }
 
-export async function getPublishedArticles(): Promise<Article[]> {
+export async function getPublishedArticles(): Promise<PublishedArticle[]> {
   try {
     const rows = await getDb()
       .select()
@@ -35,7 +42,7 @@ export async function getPublishedArticles(): Promise<Article[]> {
   }
 }
 
-export async function getPublishedArticle(slug: string): Promise<Article | null> {
+export async function getPublishedArticle(slug: string): Promise<PublishedArticle | null> {
   try {
     const [row] = await getDb()
       .select()

@@ -1,0 +1,416 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 28%),
+    linear-gradient(180deg, #fbf9ff, #f7f6fb 60%, #ffffff);
+  color: #241632;
+}
+
+.shell {
+  width: min(1160px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 90px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  border: 1px solid rgba(91, 67, 117, 0.12);
+  border-radius: 28px;
+  padding: 28px 30px;
+  background: linear-gradient(135deg, #2b153d, #6d28d9 65%, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 22px 52px rgba(67, 34, 104, 0.2);
+}
+
+.header > div > span {
+  display: block;
+  margin-top: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.header h1 {
+  margin: 7px 0 8px;
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+.header p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.95;
+}
+
+.back,
+.commandLink {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.commandLink {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.error {
+  margin-bottom: 16px;
+  border: 1px solid #fecaca;
+  border-radius: 15px;
+  background: #fff7f7;
+  padding: 14px 16px;
+  color: #b91c1c;
+  line-height: 1.8;
+}
+
+.bookingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.formPanel,
+.summaryCard,
+.history,
+.stateCard {
+  border: 1px solid rgba(91, 67, 117, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 42px rgba(55, 35, 78, 0.08);
+}
+
+.formPanel {
+  padding: 26px;
+}
+
+.stepHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 4px 0 18px;
+}
+
+.stepHeader + .twoCols,
+.twoCols + .stepHeader {
+  margin-top: 20px;
+}
+
+.stepHeader > b {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: #efe7fb;
+  color: #6d28d9;
+}
+
+.stepHeader h2,
+.stepHeader p {
+  margin: 0;
+}
+
+.stepHeader h2 {
+  font-size: 18px;
+}
+
+.stepHeader p {
+  margin-top: 5px;
+  color: #766a80;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.twoCols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.formPanel label {
+  display: grid;
+  gap: 8px;
+  color: #4c3b5d;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.formPanel select,
+.formPanel input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(91, 67, 117, 0.16);
+  border-radius: 13px;
+  background: #fbfaff;
+  padding: 0 13px;
+  color: #2d1e3c;
+  font: inherit;
+  outline: 0;
+}
+
+.discountRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+}
+
+.discountRow button,
+.summaryCard button {
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.discountRow button {
+  min-width: 110px;
+  padding: 0 14px;
+}
+
+.discountRow button:disabled,
+.summaryCard button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.autoCardNote {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  background: #f0fdf4;
+  padding: 15px;
+}
+
+.autoCardNote > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 900;
+}
+
+.autoCardNote strong,
+.autoCardNote p {
+  display: block;
+  margin: 0;
+}
+
+.autoCardNote strong {
+  color: #166534;
+  font-size: 13px;
+}
+
+.autoCardNote p {
+  margin-top: 4px;
+  color: #4f6b57;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.summaryCard {
+  position: sticky;
+  top: 18px;
+  padding: 24px;
+}
+
+.summaryCard > span {
+  display: block;
+  margin-bottom: 12px;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.summaryCard > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+}
+
+.summaryCard small {
+  color: #7e7188;
+}
+
+.summaryCard strong {
+  text-align: left;
+}
+
+.summaryCard hr {
+  border: 0;
+  border-top: 1px solid #eee8f3;
+}
+
+.summaryCard .total strong {
+  color: #6d28d9;
+  font-size: 20px;
+}
+
+.summaryCard button {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 14px;
+}
+
+.history {
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.history header span {
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.history header h2 {
+  margin: 6px 0 18px;
+}
+
+.historyList {
+  display: grid;
+  gap: 10px;
+}
+
+.historyList article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #eee8f3;
+  border-radius: 15px;
+  padding: 14px 15px;
+}
+
+.historyList article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.historyList article > div:last-child {
+  text-align: left;
+}
+
+.historyList small,
+.empty {
+  color: #7d7187;
+  font-size: 12px;
+}
+
+.stateCard {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  padding: 36px;
+  text-align: center;
+}
+
+.stateCard h1,
+.stateCard h2,
+.stateCard p {
+  margin: 0;
+}
+
+.stateCard p {
+  max-width: 560px;
+  color: #7b6d85;
+  line-height: 1.9;
+}
+
+.stateCard a {
+  margin-top: 10px;
+  color: #6d28d9;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ede5f8;
+  border-top-color: #6d28d9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 840px) {
+  .bookingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryCard {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    width: calc(100% - 20px);
+    padding-top: 12px;
+    padding-bottom: 126px;
+  }
+
+  .header {
+    flex-direction: column;
+    padding: 23px 20px;
+    border-radius: 22px;
+  }
+
+  .twoCols {
+    grid-template-columns: 1fr;
+  }
+
+  .discountRow {
+    grid-template-columns: 1fr;
+  }
+
+  .discountRow button {
+    min-height: 44px;
+  }
+
+  .formPanel,
+  .summaryCard,
+  .history {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .historyList article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .historyList article > div:last-child {
+    text-align: right;
+  }
+}

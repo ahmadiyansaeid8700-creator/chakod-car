@@ -103,6 +103,46 @@ async function verifyManagedListing(request: NextRequest, listingId: number) {
   };
 }
 
+async function verifyManagedBusiness(request: NextRequest, dealerId: number) {
+  const upstream = await fetch(authApiUrl("/api/commerce.php"), {
+    method: "GET",
+    cache: "no-store",
+    headers: requestIdentityHeaders(request),
+    signal: AbortSignal.timeout(20_000),
+  });
+  const payload = await parseJsonResponse(upstream);
+
+  if (!upstream.ok || payload?.success !== true) {
+    return {
+      ok: false as const,
+      status: upstream.status >= 400 ? upstream.status : 502,
+      message: cleanText(payload?.message, 220) || "دسترسی به مجموعه قابل بررسی نیست.",
+    };
+  }
+
+  const businesses = Array.isArray(payload.dealers) ? payload.dealers.filter(isRecord) : [];
+  const business = businesses.find(
+    (item) => Number(item.dealer_id || item.id || 0) === dealerId,
+  );
+
+  if (!business) {
+    return {
+      ok: false as const,
+      status: 403,
+      message: "این مجموعه در فهرست کسب‌وکارهای قابل مدیریت شما نیست.",
+    };
+  }
+
+  return {
+    ok: true as const,
+    business: {
+      id: dealerId,
+      name: cleanText(business.dealer_name || business.name, 180),
+      role: cleanText(business.role, 60),
+    },
+  };
+}
+
 async function createCommerceOrder(
   request: NextRequest,
   input: {
@@ -251,6 +291,9 @@ export async function POST(request: NextRequest) {
     let verifiedListing:
       | { id: number; title: string; status: string; dealerId: number | null }
       | null = null;
+    let verifiedBusiness:
+      | { id: number; name: string; role: string }
+      | null = null;
 
     if (requestedServiceKey.startsWith("listing_")) {
       if (!Number.isSafeInteger(listingId) || listingId <= 0) {
@@ -264,7 +307,24 @@ export async function POST(request: NextRequest) {
       verifiedListing = ownership.listing;
     }
 
-    const dealerId = dealerIdInput > 0 ? dealerIdInput : verifiedListing?.dealerId || 0;
+    const requiresManagedBusiness =
+      requestedServiceKey === "business_placement" ||
+      requestedServiceKey === "dealership_placement" ||
+      requestedServiceKey.startsWith("professional_profile_");
+
+    if (requiresManagedBusiness) {
+      if (!Number.isSafeInteger(dealerIdInput) || dealerIdInput <= 0) {
+        return jsonResponse({ success: false, message: "برای این خدمت باید یک مجموعه قابل مدیریت انتخاب شود." }, 400);
+      }
+
+      const ownership = await verifyManagedBusiness(request, dealerIdInput);
+      if (!ownership.ok) {
+        return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+      }
+      verifiedBusiness = ownership.business;
+    }
+
+    const dealerId = verifiedBusiness?.id || dealerIdInput || verifiedListing?.dealerId || 0;
     const commerceResult = await createCommerceOrder(request, {
       serviceKey: requestedServiceKey,
       listingId: verifiedListing?.id,
@@ -288,6 +348,8 @@ export async function POST(request: NextRequest) {
       listing_title: verifiedListing?.title || "",
       listing_status: verifiedListing?.status || "",
       dealer_id: dealerId || null,
+      dealer_name: verifiedBusiness?.name || "",
+      dealer_role: verifiedBusiness?.role || "",
       province: province || "",
       discount_code: commerceResult.discountCode || "",
       upstream_message: commerceResult.message || "",

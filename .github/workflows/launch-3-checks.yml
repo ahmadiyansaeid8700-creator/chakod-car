@@ -1,0 +1,49 @@
+name: Launch 3 checks
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Homepage contract
+        run: node --test tests/homepage-contract.test.mjs
+
+      - name: Local development login contract
+        run: node --test tests/local-development-login.test.mjs
+
+      - name: Local development session contract
+        run: node --test tests/local-development-session.test.mjs
+
+      - name: Local public API contract
+        run: node --test tests/local-public-api.test.mjs
+
+      - name: Route access contract
+        run: node --test tests/route-access.test.mjs

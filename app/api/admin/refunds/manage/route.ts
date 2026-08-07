@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const db = getDb();
-    const [refund] = await db
+    let [refund] = await db
       .select()
       .from(paymentRefunds)
       .where(eq(paymentRefunds.id, refundId))
@@ -146,10 +146,14 @@ export async function POST(request: NextRequest) {
       if (refund.status !== "requested") {
         return jsonResponse({ success: false, message: "این درخواست در وضعیت قابل تایید نیست." }, 409);
       }
-      await db
+      const [approvedRefund] = await db
         .update(paymentRefunds)
         .set({ status: "approved", adminNote, updatedAt: sql`CURRENT_TIMESTAMP` })
-        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "requested")));
+        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "requested")))
+        .returning();
+      if (!approvedRefund) {
+        return jsonResponse({ success: false, message: "وضعیت بازپرداخت همزمان تغییر کرده است." }, 409);
+      }
       return jsonResponse({ success: true, message: "بازپرداخت تایید شد و آماده اجرا است." });
     }
 
@@ -157,21 +161,73 @@ export async function POST(request: NextRequest) {
       if (!["requested", "approved"].includes(refund.status)) {
         return jsonResponse({ success: false, message: "این درخواست در وضعیت قابل رد نیست." }, 409);
       }
-      await db
+      const [rejectedRefund] = await db
         .update(paymentRefunds)
         .set({ status: "rejected", adminNote, updatedAt: sql`CURRENT_TIMESTAMP` })
-        .where(eq(paymentRefunds.id, refund.id));
+        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, refund.status)))
+        .returning();
+      if (!rejectedRefund) {
+        return jsonResponse({ success: false, message: "وضعیت بازپرداخت همزمان تغییر کرده است." }, 409);
+      }
       return jsonResponse({ success: true, message: "درخواست بازپرداخت رد شد." });
     }
 
-    if (!['approved', 'processing'].includes(refund.status)) {
-      if (refund.status === "refunded") {
-        return jsonResponse({ success: true, reused: true, message: "این بازپرداخت قبلا انجام شده است." });
-      }
+    if (refund.status === "refunded") {
+      return jsonResponse({ success: true, reused: true, message: "این بازپرداخت قبلا انجام شده است." });
+    }
+    if (refund.status === "processing") {
+      return jsonResponse(
+        { success: false, pending: true, message: "این بازپرداخت در حال اجرا است و دوباره اجرا نمی شود." },
+        202,
+      );
+    }
+    if (refund.status !== "approved") {
       return jsonResponse({ success: false, message: "بازپرداخت ابتدا باید تایید شود." }, 409);
     }
 
+    const [lockedRefund] = await db
+      .update(paymentRefunds)
+      .set({ status: "processing", adminNote, updatedAt: sql`CURRENT_TIMESTAMP` })
+      .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "approved")))
+      .returning();
+
+    if (!lockedRefund) {
+      const [latestRefund] = await db
+        .select()
+        .from(paymentRefunds)
+        .where(eq(paymentRefunds.id, refund.id))
+        .limit(1);
+      if (latestRefund?.status === "refunded") {
+        return jsonResponse({ success: true, reused: true, message: "این بازپرداخت قبلا انجام شده است." });
+      }
+      return jsonResponse(
+        { success: false, pending: latestRefund?.status === "processing", message: "اجرای این بازپرداخت توسط درخواست دیگری شروع شده است." },
+        latestRefund?.status === "processing" ? 202 : 409,
+      );
+    }
+    refund = lockedRefund;
+
     if (refund.destination === "wallet") {
+      const existingCredit = await db
+        .select()
+        .from(walletTransactions)
+        .where(
+          and(
+            eq(walletTransactions.referenceType, "refund"),
+            eq(walletTransactions.referenceId, String(refund.id)),
+            eq(walletTransactions.status, "completed"),
+          ),
+        )
+        .limit(1);
+
+      if (existingCredit.length) {
+        await db
+          .update(paymentRefunds)
+          .set({ status: "refunded", updatedAt: sql`CURRENT_TIMESTAMP` })
+          .where(eq(paymentRefunds.id, refund.id));
+        return jsonResponse({ success: true, reused: true, message: "اعتبار این بازپرداخت قبلا به کیف پول اضافه شده است." });
+      }
+
       const wallet = await ensureWallet(order.ownerKey);
       const nextBalance = wallet.availableBalanceToman + refund.amountToman;
       const orderStatus = await finalOrderStatus(order.id, order.finalAmountToman, refund.id, refund.amountToman);
@@ -195,7 +251,7 @@ export async function POST(request: NextRequest) {
         db
           .update(paymentRefunds)
           .set({ status: "refunded", adminNote, updatedAt: sql`CURRENT_TIMESTAMP` })
-          .where(eq(paymentRefunds.id, refund.id)),
+          .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "processing"))),
         db
           .update(commerceOrders)
           .set({ status: orderStatus, updatedAt: sql`CURRENT_TIMESTAMP` })
@@ -215,16 +271,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isGatewayRefundConfigured()) {
+      await db
+        .update(paymentRefunds)
+        .set({ status: "approved", updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "processing")));
       return jsonResponse(
         { success: false, message: "Adapter بازپرداخت بانکی هنوز در Environment تنظیم نشده است." },
         503,
       );
     }
-
-    await db
-      .update(paymentRefunds)
-      .set({ status: "processing", adminNote, updatedAt: sql`CURRENT_TIMESTAMP` })
-      .where(eq(paymentRefunds.id, refund.id));
 
     const refundReference = createPublicReference("REF");
     const settlement = await settleGatewayRefund(request, {
@@ -243,7 +298,7 @@ export async function POST(request: NextRequest) {
           adminNote: adminNote || settlement.message,
           updatedAt: sql`CURRENT_TIMESTAMP`,
         })
-        .where(eq(paymentRefunds.id, refund.id));
+        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "processing")));
 
       return jsonResponse(
         {
@@ -264,7 +319,7 @@ export async function POST(request: NextRequest) {
           adminNote: adminNote || `مرجع بازپرداخت: ${settlement.reference}`,
           updatedAt: sql`CURRENT_TIMESTAMP`,
         })
-        .where(eq(paymentRefunds.id, refund.id)),
+        .where(and(eq(paymentRefunds.id, refund.id), eq(paymentRefunds.status, "processing"))),
       db
         .update(commerceOrders)
         .set({ status: orderStatus, updatedAt: sql`CURRENT_TIMESTAMP` })

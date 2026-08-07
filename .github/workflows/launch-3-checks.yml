@@ -15,7 +15,7 @@ permissions:
 jobs:
   source-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -35,3 +35,6 @@ jobs:
 
       - name: Critical dependency audit gate
         run: npm audit --audit-level=critical
+
+      - name: Portable Vinext build preflight
+        run: npm run build:preflight

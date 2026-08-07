@@ -28,7 +28,7 @@ function validSlug(value: string) {
 
 async function requireContentAdmin() {
   const identity = await readServerIdentity("/api/admin-me.php");
-  if (!identity || identity.success !== true || identity.is_admin !== true) return false;
+  if (!isRecord(identity) || identity.success !== true || identity.is_admin !== true) return false;
 
   const admin = isRecord(identity.admin) ? identity.admin : {};
   const permissions = Array.isArray(admin.permissions) ? admin.permissions.map(String) : [];

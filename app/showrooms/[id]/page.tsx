@@ -15,21 +15,46 @@ type ListingsResponse = {
 
 export const dynamic = "force-dynamic";
 
+function decodeLegacyValue(value: string) {
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return value.trim();
+  }
+}
+
+function normalizeDealerName(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase("fa")
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/[ؤ]/g, "و")
+    .replace(/[إأ]/g, "ا")
+    .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
+}
+
 export default async function LegacyShowroomDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const dealerId = Number(id);
+  const requested = decodeLegacyValue(id);
+  const numericDealerId = Number(requested);
+  const hasNumericId = Number.isSafeInteger(numericDealerId) && numericDealerId > 0;
+  const normalizedRequested = normalizeDealerName(requested);
 
-  if (!Number.isSafeInteger(dealerId) || dealerId <= 0) {
+  if (!requested) {
     redirect("/dealerships");
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3500);
-  let destination = "/dealerships";
+  let destination = hasNumericId
+    ? "/dealerships"
+    : `/businesses?type=dealer&q=${encodeURIComponent(requested)}`;
 
   try {
     const response = await fetch(LISTINGS_API, {
@@ -38,9 +63,17 @@ export default async function LegacyShowroomDetailPage({
       signal: controller.signal,
     });
     const payload = (await response.json().catch(() => null)) as ListingsResponse | null;
-    const listing = Array.isArray(payload?.data)
-      ? payload.data.find((item) => Number(item.dealer_id) === dealerId)
-      : undefined;
+    const listings = Array.isArray(payload?.data) ? payload.data : [];
+    const listing = hasNumericId
+      ? listings.find((item) => Number(item.dealer_id) === numericDealerId)
+      : listings.find((item) => {
+          const slug = item.dealer_slug?.trim() || "";
+          const name = item.dealer_name?.trim() || "";
+          return (
+            (slug && normalizeDealerName(slug) === normalizedRequested) ||
+            (name && normalizeDealerName(name) === normalizedRequested)
+          );
+        });
 
     if (listing?.dealer_slug?.trim()) {
       destination = `/businesses/${encodeURIComponent(listing.dealer_slug.trim())}`;
@@ -48,7 +81,7 @@ export default async function LegacyShowroomDetailPage({
       destination = `/businesses?type=dealer&q=${encodeURIComponent(listing.dealer_name.trim())}`;
     }
   } catch {
-    // در صورت قطع API کاربر به دایرکتوری canonical نمایشگاه ها هدایت می شود.
+    // در قطع API مقصد fallback امن بالا حفظ می شود.
   } finally {
     clearTimeout(timeout);
   }

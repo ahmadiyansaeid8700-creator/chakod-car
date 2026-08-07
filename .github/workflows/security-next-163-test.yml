@@ -6,6 +6,9 @@ on:
       - agent/launch-3-local-baseline
     paths:
       - .github/workflows/security-next-163-test.yml
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write

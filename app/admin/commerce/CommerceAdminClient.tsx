@@ -185,8 +185,8 @@ const adminPermissions = [
   ["orders.manage", "مدیریت سفارش‌ها"],
   ["payments.view", "مشاهده پرداخت‌ها"],
   ["payments.manage", "اصلاح و بازگشت پرداخت"],
-  ["banners.view", "مشاهده بنرها"],
-  ["banners.manage", "تأیید و رد بنرها"],
+  ["banners.view", "مشاهده سوابق تبلیغات Legacy"],
+  ["banners.manage", "دسترسی سازگاری تبلیغات Legacy"],
   ["subscriptions.view", "مشاهده اشتراک‌ها"],
   ["subscriptions.manage", "مدیریت اشتراک‌ها"],
   ["discounts.view", "مشاهده کدهای تخفیف"],
@@ -215,8 +215,8 @@ const capabilityLabels: Record<keyof Capabilities, string> = {
   pricing_manage: "مدیریت تعرفه‌ها",
   orders_view: "مشاهده سفارش‌ها",
   orders_manage: "مدیریت سفارش‌ها",
-  banners_view: "مشاهده رزروهای بنر",
-  banners_manage: "مدیریت رزروهای بنر",
+  banners_view: "مشاهده سوابق تبلیغات Legacy",
+  banners_manage: "دسترسی سازگاری تبلیغات Legacy",
   subscriptions_view: "مشاهده اشتراک‌ها",
   subscriptions_manage: "مدیریت اشتراک‌ها",
   discounts_view: "مشاهده کدهای تخفیف",
@@ -244,7 +244,6 @@ const serviceGroupDefinitions = [
   { key: "listing", title: "آگهی خودرو", description: "انتشار، تمدید و بالابر آگهی‌ها", match: (key: string) => key.startsWith("listing_personal") || key.startsWith("listing_dealer") || key === "listing_bump" },
   { key: "professional", title: "پروفایل حرفه‌ای", description: "اشتراک نمایشگاه، تعمیرگاه و فروشگاه یدکی", match: (key: string) => key.startsWith("professional_profile") },
   { key: "story", title: "استوری استانی", description: "تبلیغ ۲۴ ساعته بر اساس گروه استان", match: (key: string) => key.startsWith("listing_story") },
-  { key: "banner", title: "بنر صفحه اصلی", description: "رزرو روزانه بنر استانی", match: (key: string) => key.startsWith("home_banner") },
 ] as const;
 
 type DiscountStep = 1 | 2 | 3;
@@ -255,7 +254,7 @@ const auditActionLabels: Record<string, string> = {
   update_province: "تغییر قیمت یا ظرفیت استان",
   update_order_status: "تغییر وضعیت سفارش",
   update_subscription: "ویرایش اشتراک",
-  review_banner: "بررسی رزرو بنر",
+  review_banner: "بررسی سابقه تبلیغ Legacy",
   create_admin: "افزودن مدیر",
   update_admin_access: "تغییر دسترسی مدیر",
   "discount.create": "ساخت کد تخفیف",
@@ -521,7 +520,6 @@ export default function CommerceAdminClient() {
     if (caps?.discounts_view) items.push({ key: "discounts", label: "کدهای تخفیف" });
     if (caps?.orders_view) items.push({ key: "orders", label: "سفارش‌ها" });
     if (caps?.subscriptions_view) items.push({ key: "subscriptions", label: "اشتراک‌ها" });
-    if (caps?.banners_view) items.push({ key: "banners", label: "رزرو بنر" });
     if (caps?.admins_view) items.push({ key: "admins", label: "مدیران و دسترسی" });
     if (caps?.audit_view) items.push({ key: "audit", label: "گزارش تغییرات" });
     return items;
@@ -596,7 +594,7 @@ export default function CommerceAdminClient() {
   const maxServiceRevenue = Math.max(1, ...revenueBreakdown.map((item) => item.amount_toman));
   const recentOrders = data?.recent_orders || [];
   const serviceGroups = useMemo<ServiceGroup[]>(() => {
-    const source = data?.services || [];
+    const source = (data?.services || []).filter((service) => !service.service_key.startsWith("home_banner"));
     const grouped: ServiceGroup[] = serviceGroupDefinitions.map((definition) => ({
       key: definition.key,
       title: definition.title,

@@ -333,7 +333,7 @@ export default function AdminPage() {
               <span className="moduleIcon">₮</span>
               <b>مدیریت مالی و تجاری</b>
               <p>
-                تعرفه‌ها، قیمت استان‌ها، پرداخت‌ها، اشتراک‌ها، بنرها
+                تعرفه‌ها، قیمت استان‌ها، پرداخت‌ها، اشتراک‌ها، تبلیغات
                 و سطح دسترسی مدیران را از داخل سایت کنترل کن.
               </p>
               <em>ورود به بخش</em>
@@ -341,15 +341,15 @@ export default function AdminPage() {
           )}
 
           {canAuditServices && (
-            <article className="module pending" aria-disabled="true">
-              <span className="moduleIcon small">AI</span>
-              <b>گزارش‌ها و نظارت هوشمند</b>
+            <Link className="module active" href="/admin/audit-logs">
+              <span className="moduleIcon small">≡</span>
+              <b>گزارش تغییرات و نظارت</b>
               <p>
-                گزارش تخلف، رویدادهای امنیتی و بازخورد نظارتی
-                ادمین‌ها.
+                رویدادهای مدیریتی و سوابق قابل ممیزی را از گزارش تغییرات
+                Commerce بررسی کن.
               </p>
-              <em>در حال ساخت</em>
-            </article>
+              <em>ورود به بخش</em>
+            </Link>
           )}
         </section>
       ) : (

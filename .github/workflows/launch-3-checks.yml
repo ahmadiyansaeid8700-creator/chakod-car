@@ -39,6 +39,9 @@ jobs:
       - name: Multi-dealer contract
         run: node --test tests/dealer-directory-contract.test.mjs
 
+      - name: Chakod AI contract
+        run: node --test tests/ai-assistant-contract.test.mjs
+
       - name: Local development login contract
         run: node --test tests/local-development-login.test.mjs
 

@@ -12,6 +12,8 @@ export function GET() {
     "Disallow: /logout",
     "Disallow: /auth/",
     "Disallow: /api/",
+    "Disallow: /support/tickets/",
+    "Disallow: /cars/saved-searches",
     "Disallow: /*?*returnTo=",
     `Sitemap: ${absoluteUrl("/sitemap.xml")}`,
     "",

@@ -29,6 +29,7 @@ export default async function LegacyShowroomDetailPage({
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3500);
+  let destination = "/dealerships";
 
   try {
     const response = await fetch(LISTINGS_API, {
@@ -42,17 +43,15 @@ export default async function LegacyShowroomDetailPage({
       : undefined;
 
     if (listing?.dealer_slug?.trim()) {
-      redirect(`/businesses/${encodeURIComponent(listing.dealer_slug.trim())}`);
-    }
-
-    if (listing?.dealer_name?.trim()) {
-      redirect(`/businesses?type=dealer&q=${encodeURIComponent(listing.dealer_name.trim())}`);
+      destination = `/businesses/${encodeURIComponent(listing.dealer_slug.trim())}`;
+    } else if (listing?.dealer_name?.trim()) {
+      destination = `/businesses?type=dealer&q=${encodeURIComponent(listing.dealer_name.trim())}`;
     }
   } catch {
-    // مسیر سازگاری نباید در زمان قطع API کاربر را روی صفحه خطا نگه دارد.
+    // در صورت قطع API کاربر به دایرکتوری canonical نمایشگاه ها هدایت می شود.
   } finally {
     clearTimeout(timeout);
   }
 
-  redirect("/dealerships");
+  redirect(destination);
 }

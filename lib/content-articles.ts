@@ -29,14 +29,19 @@ export async function getPublishedArticles(): Promise<PublishedArticle[]> {
     const rows = await getDb()
       .select()
       .from(contentArticles)
-      .where(eq(contentArticles.status, "published"))
       .orderBy(desc(contentArticles.publishedAt), desc(contentArticles.id));
 
     if (!rows.length) return fallbackArticles;
 
-    const managed = rows.map(rowToArticle);
-    const managedSlugs = new Set(managed.map((article) => article.slug));
-    return [...managed, ...fallbackArticles.filter((article) => !managedSlugs.has(article.slug))];
+    const managedSlugs = new Set(rows.map((row) => row.slug));
+    const publishedManaged = rows
+      .filter((row) => row.status === "published")
+      .map(rowToArticle);
+
+    return [
+      ...publishedManaged,
+      ...fallbackArticles.filter((article) => !managedSlugs.has(article.slug)),
+    ];
   } catch {
     return fallbackArticles;
   }
@@ -50,7 +55,9 @@ export async function getPublishedArticle(slug: string): Promise<PublishedArticl
       .where(eq(contentArticles.slug, slug))
       .limit(1);
 
-    if (row?.status === "published") return rowToArticle(row);
+    if (row) {
+      return row.status === "published" ? rowToArticle(row) : null;
+    }
   } catch {
     // Before the content migration is applied, launch fallback articles remain available.
   }

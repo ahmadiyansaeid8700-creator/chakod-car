@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 
 const ROOT = process.cwd();
 const APP = path.join(ROOT, 'app');
@@ -17,6 +18,7 @@ const PLACEHOLDER_TEXT = [
   /not\s+implemented/i,
   /به\s*زودی/,
   /در\s*دست\s*ساخت/,
+  /در\s*حال\s*ساخت/,
 ];
 
 function walk(dir) {
@@ -86,6 +88,78 @@ function addMatch(list, file, source, regex, kind) {
   }
 }
 
+function scriptKind(file) {
+  if (file.endsWith('.tsx')) return ts.ScriptKind.TSX;
+  if (file.endsWith('.jsx')) return ts.ScriptKind.JSX;
+  if (file.endsWith('.js')) return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
+}
+
+function jsxNameText(name) {
+  if (ts.isIdentifier(name)) return name.text;
+  return name.getText();
+}
+
+function jsxAttributeMap(attributes) {
+  const map = new Map();
+  for (const property of attributes.properties) {
+    if (!ts.isJsxAttribute(property)) continue;
+    map.set(property.name.getText(), property);
+  }
+  return map;
+}
+
+function staticJsxString(attribute) {
+  if (!attribute?.initializer) return null;
+  if (ts.isStringLiteral(attribute.initializer)) return attribute.initializer.text;
+  if (
+    ts.isJsxExpression(attribute.initializer) &&
+    attribute.initializer.expression &&
+    ts.isStringLiteral(attribute.initializer.expression)
+  ) {
+    return attribute.initializer.expression.text;
+  }
+  return null;
+}
+
+function scanJsxControls(file, source, suspiciousButtons, suspiciousAnchors) {
+  const rel = toPosix(path.relative(ROOT, file));
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind(file));
+
+  function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tagName = jsxNameText(node.tagName);
+      const attrs = jsxAttributeMap(node.attributes);
+      const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+
+      if (tagName === 'button') {
+        const type = staticJsxString(attrs.get('type'));
+        const hasHandler = ['onClick', 'onPointerDown', 'onMouseDown', 'onKeyDown', 'onSubmit', 'formAction']
+          .some((name) => attrs.has(name));
+        const disabled = attrs.has('disabled');
+        if (type === 'button' && !hasHandler && !disabled) {
+          suspiciousButtons.push({
+            file: rel,
+            line,
+            snippet: node.getText(sourceFile).replace(/\s+/g, ' ').slice(0, 220),
+          });
+        }
+      }
+
+      if ((tagName === 'a' || tagName === 'Link') && !attrs.has('href')) {
+        suspiciousAnchors.push({
+          file: rel,
+          line,
+          snippet: node.getText(sourceFile).replace(/\s+/g, ' ').slice(0, 220),
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 if (!fs.existsSync(APP)) {
   console.error('app/ directory not found');
   process.exit(2);
@@ -109,29 +183,14 @@ for (const file of sourceFiles) {
   addMatch(navRefs, rel, source, /href\s*=\s*["']([^"']*)["']/g, 'href');
   addMatch(navRefs, rel, source, /href\s*=\s*\{\s*["']([^"']*)["']\s*\}/g, 'href');
   addMatch(navRefs, rel, source, /\bhref\s*:\s*["']([^"']*)["']/g, 'href-object');
-  addMatch(navRefs, rel, source, /(?:router\.(?:push|replace)|redirect)\(\s*["']([^"']*)["']/g, 'navigation-call');
+  addMatch(navRefs, rel, source, /(?:router\.(?:push|replace)|redirect|permanentRedirect)\(\s*["']([^"']*)["']/g, 'navigation-call');
 
   for (const pattern of PLACEHOLDER_TEXT) {
     const match = source.match(pattern);
     if (match?.index != null) placeholders.push({ file: rel, line: lineOf(source, match.index), value: match[0] });
   }
 
-  for (const match of source.matchAll(/<button\b([\s\S]*?)>/g)) {
-    const attrs = match[1] || '';
-    const isTypeButton = /type\s*=\s*["']button["']/.test(attrs);
-    const hasHandler = /\bon(?:Click|PointerDown|MouseDown|KeyDown|Submit)\s*=/.test(attrs) || /formAction\s*=/.test(attrs);
-    const disabled = /\bdisabled(?:\s|=|>)/.test(attrs);
-    if (isTypeButton && !hasHandler && !disabled) {
-      suspiciousButtons.push({ file: rel, line: lineOf(source, match.index ?? 0), snippet: attrs.replace(/\s+/g, ' ').trim().slice(0, 180) });
-    }
-  }
-
-  for (const match of source.matchAll(/<a\b([\s\S]*?)>/g)) {
-    const attrs = match[1] || '';
-    if (!/\bhref\s*=/.test(attrs)) {
-      suspiciousAnchors.push({ file: rel, line: lineOf(source, match.index ?? 0), snippet: attrs.replace(/\s+/g, ' ').trim().slice(0, 180) });
-    }
-  }
+  scanJsxControls(file, source, suspiciousButtons, suspiciousAnchors);
 }
 
 const hardPlaceholders = navRefs.filter((item) => {
@@ -160,7 +219,7 @@ lines.push(`- Literal navigation references checked: ${checkedRefs.length}`);
 lines.push(`- Dead literal internal destinations: ${uniqueDead.length}`);
 lines.push(`- Empty/#/javascript navigation placeholders: ${uniquePlaceholders.length}`);
 lines.push(`- Potential inert type=button controls: ${uniqueSuspiciousButtons.length}`);
-lines.push(`- Anchor tags without href: ${uniqueSuspiciousAnchors.length}`);
+lines.push(`- Anchor/Link tags without href: ${uniqueSuspiciousAnchors.length}`);
 lines.push(`- Placeholder/TODO wording hits in app source: ${uniquePlaceholderText.length}`);
 lines.push('');
 
@@ -175,7 +234,7 @@ function section(title, items, render) {
 section('Dead internal destinations', uniqueDead, (x) => `\`${x.file}:${x.line}\` → \`${x.target}\` (${x.kind})`);
 section('Navigation placeholders', uniquePlaceholders, (x) => `\`${x.file}:${x.line}\` → \`${x.value || '(empty)'}\``);
 section('Potential inert type=button controls', uniqueSuspiciousButtons, (x) => `\`${x.file}:${x.line}\` → \`${x.snippet}\``);
-section('Anchor tags without href', uniqueSuspiciousAnchors, (x) => `\`${x.file}:${x.line}\` → \`${x.snippet}\``);
+section('Anchor/Link tags without href', uniqueSuspiciousAnchors, (x) => `\`${x.file}:${x.line}\` → \`${x.snippet}\``);
 section('Placeholder wording', uniquePlaceholderText, (x) => `\`${x.file}:${x.line}\` → \`${x.value}\``);
 section('Discovered page routes', routes.sort((a,b) => a.route.localeCompare(b.route)).map((x) => x), (x) => `\`${x.route}\` ← \`${toPosix(path.relative(ROOT, x.file))}\``);
 
@@ -184,7 +243,13 @@ fs.writeFileSync(REPORT_PATH, lines.join('\n') + '\n');
 console.log(lines.slice(0, 9).join('\n'));
 console.log(`Report: ${path.relative(ROOT, REPORT_PATH)}`);
 
-if (uniqueDead.length || uniquePlaceholders.length) {
-  console.error('Launch UI audit failed: dead destinations or navigation placeholders found.');
+if (
+  uniqueDead.length ||
+  uniquePlaceholders.length ||
+  uniqueSuspiciousButtons.length ||
+  uniqueSuspiciousAnchors.length ||
+  uniquePlaceholderText.length
+) {
+  console.error('Launch UI audit failed: unresolved navigation, controls, or placeholder wording found.');
   process.exit(1);
 }

@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import CompareListingButton from "./CompareListingButton";
 import ListingDetailClient from "./ListingDetailClient";
+import SimilarListings from "./SimilarListings";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 import { carDetailPath } from "../../../lib/car-routes";
 
@@ -46,6 +47,7 @@ export default async function ListingDetailPage({
         initialResponse={initialResponse}
       />
       <CompareListingButton listingId={listingId} />
+      <SimilarListings listingId={listingId} listing={initialResponse?.data || null} />
       <section
         dir="rtl"
         style={{

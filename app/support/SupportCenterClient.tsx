@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import styles from "./SupportCenterClient.module.css";
@@ -94,7 +95,12 @@ function formatDate(value?: string | null) {
     : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function cleanPrefill(value: string | null, maxLength: number) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
 export default function SupportCenterClient() {
+  const searchParams = useSearchParams();
   const [topic, setTopic] = useState("other");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -129,13 +135,37 @@ export default function SupportCenterClient() {
         setTickets(Array.isArray(payload.tickets) ? payload.tickets : []);
       }
     } catch {
-      // The request form remains available even when history cannot be loaded.
+      // فرم درخواست حتی در زمان خطای تاریخچه باید قابل استفاده بماند.
     }
   }
 
   useEffect(() => {
     void loadTickets();
   }, []);
+
+  useEffect(() => {
+    const requestedTopic = cleanPrefill(searchParams.get("topic"), 40);
+    if (requestedTopic && Object.prototype.hasOwnProperty.call(topicLabels, requestedTopic)) {
+      setTopic(requestedTopic);
+    }
+
+    const requestedSubject = cleanPrefill(searchParams.get("subject"), 180);
+    const requestedMessage = cleanPrefill(searchParams.get("message"), 1000);
+    const requestedOrder = cleanPrefill(searchParams.get("order_no"), 100);
+    const requestedListing = cleanPrefill(searchParams.get("listing_id"), 24).replace(/\D/g, "");
+
+    if (requestedSubject) setSubject(requestedSubject);
+    if (requestedMessage) setMessage(requestedMessage);
+    if (requestedOrder) setOrderNo(requestedOrder);
+    if (requestedListing) setListingId(requestedListing);
+
+    if (requestedTopic || requestedSubject || requestedOrder || requestedListing) {
+      window.setTimeout(
+        () => document.getElementById("request")?.scrollIntoView({ behavior: "smooth" }),
+        50,
+      );
+    }
+  }, [searchParams]);
 
   function chooseTopic(value: string) {
     setTopic(value);

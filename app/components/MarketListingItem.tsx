@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ListingCard from "./ListingCard";
 import ListingCardImage from "./ListingCardImage";
-import SaveListingButton from "./SaveListingButton";
 import type { CatalogListing } from "../ads/[segment]/catalog-types";
 import styles from "./MarketListingItem.module.css";
 
@@ -106,15 +105,8 @@ export default function MarketListingItem({ listing, tone, badge }: Props) {
 
           <div className={styles.media}>
             <ListingCardImage src={imageUrl} alt={title} />
-            <span className={styles.segmentBadge}>{badge}</span>
           </div>
         </Link>
-
-        <SaveListingButton
-          listingId={listing.id}
-          compact
-          className={styles.saveButton}
-        />
       </article>
     </>
   );

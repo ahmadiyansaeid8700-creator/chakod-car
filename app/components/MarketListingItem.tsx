@@ -83,7 +83,10 @@ export default function MarketListingItem({ listing, tone, badge }: Props) {
         />
       </div>
 
-      <article className={styles.mobileOnly}>
+      <article
+        className={styles.mobileOnly}
+        style={{ borderRadius: 0, boxShadow: "none", transform: "none" }}
+      >
         <Link
           href={href}
           prefetch={false}

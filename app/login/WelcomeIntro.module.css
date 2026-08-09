@@ -10,214 +10,318 @@
   place-items: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 54%, rgba(124, 58, 237, 0.24), transparent 34%),
-    radial-gradient(circle at 50% 10%, rgba(168, 85, 247, 0.12), transparent 26%),
-    linear-gradient(180deg, #08050e 0%, #12091f 56%, #060409 100%);
+    radial-gradient(circle at 50% 58%, rgba(124, 58, 237, 0.28), transparent 34%),
+    radial-gradient(circle at 50% 12%, rgba(168, 85, 247, 0.12), transparent 28%),
+    linear-gradient(180deg, #07040c 0%, #13091f 56%, #050307 100%);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
+.overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 0 43%, rgba(255,255,255,0.025) 49%, transparent 56%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 46px);
+  opacity: 0.55;
+}
+
 .root:has(:global(.doneBox)) .overlay {
   visibility: visible;
-  animation: overlayHello 320ms ease-out both;
+  animation: overlayHello 300ms ease-out both;
 }
 
 .scene {
   position: relative;
-  width: min(720px, 94vw);
-  min-height: min(690px, 88vh);
+  width: min(760px, 95vw);
+  min-height: min(700px, 90vh);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  padding: 28px 18px;
+  gap: 24px;
+  padding: 26px 18px;
 }
 
 .brandLockup {
   position: relative;
-  z-index: 4;
+  z-index: 5;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  color: #fff;
+  justify-content: center;
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-12px) scale(0.96);
 }
 
 .root:has(:global(.doneBox)) .brandLockup {
-  animation: brandReveal 520ms 80ms ease-out both;
+  animation: brandReveal 520ms 70ms ease-out both;
 }
 
 .brandLockup img {
-  width: min(210px, 58vw);
+  display: block;
+  width: min(255px, 62vw);
   height: auto;
-  max-height: 92px;
+  max-height: 112px;
   object-fit: contain;
-  margin-bottom: 10px;
-  filter: drop-shadow(0 8px 22px rgba(139, 92, 246, 0.2));
-}
-
-.brandLockup strong {
-  font-size: clamp(26px, 5vw, 42px);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-}
-
-.brandLockup span {
-  margin-top: 7px;
-  color: #d9cbed;
-  font-size: clamp(13px, 2.2vw, 17px);
-  line-height: 1.8;
+  filter: drop-shadow(0 9px 26px rgba(139, 92, 246, 0.28));
 }
 
 .roadGlow {
   position: absolute;
   left: 50%;
-  bottom: 118px;
-  width: min(560px, 86vw);
-  height: 84px;
-  transform: translateX(-50%);
+  bottom: 112px;
+  width: min(620px, 88vw);
+  height: 98px;
+  transform: translateX(-50%) scaleX(0.72);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.48), rgba(124, 58, 237, 0));
-  filter: blur(12px);
+  background:
+    radial-gradient(ellipse at center, rgba(125, 76, 255, 0.46) 0%, rgba(76, 29, 149, 0.23) 44%, transparent 73%);
+  filter: blur(14px);
   opacity: 0;
 }
 
 .root:has(:global(.doneBox)) .roadGlow {
-  animation: roadPulse 1800ms 300ms ease-out both;
+  animation: roadPulse 2100ms 320ms ease-out both;
 }
 
 .car {
   position: relative;
-  width: min(430px, 82vw);
-  height: 210px;
-  transform: translateY(34px) scale(0.86);
+  width: min(470px, 84vw);
+  height: 228px;
+  isolation: isolate;
   opacity: 0;
-  filter: drop-shadow(0 28px 38px rgba(0, 0, 0, 0.55));
+  transform: translateY(48px) scale(0.78);
+  filter: drop-shadow(0 34px 45px rgba(0, 0, 0, 0.62));
+}
+
+.car::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 46px;
+  width: 420px;
+  height: 146px;
+  transform: translateX(-50%);
+  clip-path: polygon(12% 18%, 27% 4%, 73% 4%, 88% 18%, 98% 55%, 91% 86%, 73% 96%, 27% 96%, 9% 86%, 2% 55%);
+  background:
+    linear-gradient(92deg, rgba(255,255,255,0.11) 0 8%, transparent 22% 76%, rgba(255,255,255,0.08) 92% 100%),
+    linear-gradient(180deg, #3a3741 0%, #242129 26%, #121116 67%, #08080b 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow:
+    inset 0 12px 20px rgba(255,255,255,0.04),
+    inset 0 -28px 34px rgba(0,0,0,0.58),
+    0 0 0 1px rgba(0,0,0,0.25);
+}
+
+.car::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -12px;
+  width: 370px;
+  height: 34px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.78), transparent 72%);
+  filter: blur(5px);
 }
 
 .root:has(:global(.doneBox)) .car {
-  animation: carArrive 760ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation:
+    carArrive 860ms 250ms cubic-bezier(0.18, 0.82, 0.22, 1) both,
+    carIdle 950ms 1180ms ease-in-out infinite alternate;
 }
 
 .windshield {
   position: absolute;
+  z-index: 1;
   left: 50%;
-  top: 4px;
-  width: 224px;
-  height: 66px;
+  top: 5px;
+  width: 242px;
+  height: 78px;
   transform: translateX(-50%);
-  border-radius: 60px 60px 24px 24px;
-  background: linear-gradient(180deg, #282033 0%, #09070d 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 8px 18px rgba(255, 255, 255, 0.035);
+  clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
+  border-radius: 58px 58px 20px 20px;
+  background:
+    linear-gradient(118deg, rgba(255,255,255,0.16) 0 13%, transparent 28%),
+    linear-gradient(180deg, #342a40 0%, #17131d 47%, #09080d 100%);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: inset 0 8px 20px rgba(255,255,255,0.04);
 }
 
 .hood {
   position: absolute;
+  z-index: 2;
   left: 50%;
-  top: 46px;
-  width: 356px;
-  height: 126px;
+  top: 55px;
+  width: 352px;
+  height: 118px;
   transform: translateX(-50%);
-  border-radius: 94px 94px 42px 42px;
+  clip-path: polygon(13% 0, 87% 0, 100% 86%, 80% 100%, 20% 100%, 0 86%);
   background:
-    linear-gradient(100deg, transparent 0 16%, rgba(255, 255, 255, 0.07) 24%, transparent 34%),
-    linear-gradient(180deg, #27242d 0%, #111015 68%, #07070a 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow:
-    inset 0 12px 28px rgba(255, 255, 255, 0.025),
-    inset 0 -20px 30px rgba(0, 0, 0, 0.55);
+    linear-gradient(102deg, transparent 0 14%, rgba(255,255,255,0.13) 23%, transparent 34%),
+    linear-gradient(258deg, transparent 0 15%, rgba(255,255,255,0.07) 24%, transparent 33%),
+    linear-gradient(180deg, #37333c 0%, #201e24 45%, #101014 100%);
+  border-top: 1px solid rgba(255,255,255,0.11);
+  box-shadow: inset 0 12px 22px rgba(255,255,255,0.025);
 }
+
+.hood::before,
+.hood::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  width: 76px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.24), transparent);
+  opacity: 0.55;
+}
+
+.hood::before { left: 54px; transform: rotate(-9deg); }
+.hood::after { right: 54px; transform: rotate(9deg); }
 
 .badge {
   position: absolute;
   left: 50%;
-  top: 18px;
+  top: 15px;
   transform: translateX(-50%);
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #121217;
+  background: radial-gradient(circle at 35% 30%, #34343a, #101014 68%);
   border: 2px solid #d7d7dd;
-  color: #f4f4f5;
-  font: 700 8px/1 Arial, sans-serif;
+  color: #f5f5f6;
+  font: 700 7px/1 Arial, sans-serif;
   letter-spacing: 0.4px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.36);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 .headlight {
   position: absolute;
-  top: 98px;
-  width: 92px;
-  height: 32px;
-  border-radius: 23px 12px 18px 10px;
+  z-index: 4;
+  top: 111px;
+  width: 112px;
+  height: 37px;
   overflow: visible;
-  background: #15141a;
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: #101116;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: inset 0 0 12px rgba(167, 228, 255, 0.08);
 }
 
 .headlightLeft {
-  left: 38px;
-  transform: skewX(8deg);
+  left: 34px;
+  clip-path: polygon(0 20%, 93% 0, 100% 76%, 12% 100%);
 }
 
 .headlightRight {
-  right: 38px;
-  transform: skewX(-8deg);
+  right: 34px;
+  clip-path: polygon(7% 0, 100% 20%, 88% 100%, 0 76%);
 }
 
 .headlight span {
   position: absolute;
-  inset: 5px 7px;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #fff 0%, #e4f9ff 46%, #bcefff 100%);
-  opacity: 0.1;
-  box-shadow: 0 0 8px rgba(196, 242, 255, 0.3);
+  inset: 6px 9px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 26% 50%, #ffffff 0 7%, #d8f6ff 8% 18%, transparent 20%),
+    radial-gradient(circle at 70% 50%, #ffffff 0 7%, #d8f6ff 8% 18%, transparent 20%),
+    linear-gradient(90deg, rgba(228,249,255,0.85), rgba(168,224,255,0.55));
+  opacity: 0.18;
+  box-shadow: 0 0 8px rgba(196,242,255,0.28);
+}
+
+.headlight::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 190px;
+  height: 86px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(224,248,255,0.58), rgba(196,242,255,0.18) 48%, transparent 100%);
+  filter: blur(14px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.headlightLeft::after {
+  right: 74%;
+  clip-path: polygon(100% 30%, 0 0, 0 100%, 100% 70%);
+}
+
+.headlightRight::after {
+  left: 74%;
+  transform: translateY(-50%) scaleX(-1);
+  clip-path: polygon(100% 30%, 0 0, 0 100%, 100% 70%);
 }
 
 .root:has(:global(.doneBox)) .headlight span {
-  animation: headlightHello 1450ms 700ms ease-in-out both;
+  animation: headlightHello 1500ms 760ms ease-in-out both;
+}
+
+.root:has(:global(.doneBox)) .headlight::after {
+  animation: beamHello 1500ms 760ms ease-in-out both;
 }
 
 .grilles {
   position: absolute;
+  z-index: 5;
   left: 50%;
-  top: 106px;
+  top: 117px;
   transform: translateX(-50%);
   display: flex;
-  gap: 5px;
+  gap: 6px;
 }
 
 .grilles span {
-  width: 30px;
-  height: 49px;
-  border-radius: 15px 15px 18px 18px;
-  border: 2px solid #73737b;
-  background: repeating-linear-gradient(90deg, #0b0b0e 0 3px, #24242b 3px 5px);
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+  width: 34px;
+  height: 55px;
+  border-radius: 17px 17px 20px 20px;
+  border: 2px solid #85858e;
+  background:
+    repeating-linear-gradient(90deg, #08080b 0 3px, #26262d 3px 5px);
+  box-shadow:
+    inset 0 0 9px rgba(0,0,0,0.72),
+    0 0 0 1px rgba(0,0,0,0.35);
 }
 
 .bumper {
   position: absolute;
+  z-index: 3;
   left: 50%;
-  bottom: 7px;
-  width: 302px;
-  height: 27px;
+  bottom: 11px;
+  width: 338px;
+  height: 42px;
   transform: translateX(-50%);
-  border-radius: 0 0 56px 56px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, #101015, #050507);
+  border-radius: 14px 14px 58px 58px;
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), transparent 35%),
+    linear-gradient(180deg, #111116, #050507);
 }
+
+.bumper::before,
+.bumper::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  width: 72px;
+  height: 20px;
+  border-radius: 4px 14px 16px 4px;
+  background: repeating-linear-gradient(90deg, #060608 0 5px, #1e1e24 5px 7px);
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.75);
+}
+
+.bumper::before { left: 23px; transform: skewX(10deg); }
+.bumper::after { right: 23px; transform: skewX(-10deg); }
 
 .welcomeCopy {
   position: relative;
-  z-index: 4;
+  z-index: 5;
   text-align: center;
   color: #fff;
   opacity: 0;
@@ -225,12 +329,12 @@
 }
 
 .root:has(:global(.doneBox)) .welcomeCopy {
-  animation: copyReveal 520ms 1650ms ease-out both;
+  animation: copyReveal 520ms 1690ms ease-out both;
 }
 
 .welcomeCopy strong {
   display: block;
-  font-size: clamp(18px, 3.2vw, 26px);
+  font-size: clamp(19px, 3.2vw, 28px);
   line-height: 1.5;
 }
 
@@ -247,29 +351,40 @@
 }
 
 @keyframes brandReveal {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes carArrive {
-  0% { opacity: 0; transform: translateY(42px) scale(0.8); }
-  60% { opacity: 1; transform: translateY(0) scale(1.025); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% { opacity: 0; transform: translateY(52px) scale(0.76); filter: blur(2px) brightness(0.8); }
+  62% { opacity: 1; transform: translateY(-2px) scale(1.03); filter: blur(0) brightness(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) brightness(1); }
+}
+
+@keyframes carIdle {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-3px) scale(1.006); }
 }
 
 @keyframes headlightHello {
-  0%, 12% { opacity: 0.08; box-shadow: 0 0 6px rgba(196, 242, 255, 0.22); }
-  22% { opacity: 1; box-shadow: 0 0 34px 13px rgba(196, 242, 255, 0.92); }
-  36% { opacity: 0.14; box-shadow: 0 0 8px rgba(196, 242, 255, 0.28); }
-  52% { opacity: 1; box-shadow: 0 0 40px 15px rgba(196, 242, 255, 0.96); }
-  68% { opacity: 0.12; box-shadow: 0 0 8px rgba(196, 242, 255, 0.3); }
-  100% { opacity: 0.62; box-shadow: 0 0 20px 6px rgba(196, 242, 255, 0.52); }
+  0%, 10% { opacity: 0.12; box-shadow: 0 0 7px rgba(196,242,255,0.24); }
+  21% { opacity: 1; box-shadow: 0 0 38px 15px rgba(196,242,255,0.98); }
+  34% { opacity: 0.14; box-shadow: 0 0 8px rgba(196,242,255,0.26); }
+  52% { opacity: 1; box-shadow: 0 0 44px 17px rgba(196,242,255,1); }
+  67% { opacity: 0.13; box-shadow: 0 0 9px rgba(196,242,255,0.28); }
+  100% { opacity: 0.76; box-shadow: 0 0 24px 8px rgba(196,242,255,0.58); }
+}
+
+@keyframes beamHello {
+  0%, 10%, 35%, 66% { opacity: 0; }
+  21%, 52% { opacity: 0.82; }
+  100% { opacity: 0.13; }
 }
 
 @keyframes roadPulse {
-  0% { opacity: 0; transform: translateX(-50%) scaleX(0.65); }
-  55% { opacity: 1; transform: translateX(-50%) scaleX(1); }
-  100% { opacity: 0.74; transform: translateX(-50%) scaleX(1.05); }
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.62); }
+  50% { opacity: 1; transform: translateX(-50%) scaleX(1); }
+  100% { opacity: 0.78; transform: translateX(-50%) scaleX(1.08); }
 }
 
 @keyframes copyReveal {
@@ -279,58 +394,71 @@
 
 @media (max-width: 520px) {
   .scene {
-    min-height: min(610px, 90vh);
-    gap: 17px;
-    padding-inline: 12px;
+    min-height: min(625px, 90vh);
+    gap: 18px;
+    padding-inline: 10px;
   }
 
   .brandLockup img {
-    width: min(180px, 54vw);
+    width: min(210px, 58vw);
   }
 
   .car {
-    width: min(342px, 88vw);
-    height: 184px;
-    transform-origin: center;
+    width: min(360px, 91vw);
+    height: 190px;
+  }
+
+  .car::before {
+    width: 340px;
+    height: 126px;
   }
 
   .hood {
-    width: 294px;
-    height: 112px;
+    width: 290px;
+    height: 102px;
+    top: 50px;
   }
 
   .windshield {
-    width: 188px;
+    width: 194px;
+    height: 66px;
   }
 
   .headlight {
-    top: 91px;
-    width: 77px;
+    top: 97px;
+    width: 86px;
+    height: 31px;
   }
 
-  .headlightLeft {
-    left: 25px;
-  }
+  .headlightLeft { left: 16px; }
+  .headlightRight { right: 16px; }
 
-  .headlightRight {
-    right: 25px;
+  .headlight::after {
+    width: 130px;
+    height: 64px;
   }
 
   .grilles {
-    top: 101px;
+    top: 104px;
   }
 
   .grilles span {
-    width: 26px;
-    height: 43px;
+    width: 28px;
+    height: 46px;
   }
 
   .bumper {
-    width: 250px;
+    width: 276px;
+    height: 36px;
+  }
+
+  .bumper::before,
+  .bumper::after {
+    width: 56px;
   }
 
   .roadGlow {
-    bottom: 94px;
+    bottom: 104px;
   }
 }
 
@@ -340,10 +468,11 @@
   .root:has(:global(.doneBox)) .car,
   .root:has(:global(.doneBox)) .roadGlow,
   .root:has(:global(.doneBox)) .headlight span,
+  .root:has(:global(.doneBox)) .headlight::after,
   .root:has(:global(.doneBox)) .welcomeCopy {
-    animation-duration: 1ms;
-    animation-delay: 0ms;
+    animation: none;
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }

@@ -39,6 +39,18 @@ function formatPrice(listing: ListingData) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return "";
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
 function normalizePhone(value?: string | null) {
   return value ? value.replace(/[^\d+]/g, "") : "";
 }
@@ -115,9 +127,21 @@ export default function ListingDetailMobile({ listingId, initialResponse }: Prop
   const reportHref = `/support?topic=report&listing_id=${listing.id}&subject=${encodeURIComponent(`گزارش آگهی شماره ${listing.id}`)}#request`;
   const latitude = Number(listing.latitude);
   const longitude = Number(listing.longitude);
-  const mapUrl = Number.isFinite(latitude) && Number.isFinite(longitude)
+  const hasValidCoords =
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180 &&
+    !(latitude === 0 && longitude === 0);
+  const mapUrl = hasValidCoords
     ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
     : "";
+  const publishedAt = formatDate(listing.created_at);
+  const updatedAt = formatDate(listing.updated_at);
+  const freshnessText = [
+    publishedAt ? `انتشار ${publishedAt}` : "",
+    updatedAt ? `به‌روزرسانی ${updatedAt}` : "",
+  ].filter(Boolean).join(" • ");
 
   const specs = [
     {
@@ -154,7 +178,6 @@ export default function ListingDetailMobile({ listingId, initialResponse }: Prop
       <div className={styles.shell}>
         <div className={styles.backRow}>
           <Link href="/cars">بازگشت به خودروها</Link>
-          <span>آگهی شماره {formatNumber(listing.id)}</span>
         </div>
 
         <section className={styles.gallery} aria-label="تصاویر آگهی">
@@ -187,10 +210,6 @@ export default function ListingDetailMobile({ listingId, initialResponse }: Prop
         </section>
 
         <section className={styles.summary}>
-          <div className={styles.badges}>
-            {dealerVerified ? <span className={styles.verified}>✓ فروشنده تأییدشده</span> : null}
-            <span>{isDealer ? "نمایشگاهی" : "شخصی"}</span>
-          </div>
           <h1 className={styles.title}>{title}</h1>
           {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
           <div className={styles.price}>
@@ -199,7 +218,7 @@ export default function ListingDetailMobile({ listingId, initialResponse }: Prop
           </div>
           <div className={styles.metaLine}>
             <span><b>{location}</b></span>
-            <span>{formatNumber(listing.views_count || 0)} بازدید</span>
+            {freshnessText ? <span>{freshnessText}</span> : null}
           </div>
         </section>
 
@@ -271,9 +290,9 @@ export default function ListingDetailMobile({ listingId, initialResponse }: Prop
       <div className={styles.actions}>
         <SaveListingButton listingId={listing.id} compact className={styles.saveButton} />
         <ShareListingButton title={title} url={shareUrl} compact />
-        <a className={styles.call} href={callablePhone ? `tel:${callablePhone}` : "#seller"}>
-          {callablePhone ? "تماس با فروشنده" : "اطلاعات فروشنده"}
-        </a>
+        {callablePhone ? (
+          <a className={styles.call} href={`tel:${callablePhone}`}>تماس با فروشنده</a>
+        ) : null}
       </div>
     </main>
   );

@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import AuthStatus from "../../components/AuthStatus";
 import CatalogListingsClient from "../../components/CatalogListingsClient";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import { carMarketPath, legacyAdsRedirect } from "../../../lib/car-routes";
@@ -264,9 +265,9 @@ export default async function SegmentCatalogPage({
               <span aria-hidden="true">♡</span>
               <b>نشان</b>
             </Link>
-            <Link className={chrome.accountLink} href="/account">
-              حساب من
-            </Link>
+            <div className={chrome.accountStatus}>
+              <AuthStatus />
+            </div>
             <Link className={chrome.submitLink} href="/account/listings/new">
               <span aria-hidden="true">＋</span>
               <b>ثبت آگهی</b>

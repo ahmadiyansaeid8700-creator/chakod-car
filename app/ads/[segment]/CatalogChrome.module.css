@@ -1,0 +1,256 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  border-bottom: 1px solid rgba(232, 223, 244, 0.96);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 30px rgba(42, 26, 68, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.headerInner {
+  width: min(1240px, calc(100% - 32px));
+  min-height: 64px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+.logo {
+  display: block;
+  width: auto;
+  height: 39px;
+  object-fit: contain;
+}
+
+.primaryNav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #5c5364;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primaryNav a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.primaryNav a:hover,
+.primaryNav .activeNav {
+  color: #6d28d9;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.savedLink,
+.accountLink,
+.submitLink {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.savedLink,
+.accountLink {
+  color: #4c1d95;
+  border: 1px solid #e8dff4;
+  background: #fff;
+}
+
+.savedLink span,
+.submitLink span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.savedLink b,
+.submitLink b {
+  font: inherit;
+}
+
+.savedLink:hover,
+.accountLink:hover {
+  border-color: #c4b5fd;
+  background: #faf7ff;
+}
+
+.submitLink {
+  color: #fff;
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  box-shadow: 0 12px 26px rgba(76, 29, 149, 0.18);
+}
+
+.hero {
+  width: min(1240px, calc(100% - 32px));
+  margin: 18px auto 12px;
+  padding: 24px 26px;
+  border: 1px solid #e7dcf2;
+  border-radius: 24px;
+  color: #17111f;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.09), transparent 20rem),
+    #fff;
+  box-shadow: 0 18px 48px rgba(47, 28, 72, 0.07);
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.hero h1 {
+  margin: 0;
+  color: #17111f;
+  font-size: clamp(25px, 2.6vw, 36px);
+  line-height: 1.45;
+}
+
+.hero p {
+  max-width: 720px;
+  margin: 7px 0 0;
+  color: #786f82;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.segmentNav {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto 12px;
+  padding: 6px;
+  border: 1px solid #e8dff4;
+  border-radius: 16px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 30px rgba(42, 26, 68, 0.045);
+  scrollbar-width: none;
+}
+
+.segmentNav::-webkit-scrollbar {
+  display: none;
+}
+
+.segmentNav a {
+  min-height: 40px;
+  min-width: 120px;
+  padding: 0 14px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 0 auto;
+  color: #6f6478;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.segmentNav a:hover {
+  color: var(--accent);
+  background: var(--soft);
+}
+
+.segmentNav .segmentActive {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.browser {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .headerInner {
+    gap: 10px;
+  }
+
+  .primaryNav {
+    gap: 14px;
+  }
+
+  .accountLink {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .headerInner {
+    width: calc(100% - 20px);
+    min-height: 58px;
+  }
+
+  .logo {
+    height: 31px;
+  }
+
+  .primaryNav {
+    display: none;
+  }
+
+  .actions {
+    margin-right: auto;
+  }
+
+  .savedLink {
+    width: 40px;
+    padding: 0;
+  }
+
+  .savedLink b {
+    display: none;
+  }
+
+  .submitLink {
+    min-height: 40px;
+    padding: 0 10px;
+  }
+
+  .hero,
+  .segmentNav,
+  .browser {
+    width: calc(100% - 20px);
+  }
+
+  .hero {
+    margin-top: 12px;
+    padding: 19px 18px;
+    border-radius: 20px;
+  }
+
+  .hero h1 {
+    font-size: 24px;
+  }
+}

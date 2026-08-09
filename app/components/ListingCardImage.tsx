@@ -16,15 +16,16 @@ function Placeholder() {
         alt=""
         aria-hidden="true"
         style={{
-          width: 58,
-          height: 68,
+          width: 48,
+          height: 56,
           objectFit: "contain",
-          opacity: 0.92,
-          filter: "drop-shadow(0 10px 18px rgba(15, 8, 26, 0.28))",
+          opacity: 0.82,
+          filter: "drop-shadow(0 8px 14px rgba(15, 8, 26, 0.22))",
         }}
       />
-      <strong style={{ fontSize: 12, color: "#fff" }}>چاکود</strong>
-      <span>تصویر برای این آگهی ثبت نشده</span>
+      <span style={{ fontSize: 9, color: "rgba(255,255,255,.78)" }}>
+        بدون تصویر
+      </span>
     </div>
   );
 }

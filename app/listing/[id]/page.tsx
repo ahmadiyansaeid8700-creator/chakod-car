@@ -3,9 +3,11 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import CompareListingButton from "./CompareListingButton";
 import ListingDetailClient from "./ListingDetailClient";
+import ListingDetailMobile from "./ListingDetailMobile";
 import SimilarListings from "./SimilarListings";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 import { carDetailPath } from "../../../lib/car-routes";
+import responsive from "./ListingDetailResponsive.module.css";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -42,55 +44,64 @@ export default async function ListingDetailPage({
 
   return (
     <>
-      <ListingDetailClient
-        listingId={listingId}
-        initialResponse={initialResponse}
-      />
-      <CompareListingButton listingId={listingId} />
-      <SimilarListings listingId={listingId} listing={initialResponse?.data || null} />
-      <section
-        dir="rtl"
-        style={{
-          width: "min(1180px, calc(100% - 24px))",
-          margin: "0 auto 42px",
-          border: "1px solid #eadff2",
-          borderRadius: 18,
-          background: "#fff",
-          padding: "17px 18px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <strong style={{ display: "block", color: "#2c1d37", marginBottom: 4 }}>
-            مشکلی در اطلاعات این آگهی دیدید؟
-          </strong>
-          <span style={{ color: "#776980", fontSize: 12 }}>
-            گزارش با شناسه همین آگهی برای پشتیبانی چاکود ثبت و قابل پیگیری می‌شود.
-          </span>
-        </div>
-        <Link
-          href={reportHref}
+      <div className={responsive.mobileOnly}>
+        <ListingDetailMobile
+          listingId={listingId}
+          initialResponse={initialResponse}
+        />
+      </div>
+
+      <div className={responsive.desktopOnly}>
+        <ListingDetailClient
+          listingId={listingId}
+          initialResponse={initialResponse}
+        />
+        <CompareListingButton listingId={listingId} />
+        <SimilarListings listingId={listingId} listing={initialResponse?.data || null} />
+        <section
+          dir="rtl"
           style={{
-            display: "inline-flex",
-            minHeight: 40,
+            width: "min(1180px, calc(100% - 24px))",
+            margin: "0 auto 42px",
+            border: "1px solid #eadff2",
+            borderRadius: 18,
+            background: "#fff",
+            padding: "17px 18px",
+            display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 12,
-            background: "#f4effb",
-            padding: "0 14px",
-            color: "#6d28d9",
-            fontSize: 12,
-            fontWeight: 900,
-            textDecoration: "none",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
-          گزارش آگهی
-        </Link>
-      </section>
+          <div>
+            <strong style={{ display: "block", color: "#2c1d37", marginBottom: 4 }}>
+              مشکلی در اطلاعات این آگهی دیدید؟
+            </strong>
+            <span style={{ color: "#776980", fontSize: 12 }}>
+              گزارش با شناسه همین آگهی برای پشتیبانی چاکود ثبت و قابل پیگیری می‌شود.
+            </span>
+          </div>
+          <Link
+            href={reportHref}
+            style={{
+              display: "inline-flex",
+              minHeight: 40,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 12,
+              background: "#f4effb",
+              padding: "0 14px",
+              color: "#6d28d9",
+              fontSize: 12,
+              fontWeight: 900,
+              textDecoration: "none",
+            }}
+          >
+            گزارش آگهی
+          </Link>
+        </section>
+      </div>
     </>
   );
 }

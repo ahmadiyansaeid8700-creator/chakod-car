@@ -7,6 +7,12 @@ import {
   rejectCrossSiteMutation,
   secureJsonHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import {
+  CURRENT_PRIVACY_VERSION,
+  CURRENT_REFUND_VERSION,
+  CURRENT_TERMS_VERSION,
+  recordLoginLegalAcceptance,
+} from "../../../../lib/legal-consent";
 
 const MAX_REQUEST_BYTES = 2_000;
 
@@ -54,7 +60,13 @@ export async function POST(request: NextRequest) {
       method: "POST",
       cache: "no-store",
       headers,
-      body: JSON.stringify({ mobile, accept_terms: true }),
+      body: JSON.stringify({
+        mobile,
+        accept_terms: true,
+        terms_version: CURRENT_TERMS_VERSION,
+        privacy_version: CURRENT_PRIVACY_VERSION,
+        refund_version: CURRENT_REFUND_VERSION,
+      }),
       signal: AbortSignal.timeout(15_000),
     });
 
@@ -63,10 +75,28 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "پاسخ سرویس پیامک معتبر نیست." }, 502);
     }
 
-    return Response.json(payload, {
-      status: upstream.status,
-      headers: secureJsonHeaders(),
-    });
+    if (upstream.ok && payload.success === true) {
+      await recordLoginLegalAcceptance(mobile, {
+        ipAddress: cloudflareIp,
+        userAgent,
+        source: "login_otp",
+      });
+    }
+
+    return Response.json(
+      {
+        ...payload,
+        legal: {
+          terms_version: CURRENT_TERMS_VERSION,
+          privacy_version: CURRENT_PRIVACY_VERSION,
+          refund_version: CURRENT_REFUND_VERSION,
+        },
+      },
+      {
+        status: upstream.status,
+        headers: secureJsonHeaders(),
+      },
+    );
   } catch {
     return jsonResponse({ success: false, message: "ارتباط با سرویس پیامک برقرار نشد." }, 502);
   }

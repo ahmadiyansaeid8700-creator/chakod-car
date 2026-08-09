@@ -15,7 +15,7 @@ export default function LoginLayout({ children }: LoginLayoutProps) {
         <div className={styles.splashFrame}>
           <img
             className={styles.splashArtwork}
-            src="/brand/chakod-welcome-final.webp"
+            src="/brand/chakod-welcome-final.png"
             alt=""
           />
 

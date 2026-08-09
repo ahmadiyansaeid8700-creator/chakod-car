@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import ListingCard from "./ListingCard";
+import MarketListingItem from "./MarketListingItem";
 import CatalogFilterPanel from "../ads/[segment]/CatalogFilterPanel";
 import type {
   CatalogFacets,
@@ -328,13 +328,11 @@ export default function CatalogListingsClient({
         ) : response && response.data.length > 0 ? (
           <div className={styles.grid}>
             {response.data.map((listing) => (
-              <ListingCard
+              <MarketListingItem
                 key={listing.id}
                 listing={listing}
                 tone={tone}
                 badge={badge}
-                variant="grid"
-                showActions
               />
             ))}
           </div>

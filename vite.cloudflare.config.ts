@@ -33,6 +33,13 @@ export default defineConfig(async () => {
           images: {
             binding: "IMAGES",
           },
+          d1_databases: [
+            {
+              binding: "DB",
+              database_name: "chakod-staging",
+              database_id: "c38ca246-c71b-4a64-98fb-d0c946da3cb9",
+            },
+          ],
         },
       }),
     ],

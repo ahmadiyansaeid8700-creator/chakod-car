@@ -7,6 +7,7 @@ import { createLocalDevelopmentSession } from "../../lib/local-development-login
 import { safeReturnTo } from "./return-to";
 
 const RESEND_SECONDS = 90;
+const WELCOME_SPLASH_MS = 2600;
 const LOCAL_DEV_SESSION_MARKER = "chakod-local-dev-session";
 const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
 
@@ -186,6 +187,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     setMessage("");
+
     try {
       const res = await fetch("/api/auth/send-code", {
         method: "POST",
@@ -204,7 +206,7 @@ export default function LoginPage() {
       if (!json.success) {
         setError(
           json.message ||
-            "ارسال کد تأیید ناموفق بود. لطفاً چند دقیقه بعد دوباره تلاش کنید."
+            "ارسال کد تأیید ناموفق بود. لطفاً چند دقیقه بعد دوباره تلاش کنید.",
         );
         return;
       }
@@ -284,25 +286,20 @@ export default function LoginPage() {
         : "/account?complete=1";
       const nextUrl = postLoginDestination(defaultNextUrl);
 
-      setMessage(
-        nextUrl === "/account?complete=1"
-          ? "ورود موفق بود. لطفاً یک‌بار پروفایل خود را تکمیل کنید."
-          : "ورود موفق بود. در حال انتقال به صفحه درخواستی..."
-      );
-
+      setMessage("");
       setStep("done");
 
       window.setTimeout(() => {
-        window.location.href = nextUrl;
-      }, 700);
-    } catch (error) {
+        window.location.replace(nextUrl);
+      }, WELCOME_SPLASH_MS);
+    } catch (caughtError) {
       const isTimeout =
-        error instanceof DOMException && error.name === "AbortError";
+        caughtError instanceof DOMException && caughtError.name === "AbortError";
 
       setError(
         isTimeout
           ? "پاسخ سرور طول کشید. دوباره روی تأیید و ورود بزنید."
-          : "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید."
+          : "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.",
       );
       setMessage("");
     } finally {
@@ -339,7 +336,9 @@ export default function LoginPage() {
                 <input
                   className="normalInput"
                   value={mobile}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setMobile(e.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setMobile(event.target.value)
+                  }
                   placeholder="مثلاً 09123456789"
                   inputMode="tel"
                   autoComplete="tel"
@@ -350,7 +349,9 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   checked={accepted}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setAccepted(e.target.checked)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setAccepted(event.target.checked)
+                  }
                 />
                 <span>
                   قوانین ثبت آگهی، شرایط استفاده، حریم خصوصی و سیاست پرداخت
@@ -369,8 +370,8 @@ export default function LoginPage() {
                 {loading
                   ? "در حال ارسال..."
                   : accepted
-                  ? "ارسال کد تأیید"
-                  : "ابتدا قوانین را بپذیرید"}
+                    ? "ارسال کد تأیید"
+                    : "ابتدا قوانین را بپذیرید"}
               </button>
 
               {IS_LOCAL_DEV && (
@@ -411,8 +412,8 @@ export default function LoginPage() {
                 <input
                   className="codeInput"
                   value={code}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setCode(normalizeCode(e.target.value));
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setCode(normalizeCode(event.target.value));
                     setError("");
                     setMessage("");
                   }}
@@ -426,13 +427,13 @@ export default function LoginPage() {
               <button
                 className="primaryBtn"
                 disabled={!canVerify || loading}
-                onClick={() => verifyCode()}
+                onClick={verifyCode}
               >
                 {loading
                   ? "در حال تأیید..."
                   : canVerify
-                  ? "تأیید و ورود"
-                  : "کد را وارد کنید"}
+                    ? "تأیید و ورود"
+                    : "کد را وارد کنید"}
               </button>
 
               <div className="resendBox">
@@ -469,13 +470,10 @@ export default function LoginPage() {
           )}
 
           {step === "done" && (
-            <div className="doneBox">
-              <div className="doneIcon">👑</div>
-              <h1>خوش آمدید به چاکود</h1>
-              <p>چند لحظه دیگر وارد مرحله بعد می‌شوید.</p>
-              <a className="primaryLink" href="/account">
-                ادامه
-              </a>
+            <div className="doneBox" aria-hidden="true">
+              <div className="doneIcon">✓</div>
+              <h1>ورود موفق بود</h1>
+              <p>در حال آماده‌سازی چاکود برای شما...</p>
             </div>
           )}
 
@@ -653,8 +651,7 @@ export default function LoginPage() {
           margin-right: 6px;
         }
 
-        .primaryBtn,
-        .primaryLink {
+        .primaryBtn {
           width: 100%;
           border: 0;
           border-radius: 17px;
@@ -664,7 +661,6 @@ export default function LoginPage() {
           font-weight: bold;
           font-size: 14px;
           cursor: pointer;
-          text-decoration: none;
           display: inline-block;
           text-align: center;
         }
@@ -709,7 +705,9 @@ export default function LoginPage() {
           cursor: pointer;
         }
 
-        .devLoginBtn:disabled {
+        .devLoginBtn:disabled,
+        .linkBtn:disabled,
+        .resendBtn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
@@ -722,11 +720,6 @@ export default function LoginPage() {
           font-weight: bold;
           margin-top: 14px;
           cursor: pointer;
-        }
-
-        .linkBtn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
 
         .resendBox {
@@ -753,11 +746,6 @@ export default function LoginPage() {
           font-weight: bold;
           cursor: pointer;
           font-size: 13px;
-        }
-
-        .resendBtn:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
         }
 
         .message {

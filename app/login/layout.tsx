@@ -12,41 +12,16 @@ export default function LoginLayout({ children }: LoginLayoutProps) {
       {children}
 
       <div className={styles.overlay} aria-hidden="true">
-        <div className={styles.scene}>
-          <div className={styles.brandLockup}>
-            <img
-              src="/brand/chakod-logo-full-light.png"
-              alt="چاکود، پلتفرم رشد کسب و کار خودرو"
-            />
-          </div>
+        <div className={styles.splashFrame}>
+          <img
+            className={styles.splashArtwork}
+            src="/brand/chakod-welcome-final.webp"
+            alt=""
+          />
 
-          <div className={styles.roadGlow} />
-
-          <div className={styles.car}>
-            <div className={styles.windshield} />
-            <div className={styles.hood}>
-              <span className={styles.badge}>BMW</span>
-            </div>
-
-            <div className={`${styles.headlight} ${styles.headlightLeft}`}>
-              <span />
-            </div>
-            <div className={`${styles.headlight} ${styles.headlightRight}`}>
-              <span />
-            </div>
-
-            <div className={styles.grilles}>
-              <span />
-              <span />
-            </div>
-
-            <div className={styles.bumper} />
-          </div>
-
-          <div className={styles.welcomeCopy}>
-            <strong>به چاکود خوش آمدید</strong>
-            <span>در حال ورود به صفحه اصلی...</span>
-          </div>
+          <span className={`${styles.headlightFlash} ${styles.headlightLeft}`} />
+          <span className={`${styles.headlightFlash} ${styles.headlightRight}`} />
+          <span className={styles.floorPulse} />
         </div>
       </div>
     </div>

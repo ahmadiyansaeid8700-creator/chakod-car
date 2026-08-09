@@ -169,51 +169,51 @@
 
 .hero {
   width: min(1240px, calc(100% - 32px));
-  margin: 18px auto 12px;
-  padding: 24px 26px;
+  margin: 14px auto 10px;
+  padding: 16px 20px;
   border: 1px solid #e7dcf2;
-  border-radius: 24px;
+  border-radius: 18px;
   color: #17111f;
   background:
-    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.09), transparent 20rem),
+    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.075), transparent 18rem),
     #fff;
-  box-shadow: 0 18px 48px rgba(47, 28, 72, 0.07);
+  box-shadow: 0 12px 34px rgba(47, 28, 72, 0.055);
 }
 
 .kicker {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 950;
 }
 
 .hero h1 {
   margin: 0;
   color: #17111f;
-  font-size: clamp(25px, 2.6vw, 36px);
-  line-height: 1.45;
+  font-size: clamp(23px, 2.3vw, 31px);
+  line-height: 1.4;
 }
 
 .hero p {
-  max-width: 720px;
-  margin: 7px 0 0;
+  max-width: 760px;
+  margin: 4px 0 0;
   color: #786f82;
-  font-size: 11px;
-  line-height: 1.9;
+  font-size: 10px;
+  line-height: 1.8;
 }
 
 .segmentNav {
   width: min(1240px, calc(100% - 32px));
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
   padding: 6px;
   border: 1px solid #e8dff4;
-  border-radius: 16px;
+  border-radius: 15px;
   display: flex;
   gap: 6px;
   overflow-x: auto;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 10px 30px rgba(42, 26, 68, 0.045);
+  box-shadow: 0 8px 24px rgba(42, 26, 68, 0.04);
   scrollbar-width: none;
 }
 
@@ -222,10 +222,10 @@
 }
 
 .segmentNav a {
-  min-height: 40px;
+  min-height: 38px;
   min-width: 120px;
   padding: 0 14px;
-  border-radius: 11px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -253,6 +253,20 @@
   margin: 0 auto;
 }
 
+.browser > :global(div:first-child) {
+  grid-template-columns: 276px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.browser :global(aside[aria-label="فیلتر آگهی‌ها"]) {
+  border-radius: 20px;
+  box-shadow: 0 12px 34px rgba(39, 23, 52, 0.055);
+}
+
+.browser :global(aside[aria-label="فیلتر آگهی‌ها"]) > div:first-child {
+  padding: 15px 15px 13px;
+}
+
 /* Market-only polish: keep shared ListingCard rails untouched. */
 .browser :global(article) {
   border-radius: 20px;
@@ -260,7 +274,7 @@
 }
 
 .browser :global(article) > div:first-child {
-  aspect-ratio: 1.95 / 1;
+  aspect-ratio: 2.05 / 1;
   border-radius: 19px 19px 0 0;
 }
 
@@ -273,7 +287,7 @@
 .browser :global(article) > div:nth-child(2) > div:first-child {
   min-height: auto;
   margin-top: 0;
-  padding-top: 13px;
+  padding-top: 12px;
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
@@ -283,18 +297,18 @@
 }
 
 .browser :global(article) [aria-label="اطلاعات آگهی"] {
-  min-height: 42px;
-  margin-top: 9px;
+  min-height: 40px;
+  margin-top: 8px;
 }
 
 .browser :global(article) [aria-label="مشخصات اصلی خودرو"] {
-  margin-top: 10px;
+  margin-top: 9px;
   gap: 6px;
 }
 
 .browser :global(article) [aria-label="مشخصات اصلی خودرو"] > span {
-  min-height: 54px;
-  padding: 7px 4px;
+  min-height: 52px;
+  padding: 6px 4px;
 }
 
 .browser :global(form) input,
@@ -326,6 +340,10 @@
   .accountLink,
   .accountStatus {
     display: none;
+  }
+
+  .browser > :global(div:first-child) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -368,16 +386,16 @@
   }
 
   .hero {
-    margin-top: 12px;
-    padding: 19px 18px;
-    border-radius: 20px;
+    margin-top: 10px;
+    padding: 14px 16px;
+    border-radius: 17px;
   }
 
   .hero h1 {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .browser :global(article) > div:first-child {
-    aspect-ratio: 1.72 / 1;
+    aspect-ratio: 1.78 / 1;
   }
 }

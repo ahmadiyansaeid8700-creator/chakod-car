@@ -10,6 +10,12 @@ import {
   secureJsonHeaders,
   sessionCookieOptions,
 } from "../../../../lib/chakod-auth-proxy";
+import {
+  CURRENT_PRIVACY_VERSION,
+  CURRENT_REFUND_VERSION,
+  CURRENT_TERMS_VERSION,
+  markLatestLoginLegalAcceptanceVerified,
+} from "../../../../lib/legal-consent";
 
 const MAX_REQUEST_BYTES = 2_000;
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
@@ -30,6 +36,18 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     if (body.length > MAX_REQUEST_BYTES) {
       return jsonResponse({ success: false, message: "حجم درخواست ورود معتبر نیست." }, 413);
+    }
+
+    let mobile = "";
+    try {
+      const parsed = JSON.parse(body) as { mobile?: unknown };
+      mobile = normalizeMobile(parsed.mobile);
+    } catch {
+      return jsonResponse({ success: false, message: "اطلاعات ورود معتبر نیست." }, 400);
+    }
+
+    if (!/^09\d{9}$/.test(mobile)) {
+      return jsonResponse({ success: false, message: "شماره موبایل معتبر نیست." }, 400);
     }
 
     const headers: Record<string, string> = {
@@ -56,10 +74,26 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "پاسخ سرویس ورود معتبر نیست." }, 502);
     }
 
-    const response = NextResponse.json(payload, {
-      status: upstream.status,
-      headers: secureJsonHeaders(),
-    });
+    let legalAcceptanceRecorded = false;
+    if (upstream.ok && payload.success === true) {
+      legalAcceptanceRecorded = await markLatestLoginLegalAcceptanceVerified(mobile);
+    }
+
+    const response = NextResponse.json(
+      {
+        ...payload,
+        legal: {
+          terms_version: CURRENT_TERMS_VERSION,
+          privacy_version: CURRENT_PRIVACY_VERSION,
+          refund_version: CURRENT_REFUND_VERSION,
+          acceptance_recorded: legalAcceptanceRecorded,
+        },
+      },
+      {
+        status: upstream.status,
+        headers: secureJsonHeaders(),
+      },
+    );
 
     const token = typeof payload.session_token === "string" ? payload.session_token : "";
     if (upstream.ok && payload.success === true && TOKEN_PATTERN.test(token)) {
@@ -74,4 +108,21 @@ export async function POST(request: NextRequest) {
   } catch {
     return jsonResponse({ success: false, message: "ارتباط با سرویس ورود برقرار نشد." }, 502);
   }
+}
+
+function normalizeMobile(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  let mobile = value
+    .trim()
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[\s\-_()]/g, "");
+
+  if (mobile.startsWith("+98")) mobile = `0${mobile.slice(3)}`;
+  if (mobile.startsWith("98") && mobile.length === 12) {
+    mobile = `0${mobile.slice(2)}`;
+  }
+
+  return mobile;
 }

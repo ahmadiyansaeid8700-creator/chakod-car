@@ -192,6 +192,67 @@
   margin: 0 auto;
 }
 
+/* Market-only polish: keep shared ListingCard rails untouched. */
+.browser :global(article) {
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(37, 24, 51, 0.065);
+}
+
+.browser :global(article) > div:first-child {
+  aspect-ratio: 1.95 / 1;
+  border-radius: 19px 19px 0 0;
+}
+
+.browser :global(article) > div:nth-child(2) {
+  padding-right: 15px;
+  padding-left: 15px;
+  padding-bottom: 15px;
+}
+
+.browser :global(article) > div:nth-child(2) > div:first-child {
+  min-height: auto;
+  margin-top: 0;
+  padding-top: 13px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.browser :global(article) > div:nth-child(2) > div:first-child > span:first-child {
+  display: none;
+}
+
+.browser :global(article) [aria-label="اطلاعات آگهی"] {
+  min-height: 42px;
+  margin-top: 9px;
+}
+
+.browser :global(article) [aria-label="مشخصات اصلی خودرو"] {
+  margin-top: 10px;
+  gap: 6px;
+}
+
+.browser :global(article) [aria-label="مشخصات اصلی خودرو"] > span {
+  min-height: 54px;
+  padding: 7px 4px;
+}
+
+.browser :global(form) input,
+.browser :global(form) select {
+  font-size: 11px !important;
+}
+
+.browser :global(form) label > span {
+  font-size: 10px !important;
+}
+
+.browser :global(form) section > div:first-child {
+  font-size: 11px;
+}
+
+.browser :global(form) section > div:first-child small {
+  font-size: 9px;
+}
+
 @media (max-width: 900px) {
   .headerInner {
     gap: 10px;
@@ -252,5 +313,9 @@
 
   .hero h1 {
     font-size: 24px;
+  }
+
+  .browser :global(article) > div:first-child {
+    aspect-ratio: 1.72 / 1;
   }
 }

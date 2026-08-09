@@ -1,7 +1,6 @@
 // CHAKOD_MARKET_FILTER_V1
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import CatalogListingsClient from "../../components/CatalogListingsClient";
@@ -13,6 +12,7 @@ import type {
   CatalogSegment,
 } from "./catalog-types";
 import styles from "./CatalogPage.module.css";
+import chrome from "./CatalogChrome.module.css";
 
 const API_URL = "https://api.chakod.com/api/listings.php";
 
@@ -33,7 +33,7 @@ const segmentConfig: Record<CatalogSegment, SegmentConfig> = {
   all: {
     title: "بازار خودرو چاکود",
     shortTitle: "همه خودروها",
-    kicker: "CHAKOD CAR MARKET",
+    kicker: "بازار خودرو",
     description:
       "جست‌وجوی دقیق میان آگهی‌های تأییدشده؛ از برند و مدل تا قیمت، سال، کارکرد و موقعیت.",
     badge: "بازار چاکود",
@@ -44,7 +44,7 @@ const segmentConfig: Record<CatalogSegment, SegmentConfig> = {
   luxury: {
     title: "خودروهای لوکس چاکود",
     shortTitle: "لوکس",
-    kicker: "CHAKOD LUXURY",
+    kicker: "خودروهای لوکس",
     description:
       "خودروهای ممتاز، برندهای لوکس و آگهی‌های ارزشمند بازار در یک فهرست حرفه‌ای.",
     badge: "منتخب لوکس",
@@ -55,7 +55,7 @@ const segmentConfig: Record<CatalogSegment, SegmentConfig> = {
   freezone: {
     title: "خودروهای منطقه آزاد",
     shortTitle: "منطقه آزاد",
-    kicker: "FREE ZONE MARKET",
+    kicker: "منطقه آزاد",
     description:
       "آگهی‌های مرتبط با مناطق آزاد، پلاک‌های ویژه و فروشندگان تخصصی این بازار.",
     badge: "منطقه آزاد",
@@ -66,7 +66,7 @@ const segmentConfig: Record<CatalogSegment, SegmentConfig> = {
   economic: {
     title: "خودروهای اقتصادی",
     shortTitle: "اقتصادی",
-    kicker: "SMART VALUE",
+    kicker: "خودروهای اقتصادی",
     description:
       "گزینه‌های اقتصادی و کاربردی بازار با امکان مقایسه سریع قیمت، سال و کارکرد.",
     badge: "ارزش خرید",
@@ -231,9 +231,6 @@ export default async function SegmentCatalogPage({
   const apiUrl = buildApiUrl(segment, filters);
   const clientApiUrl = `/api/catalog?${new URL(apiUrl).searchParams.toString()}`;
   const initialResponse = await fetchCatalog(apiUrl);
-  const totalText = initialResponse
-    ? new Intl.NumberFormat("fa-IR").format(initialResponse.total)
-    : "…";
 
   const cssVars = {
     "--accent": config.accent,
@@ -243,45 +240,52 @@ export default async function SegmentCatalogPage({
 
   return (
     <main className={styles.page} dir="rtl" style={cssVars}>
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/" aria-label="صفحه اصلی چاکود">
-          <Image
-            src="/brand/chakod-logo-horizontal.png"
-            alt="چاکود"
-            width={208}
-            height={80}
-            priority
-          />
-        </Link>
-
-        <nav className={styles.headerNav} aria-label="ناوبری بازار خودرو">
-          <Link href="/">خانه</Link>
-          <Link href="/showrooms">نمایشگاه‌ها</Link>
-          <Link href="/account/saved">ذخیره‌شده‌ها</Link>
-          <Link className={styles.submitLink} href="/account/listings/new">
-            ثبت آگهی
+      <header className={chrome.header}>
+        <div className={chrome.headerInner}>
+          <Link className={chrome.brand} href="/" aria-label="صفحه اصلی چاکود">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className={chrome.logo}
+              src="/brand/chakod-logo-horizontal.png"
+              alt="چاکود"
+            />
           </Link>
-        </nav>
+
+          <nav className={chrome.primaryNav} aria-label="ناوبری اصلی چاکود">
+            <Link className={chrome.activeNav} href="/cars">
+              خودروها
+            </Link>
+            <Link href="/dealerships">نمایشگاه‌ها</Link>
+            <Link href="/businesses">کسب‌وکارها</Link>
+          </nav>
+
+          <div className={chrome.actions}>
+            <Link className={chrome.savedLink} href="/account/saved">
+              <span aria-hidden="true">♡</span>
+              <b>نشان</b>
+            </Link>
+            <Link className={chrome.accountLink} href="/account">
+              حساب من
+            </Link>
+            <Link className={chrome.submitLink} href="/account/listings/new">
+              <span aria-hidden="true">＋</span>
+              <b>ثبت آگهی</b>
+            </Link>
+          </div>
+        </div>
       </header>
 
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <span className={styles.kicker}>{config.kicker}</span>
-          <h1>{config.title}</h1>
-          <p>{config.description}</p>
-        </div>
-
-        <div className={styles.heroStat} aria-label="تعداد آگهی‌های پیدا شده">
-          <strong>{totalText}</strong>
-          <span>آگهی تأییدشده</span>
-        </div>
+      <section className={chrome.hero}>
+        <span className={chrome.kicker}>{config.kicker}</span>
+        <h1>{config.title}</h1>
+        <p>{config.description}</p>
       </section>
 
-      <nav className={styles.segmentNav} aria-label="بخش‌های بازار خودرو">
+      <nav className={chrome.segmentNav} aria-label="بخش‌های بازار خودرو">
         {(Object.keys(segmentConfig) as CatalogSegment[]).map((key) => (
           <Link
             key={key}
-            className={key === segment ? styles.segmentActive : undefined}
+            className={key === segment ? chrome.segmentActive : undefined}
             href={carMarketPath(key)}
           >
             {segmentConfig[key].shortTitle}
@@ -289,7 +293,7 @@ export default async function SegmentCatalogPage({
         ))}
       </nav>
 
-      <section className={styles.browser} aria-label={config.title}>
+      <section className={chrome.browser} aria-label={config.title}>
         <CatalogListingsClient
           key={apiUrl}
           clientApiUrl={clientApiUrl}

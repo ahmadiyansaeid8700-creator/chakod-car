@@ -10,8 +10,9 @@
   place-items: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 42%, rgba(124, 58, 237, 0.2), transparent 34%),
-    linear-gradient(180deg, #0a0611 0%, #12091f 58%, #07050b 100%);
+    radial-gradient(circle at 50% 54%, rgba(124, 58, 237, 0.24), transparent 34%),
+    radial-gradient(circle at 50% 10%, rgba(168, 85, 247, 0.12), transparent 26%),
+    linear-gradient(180deg, #08050e 0%, #12091f 56%, #060409 100%);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -19,77 +20,117 @@
 
 .root:has(:global(.doneBox)) .overlay {
   visibility: visible;
-  animation: overlayHello 680ms ease-out both;
+  animation: overlayHello 320ms ease-out both;
 }
 
 .scene {
   position: relative;
-  width: min(620px, 92vw);
-  min-height: 360px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 18px;
+  width: min(720px, 94vw);
+  min-height: min(690px, 88vh);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 28px 18px;
+}
+
+.brandLockup {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.root:has(:global(.doneBox)) .brandLockup {
+  animation: brandReveal 520ms 80ms ease-out both;
+}
+
+.brandLockup img {
+  width: min(210px, 58vw);
+  height: auto;
+  max-height: 92px;
+  object-fit: contain;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 8px 22px rgba(139, 92, 246, 0.2));
+}
+
+.brandLockup strong {
+  font-size: clamp(26px, 5vw, 42px);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.brandLockup span {
+  margin-top: 7px;
+  color: #d9cbed;
+  font-size: clamp(13px, 2.2vw, 17px);
+  line-height: 1.8;
 }
 
 .roadGlow {
   position: absolute;
   left: 50%;
-  bottom: 72px;
-  width: min(520px, 82vw);
-  height: 70px;
+  bottom: 118px;
+  width: min(560px, 86vw);
+  height: 84px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.42), rgba(124, 58, 237, 0));
-  filter: blur(10px);
+  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.48), rgba(124, 58, 237, 0));
+  filter: blur(12px);
   opacity: 0;
 }
 
 .root:has(:global(.doneBox)) .roadGlow {
-  animation: roadPulse 620ms ease-out both;
+  animation: roadPulse 1800ms 300ms ease-out both;
 }
 
 .car {
   position: relative;
-  width: min(390px, 78vw);
-  height: 190px;
-  transform: translateY(26px) scale(0.88);
+  width: min(430px, 82vw);
+  height: 210px;
+  transform: translateY(34px) scale(0.86);
   opacity: 0;
-  filter: drop-shadow(0 24px 35px rgba(0, 0, 0, 0.48));
+  filter: drop-shadow(0 28px 38px rgba(0, 0, 0, 0.55));
 }
 
 .root:has(:global(.doneBox)) .car {
-  animation: carArrive 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: carArrive 760ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .windshield {
   position: absolute;
   left: 50%;
   top: 4px;
-  width: 210px;
-  height: 62px;
+  width: 224px;
+  height: 66px;
   transform: translateX(-50%);
-  border-radius: 58px 58px 22px 22px;
-  background: linear-gradient(180deg, #241b31 0%, #09070d 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 8px 18px rgba(255, 255, 255, 0.03);
+  border-radius: 60px 60px 24px 24px;
+  background: linear-gradient(180deg, #282033 0%, #09070d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 8px 18px rgba(255, 255, 255, 0.035);
 }
 
 .hood {
   position: absolute;
   left: 50%;
-  top: 43px;
-  width: 330px;
-  height: 118px;
+  top: 46px;
+  width: 356px;
+  height: 126px;
   transform: translateX(-50%);
-  border-radius: 88px 88px 40px 40px;
+  border-radius: 94px 94px 42px 42px;
   background:
-    linear-gradient(100deg, transparent 0 16%, rgba(255, 255, 255, 0.06) 24%, transparent 34%),
-    linear-gradient(180deg, #25222b 0%, #111015 68%, #08080b 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    linear-gradient(100deg, transparent 0 16%, rgba(255, 255, 255, 0.07) 24%, transparent 34%),
+    linear-gradient(180deg, #27242d 0%, #111015 68%, #07070a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow:
-    inset 0 10px 24px rgba(255, 255, 255, 0.025),
-    inset 0 -18px 28px rgba(0, 0, 0, 0.5);
+    inset 0 12px 28px rgba(255, 255, 255, 0.025),
+    inset 0 -20px 30px rgba(0, 0, 0, 0.55);
 }
 
 .badge {
@@ -112,22 +153,22 @@
 
 .headlight {
   position: absolute;
-  top: 91px;
-  width: 86px;
-  height: 31px;
-  border-radius: 22px 12px 18px 10px;
-  overflow: hidden;
+  top: 98px;
+  width: 92px;
+  height: 32px;
+  border-radius: 23px 12px 18px 10px;
+  overflow: visible;
   background: #15141a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.11);
 }
 
 .headlightLeft {
-  left: 37px;
+  left: 38px;
   transform: skewX(8deg);
 }
 
 .headlightRight {
-  right: 37px;
+  right: 38px;
   transform: skewX(-8deg);
 }
 
@@ -135,139 +176,173 @@
   position: absolute;
   inset: 5px 7px;
   border-radius: inherit;
-  background: linear-gradient(90deg, #fff 0%, #dff7ff 45%, #b9efff 100%);
-  opacity: 0.12;
-  box-shadow: 0 0 8px rgba(196, 242, 255, 0.35);
+  background: linear-gradient(90deg, #fff 0%, #e4f9ff 46%, #bcefff 100%);
+  opacity: 0.1;
+  box-shadow: 0 0 8px rgba(196, 242, 255, 0.3);
 }
 
 .root:has(:global(.doneBox)) .headlight span {
-  animation: headlightHello 620ms ease-in-out both;
+  animation: headlightHello 1450ms 700ms ease-in-out both;
 }
 
 .grilles {
   position: absolute;
   left: 50%;
-  top: 100px;
+  top: 106px;
   transform: translateX(-50%);
   display: flex;
   gap: 5px;
 }
 
 .grilles span {
-  width: 29px;
-  height: 47px;
+  width: 30px;
+  height: 49px;
   border-radius: 15px 15px 18px 18px;
-  border: 2px solid #6f6f77;
-  background:
-    repeating-linear-gradient(90deg, #0b0b0e 0 3px, #222229 3px 5px);
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.55);
+  border: 2px solid #73737b;
+  background: repeating-linear-gradient(90deg, #0b0b0e 0 3px, #24242b 3px 5px);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
 .bumper {
   position: absolute;
   left: 50%;
-  bottom: 6px;
-  width: 280px;
-  height: 25px;
+  bottom: 7px;
+  width: 302px;
+  height: 27px;
   transform: translateX(-50%);
-  border-radius: 0 0 54px 54px;
+  border-radius: 0 0 56px 56px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, #101015, #050507);
 }
 
 .welcomeCopy {
   position: relative;
-  z-index: 3;
+  z-index: 4;
   text-align: center;
   color: #fff;
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(10px);
 }
 
 .root:has(:global(.doneBox)) .welcomeCopy {
-  animation: copyReveal 560ms 90ms ease-out both;
+  animation: copyReveal 520ms 1650ms ease-out both;
 }
 
 .welcomeCopy strong {
   display: block;
-  font-size: clamp(20px, 4vw, 30px);
+  font-size: clamp(18px, 3.2vw, 26px);
   line-height: 1.5;
 }
 
 .welcomeCopy span {
   display: block;
-  margin-top: 4px;
-  color: #d8c9ef;
-  font-size: 13px;
+  margin-top: 5px;
+  color: #cdbfe1;
+  font-size: 12px;
 }
 
 @keyframes overlayHello {
-  0% { opacity: 0; }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { opacity: 1; }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes brandReveal {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes carArrive {
-  0% { opacity: 0; transform: translateY(38px) scale(0.8); }
-  55% { opacity: 1; transform: translateY(0) scale(1.025); }
+  0% { opacity: 0; transform: translateY(42px) scale(0.8); }
+  60% { opacity: 1; transform: translateY(0) scale(1.025); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes headlightHello {
-  0%, 18% { opacity: 0.08; box-shadow: 0 0 6px rgba(196, 242, 255, 0.25); }
-  28% { opacity: 1; box-shadow: 0 0 22px 8px rgba(196, 242, 255, 0.75); }
-  42% { opacity: 0.18; box-shadow: 0 0 8px rgba(196, 242, 255, 0.3); }
-  58% { opacity: 1; box-shadow: 0 0 28px 10px rgba(196, 242, 255, 0.82); }
-  78%, 100% { opacity: 0.72; box-shadow: 0 0 18px 5px rgba(196, 242, 255, 0.55); }
+  0%, 12% { opacity: 0.08; box-shadow: 0 0 6px rgba(196, 242, 255, 0.22); }
+  22% { opacity: 1; box-shadow: 0 0 34px 13px rgba(196, 242, 255, 0.92); }
+  36% { opacity: 0.14; box-shadow: 0 0 8px rgba(196, 242, 255, 0.28); }
+  52% { opacity: 1; box-shadow: 0 0 40px 15px rgba(196, 242, 255, 0.96); }
+  68% { opacity: 0.12; box-shadow: 0 0 8px rgba(196, 242, 255, 0.3); }
+  100% { opacity: 0.62; box-shadow: 0 0 20px 6px rgba(196, 242, 255, 0.52); }
 }
 
 @keyframes roadPulse {
   0% { opacity: 0; transform: translateX(-50%) scaleX(0.65); }
   55% { opacity: 1; transform: translateX(-50%) scaleX(1); }
-  100% { opacity: 0.72; transform: translateX(-50%) scaleX(1.05); }
+  100% { opacity: 0.74; transform: translateX(-50%) scaleX(1.05); }
 }
 
 @keyframes copyReveal {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 520px) {
   .scene {
-    min-height: 300px;
-    gap: 12px;
+    min-height: min(610px, 90vh);
+    gap: 17px;
+    padding-inline: 12px;
+  }
+
+  .brandLockup img {
+    width: min(180px, 54vw);
   }
 
   .car {
-    width: min(330px, 84vw);
+    width: min(342px, 88vw);
+    height: 184px;
     transform-origin: center;
   }
 
   .hood {
-    width: 292px;
+    width: 294px;
+    height: 112px;
   }
 
   .windshield {
     width: 188px;
   }
 
+  .headlight {
+    top: 91px;
+    width: 77px;
+  }
+
   .headlightLeft {
-    left: 26px;
+    left: 25px;
   }
 
   .headlightRight {
-    right: 26px;
+    right: 25px;
+  }
+
+  .grilles {
+    top: 101px;
+  }
+
+  .grilles span {
+    width: 26px;
+    height: 43px;
+  }
+
+  .bumper {
+    width: 250px;
+  }
+
+  .roadGlow {
+    bottom: 94px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root:has(:global(.doneBox)) .overlay,
+  .root:has(:global(.doneBox)) .brandLockup,
   .root:has(:global(.doneBox)) .car,
   .root:has(:global(.doneBox)) .roadGlow,
   .root:has(:global(.doneBox)) .headlight span,
   .root:has(:global(.doneBox)) .welcomeCopy {
-    animation: none;
+    animation-duration: 1ms;
+    animation-delay: 0ms;
     opacity: 1;
     transform: none;
   }

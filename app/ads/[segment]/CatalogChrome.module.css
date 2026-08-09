@@ -425,7 +425,135 @@
     font-size: 9px;
   }
 
+  .browser {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Mobile-first market cards: compact, scannable and clear of the bottom nav. */
+  .browser :global(article) {
+    height: auto;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(37, 24, 51, 0.06);
+  }
+
   .browser :global(article) > div:first-child {
-    aspect-ratio: 1.95 / 1;
+    max-height: 148px;
+    aspect-ratio: 2.65 / 1;
+    border-radius: 15px 15px 0 0;
+  }
+
+  .browser :global(article) > div:nth-child(2) {
+    padding: 0 12px 11px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child {
+    min-height: auto;
+    margin-top: 0;
+    padding-top: 9px;
+    display: block;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child > span:first-child {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child a {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child div > span {
+    margin-top: 1px;
+    font-size: 8px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] {
+    min-height: 34px;
+    margin-top: 7px;
+    padding: 0 2px;
+    gap: 6px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] b {
+    font-size: 7px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] {
+    margin-top: 7px;
+    gap: 5px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] > span {
+    min-height: 43px;
+    padding: 5px 3px;
+    border-radius: 9px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] small {
+    font-size: 6px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] strong {
+    font-size: 7px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > strong {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Seller type is already present in meta; remove the duplicate seller block on mobile. */
+  .browser :global(article) > div:nth-child(2) > div:nth-child(5) {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child {
+    min-height: 42px;
+    margin-top: 8px;
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 6px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a,
+  .browser :global(article) > div:nth-child(2) > div:last-child > button {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a {
+    padding: 0 10px;
+    justify-content: center;
+  }
+
+  /* QR is not useful as a prominent element on the same phone; keep the view action only. */
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:last-child {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:first-child {
+    display: block;
+    text-align: center;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:first-child small {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > button span {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 430px) {
+  .browser :global(article) > div:first-child {
+    max-height: 138px;
+    aspect-ratio: 2.7 / 1;
   }
 }

@@ -386,16 +386,46 @@
   }
 
   .hero {
-    margin-top: 10px;
-    padding: 14px 16px;
-    border-radius: 17px;
+    margin-top: 9px;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .kicker {
+    margin-bottom: 2px;
+    font-size: 8px;
   }
 
   .hero h1 {
-    font-size: 22px;
+    font-size: 21px;
+    line-height: 1.35;
+  }
+
+  .hero p {
+    margin-top: 3px;
+    font-size: 9px;
+    line-height: 1.7;
+  }
+
+  .segmentNav {
+    margin-bottom: 8px;
+    padding: 4px;
+    gap: 4px;
+    overflow: hidden;
+    border-radius: 13px;
+  }
+
+  .segmentNav a {
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 5px;
+    flex: 1 1 0;
+    border-radius: 9px;
+    font-size: 9px;
   }
 
   .browser :global(article) > div:first-child {
-    aspect-ratio: 1.78 / 1;
+    aspect-ratio: 1.95 / 1;
   }
 }

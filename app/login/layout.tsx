@@ -13,6 +13,12 @@ export default function LoginLayout({ children }: LoginLayoutProps) {
 
       <div className={styles.overlay} aria-hidden="true">
         <div className={styles.scene}>
+          <div className={styles.brandLockup}>
+            <img src="/brand/chakod-logo-full-light.png" alt="" />
+            <strong>چاکود</strong>
+            <span>پلتفرم رشد کسب و کار خودرو</span>
+          </div>
+
           <div className={styles.roadGlow} />
 
           <div className={styles.car}>
@@ -37,8 +43,8 @@ export default function LoginLayout({ children }: LoginLayoutProps) {
           </div>
 
           <div className={styles.welcomeCopy}>
-            <strong>خوش اومدی به چاکود</strong>
-            <span>سفر خوبت از اینجا شروع میشه</span>
+            <strong>به چاکود خوش آمدید</strong>
+            <span>در حال ورود به صفحه اصلی...</span>
           </div>
         </div>
       </div>

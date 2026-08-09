@@ -255,10 +255,6 @@ export default function CatalogListingsClient({
     ].filter((item): item is { key: string; label: string } => Boolean(item));
   }, [facets.brands, facets.categories, facets.models, filters]);
 
-  function changeSort(nextSort: string) {
-    window.location.href = buildHref(segment, filters, { sort: nextSort });
-  }
-
   const tone = segment === "all" ? "neutral" : segment;
 
   return (
@@ -285,21 +281,6 @@ export default function CatalogListingsClient({
                 : `مرتب‌شده بر اساس ${sortLabels[filters.sort] || "انتخاب شما"}`}
             </span>
           </div>
-
-          <select
-            className={styles.sortControl}
-            value={filters.sort}
-            onChange={(event) => changeSort(event.target.value)}
-            aria-label="مرتب‌سازی آگهی‌ها"
-          >
-            <option value="vip">پیشنهاد چاکود</option>
-            <option value="newest">جدیدترین آگهی</option>
-            <option value="cheap">ارزان‌ترین</option>
-            <option value="expensive">گران‌ترین</option>
-            <option value="low_mileage">کم‌کارکردترین</option>
-            <option value="newest_year">جدیدترین سال ساخت</option>
-            <option value="popular">پربازدیدترین</option>
-          </select>
         </div>
 
         {activeItems.length > 0 ? (

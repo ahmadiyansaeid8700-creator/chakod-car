@@ -14,9 +14,10 @@ export default function LoginLayout({ children }: LoginLayoutProps) {
       <div className={styles.overlay} aria-hidden="true">
         <div className={styles.scene}>
           <div className={styles.brandLockup}>
-            <img src="/brand/chakod-logo-full-light.png" alt="" />
-            <strong>چاکود</strong>
-            <span>پلتفرم رشد کسب و کار خودرو</span>
+            <img
+              src="/brand/chakod-logo-full-light.png"
+              alt="چاکود، پلتفرم رشد کسب و کار خودرو"
+            />
           </div>
 
           <div className={styles.roadGlow} />

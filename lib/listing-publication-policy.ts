@@ -21,7 +21,7 @@ export function isUsableListingPhone(value?: string | null) {
 
   if (digits.length === 11 && digits.startsWith("0")) return true;
   if (digits.length === 12 && digits.startsWith("98")) return true;
-  if (digits.length === 13 && digits.startsWith("0098")) return true;
+  if (digits.length === 14 && digits.startsWith("0098")) return true;
 
   return false;
 }

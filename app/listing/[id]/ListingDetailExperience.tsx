@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  isDealerListing,
+  isUsableListingPhone,
+  normalizeListingPhone,
+  publicSellerName,
+} from "../../../lib/listing-publication-policy";
 import SaveListingButton from "../../components/SaveListingButton";
 import OwnerStoryVipButton from "./OwnerStoryVipButton";
 import ShareListingButton from "./ShareListingButton";
@@ -52,15 +58,6 @@ function dateLabel(value?: string | null) {
     month: "long",
     day: "numeric",
   }).format(date);
-}
-
-function normalizePhone(value?: string | null) {
-  return value ? value.replace(/[^\d+]/g, "") : "";
-}
-
-function hasUsablePhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 13;
 }
 
 function Gallery({ images, title }: { images: GalleryImage[]; title: string }) {
@@ -188,21 +185,18 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
     [province, city, listing.neighborhood].filter(Boolean).join("، ") ||
     "موقعیت ثبت نشده";
 
-  const sellerType = String(listing.seller_type || listing.listing_owner_type || "");
-  const isDealer = ["dealer", "showroom", "freezone_operator"].includes(sellerType) || Boolean(listing.dealer_id);
-  const sellerName = isDealer
-    ? listing.dealer_name || "نمایشگاه عضو چاکود"
-    : "شخصی";
+  const isDealer = isDealerListing(listing);
+  const sellerName = publicSellerName(listing);
   const sellerLogo = isDealer && listing.dealer_logo_url ? normalizeAssetUrl(listing.dealer_logo_url) : "";
   const dealerVerified = Boolean(
     listing.dealer_is_verified || listing.dealer_verified || listing.is_dealer_verified,
   );
 
-  const phone = normalizePhone(
+  const phone = normalizeListingPhone(
     listing.contact_phone || listing.seller_phone || listing.phone || listing.mobile || "",
   );
 
-  if (!hasUsablePhone(phone)) {
+  if (!isUsableListingPhone(phone)) {
     return (
       <main className={styles.state}>
         <div>

@@ -346,7 +346,7 @@ export default function AccountV2Page() {
               <span><strong>داشبورد</strong><small>آمار و وضعیت</small></span>
               <Icon name="chevron" />
             </Link>
-            <Link href="/account?complete=1" className={styles.quickCard}>
+            <Link href="/account-v2/profile" className={styles.quickCard}>
               <span className={styles.quickIcon}><Icon name="profile" /></span>
               <span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span>
               <Icon name="chevron" />
@@ -362,7 +362,7 @@ export default function AccountV2Page() {
                 <p>اطلاعات عمومی کسب‌وکار جدا از صفحه حساب مدیریت می‌شود.</p>
               </div>
             </div>
-            <Link href="/account?setup=business#professional-profile" className={styles.businessCard}>
+            <Link href="/account-v2/business-profile" className={styles.businessCard}>
               <span className={styles.businessIcon}><Icon name="store" /></span>
               <span className={styles.businessCopy}>
                 <strong>{user.business_name || "پروفایل مجموعه"}</strong>

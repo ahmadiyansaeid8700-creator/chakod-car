@@ -1,11 +1,8 @@
 import { notFound, permanentRedirect } from "next/navigation";
 
-import ListingDetailDesktop from "./ListingDetailDesktop";
-import ListingDetailMobile from "./ListingDetailMobile";
-import SimilarListings from "./SimilarListings";
+import ListingDetailExperience from "./ListingDetailExperience";
 import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 import { carDetailPath } from "../../../lib/car-routes";
-import responsive from "./ListingDetailResponsive.module.css";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -40,21 +37,9 @@ export default async function ListingDetailPage({
   const initialResponse = await getInitialListing(listingId);
 
   return (
-    <>
-      <div className={responsive.mobileOnly}>
-        <ListingDetailMobile
-          listingId={listingId}
-          initialResponse={initialResponse}
-        />
-      </div>
-
-      <div className={responsive.desktopOnly}>
-        <ListingDetailDesktop
-          listingId={listingId}
-          initialResponse={initialResponse}
-        />
-        <SimilarListings listingId={listingId} listing={initialResponse?.data || null} />
-      </div>
-    </>
+    <ListingDetailExperience
+      listingId={listingId}
+      initialResponse={initialResponse}
+    />
   );
 }

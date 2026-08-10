@@ -192,9 +192,7 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
   const isDealer = ["dealer", "showroom", "freezone_operator"].includes(sellerType) || Boolean(listing.dealer_id);
   const sellerName = isDealer
     ? listing.dealer_name || "نمایشگاه عضو چاکود"
-    : listing.show_seller_name === false
-      ? "فروشنده شخصی"
-      : listing.seller_display_name || "فروشنده چاکود";
+    : "شخصی";
   const sellerLogo = isDealer && listing.dealer_logo_url ? normalizeAssetUrl(listing.dealer_logo_url) : "";
   const dealerVerified = Boolean(
     listing.dealer_is_verified || listing.dealer_verified || listing.is_dealer_verified,
@@ -342,9 +340,9 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
                 </div>
                 <div>
                   <strong>{sellerName}</strong>
-                  <span>
-                    {dealerVerified ? "فروشنده تأییدشده" : isDealer ? "نمایشگاه خودرو" : "فروشنده شخصی"}
-                  </span>
+                  {isDealer ? (
+                    <span>{dealerVerified ? "فروشنده تأییدشده" : "نمایشگاه خودرو"}</span>
+                  ) : null}
                 </div>
               </div>
 

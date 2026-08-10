@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import MobileBottomNav from "../components/MobileBottomNav";
 import styles from "./page.module.css";
 
+type AccountType = "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
+
 type AccountUser = {
   id?: number;
   mobile?: string;
@@ -14,7 +16,7 @@ type AccountUser = {
   business_name?: string | null;
   business_city?: string | null;
   business_location_label?: string | null;
-  account_type?: "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business" | string;
+  account_type?: AccountType | string;
   profile_completed?: boolean;
   phone_verified?: boolean;
   mobile_verified?: boolean;
@@ -59,9 +61,7 @@ function getToken() {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token
-    ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
-    : {};
+  return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }
 
 function clearAuth() {
@@ -98,23 +98,86 @@ function maskMobile(value?: string) {
   return `${mobile.slice(0, 4)}••••${mobile.slice(-3)}`;
 }
 
-function accountTypeLabel(type?: string) {
+function normalizeAccountType(type?: string): AccountType {
+  if (type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service" || type === "business") return type;
+  return "personal";
+}
+
+function accountTypeLabel(type: AccountType) {
   if (type === "dealer") return "نمایشگاه خودرو";
   if (type === "parts_store") return "فروشگاه قطعات";
   if (type === "repair_shop") return "تعمیرگاه خودرو";
   if (type === "car_service") return "خدمات خودرو";
-  if (type === "business") return "کسب‌وکار";
+  if (type === "business") return "نوع کسب‌وکار تعیین نشده";
   return "حساب شخصی";
 }
 
-function isBusinessAccount(type?: string) {
-  return Boolean(type && type !== "personal");
+function isProfessionalAccount(type: AccountType) {
+  return type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service";
+}
+
+function isVehicleListingAccount(type: AccountType) {
+  return type === "personal" || type === "dealer";
+}
+
+function primaryAction(type: AccountType, total: number) {
+  if (type === "personal") {
+    return {
+      title: total > 0 ? "آگهی بعدی‌ات را ثبت کن" : "اولین آگهی‌ات را ثبت کن",
+      description: "ثبت خودرو کوتاه و مرحله‌ای انجام می‌شود.",
+      href: "/account/listings/new",
+      label: "ثبت آگهی",
+    };
+  }
+
+  if (type === "dealer") {
+    return {
+      title: "خودروی جدید نمایشگاه را ثبت کنید",
+      description: "آگهی خودرو و صفحه نمایشگاه جداگانه مدیریت می‌شوند.",
+      href: "/account/listings/new",
+      label: "ثبت خودرو",
+    };
+  }
+
+  if (type === "parts_store") {
+    return {
+      title: "صفحه فروشگاه را مدیریت کنید",
+      description: "تماس، موقعیت، قطعات و ساعات کاری را به‌روز نگه دارید.",
+      href: "/account-v2/business-profile",
+      label: "مدیریت فروشگاه",
+    };
+  }
+
+  if (type === "repair_shop") {
+    return {
+      title: "صفحه تعمیرگاه را مدیریت کنید",
+      description: "خدمات، تماس، آدرس و ساعت کاری تعمیرگاه را مدیریت کنید.",
+      href: "/account-v2/business-profile",
+      label: "مدیریت تعمیرگاه",
+    };
+  }
+
+  if (type === "car_service") {
+    return {
+      title: "صفحه خدمات خودرو را مدیریت کنید",
+      description: "خدمات، تماس، موقعیت و ساعت کاری مرکز را مدیریت کنید.",
+      href: "/account-v2/business-profile",
+      label: "مدیریت خدمات",
+    };
+  }
+
+  return {
+    title: "نوع کسب‌وکارتان را مشخص کنید",
+    description: "برای نمایش ابزارهای درست، ابتدا نوع فعالیت حساب را کامل کنید.",
+    href: "/account-v2/profile",
+    label: "تکمیل حساب",
+  };
 }
 
 function Icon({ name }: { name: "list" | "plus" | "bookmark" | "chart" | "profile" | "store" | "shield" | "chevron" }) {
   const paths = {
     list: <><path d="M7 6h12M7 12h12M7 18h12" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></>,
-    plus: <><path d="M12 5v14M5 12h14" /></>,
+    plus: <path d="M12 5v14M5 12h14" />,
     bookmark: <path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14L12 16.4 5.5 20V6A1.5 1.5 0 0 1 7 4.5Z" />,
     chart: <><path d="M5 19V9M12 19V5M19 19v-7" /><path d="M3.5 19.5h17" /></>,
     profile: <><circle cx="12" cy="8" r="3.5" /><path d="M5.5 19c.7-3.3 3-5 6.5-5s5.8 1.7 6.5 5" /></>,
@@ -130,7 +193,6 @@ export default function AccountV2Page() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [stats, setStats] = useState<Stats>(EMPTY_STATS);
-  const [dealerCount, setDealerCount] = useState(0);
   const [error, setError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -147,7 +209,6 @@ export default function AccountV2Page() {
     async function load() {
       const token = getToken();
       const cached = readCachedUser();
-
       if (cached) setUser(cached);
 
       if (!token) {
@@ -187,7 +248,6 @@ export default function AccountV2Page() {
             headers: { Accept: "application/json", ...authHeaders() },
           });
           const dashboard = await readJson<DashboardResponse>(dashboardResponse);
-
           if (dashboardResponse.ok && dashboard?.success) {
             setStats({
               total: Number(dashboard.stats?.total || 0),
@@ -197,10 +257,9 @@ export default function AccountV2Page() {
               inactive: Number(dashboard.stats?.inactive || 0),
               sold: Number(dashboard.stats?.sold || 0),
             });
-            setDealerCount(Array.isArray(dashboard.dealers) ? dashboard.dealers.length : 0);
           }
         } catch {
-          // خلاصه آماری برای نمایش صفحه ضروری نیست.
+          // آمار برای نمایش صفحه ضروری نیست.
         }
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
@@ -219,26 +278,25 @@ export default function AccountV2Page() {
     return user.business_name || user.display_name || user.full_name || "کاربر چاکود";
   }, [user]);
 
-  const business = isBusinessAccount(user?.account_type);
+  const accountType = normalizeAccountType(user?.account_type);
+  const professional = isProfessionalAccount(accountType);
+  const vehicleAccount = isVehicleListingAccount(accountType);
+  const needsBusinessType = accountType === "business";
   const verified = Boolean(user?.phone_verified || user?.mobile_verified);
-  const profileReady = Boolean(user?.profile_completed);
+  const profileReady = Boolean(user?.profile_completed) && !needsBusinessType;
   const location = user?.business_location_label || user?.business_city || "";
-  const hasActivity = stats.total > 0 || dealerCount > 0;
+  const primary = primaryAction(accountType, stats.total);
+  const hasActivity = vehicleAccount ? stats.total > 0 : professional;
 
   async function logout() {
     if (loggingOut) return;
     setLoggingOut(true);
-
     try {
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
         cache: "no-store",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...authHeaders(),
-        },
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({}),
       });
     } catch {
@@ -251,12 +309,7 @@ export default function AccountV2Page() {
   }
 
   if (loading && !user) {
-    return (
-      <main className={styles.statePage} dir="rtl">
-        <span className={styles.loader} />
-        <strong>در حال آماده‌سازی حساب…</strong>
-      </main>
-    );
+    return <main className={styles.statePage} dir="rtl"><span className={styles.loader} /><strong>در حال آماده‌سازی حساب…</strong></main>;
   }
 
   if (!user) {
@@ -265,7 +318,7 @@ export default function AccountV2Page() {
         <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
         <section className={styles.loginCard}>
           <h1>حساب چاکود</h1>
-          <p>{error || "برای مدیریت آگهی‌ها و حساب خود وارد شوید."}</p>
+          <p>{error || "برای مدیریت حساب خود وارد شوید."}</p>
           <Link href="/login">ورود با شماره موبایل</Link>
         </section>
       </main>
@@ -276,12 +329,8 @@ export default function AccountV2Page() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.logoLink} aria-label="خانه چاکود">
-            <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
-          </Link>
-          <button type="button" className={styles.logout} onClick={() => void logout()} disabled={loggingOut}>
-            {loggingOut ? "…" : "خروج"}
-          </button>
+          <Link href="/" className={styles.logoLink} aria-label="خانه چاکود"><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link>
+          <button type="button" className={styles.logout} onClick={() => void logout()} disabled={loggingOut}>{loggingOut ? "…" : "خروج"}</button>
         </header>
 
         {error ? <div className={styles.notice}>{error}</div> : null}
@@ -290,86 +339,54 @@ export default function AccountV2Page() {
           <div className={styles.identityTop}>
             <div className={styles.avatar}>{displayName.trim().charAt(0) || "چ"}</div>
             <div className={styles.identityCopy}>
-              <span className={styles.accountType}>{accountTypeLabel(user.account_type)}</span>
+              <span className={styles.accountType}>{accountTypeLabel(accountType)}</span>
               <h1>{displayName}</h1>
               <p>{maskMobile(user.mobile)}{location ? ` · ${location}` : ""}</p>
             </div>
           </div>
-
           <div className={styles.statusRow}>
-            <span className={verified ? styles.goodStatus : styles.warnStatus}>
-              <Icon name="shield" />
-              {verified ? "شماره تأیید شده" : "شماره نیازمند تأیید"}
-            </span>
-            <span className={profileReady ? styles.goodStatus : styles.warnStatus}>
-              <Icon name="profile" />
-              {profileReady ? "پروفایل آماده" : "پروفایل ناقص"}
-            </span>
+            <span className={verified ? styles.goodStatus : styles.warnStatus}><Icon name="shield" />{verified ? "شماره تأیید شده" : "شماره نیازمند تأیید"}</span>
+            <span className={profileReady ? styles.goodStatus : styles.warnStatus}><Icon name="profile" />{needsBusinessType ? "نوع فعالیت مشخص نشده" : profileReady ? "پروفایل آماده" : "پروفایل ناقص"}</span>
           </div>
         </section>
 
         <section className={styles.primaryAction}>
-          <div>
-            <span>کار اصلی</span>
-            <h2>{stats.total > 0 ? "آگهی بعدی‌ات را ثبت کن" : "اولین آگهی‌ات را ثبت کن"}</h2>
-            <p>ثبت خودرو کوتاه و مرحله‌ای انجام می‌شود.</p>
-          </div>
-          <Link href="/account/listings/new">
-            <Icon name="plus" />
-            ثبت آگهی
-          </Link>
+          <div><span>کار اصلی</span><h2>{primary.title}</h2><p>{primary.description}</p></div>
+          <Link href={primary.href}><Icon name={vehicleAccount ? "plus" : needsBusinessType ? "profile" : "store"} />{primary.label}</Link>
         </section>
 
-        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
-          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
-          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
-          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
-        </section>
+        {vehicleAccount ? (
+          <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
+            <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
+            <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
+            <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
+          </section>
+        ) : null}
 
         <section className={styles.section}>
-          <div className={styles.sectionHead}>
-            <h2>دسترسی سریع</h2>
-          </div>
+          <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
           <div className={styles.quickGrid}>
-            <Link href="/account/listings" className={styles.quickCard}>
-              <span className={styles.quickIcon}><Icon name="list" /></span>
-              <span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span>
-              <Icon name="chevron" />
-            </Link>
-            <Link href="/account/saved" className={styles.quickCard}>
-              <span className={styles.quickIcon}><Icon name="bookmark" /></span>
-              <span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span>
-              <Icon name="chevron" />
-            </Link>
-            <Link href="/dashboard" className={styles.quickCard}>
-              <span className={styles.quickIcon}><Icon name="chart" /></span>
-              <span><strong>داشبورد</strong><small>آمار و وضعیت</small></span>
-              <Icon name="chevron" />
-            </Link>
-            <Link href="/account-v2/profile" className={styles.quickCard}>
-              <span className={styles.quickIcon}><Icon name="profile" /></span>
-              <span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span>
-              <Icon name="chevron" />
-            </Link>
+            {vehicleAccount ? (
+              <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
+            ) : professional ? (
+              <Link href="/account-v2/business-profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="store" /></span><span><strong>صفحه کسب‌وکار</strong><small>اطلاعات عمومی و خدمات</small></span><Icon name="chevron" /></Link>
+            ) : (
+              <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>تعیین نوع فعالیت</strong><small>تکمیل نوع حساب</small></span><Icon name="chevron" /></Link>
+            )}
+
+            <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
+            <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
+            <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 
-        {business ? (
+        {professional ? (
           <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <div>
-                <h2>مدیریت مجموعه</h2>
-                <p>اطلاعات عمومی کسب‌وکار جدا از صفحه حساب مدیریت می‌شود.</p>
-              </div>
-            </div>
+            <div className={styles.sectionHead}><div><h2>{accountType === "dealer" ? "مدیریت نمایشگاه" : accountType === "parts_store" ? "مدیریت فروشگاه" : accountType === "repair_shop" ? "مدیریت تعمیرگاه" : "مدیریت مرکز خدمات"}</h2><p>اطلاعات عمومی کسب‌وکار جدا از صفحه حساب مدیریت می‌شود.</p></div></div>
             <Link href="/account-v2/business-profile" className={styles.businessCard}>
               <span className={styles.businessIcon}><Icon name="store" /></span>
-              <span className={styles.businessCopy}>
-                <strong>{user.business_name || "پروفایل مجموعه"}</strong>
-                <small>{profileReady ? "ویرایش صفحه عمومی، تماس و موقعیت" : "اطلاعات مجموعه را تکمیل کنید"}</small>
-              </span>
-              <span className={styles.businessState}>{profileReady ? "آماده" : "تکمیل"}</span>
-              <Icon name="chevron" />
+              <span className={styles.businessCopy}><strong>{user.business_name || accountTypeLabel(accountType)}</strong><small>{profileReady ? "ویرایش تماس، موقعیت، خدمات و ساعات کاری" : "اطلاعات کسب‌وکار را تکمیل کنید"}</small></span>
+              <span className={styles.businessState}>{profileReady ? "آماده" : "تکمیل"}</span><Icon name="chevron" />
             </Link>
           </section>
         ) : null}
@@ -377,20 +394,13 @@ export default function AccountV2Page() {
         <section className={styles.section}>
           <div className={styles.sectionHead}><h2>حساب و پشتیبانی</h2></div>
           <div className={styles.simpleList}>
-            <Link href="/support">
-              <span><strong>پشتیبانی چاکود</strong><small>پیگیری درخواست یا گزارش مشکل</small></span>
-              <Icon name="chevron" />
-            </Link>
-            <Link href="/account/ads">
-              <span><strong>تبلیغات و دیده‌شدن</strong><small>{hasActivity ? "مدیریت تبلیغات حساب" : "بعد از شروع فعالیت فعال می‌شود"}</small></span>
-              <Icon name="chevron" />
-            </Link>
+            <Link href="/support"><span><strong>پشتیبانی چاکود</strong><small>پیگیری درخواست یا گزارش مشکل</small></span><Icon name="chevron" /></Link>
+            <Link href="/account/ads"><span><strong>تبلیغات و دیده‌شدن</strong><small>{hasActivity ? "مدیریت تبلیغات حساب" : "بعد از شروع فعالیت فعال می‌شود"}</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 
         <div className={styles.bottomSpace} />
       </div>
-
       <MobileBottomNav />
     </main>
   );

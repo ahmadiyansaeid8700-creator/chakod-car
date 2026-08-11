@@ -1,3 +1,7 @@
+import { and, eq } from "drizzle-orm";
+
+import { getDb } from "../db";
+import { accountActivities } from "../db/schema";
 import {
   authApiUrl,
   parseJsonResponse,
@@ -20,6 +24,7 @@ export const DELETABLE_BUSINESS_TYPES = [
 export type DeletableBusinessType = (typeof DELETABLE_BUSINESS_TYPES)[number];
 
 export type BusinessDeletionContext = {
+  activityId: number;
   activityType: DeletableBusinessType;
   activityKey: string;
   activityExternalId: number;
@@ -54,7 +59,8 @@ function isDeletionType(value: string): value is DeletableBusinessType {
 }
 
 export async function readBusinessDeletionContext(input: {
-  activityType: string;
+  activityId?: number;
+  activityType?: string;
   dealerId?: number;
 }): Promise<BusinessDeletionContext | null> {
   const raw: unknown = await readServerIdentity("/api/me.php");
@@ -62,10 +68,40 @@ export async function readBusinessDeletionContext(input: {
 
   const userId = Math.round(Number(raw.user.id || 0));
   const mobile = normalizeMobile(raw.user.mobile);
+  if (!Number.isSafeInteger(userId) || userId <= 0 || !/^09\d{9}$/.test(mobile)) return null;
+
+  const activityId = Math.round(Number(input.activityId || 0));
+  if (Number.isSafeInteger(activityId) && activityId > 0) {
+    try {
+      const [activity] = await getDb()
+        .select()
+        .from(accountActivities)
+        .where(and(eq(accountActivities.id, activityId), eq(accountActivities.ownerUserId, userId)))
+        .limit(1);
+
+      if (!activity || !isDeletionType(activity.activityType)) return null;
+
+      if (activity.activityType === "dealer" && activity.externalDealerId) {
+        const dealer = await readDealerVerificationContext(activity.externalDealerId);
+        if (!dealer || dealer.role !== "owner") return null;
+      }
+
+      return {
+        activityId: activity.id,
+        activityType: activity.activityType,
+        activityKey: `activity:${activity.id}`,
+        activityExternalId: Number(activity.externalDealerId || 0),
+        activityName: activity.name,
+        userId,
+        mobile,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   const accountType = clean(raw.user.account_type, 40);
   const activityType = clean(input.activityType, 40);
-
-  if (!Number.isSafeInteger(userId) || userId <= 0 || !/^09\d{9}$/.test(mobile)) return null;
   if (!isDeletionType(activityType)) return null;
 
   if (activityType === "dealer") {
@@ -76,6 +112,7 @@ export async function readBusinessDeletionContext(input: {
     if (!dealer || dealer.role !== "owner") return null;
 
     return {
+      activityId: 0,
       activityType,
       activityKey: `dealer:${dealerId}`,
       activityExternalId: dealerId,
@@ -85,8 +122,6 @@ export async function readBusinessDeletionContext(input: {
     };
   }
 
-  // Legacy professional profiles are currently owned directly by the signed-in account.
-  // Once generic activities land, this branch should resolve ownership by activity membership too.
   if (accountType !== activityType) return null;
 
   const activityName =
@@ -98,6 +133,7 @@ export async function readBusinessDeletionContext(input: {
         : "مرکز خدمات خودرو");
 
   return {
+    activityId: 0,
     activityType,
     activityKey: `${activityType}:user:${userId}`,
     activityExternalId: 0,

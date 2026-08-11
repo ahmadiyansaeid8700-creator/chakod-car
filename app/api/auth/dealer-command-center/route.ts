@@ -4,9 +4,12 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../../db";
 import { businessVerificationRequests } from "../../../../db/schema";
 import {
+  authApiUrl,
   jsonResponse,
+  parseJsonResponse,
   proxyAuthenticatedJson,
   rejectCrossSiteMutation,
+  requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
 
 export const runtime = "nodejs";
@@ -89,6 +92,29 @@ async function requireVerifiedManagement(dealerId: number) {
   return null;
 }
 
+async function readCurrentMemberStatus(request: NextRequest, dealerId: number, memberId: number) {
+  if (!dealerId || !memberId) return null;
+
+  try {
+    const response = await fetch(
+      authApiUrl(`/api/dealer-command-center.php?dealer_id=${encodeURIComponent(String(dealerId))}`),
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: requestIdentityHeaders(request),
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
+    const payload = await parseJsonResponse(response);
+    if (!response.ok || payload?.success !== true || !Array.isArray(payload.members)) return null;
+
+    const member = payload.members.find((item) => isRecord(item) && positiveId(item.id) === memberId);
+    return isRecord(member) && typeof member.status === "string" ? member.status : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   return proxyAuthenticatedJson(request, endpoint(request));
 }
@@ -134,13 +160,25 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (payload.status === "active") {
-    return jsonResponse(
-      {
-        success: false,
-        message: "فعال‌سازی عضو از طرف مدیر مجاز نیست. عضو دعوت‌شده باید دعوت را از حساب خودش قبول کند.",
-      },
-      403,
-    );
+    const dealerId = positiveId(payload.dealer_id || request.nextUrl.searchParams.get("dealer_id"));
+    const memberId = positiveId(payload.member_id);
+    const currentStatus = await readCurrentMemberStatus(request, dealerId, memberId);
+
+    if (!currentStatus) {
+      return jsonResponse(
+        { success: false, message: "وضعیت فعلی عضو قابل بررسی نیست؛ تغییر وضعیت انجام نشد." },
+        503,
+      );
+    }
+    if (currentStatus === "invited") {
+      return jsonResponse(
+        {
+          success: false,
+          message: "فعال‌سازی عضو دعوت‌شده از طرف مدیر مجاز نیست. خود شخص باید دعوت را از حساب خودش قبول کند.",
+        },
+        403,
+      );
+    }
   }
 
   return proxyAuthenticatedJson(request, endpoint(request), {

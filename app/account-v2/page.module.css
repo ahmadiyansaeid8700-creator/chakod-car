@@ -334,14 +334,14 @@
   .quickCard { min-height: 82px; grid-template-columns: 40px minmax(0,1fr) 17px; }
 }
 
-#businesses-overview {
+#businesses {
   overflow: hidden;
   background:
     radial-gradient(circle at 94% 0%, rgba(122, 40, 205, .08), transparent 38%),
     rgba(255,255,255,.96);
 }
 
-#businesses-overview .quickGrid {
+#businesses .quickGrid {
   display: flex;
   grid-template-columns: none;
   gap: 10px;
@@ -353,11 +353,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
-#businesses-overview .quickGrid::-webkit-scrollbar {
+#businesses .quickGrid::-webkit-scrollbar {
   display: none;
 }
 
-#businesses-overview .quickCard {
+#businesses .quickCard {
   flex: 0 0 clamp(208px, 42vw, 272px);
   min-height: 76px;
   grid-template-columns: 42px minmax(0,1fr) 16px;
@@ -370,7 +370,7 @@
   scroll-snap-align: start;
 }
 
-#businesses-overview .quickIcon {
+#businesses .quickIcon {
   width: 42px;
   height: 42px;
   border-radius: 14px;
@@ -379,41 +379,41 @@
   box-shadow: inset 0 0 0 1px rgba(109,40,217,.05);
 }
 
-#businesses-overview .quickIcon svg {
+#businesses .quickIcon svg {
   width: 21px;
   height: 21px;
 }
 
-#businesses-overview .quickCard strong {
+#businesses .quickCard strong {
   color: #2b183a;
   font-size: 11px;
 }
 
-#businesses-overview .quickCard small {
+#businesses .quickCard small {
   margin-top: 4px;
   color: #897493;
   font-size: 8px;
 }
 
-#businesses-overview .quickCard > svg {
+#businesses .quickCard > svg {
   color: #9c75bd;
 }
 
 @media (max-width:620px) {
-  #businesses-overview {
+  #businesses {
     padding-inline: 10px;
   }
 
-  #businesses-overview .sectionHead {
+  #businesses .sectionHead {
     padding-inline: 2px;
   }
 
-  #businesses-overview .quickGrid {
+  #businesses .quickGrid {
     margin-inline: -2px;
     padding-inline: 2px;
   }
 
-  #businesses-overview .quickCard {
+  #businesses .quickCard {
     flex-basis: min(78vw, 245px);
     min-height: 68px;
     grid-template-columns: 38px minmax(0,1fr) 15px;
@@ -421,7 +421,7 @@
     border-radius: 15px;
   }
 
-  #businesses-overview .quickIcon {
+  #businesses .quickIcon {
     width: 38px;
     height: 38px;
     border-radius: 12px;
@@ -429,11 +429,11 @@
 }
 
 @media (min-width:760px) {
-  #businesses-overview .quickGrid {
+  #businesses .quickGrid {
     overflow-x: auto;
   }
 
-  #businesses-overview .quickCard {
+  #businesses .quickCard {
     flex-basis: calc((100% - 20px) / 3);
     min-width: 220px;
     min-height: 78px;

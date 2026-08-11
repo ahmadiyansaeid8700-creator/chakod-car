@@ -32,13 +32,20 @@ test("keeps dealer management reachable from Account V2 without legacy account n
   assert.doesNotMatch(directory, /\/dealers\/\$\{/);
 });
 
-test("keeps dealer command center scoped to the selected dealer", async () => {
+test("keeps dealer command center focused and scopes team invitations to verified management", async () => {
   const commandCenter = await source("app/account/business/DealerCommandCenter.tsx");
+  const commandRoute = await source("app/api/auth/dealer-command-center/route.ts");
+
   assert.match(commandCenter, /searchParams\.get\("dealer_id"\)/);
-  assert.match(commandCenter, /نمای کلی/);
-  assert.match(commandCenter, /آگهی‌ها/);
-  assert.match(commandCenter, /تیم/);
-  assert.match(commandCenter, /اطلاعات/);
-  assert.match(commandCenter, /مالی/);
+  assert.match(commandCenter, /type TabKey = "overview" \| "listings" \| "team"/);
+  assert.match(commandCenter, /\["overview", "نمای کلی", "shield"\]/);
+  assert.match(commandCenter, /\["listings", "آگهی‌ها", "list"\]/);
+  assert.match(commandCenter, /\["team", "تیم", "team"\]/);
+  assert.match(commandCenter, /\/api\/auth\/business-verification\?dealer_id=/);
+  assert.match(commandCenter, /status: "invited"/);
+  assert.doesNotMatch(commandCenter, /permissionOptions|job_title|اقدامات سریع/);
+  assert.match(commandRoute, /businessVerificationRequests/);
+  assert.match(commandRoute, /verification\?\.status !== "verified"/);
+  assert.match(commandRoute, /currentStatus === "invited"/);
   assert.doesNotMatch(commandCenter, /رزرو بنر|نمایشگاه منتخب/);
 });

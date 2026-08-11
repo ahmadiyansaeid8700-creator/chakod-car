@@ -19,8 +19,9 @@ test("keeps Drizzle migration journal ordered and unique", async () => {
     "0000_curvy_wildside",
     "0001_launch_finance_support",
     "0002_content_articles",
+    "0003_business_verifications",
   ]);
-  assert.deepEqual(indexes, [0, 1, 2]);
+  assert.deepEqual(indexes, [0, 1, 2, 3]);
   assert.equal(new Set(tags).size, tags.length);
 });
 
@@ -48,6 +49,15 @@ test("keeps CMS table in migration 0002", async () => {
   assert.match(sql, /CREATE TABLE `content_articles`/);
   assert.match(sql, /`slug` text NOT NULL UNIQUE/);
   assert.match(sql, /`status` text DEFAULT 'draft' NOT NULL/);
+});
+
+test("keeps business verification table in migration 0003", async () => {
+  const sql = await read("drizzle/0003_business_verifications.sql");
+  assert.match(sql, /CREATE TABLE `business_verification_requests`/);
+  assert.match(sql, /`activity_key` text NOT NULL/);
+  assert.match(sql, /business_verification_requests_activity_key_unique/);
+  assert.match(sql, /`document_base64` text NOT NULL/);
+  assert.match(sql, /`status` text DEFAULT 'pending' NOT NULL/);
 });
 
 test("keeps migration snapshots chained", async () => {

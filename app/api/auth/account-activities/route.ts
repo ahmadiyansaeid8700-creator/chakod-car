@@ -10,6 +10,7 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import { getRuntimeEnv } from "../../../../lib/runtime-env";
 import { readServerIdentity } from "../../../../lib/server-route-access";
 
 export const runtime = "nodejs";
@@ -37,6 +38,8 @@ type DealerItem = {
   active: boolean;
 };
 
+let activitySchemaReady: Promise<void> | null = null;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -59,6 +62,42 @@ function normalizePhone(value: unknown) {
 
 function isActivityType(value: string): value is ActivityType {
   return (ACTIVITY_TYPES as readonly string[]).includes(value);
+}
+
+async function ensureAccountActivitiesSchema() {
+  if (!activitySchemaReady) {
+    activitySchemaReady = (async () => {
+      const d1 = getRuntimeEnv().DB;
+      await d1.exec(`CREATE TABLE IF NOT EXISTS account_activities (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        owner_user_id integer NOT NULL,
+        activity_type text NOT NULL,
+        name text NOT NULL,
+        phone text DEFAULT '' NOT NULL,
+        province text DEFAULT '' NOT NULL,
+        city text DEFAULT '' NOT NULL,
+        neighborhood text DEFAULT '' NOT NULL,
+        address text DEFAULT '' NOT NULL,
+        external_dealer_id integer,
+        source text DEFAULT 'native' NOT NULL,
+        status text DEFAULT 'draft' NOT NULL,
+        verification_status text DEFAULT 'unverified' NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`);
+      await d1.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_owner_type_unique ON account_activities (owner_user_id, activity_type)",
+      );
+      await d1.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_external_dealer_unique ON account_activities (external_dealer_id)",
+      );
+    })().catch((error) => {
+      activitySchemaReady = null;
+      throw error;
+    });
+  }
+
+  return activitySchemaReady;
 }
 
 async function readAccountUser(): Promise<AccountUser | null> {
@@ -184,6 +223,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    await ensureAccountActivitiesSchema();
     const dealers = await syncLegacyActivities(request, user);
     const rows = await getDb()
       .select()
@@ -216,7 +256,7 @@ export async function GET(request: NextRequest) {
     });
   } catch {
     return jsonResponse(
-      { success: false, message: "فهرست کسب‌وکارها در دسترس نیست. Migration فعالیت‌ها را بررسی کنید." },
+      { success: false, message: "فهرست کسب‌وکارها فعلاً در دسترس نیست. دوباره تلاش کنید." },
       503,
     );
   }
@@ -258,6 +298,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await ensureAccountActivitiesSchema();
     await syncLegacyActivities(request, user);
     const [existing] = await getDb()
       .select({ id: accountActivities.id })

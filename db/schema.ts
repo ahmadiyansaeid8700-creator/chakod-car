@@ -167,3 +167,26 @@ export const contentArticles = sqliteTable("content_articles", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const businessVerificationRequests = sqliteTable("business_verification_requests", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  activityKey: text("activity_key").notNull().unique(),
+  activityType: text("activity_type").notNull(),
+  activityExternalId: integer("activity_external_id").notNull(),
+  activityName: text("activity_name").notNull(),
+  applicantUserId: integer("applicant_user_id").notNull(),
+  applicantMobile: text("applicant_mobile").notNull().default(""),
+  applicantRelation: text("applicant_relation").notNull(),
+  documentType: text("document_type").notNull(),
+  documentReference: text("document_reference").notNull().default(""),
+  licenseHolderName: text("license_holder_name").notNull(),
+  documentName: text("document_name").notNull(),
+  documentMime: text("document_mime").notNull(),
+  documentBase64: text("document_base64").notNull(),
+  status: text("status").notNull().default("pending"),
+  rejectionReason: text("rejection_reason").notNull().default(""),
+  reviewedBy: text("reviewed_by").notNull().default(""),
+  reviewedAt: text("reviewed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

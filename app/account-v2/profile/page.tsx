@@ -7,6 +7,7 @@ import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
 type AccountType = "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
+type SelectableAccountType = Exclude<AccountType, "business">;
 
 type User = {
   mobile?: string;
@@ -21,6 +22,14 @@ type User = {
 
 type MeResponse = { success?: boolean; user?: User | null; message?: string };
 type UpdateResponse = { success?: boolean; user?: User | null; message?: string };
+
+const accountTypes: Array<{ value: SelectableAccountType; label: string }> = [
+  { value: "personal", label: "حساب شخصی" },
+  { value: "dealer", label: "نمایشگاه خودرو" },
+  { value: "parts_store", label: "فروشگاه قطعات" },
+  { value: "repair_shop", label: "تعمیرگاه خودرو" },
+  { value: "car_service", label: "خدمات خودرو" },
+];
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -41,14 +50,18 @@ function typeLabel(type?: string) {
   return "حساب شخصی";
 }
 
-function isFinalBusinessType(type?: string): type is Exclude<AccountType, "personal" | "business"> {
+function isSelectableAccountType(type?: string | null): type is SelectableAccountType {
+  return type === "personal" || type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service";
+}
+
+function isBusinessType(type?: string | null): type is Exclude<SelectableAccountType, "personal"> {
   return type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service";
 }
 
 export default function AccountProfileV2Page() {
   const [user, setUser] = useState<User | null>(null);
   const [fullName, setFullName] = useState("");
-  const [selectedType, setSelectedType] = useState<AccountType>("personal");
+  const [selectedType, setSelectedType] = useState<SelectableAccountType | "">("");
   const [businessName, setBusinessName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +71,7 @@ export default function AccountProfileV2Page() {
   function hydrate(next: User) {
     setUser(next);
     setFullName(next.full_name || "");
-    setSelectedType((next.account_type as AccountType) || "personal");
+    setSelectedType(isSelectableAccountType(next.account_type) ? next.account_type : "");
     setBusinessName(next.business_name || "");
   }
 
@@ -97,8 +110,6 @@ export default function AccountProfileV2Page() {
     if (!user || saving) return;
 
     const cleanName = fullName.trim().replace(/\s+/g, " ");
-    const unresolvedBusiness = user.account_type === "business";
-    const nextType = unresolvedBusiness ? selectedType : (user.account_type || "personal");
     const cleanBusinessName = businessName.trim().replace(/\s+/g, " ");
 
     if (cleanName.length < 2) {
@@ -106,14 +117,28 @@ export default function AccountProfileV2Page() {
       return;
     }
 
-    if (unresolvedBusiness && !isFinalBusinessType(nextType)) {
-      setError("نوع کسب‌وکار را مشخص کنید.");
+    if (!selectedType) {
+      setError("نوع حساب را انتخاب کنید.");
       return;
     }
 
-    if (isFinalBusinessType(nextType) && cleanBusinessName.length < 2) {
+    if (isBusinessType(selectedType) && cleanBusinessName.length < 2) {
       setError("نام مجموعه را وارد کنید.");
       return;
+    }
+
+    const currentType = isSelectableAccountType(user.account_type) ? user.account_type : null;
+    const typeChanged = currentType !== selectedType;
+
+    if (typeChanged) {
+      const extraNote =
+        selectedType === "personal"
+          ? "\n\nتوجه: این کار نوع حساب اصلی را به شخصی تغییر می‌دهد؛ رکورد مستقل نمایشگاه یا کسب‌وکار، اگر وجود داشته باشد، با این عملیات حذف دائمی نمی‌شود."
+          : "";
+      const confirmed = window.confirm(
+        `نوع حساب از «${typeLabel(user.account_type)}» به «${typeLabel(selectedType)}» تغییر کند؟${extraNote}`,
+      );
+      if (!confirmed) return;
     }
 
     setSaving(true);
@@ -132,8 +157,8 @@ export default function AccountProfileV2Page() {
         },
         body: JSON.stringify({
           full_name: cleanName,
-          account_type: nextType,
-          business_name: isFinalBusinessType(nextType) ? cleanBusinessName : "",
+          account_type: selectedType,
+          business_name: isBusinessType(selectedType) ? cleanBusinessName : "",
         }),
       });
       const result = (await response.json().catch(() => null)) as UpdateResponse | null;
@@ -145,7 +170,7 @@ export default function AccountProfileV2Page() {
       hydrate(next);
       localStorage.setItem("chakod_user", JSON.stringify(next));
       window.dispatchEvent(new Event("chakod:auth-changed"));
-      setMessage("اطلاعات حساب ذخیره شد.");
+      setMessage(typeChanged ? "نوع حساب و اطلاعات پایه با موفقیت تغییر کرد." : "اطلاعات حساب ذخیره شد.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "ذخیره اطلاعات انجام نشد.");
     } finally {
@@ -153,21 +178,20 @@ export default function AccountProfileV2Page() {
     }
   }
 
-  const unresolvedBusiness = user?.account_type === "business";
-  const finalBusiness = isFinalBusinessType(user?.account_type);
+  const typeChanged = Boolean(user && selectedType && user.account_type !== selectedType);
 
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.header}>
-          <Link href="/account-v2">بازگشت</Link>
+          <Link href="/account">بازگشت</Link>
           <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
         </header>
 
         <section className={styles.titleBlock}>
           <span>حساب من</span>
           <h1>اطلاعات پایه</h1>
-          <p>{unresolvedBusiness ? "نوع کسب‌وکار را یک‌بار مشخص کنید تا ابزارهای درست نمایش داده شوند." : "فقط اطلاعات مربوط به خود حساب اینجا نگهداری می‌شود."}</p>
+          <p>نام و نوع حساب را اینجا مدیریت کنید. نوع حساب هر زمان قابل تغییر است.</p>
         </section>
 
         {loading ? <div className={styles.state}>در حال دریافت اطلاعات…</div> : null}
@@ -179,39 +203,43 @@ export default function AccountProfileV2Page() {
             <label>
               <span>نام و نام خانوادگی</span>
               <input value={fullName} onChange={(event) => setFullName(event.target.value)} maxLength={120} autoComplete="name" />
-              <small>این نام برای مدیریت داخلی حساب است.</small>
+              <small>نام صاحب حساب چاکود.</small>
             </label>
 
-            {unresolvedBusiness ? (
-              <>
-                <label className={styles.spacedField}>
-                  <span>نوع کسب‌وکار</span>
-                  <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as AccountType)}>
-                    <option value="business">انتخاب کنید</option>
-                    <option value="dealer">نمایشگاه خودرو</option>
-                    <option value="parts_store">فروشگاه قطعات</option>
-                    <option value="repair_shop">تعمیرگاه خودرو</option>
-                    <option value="car_service">خدمات خودرو</option>
-                  </select>
-                  <small>بعد از انتخاب، صفحه حساب و ابزارها متناسب با همین نوع فعالیت می‌شوند.</small>
-                </label>
+            <label className={styles.spacedField}>
+              <span>نوع حساب</span>
+              <select
+                value={selectedType}
+                onChange={(event) => {
+                  setSelectedType(event.target.value as SelectableAccountType | "");
+                  setError("");
+                  setMessage("");
+                }}
+              >
+                <option value="">انتخاب کنید</option>
+                {accountTypes.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+              <small>می‌توانید بین حساب شخصی، نمایشگاه، قطعات، تعمیرگاه و خدمات خودرو جابه‌جا شوید.</small>
+            </label>
 
-                {isFinalBusinessType(selectedType) ? (
-                  <label className={styles.spacedField}>
-                    <span>نام مجموعه</span>
-                    <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={180} autoComplete="organization" />
-                  </label>
-                ) : null}
-              </>
-            ) : finalBusiness ? (
+            {isBusinessType(selectedType) ? (
               <label className={styles.spacedField}>
                 <span>نام مجموعه</span>
                 <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={180} autoComplete="organization" />
               </label>
             ) : null}
 
+            {typeChanged ? (
+              <div className={styles.changeNotice}>
+                پس از ذخیره، ابزارهای حساب متناسب با نوع جدید نمایش داده می‌شوند.
+                {selectedType === "personal" ? " این تغییر به‌تنهایی رکورد مستقل نمایشگاه یا کسب‌وکار را حذف دائمی نمی‌کند." : ""}
+              </div>
+            ) : null}
+
             <div className={styles.readonlyRow}>
-              <span><small>نوع حساب</small><strong>{unresolvedBusiness ? typeLabel(selectedType) : typeLabel(user.account_type)}</strong></span>
+              <span><small>نوع فعلی حساب</small><strong>{typeLabel(user.account_type)}</strong></span>
               <span><small>شماره موبایل</small><strong dir="ltr">{user.mobile || "ثبت نشده"}</strong></span>
             </div>
 

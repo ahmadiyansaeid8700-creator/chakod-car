@@ -209,10 +209,6 @@ export default function AccountV2Page() {
     );
   }
 
-  const businessShortcutHref = availableTypes.length > 0 ? "/account-v2/businesses/new" : "/account#businesses";
-  const businessShortcutTitle = availableTypes.length > 0 ? "افزودن کسب‌وکار" : "کسب‌وکارهای من";
-  const businessShortcutDescription = availableTypes.length > 0 ? "نمایشگاه، قطعات، تعمیرگاه یا خدمات" : "مدیریت مجموعه‌های ثبت‌شده";
-
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
@@ -238,10 +234,23 @@ export default function AccountV2Page() {
           </div>
         </section>
 
-        <section className={styles.section} id="businesses-overview">
-          <div className={styles.sectionHead}>
-            <div><h2>حساب و کسب‌وکارهای من</h2><p>حساب شخصی شما ثابت است؛ هر کسب‌وکاری که اضافه کنید همین‌جا نمایش داده می‌شود.</p></div>
+        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
+          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
+          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
+          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
+          <div className={styles.quickGrid}>
+            <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
+            <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
+            <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
           </div>
+        </section>
+
+        <section className={styles.section} id="businesses">
+          <div className={styles.sectionHead}><h2>مدیریت کسب‌وکار</h2></div>
           <div className={styles.quickGrid}>
             <Link href="/account-v2/profile" className={styles.quickCard}>
               <span className={styles.quickIcon}><Icon name="profile" /></span>
@@ -258,62 +267,11 @@ export default function AccountV2Page() {
             {availableTypes.length > 0 ? (
               <Link href="/account-v2/businesses/new" className={styles.quickCard}>
                 <span className={styles.quickIcon}><Icon name="plus" /></span>
-                <span><strong>افزودن کسب‌وکار</strong><small>یک مجموعه جدید به همین حساب اضافه کنید</small></span>
+                <span><strong>افزودن کسب‌وکار</strong><small>نمایشگاه، قطعات، تعمیرگاه یا خدمات</small></span>
                 <Icon name="chevron" />
               </Link>
             ) : null}
           </div>
-        </section>
-
-        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
-          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
-          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
-          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
-          <div className={styles.quickGrid}>
-            <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
-            <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
-            <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
-            <Link href={businessShortcutHref} className={styles.quickCard}><span className={styles.quickIcon}><Icon name="store" /></span><span><strong>{businessShortcutTitle}</strong><small>{businessShortcutDescription}</small></span><Icon name="chevron" /></Link>
-          </div>
-        </section>
-
-        <section className={styles.section} id="businesses">
-          <div className={styles.sectionHead}>
-            <div><h2>مدیریت کسب‌وکار</h2><p>حساب شما ثابت است؛ کسب‌وکارها جداگانه به آن اضافه می‌شوند و از هر نوع حداکثر یکی مالک می‌شوید.</p></div>
-          </div>
-
-          {availableTypes.length > 0 ? (
-            <div className={styles.simpleList} style={{ marginBottom: 8 }}>
-              <Link href="/account-v2/businesses/new">
-                <span><strong>+ ثبت کسب‌وکار جدید</strong><small>نمایشگاه، فروشگاه قطعات، تعمیرگاه یا مرکز خدمات خودرو</small></span>
-                <Icon name="chevron" />
-              </Link>
-            </div>
-          ) : null}
-
-          {activities.length > 0 ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              {activities.map((activity) => (
-                <div key={activity.id}>
-                  <Link href={activityManageHref(activity)} className={styles.businessCard}>
-                    <span className={styles.businessIcon}><Icon name="store" /></span>
-                    <span className={styles.businessCopy}><strong>{activity.name}</strong><small>{activityLabel(activity.type)}{activity.city ? ` · ${activity.city}` : ""}</small></span>
-                    <span className={styles.businessState}>{activity.verification_status === "verified" ? "تأییدشده" : activity.status === "active" ? "فعال" : "تکمیل"}</span><Icon name="chevron" />
-                  </Link>
-                  <div className={styles.simpleList} style={{ marginTop: 5 }}>
-                    {activity.type === "dealer" && activity.external_dealer_id ? (
-                      <Link href={`/account-v2/verification?dealer_id=${activity.external_dealer_id}`}><span><strong>تأیید مجموعه</strong><small>احراز مالک یا مدیر اصلی</small></span><Icon name="chevron" /></Link>
-                    ) : null}
-                    <Link href={`/account-v2/business-delete?activity_id=${activity.id}`}><span><strong>درخواست حذف کسب‌وکار</strong><small>فقط مالک · با کد تأیید شماره حساب</small></span><Icon name="chevron" /></Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </section>
 
         {memberships.length > 0 ? (

@@ -258,12 +258,18 @@ export default function AccountV2Page() {
         <section className={styles.section} id="businesses">
           <div className={styles.sectionHead}>
             <div><h2>مدیریت کسب‌وکار</h2><p>حساب شما ثابت است؛ کسب‌وکارها جداگانه به آن اضافه می‌شوند و از هر نوع حداکثر یکی مالک می‌شوید.</p></div>
-            {availableTypes.length > 0 ? <Link href="/account-v2/businesses/new">+ افزودن</Link> : null}
           </div>
 
-          {activities.length === 0 ? (
-            <div className={styles.simpleList}><Link href="/account-v2/businesses/new"><span><strong>اولین کسب‌وکار را اضافه کنید</strong><small>نمایشگاه، قطعات، تعمیرگاه یا خدمات خودرو</small></span><Icon name="chevron" /></Link></div>
-          ) : (
+          {availableTypes.length > 0 ? (
+            <div className={styles.simpleList} style={{ marginBottom: 8 }}>
+              <Link href="/account-v2/businesses/new">
+                <span><strong>+ ثبت کسب‌وکار جدید</strong><small>نمایشگاه، فروشگاه قطعات، تعمیرگاه یا مرکز خدمات خودرو</small></span>
+                <Icon name="chevron" />
+              </Link>
+            </div>
+          ) : null}
+
+          {activities.length > 0 ? (
             <div style={{ display: "grid", gap: 8 }}>
               {activities.map((activity) => (
                 <div key={activity.id}>
@@ -281,7 +287,7 @@ export default function AccountV2Page() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </section>
 
         {memberships.length > 0 ? (

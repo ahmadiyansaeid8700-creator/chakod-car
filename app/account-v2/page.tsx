@@ -234,21 +234,6 @@ export default function AccountV2Page() {
           </div>
         </section>
 
-        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
-          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
-          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
-          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
-          <div className={styles.quickGrid}>
-            <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
-            <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
-            <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
-          </div>
-        </section>
-
         <section className={styles.section} id="businesses">
           <div className={styles.sectionHead}><h2>مدیریت کسب‌وکار</h2></div>
           <div className={styles.quickGrid}>
@@ -271,6 +256,21 @@ export default function AccountV2Page() {
                 <Icon name="chevron" />
               </Link>
             ) : null}
+          </div>
+        </section>
+
+        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
+          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
+          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
+          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
+          <div className={styles.quickGrid}>
+            <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
+            <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
+            <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 

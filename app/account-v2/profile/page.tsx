@@ -27,7 +27,7 @@ function getToken() {
   return localStorage.getItem("chakod_session_token") || "";
 }
 
-function headers() {
+function headers(): Record<string, string> {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }

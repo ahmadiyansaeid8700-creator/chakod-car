@@ -209,6 +209,10 @@ export default function AccountV2Page() {
     );
   }
 
+  const businessShortcutHref = availableTypes.length > 0 ? "/account-v2/businesses/new" : "/account#businesses";
+  const businessShortcutTitle = availableTypes.length > 0 ? "افزودن کسب‌وکار" : "کسب‌وکارهای من";
+  const businessShortcutDescription = availableTypes.length > 0 ? "نمایشگاه، قطعات، تعمیرگاه یا خدمات" : "مدیریت مجموعه‌های ثبت‌شده";
+
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
@@ -234,14 +238,14 @@ export default function AccountV2Page() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.section} id="businesses-overview">
           <div className={styles.sectionHead}>
-            <div><h2>هویت‌های من</h2><p>حساب شخصی و کسب‌وکارهای متصل به این حساب.</p></div>
+            <div><h2>حساب و کسب‌وکارهای من</h2><p>حساب شخصی شما ثابت است؛ هر کسب‌وکاری که اضافه کنید همین‌جا نمایش داده می‌شود.</p></div>
           </div>
           <div className={styles.quickGrid}>
             <Link href="/account-v2/profile" className={styles.quickCard}>
               <span className={styles.quickIcon}><Icon name="profile" /></span>
-              <span><strong>شخصی</strong><small>{displayName}</small></span>
+              <span><strong>حساب شخصی</strong><small>{displayName}</small></span>
               <Icon name="chevron" />
             </Link>
             {activities.map((activity) => (
@@ -251,6 +255,13 @@ export default function AccountV2Page() {
                 <Icon name="chevron" />
               </Link>
             ))}
+            {availableTypes.length > 0 ? (
+              <Link href="/account-v2/businesses/new" className={styles.quickCard}>
+                <span className={styles.quickIcon}><Icon name="plus" /></span>
+                <span><strong>افزودن کسب‌وکار</strong><small>یک مجموعه جدید به همین حساب اضافه کنید</small></span>
+                <Icon name="chevron" />
+              </Link>
+            ) : null}
           </div>
         </section>
 
@@ -266,7 +277,7 @@ export default function AccountV2Page() {
             <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
             <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
             <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
-            <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span><Icon name="chevron" /></Link>
+            <Link href={businessShortcutHref} className={styles.quickCard}><span className={styles.quickIcon}><Icon name="store" /></span><span><strong>{businessShortcutTitle}</strong><small>{businessShortcutDescription}</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 

@@ -18,10 +18,11 @@ type ProfileResponse = {
   profile?: ProfessionalProfile;
 };
 
-type UploadResponse = {
+type LogoResponse = {
   success?: boolean;
   message?: string;
   url?: string;
+  profile?: ProfessionalProfile;
 };
 
 function getToken() {
@@ -87,12 +88,20 @@ export default function BusinessMediaPage() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !profile || working) return;
+    if (!requestedDealerId) {
+      setError("شناسه نمایشگاه مشخص نیست. از پنل نمایشگاه دوباره وارد بخش لوگو شوید.");
+      return;
+    }
     if (!file.type.startsWith("image/")) {
       setError("فایل انتخاب‌شده باید تصویر باشد.");
       return;
     }
-    if (file.size > 7 * 1024 * 1024) {
-      setError("حجم لوگو باید کمتر از ۷ مگابایت باشد.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("فرمت لوگو باید JPG، PNG یا WebP باشد.");
+      return;
+    }
+    if (file.size > 6 * 1024 * 1024) {
+      setError("حجم لوگو باید حداکثر ۶ مگابایت باشد.");
       return;
     }
 
@@ -101,43 +110,25 @@ export default function BusinessMediaPage() {
     setNotice("");
     try {
       const form = new FormData();
-      form.set("kind", "logo");
+      form.set("dealer_id", String(requestedDealerId));
       form.set("file", file);
-      const uploadResponse = await fetch("/api/auth/professional-profile/upload", {
+
+      const response = await fetch("/api/auth/business-logo", {
         method: "POST",
         credentials: "include",
         headers: authHeaders(),
         body: form,
       });
-      const upload = await readJson<UploadResponse>(uploadResponse);
-      if (!uploadResponse.ok || !upload?.success || !upload.url) {
-        throw new Error(upload?.message || "بارگذاری لوگو انجام نشد.");
+      const result = await readJson<LogoResponse>(response);
+      if (!response.ok || !result?.success || !result.url) {
+        throw new Error(result?.message || "بارگذاری و ذخیره لوگو انجام نشد.");
       }
 
-      const nextProfile: ProfessionalProfile = {
-        ...profile,
-        ...(requestedDealerId ? { dealer_id: requestedDealerId } : {}),
-        logo_url: upload.url,
-      };
-      const saveResponse = await fetch("/api/auth/professional-profile", {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          ...authHeaders(),
-        },
-        body: JSON.stringify(nextProfile),
-      });
-      const saved = await readJson<ProfileResponse>(saveResponse);
-      if (!saveResponse.ok || !saved?.success || !saved.profile) {
-        throw new Error(saved?.message || "ذخیره لوگوی مجموعه انجام نشد.");
-      }
-      setProfile(saved.profile);
-      setNotice("لوگوی مجموعه با موفقیت ذخیره شد.");
+      setProfile(result.profile || { ...profile, dealer_id: requestedDealerId, logo_url: result.url });
+      setNotice(result.message || "لوگوی مجموعه با موفقیت ذخیره شد.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "بارگذاری لوگو انجام نشد.");
+      const message = caught instanceof Error ? caught.message : "بارگذاری لوگو انجام نشد.";
+      setError(message === "Failed to fetch" ? "ارسال لوگو به سرور انجام نشد. دوباره تلاش کنید." : message);
     } finally {
       setWorking(false);
     }

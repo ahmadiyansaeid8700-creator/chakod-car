@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const bannerReservations = sqliteTable("banner_reservations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -190,3 +190,33 @@ export const businessVerificationRequests = sqliteTable("business_verification_r
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const accountActivities = sqliteTable(
+  "account_activities",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    ownerUserId: integer("owner_user_id").notNull(),
+    activityType: text("activity_type").notNull(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull().default(""),
+    province: text("province").notNull().default(""),
+    city: text("city").notNull().default(""),
+    neighborhood: text("neighborhood").notNull().default(""),
+    address: text("address").notNull().default(""),
+    externalDealerId: integer("external_dealer_id"),
+    source: text("source").notNull().default("native"),
+    status: text("status").notNull().default("draft"),
+    verificationStatus: text("verification_status").notNull().default("unverified"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    ownerTypeUnique: uniqueIndex("account_activities_owner_type_unique").on(
+      table.ownerUserId,
+      table.activityType,
+    ),
+    externalDealerUnique: uniqueIndex("account_activities_external_dealer_unique").on(
+      table.externalDealerId,
+    ),
+  }),
+);

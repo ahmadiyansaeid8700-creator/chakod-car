@@ -20,6 +20,7 @@ const migrations = [
   "drizzle/0001_launch_finance_support.sql",
   "drizzle/0002_content_articles.sql",
   "drizzle/0003_business_verifications.sql",
+  "drizzle/0004_account_activities.sql",
 ];
 
 const expectedTables = [
@@ -35,6 +36,7 @@ const expectedTables = [
   "support_replies",
   "content_articles",
   "business_verification_requests",
+  "account_activities",
 ];
 
 function run(args) {

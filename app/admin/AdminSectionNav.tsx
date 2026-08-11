@@ -6,6 +6,7 @@ const primaryLinks = [
   { href: "/admin", label: "داشبورد" },
   { href: "/admin/listings", label: "آگهی‌ها" },
   { href: "/admin/businesses", label: "کسب‌وکارها" },
+  { href: "/admin/business-verifications", label: "تأیید مدارک" },
   { href: "/admin/users", label: "کاربران" },
   { href: "/admin/support", label: "پشتیبانی" },
 ];

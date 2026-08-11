@@ -13,5 +13,5 @@ export async function hashSupportAccess(value: string) {
 }
 
 export function validSupportTicketNo(value: string) {
-  return /^SUP-[A-Z0-9-]{10,80}$/i.test(value);
+  return /^(?:SUP|DEL)-[A-Z0-9-]{10,80}$/i.test(value);
 }

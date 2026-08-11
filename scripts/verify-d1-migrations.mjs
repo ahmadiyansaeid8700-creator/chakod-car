@@ -19,6 +19,7 @@ const migrations = [
   "drizzle/0000_curvy_wildside.sql",
   "drizzle/0001_launch_finance_support.sql",
   "drizzle/0002_content_articles.sql",
+  "drizzle/0003_business_verifications.sql",
 ];
 
 const expectedTables = [
@@ -33,6 +34,7 @@ const expectedTables = [
   "support_tickets",
   "support_replies",
   "content_articles",
+  "business_verification_requests",
 ];
 
 function run(args) {

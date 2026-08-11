@@ -41,9 +41,10 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "اطلاعات درخواست معتبر نیست." }, 400);
   }
 
+  const activityId = Math.round(Number(input.activity_id || 0));
   const activityType = clean(input.activity_type, 40);
   const dealerId = Math.round(Number(input.dealer_id || 0));
-  const context = await readBusinessDeletionContext({ activityType, dealerId });
+  const context = await readBusinessDeletionContext({ activityId, activityType, dealerId });
 
   if (!context) {
     return jsonResponse(
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       message: "کد تأیید به شماره صاحب حساب ارسال شد.",
       mobile_masked: maskMobile(context.mobile),
       business_name: context.activityName,
+      activity_id: context.activityId,
     });
   } catch {
     return jsonResponse({ success: false, message: "ارتباط با سرویس پیامک برقرار نشد." }, 502);

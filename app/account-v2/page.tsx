@@ -234,9 +234,24 @@ export default function AccountV2Page() {
           </div>
         </section>
 
-        <section className={styles.primaryAction}>
-          <div><span>کار اصلی</span><h2>{stats.total > 0 ? "آگهی خودروی جدید ثبت کنید" : "اولین آگهی خودرو را ثبت کنید"}</h2><p>در شروع ثبت، هویت انتشار بین شخصی و نمایشگاه‌های مجاز انتخاب می‌شود.</p></div>
-          <Link href="/account/listings/new"><Icon name="plus" />ثبت آگهی</Link>
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <div><h2>هویت‌های من</h2><p>حساب شخصی و کسب‌وکارهای متصل به این حساب.</p></div>
+          </div>
+          <div className={styles.quickGrid}>
+            <Link href="/account-v2/profile" className={styles.quickCard}>
+              <span className={styles.quickIcon}><Icon name="profile" /></span>
+              <span><strong>شخصی</strong><small>{displayName}</small></span>
+              <Icon name="chevron" />
+            </Link>
+            {activities.map((activity) => (
+              <Link key={activity.id} href={activityManageHref(activity)} className={styles.quickCard}>
+                <span className={styles.quickIcon}><Icon name="store" /></span>
+                <span><strong>{activity.name}</strong><small>{activityLabel(activity.type)}</small></span>
+                <Icon name="chevron" />
+              </Link>
+            ))}
+          </div>
         </section>
 
         <section className={styles.stats} aria-label="وضعیت آگهی‌ها">

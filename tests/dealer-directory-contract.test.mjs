@@ -19,10 +19,14 @@ test("keeps multi-dealer management behind authenticated proxy", async () => {
   assert.doesNotMatch(route, /ownerKey|idempotencyKey/);
 });
 
-test("exposes canonical dealer directory from account navigation", async () => {
+test("keeps dealer management reachable from Account V2 without legacy account nav", async () => {
   const layout = await source("app/account/layout.tsx");
+  const accountV2 = await source("app/account-v2/page.tsx");
   const directory = await source("app/account/business/dealers/DealerDirectoryClient.tsx");
-  assert.match(layout, /\/account\/business\/dealers/);
+
+  assert.doesNotMatch(layout, /accountLinks|navigationShell|\/account\/business\/dealers/);
+  assert.match(accountV2, /مدیریت کسب‌وکار/);
+  assert.match(accountV2, /\/account\/business\?dealer_id=/);
   assert.match(directory, /\/api\/auth\/dealers/);
   assert.match(directory, /\/account\/business/);
   assert.doesNotMatch(directory, /\/dealers\/\$\{/);

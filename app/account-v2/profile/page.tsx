@@ -6,14 +6,12 @@ import { FormEvent, useEffect, useState } from "react";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
-type AccountType = "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
-
 type User = {
   mobile?: string;
   full_name?: string | null;
   display_name?: string | null;
   business_name?: string | null;
-  account_type?: AccountType | string;
+  account_type?: string;
   profile_completed?: boolean;
   phone_verified?: boolean;
   mobile_verified?: boolean;
@@ -32,24 +30,9 @@ function headers(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }
 
-function typeLabel(type?: string) {
-  if (type === "dealer") return "نمایشگاه خودرو";
-  if (type === "parts_store") return "فروشگاه قطعات";
-  if (type === "repair_shop") return "تعمیرگاه خودرو";
-  if (type === "car_service") return "خدمات خودرو";
-  if (type === "business") return "نوع کسب‌وکار تعیین نشده";
-  return "حساب شخصی";
-}
-
-function isFinalBusinessType(type?: string): type is Exclude<AccountType, "personal" | "business"> {
-  return type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service";
-}
-
 export default function AccountProfileV2Page() {
   const [user, setUser] = useState<User | null>(null);
   const [fullName, setFullName] = useState("");
-  const [selectedType, setSelectedType] = useState<AccountType>("personal");
-  const [businessName, setBusinessName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -57,9 +40,7 @@ export default function AccountProfileV2Page() {
 
   function hydrate(next: User) {
     setUser(next);
-    setFullName(next.full_name || "");
-    setSelectedType((next.account_type as AccountType) || "personal");
-    setBusinessName(next.business_name || "");
+    setFullName(next.full_name || next.display_name || "");
   }
 
   useEffect(() => {
@@ -68,7 +49,7 @@ export default function AccountProfileV2Page() {
       try {
         hydrate(JSON.parse(cached) as User);
       } catch {
-        // ادامه با پاسخ سرور.
+        // پاسخ سرور منبع اصلی است.
       }
     }
 
@@ -97,22 +78,8 @@ export default function AccountProfileV2Page() {
     if (!user || saving) return;
 
     const cleanName = fullName.trim().replace(/\s+/g, " ");
-    const unresolvedBusiness = user.account_type === "business";
-    const nextType = unresolvedBusiness ? selectedType : (user.account_type || "personal");
-    const cleanBusinessName = businessName.trim().replace(/\s+/g, " ");
-
     if (cleanName.length < 2) {
       setError("نام و نام خانوادگی را کامل وارد کنید.");
-      return;
-    }
-
-    if (unresolvedBusiness && !isFinalBusinessType(nextType)) {
-      setError("نوع کسب‌وکار را مشخص کنید.");
-      return;
-    }
-
-    if (isFinalBusinessType(nextType) && cleanBusinessName.length < 2) {
-      setError("نام مجموعه را وارد کنید.");
       return;
     }
 
@@ -132,8 +99,10 @@ export default function AccountProfileV2Page() {
         },
         body: JSON.stringify({
           full_name: cleanName,
-          account_type: nextType,
-          business_name: isFinalBusinessType(nextType) ? cleanBusinessName : "",
+          // این دو مقدار فقط برای سازگاری Backend قدیمی حفظ می‌شوند.
+          // نوع حساب اصلی در Account V2 همیشه شخصی است و کسب‌وکارها مستقل مدیریت می‌شوند.
+          account_type: user.account_type || "personal",
+          business_name: user.business_name || "",
         }),
       });
       const result = (await response.json().catch(() => null)) as UpdateResponse | null;
@@ -153,8 +122,7 @@ export default function AccountProfileV2Page() {
     }
   }
 
-  const unresolvedBusiness = user?.account_type === "business";
-  const finalBusiness = isFinalBusinessType(user?.account_type);
+  const mobileVerified = Boolean(user?.phone_verified || user?.mobile_verified);
 
   return (
     <main className={styles.page} dir="rtl">
@@ -165,9 +133,9 @@ export default function AccountProfileV2Page() {
         </header>
 
         <section className={styles.titleBlock}>
-          <span>حساب من</span>
+          <span>حساب اصلی</span>
           <h1>اطلاعات پایه</h1>
-          <p>نام صاحب حساب و اطلاعات پایه اینجا نگهداری می‌شود. مدیریت فعالیت‌های کسب‌وکاری به‌صورت مستقل انجام خواهد شد.</p>
+          <p>این صفحه فقط اطلاعات شخصی صاحب حساب را نگه می‌دارد. نمایشگاه، فروشگاه، تعمیرگاه و خدمات خودرو در بخش «مدیریت کسب‌وکار» جدا هستند.</p>
         </section>
 
         {loading ? <div className={styles.state}>در حال دریافت اطلاعات…</div> : null}
@@ -182,44 +150,20 @@ export default function AccountProfileV2Page() {
               <small>نام صاحب حساب چاکود.</small>
             </label>
 
-            {unresolvedBusiness ? (
-              <>
-                <label className={styles.spacedField}>
-                  <span>نوع کسب‌وکار فعلی</span>
-                  <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as AccountType)}>
-                    <option value="business">انتخاب کنید</option>
-                    <option value="dealer">نمایشگاه خودرو</option>
-                    <option value="parts_store">فروشگاه قطعات</option>
-                    <option value="repair_shop">تعمیرگاه خودرو</option>
-                    <option value="car_service">خدمات خودرو</option>
-                  </select>
-                  <small>این انتخاب فقط برای حساب‌های قدیمیِ تعیین‌نشده است.</small>
-                </label>
-
-                {isFinalBusinessType(selectedType) ? (
-                  <label className={styles.spacedField}>
-                    <span>نام مجموعه</span>
-                    <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={180} autoComplete="organization" />
-                  </label>
-                ) : null}
-              </>
-            ) : finalBusiness ? (
-              <label className={styles.spacedField}>
-                <span>نام مجموعه فعلی</span>
-                <input value={businessName} onChange={(event) => setBusinessName(event.target.value)} maxLength={180} autoComplete="organization" />
-              </label>
-            ) : null}
-
             <div className={styles.readonlyRow}>
-              <span><small>وضعیت فعلی</small><strong>{typeLabel(user.account_type)}</strong></span>
+              <span><small>نوع حساب اصلی</small><strong>شخصی</strong></span>
               <span><small>شماره موبایل</small><strong dir="ltr">{user.mobile || "ثبت نشده"}</strong></span>
             </div>
 
             <div className={styles.verifyRow}>
-              <span>{user.phone_verified || user.mobile_verified ? "شماره موبایل تأیید شده" : "شماره موبایل نیازمند تأیید است"}</span>
+              <span>{mobileVerified ? "شماره موبایل تأیید شده" : "شماره موبایل نیازمند تأیید است"}</span>
             </div>
 
             <button type="submit" disabled={saving}>{saving ? "در حال ذخیره…" : "ذخیره تغییرات"}</button>
+
+            <Link href="/account#businesses" className={styles.spacedField}>
+              مدیریت کسب‌وکارهای متصل به این حساب
+            </Link>
           </form>
         ) : null}
 

@@ -52,8 +52,8 @@ function localizeListingStatus(value: unknown) {
   return "وضعیت نامشخص";
 }
 
-function localizeCommandPayload(payload: unknown) {
-  if (!isRecord(payload) || !Array.isArray(payload.top_listings)) return payload;
+function localizeCommandPayload(payload: MutationPayload): MutationPayload {
+  if (!Array.isArray(payload.top_listings)) return payload;
 
   return {
     ...payload,
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       signal: AbortSignal.timeout(15_000),
     });
     const payload = await parseJsonResponse(response);
-    if (!payload) {
+    if (!isRecord(payload)) {
       return jsonResponse({ success: false, message: "پاسخ پنل نمایشگاه معتبر نیست." }, 502);
     }
     return jsonResponse(localizeCommandPayload(payload), response.status);

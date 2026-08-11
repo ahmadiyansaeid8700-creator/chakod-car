@@ -374,6 +374,10 @@ export default function AccountV2Page() {
               <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>تعیین نوع فعالیت</strong><small>تکمیل نوع حساب</small></span><Icon name="chevron" /></Link>
             )}
 
+            {accountType === "dealer" ? (
+              <Link href="/account-v2/verification" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="shield" /></span><span><strong>تأیید مجموعه</strong><small>ارسال پروانه کسب یا مدرک فعالیت</small></span><Icon name="chevron" /></Link>
+            ) : null}
+
             <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
             <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
             <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span><Icon name="chevron" /></Link>

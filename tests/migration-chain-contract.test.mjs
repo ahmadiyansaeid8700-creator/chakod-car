@@ -63,11 +63,11 @@ test("keeps business verification table in migration 0003", async () => {
 
 test("keeps generic account activities in migration 0004", async () => {
   const sql = await read("drizzle/0004_account_activities.sql");
-  assert.match(sql, /CREATE TABLE `account_activities`/);
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS `account_activities`/);
   assert.match(sql, /`owner_user_id` integer NOT NULL/);
   assert.match(sql, /`activity_type` text NOT NULL/);
-  assert.match(sql, /account_activities_owner_type_unique/);
-  assert.match(sql, /account_activities_external_dealer_unique/);
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS `account_activities_owner_type_unique`/);
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS `account_activities_external_dealer_unique`/);
 });
 
 test("keeps migration snapshots chained", async () => {

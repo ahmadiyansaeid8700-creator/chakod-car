@@ -386,12 +386,15 @@ export default function AccountV2Page() {
 
         {professional ? (
           <section className={styles.section}>
-            <div className={styles.sectionHead}><div><h2>{accountType === "dealer" ? "مدیریت نمایشگاه" : accountType === "parts_store" ? "مدیریت فروشگاه" : accountType === "repair_shop" ? "مدیریت تعمیرگاه" : "مدیریت مرکز خدمات"}</h2><p>اطلاعات عمومی کسب‌وکار جدا از صفحه حساب مدیریت می‌شود.</p></div></div>
+            <div className={styles.sectionHead}><div><h2>مدیریت کسب‌وکار</h2><p>اطلاعات هر کسب‌وکار و عملیات حساس آن از همین بخش مدیریت می‌شود.</p></div></div>
             <Link href="/account-v2/business-profile" className={styles.businessCard}>
               <span className={styles.businessIcon}><Icon name="store" /></span>
               <span className={styles.businessCopy}><strong>{user.business_name || accountTypeLabel(accountType)}</strong><small>{profileReady ? "ویرایش تماس، موقعیت، خدمات و ساعات کاری" : "اطلاعات کسب‌وکار را تکمیل کنید"}</small></span>
               <span className={styles.businessState}>{profileReady ? "آماده" : "تکمیل"}</span><Icon name="chevron" />
             </Link>
+            <div className={styles.simpleList} style={{ marginTop: 8 }}>
+              <Link href="/account-v2/business-delete"><span><strong>درخواست حذف کسب‌وکار</strong><small>فقط مالک · با کد تأیید شماره حساب</small></span><Icon name="chevron" /></Link>
+            </div>
           </section>
         ) : null}
 

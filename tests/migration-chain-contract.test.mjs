@@ -20,8 +20,9 @@ test("keeps Drizzle migration journal ordered and unique", async () => {
     "0001_launch_finance_support",
     "0002_content_articles",
     "0003_business_verifications",
+    "0004_account_activities",
   ]);
-  assert.deepEqual(indexes, [0, 1, 2, 3]);
+  assert.deepEqual(indexes, [0, 1, 2, 3, 4]);
   assert.equal(new Set(tags).size, tags.length);
 });
 
@@ -58,6 +59,15 @@ test("keeps business verification table in migration 0003", async () => {
   assert.match(sql, /business_verification_requests_activity_key_unique/);
   assert.match(sql, /`document_base64` text NOT NULL/);
   assert.match(sql, /`status` text DEFAULT 'pending' NOT NULL/);
+});
+
+test("keeps generic account activities in migration 0004", async () => {
+  const sql = await read("drizzle/0004_account_activities.sql");
+  assert.match(sql, /CREATE TABLE `account_activities`/);
+  assert.match(sql, /`owner_user_id` integer NOT NULL/);
+  assert.match(sql, /`activity_type` text NOT NULL/);
+  assert.match(sql, /account_activities_owner_type_unique/);
+  assert.match(sql, /account_activities_external_dealer_unique/);
 });
 
 test("keeps migration snapshots chained", async () => {

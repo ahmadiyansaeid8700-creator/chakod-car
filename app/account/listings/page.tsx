@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
@@ -85,6 +86,17 @@ const STATUS_FILTERS = [
   { key: "inactive", label: "غیرفعال" },
 ] as const;
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "فعال",
+  pending: "در انتظار بررسی",
+  rejected: "نیازمند اصلاح",
+  sold: "فروخته‌شده",
+  inactive: "غیرفعال",
+  expired: "منقضی‌شده",
+  deleted: "بایگانی‌شده",
+  draft: "پیش‌نویس",
+};
+
 function formatNumber(value: number | string | null | undefined) {
   const number = Number(value || 0);
   return Number.isFinite(number) ? new Intl.NumberFormat("fa-IR").format(number) : "۰";
@@ -110,6 +122,13 @@ function statusClass(code?: string) {
   return styles.statusMuted;
 }
 
+function statusLabel(code?: string, title?: string) {
+  const normalized = String(code || "").toLowerCase();
+  if (STATUS_LABELS[normalized]) return STATUS_LABELS[normalized];
+  if (title && !/[A-Za-z]/.test(title)) return title;
+  return "وضعیت نامشخص";
+}
+
 function cleanDealers(items?: DealerItem[]) {
   if (!Array.isArray(items)) return [];
   const seen = new Set<number>();
@@ -122,13 +141,17 @@ function cleanDealers(items?: DealerItem[]) {
 }
 
 export default function AccountListingsPage() {
+  const searchParams = useSearchParams();
+  const requestedDealerId = Math.max(0, Math.round(Number(searchParams.get("dealer_id") || 0)));
+  const requestedIdentityKey = requestedDealerId ? `dealer:${requestedDealerId}` : "all";
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [dealers, setDealers] = useState<DealerItem[]>([]);
   const [summary, setSummary] = useState<Summary>(EMPTY_SUMMARY);
   const [status, setStatus] = useState("all");
-  const [identityKey, setIdentityKey] = useState("all");
+  const [identityKey, setIdentityKey] = useState(requestedIdentityKey);
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -141,6 +164,12 @@ export default function AccountListingsPage() {
     has_prev: false,
   });
 
+  useEffect(() => {
+    if (!requestedDealerId) return;
+    setIdentityKey(`dealer:${requestedDealerId}`);
+    setPage(1);
+  }, [requestedDealerId]);
+
   const identities = useMemo<IdentityFilter[]>(() => [
     { key: "all", label: "همه هویت‌ها", owner: "all", dealerId: 0 },
     { key: "personal", label: "شخصی", owner: "personal", dealerId: 0 },
@@ -152,7 +181,18 @@ export default function AccountListingsPage() {
     })),
   ], [dealers]);
 
-  const selectedIdentity = identities.find((item) => item.key === identityKey) || identities[0];
+  const selectedIdentity = useMemo<IdentityFilter>(() => {
+    const known = identities.find((item) => item.key === identityKey);
+    if (known) return known;
+    if (identityKey.startsWith("dealer:")) {
+      const dealerId = Math.max(0, Math.round(Number(identityKey.slice("dealer:".length) || 0)));
+      if (dealerId) {
+        return { key: identityKey, label: `نمایشگاه ${dealerId}`, owner: "dealer", dealerId };
+      }
+    }
+    return identities[0];
+  }, [identities, identityKey]);
+
   const attentionCount = summary.pending + summary.rejected + summary.inactive + summary.expired;
 
   async function loadListings(targetPage = page) {
@@ -211,7 +251,6 @@ export default function AccountListingsPage() {
 
   useEffect(() => {
     void loadListings(page);
-    // selectedIdentity به شکل owner/dealer_id در dependencyهای زیر بازتاب داده شده است.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, status, identityKey, appliedSearch]);
 
@@ -232,11 +271,13 @@ export default function AccountListingsPage() {
 
   function clearFilters() {
     setStatus("all");
-    setIdentityKey("all");
+    setIdentityKey(requestedDealerId ? `dealer:${requestedDealerId}` : "all");
     setSearch("");
     setAppliedSearch("");
     setPage(1);
   }
+
+  const scopedDealer = selectedIdentity.owner === "dealer" ? selectedIdentity : null;
 
   return (
     <main className={styles.page} dir="rtl">
@@ -249,10 +290,10 @@ export default function AccountListingsPage() {
         <section className={styles.headerCard}>
           <div>
             <span>مدیریت آگهی‌ها</span>
-            <h1>آگهی‌های من</h1>
-            <p>آگهی‌های شخصی و نمایشگاه‌های مجاز، بدون منوی اضافه و در یک لیست.</p>
+            <h1>{scopedDealer ? `آگهی‌های ${scopedDealer.label}` : "آگهی‌های من"}</h1>
+            <p>{scopedDealer ? "فقط آگهی‌های همین مجموعه نمایش داده می‌شوند." : "آگهی‌های شخصی و نمایشگاه‌های مجاز در یک لیست."}</p>
           </div>
-          <Link href="/account/listings/new" className={styles.addButton}>+ ثبت آگهی</Link>
+          <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"} className={styles.addButton}>+ ثبت آگهی</Link>
         </section>
 
         <section className={styles.summary} aria-label="خلاصه آگهی‌ها">
@@ -276,18 +317,20 @@ export default function AccountListingsPage() {
               ))}
             </div>
 
-            <div className={styles.identityRow} aria-label="هویت انتشار">
-              {identities.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`${styles.identityButton} ${identityKey === item.key ? styles.identityActive : ""}`}
-                  onClick={() => chooseIdentity(item.key)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+            {!requestedDealerId ? (
+              <div className={styles.identityRow} aria-label="هویت انتشار">
+                {identities.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.identityButton} ${identityKey === item.key ? styles.identityActive : ""}`}
+                    onClick={() => chooseIdentity(item.key)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className={styles.searchRow}>
@@ -303,7 +346,7 @@ export default function AccountListingsPage() {
 
         <div className={styles.resultLine}>
           <span>{formatNumber(pagination.total)} آگهی پیدا شد</span>
-          {(status !== "all" || identityKey !== "all" || appliedSearch) ? <button type="button" onClick={clearFilters}>پاک کردن فیلترها</button> : null}
+          {(status !== "all" || (!requestedDealerId && identityKey !== "all") || appliedSearch) ? <button type="button" onClick={clearFilters}>پاک کردن فیلترها</button> : null}
         </div>
 
         {loading ? (
@@ -318,7 +361,7 @@ export default function AccountListingsPage() {
           <section className={styles.state}>
             <strong>آگهی‌ای پیدا نشد</strong>
             <span>فیلتر را تغییر دهید یا یک آگهی جدید ثبت کنید.</span>
-            <Link href="/account/listings/new">ثبت آگهی</Link>
+            <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"}>ثبت آگهی</Link>
           </section>
         ) : (
           <section className={styles.list}>
@@ -333,7 +376,7 @@ export default function AccountListingsPage() {
                 <article className={styles.card} key={listing.id}>
                   <div className={styles.imageWrap}>
                     {listing.cover_image?.image_url ? <img src={listing.cover_image.image_url} alt={listing.title || "خودرو"} /> : <span className={styles.noImage}>بدون عکس</span>}
-                    <span className={`${styles.status} ${statusClass(listing.status?.code)}`}>{listing.status?.title || "در انتظار"}</span>
+                    <span className={`${styles.status} ${statusClass(listing.status?.code)}`}>{statusLabel(listing.status?.code, listing.status?.title)}</span>
                   </div>
 
                   <div className={styles.body}>

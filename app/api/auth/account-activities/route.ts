@@ -68,7 +68,7 @@ async function ensureAccountActivitiesSchema() {
   if (!activitySchemaReady) {
     activitySchemaReady = (async () => {
       const d1 = getRuntimeEnv().DB;
-      await d1.exec(`CREATE TABLE IF NOT EXISTS account_activities (
+      await d1.prepare(`CREATE TABLE IF NOT EXISTS account_activities (
         id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
         owner_user_id integer NOT NULL,
         activity_type text NOT NULL,
@@ -84,13 +84,18 @@ async function ensureAccountActivitiesSchema() {
         verification_status text DEFAULT 'unverified' NOT NULL,
         created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
-      )`);
-      await d1.exec(
-        "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_owner_type_unique ON account_activities (owner_user_id, activity_type)",
-      );
-      await d1.exec(
-        "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_external_dealer_unique ON account_activities (external_dealer_id)",
-      );
+      )`).run();
+      await d1
+        .prepare(
+          "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_owner_type_unique ON account_activities (owner_user_id, activity_type)",
+        )
+        .run();
+      await d1
+        .prepare(
+          "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_external_dealer_unique ON account_activities (external_dealer_id)",
+        )
+        .run();
+      await d1.prepare("SELECT 1 FROM account_activities LIMIT 1").run();
     })().catch((error) => {
       activitySchemaReady = null;
       throw error;

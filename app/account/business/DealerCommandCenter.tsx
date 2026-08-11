@@ -84,6 +84,11 @@ type VerificationResponse = {
   verification?: { status?: string } | null;
 };
 
+type ProfessionalProfileResponse = {
+  success?: boolean;
+  profile?: { dealer_id?: number | null; logo_url?: string | null } | null;
+};
+
 type VerificationStatus = "loading" | "unverified" | "pending" | "verified" | "rejected" | "suspended" | "unavailable";
 type TabKey = "overview" | "listings" | "team";
 type IconName = "car" | "eye" | "bookmark" | "team" | "plus" | "shield" | "list" | "chevron" | "profile";
@@ -216,6 +221,7 @@ export default function DealerCommandCenter() {
   const [dealerId, setDealerId] = useState(0);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showInvite, setShowInvite] = useState(false);
@@ -262,6 +268,25 @@ export default function DealerCommandCenter() {
       });
       const payload = await readJson<CommandResponse>(response);
       if (!response.ok || !payload.success) throw new Error(payload.message || "اطلاعات مدیریتی نمایشگاه دریافت نشد.");
+
+      if (payload.dealer && !payload.dealer.logo_url) {
+        try {
+          const profileResponse = await fetch("/api/auth/professional-profile", {
+            cache: "no-store",
+            credentials: "include",
+            headers: { Accept: "application/json", ...authHeaders() },
+          });
+          const profilePayload = await readJson<ProfessionalProfileResponse>(profileResponse);
+          const profileDealerId = Number(profilePayload.profile?.dealer_id || 0);
+          const sameDealer = !profileDealerId || profileDealerId === payload.dealer.id;
+          if (profileResponse.ok && profilePayload.success && sameDealer && profilePayload.profile?.logo_url) {
+            payload.dealer.logo_url = profilePayload.profile.logo_url;
+          }
+        } catch {
+          // لوگوی پنل اختیاری است؛ خطای پروفایل نباید کل مرکز فرمان را از کار بیندازد.
+        }
+      }
+
       setData(payload);
       if (payload.dealer?.id) {
         setDealerId(payload.dealer.id);
@@ -374,6 +399,36 @@ export default function DealerCommandCenter() {
     }
   }
 
+  async function removeMember(member: Member) {
+    if (member.role === "owner" || removingMemberId) return;
+    const confirmed = window.confirm(`عضو «${member.display_name}» از تیم حذف شود؟ دسترسی او به این مجموعه قطع خواهد شد.`);
+    if (!confirmed) return;
+
+    setRemovingMemberId(member.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/auth/dealer-command-center?dealer_id=${dealerId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ dealer_id: dealerId, member_id: member.id, status: "removed" }),
+      });
+      const payload = await readJson<{ success?: boolean; message?: string }>(response);
+      if (!response.ok || !payload.success) throw new Error(payload.message || "حذف عضو انجام نشد.");
+      setNotice(`«${member.display_name}» از تیم حذف شد.`);
+      if (editingMemberId === member.id) {
+        setEditingMemberId(null);
+        setEditingMemberOriginalStatus("");
+      }
+      await load(dealerId);
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "حذف عضو انجام نشد.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }
+
   if (loading) {
     return (
       <main className={styles.page} dir="rtl">
@@ -396,7 +451,7 @@ export default function DealerCommandCenter() {
 
   const summary = data.summary || { total: 0, active: 0, pending: 0, inactive: 0, sold: 0, rejected: 0, views: 0, favorites: 0, expiring_soon: 0 };
   const currentDealerId = dealerId || data.dealer.id;
-  const members = data.members || [];
+  const members = (data.members || []).filter((member) => member.status !== "removed");
   const mainInfoReady = Boolean(data.dealer.name && data.dealer.province && data.dealer.city);
   const verificationProgress = data.dealer.is_verified ? 100 : mainInfoReady ? 60 : 30;
   const location = [data.dealer.province, data.dealer.city].filter(Boolean).join("، ") || "محدوده ثبت نشده";
@@ -420,7 +475,14 @@ export default function DealerCommandCenter() {
             <p>{location}</p>
             <div className={styles.roleLine}><Icon name="profile" /><span>نقش شما: {roleLabels[data.role || "viewer"] || data.role || "عضو"}</span></div>
           </div>
-          <div className={styles.dealerAvatar}>{data.dealer.logo_url ? <img src={data.dealer.logo_url} alt="" /> : "چ"}</div>
+          <Link
+            href={`/account/business/media?dealer_id=${currentDealerId}`}
+            className={styles.dealerAvatar}
+            aria-label={data.dealer.logo_url ? "تغییر لوگوی نمایشگاه" : "بارگذاری لوگوی نمایشگاه"}
+            title={data.dealer.logo_url ? "تغییر لوگو" : "بارگذاری لوگو"}
+          >
+            {data.dealer.logo_url ? <img src={data.dealer.logo_url} alt="لوگوی نمایشگاه" /> : <span>+ لوگو</span>}
+          </Link>
           <div className={styles.heroBadges}>
             <span className={data.dealer.is_verified ? styles.verifiedBadge : styles.pendingBadge}>{data.dealer.is_verified ? "تأییدشده" : "در انتظار تأیید"}</span>
             <span className={data.subscription?.status === "active" ? styles.activeBadge : styles.neutralBadge}>{data.subscription?.status === "active" ? `اشتراک تا ${formatDate(data.subscription.expires_at)}` : "اشتراک غیرفعال"}</span>
@@ -523,7 +585,18 @@ export default function DealerCommandCenter() {
                     <span className={`${styles.memberStatus} ${styles[`member_${member.status}`] || ""}`}>{memberStatusLabels[member.status] || member.status}</span>
                   </div>
                   <div className={styles.memberMetrics}><span><strong>{formatNumber(member.listing_count)}</strong><small>آگهی</small></span><span><strong>{formatNumber(member.sold_count)}</strong><small>فروخته</small></span><span><strong>{formatNumber(member.views_count)}</strong><small>بازدید</small></span></div>
-                  {canManageTeam && member.role !== "owner" ? <div className={styles.memberFoot}><button onClick={() => startEdit(member)}>{member.status === "invited" ? "مدیریت دعوت" : "ویرایش عضو"}</button></div> : null}
+                  {canManageTeam && member.role !== "owner" ? (
+                    <div className={styles.memberFoot}>
+                      <button onClick={() => startEdit(member)}>{member.status === "invited" ? "مدیریت دعوت" : "ویرایش عضو"}</button>
+                      <button
+                        onClick={() => void removeMember(member)}
+                        disabled={removingMemberId === member.id}
+                        style={{ color: "#a12b43", background: "#fff0f3", borderColor: "#f2cbd5" }}
+                      >
+                        {removingMemberId === member.id ? "در حال حذف…" : member.status === "invited" ? "لغو دعوت" : "حذف عضو"}
+                      </button>
+                    </div>
+                  ) : null}
                 </article>
               )) : <div className={styles.empty}>هنوز پرسنلی برای این نمایشگاه ثبت نشده است.</div>}
             </div>

@@ -180,6 +180,7 @@ export default function AccountV2Page() {
 
   const displayName = useMemo(() => user?.display_name || user?.full_name || "کاربر چاکود", [user]);
   const verified = Boolean(user?.phone_verified || user?.mobile_verified);
+  const personalProfileReady = Boolean((user?.full_name || user?.display_name || "").trim().length >= 2);
 
   async function logout() {
     if (loggingOut) return;
@@ -229,7 +230,7 @@ export default function AccountV2Page() {
           </div>
           <div className={styles.statusRow}>
             <span className={verified ? styles.goodStatus : styles.warnStatus}><Icon name="shield" />{verified ? "شماره تأیید شده" : "شماره نیازمند تأیید"}</span>
-            <span className={user.profile_completed ? styles.goodStatus : styles.warnStatus}><Icon name="profile" />{user.profile_completed ? "اطلاعات حساب آماده" : "اطلاعات حساب ناقص"}</span>
+            <span className={personalProfileReady ? styles.goodStatus : styles.warnStatus}><Icon name="profile" />{personalProfileReady ? "اطلاعات حساب آماده" : "اطلاعات حساب ناقص"}</span>
           </div>
         </section>
 
@@ -254,7 +255,7 @@ export default function AccountV2Page() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.section} id="businesses">
           <div className={styles.sectionHead}>
             <div><h2>مدیریت کسب‌وکار</h2><p>حساب شما ثابت است؛ کسب‌وکارها جداگانه به آن اضافه می‌شوند و از هر نوع حداکثر یکی مالک می‌شوید.</p></div>
             {availableTypes.length > 0 ? <Link href="/account-v2/businesses/new">+ افزودن</Link> : null}

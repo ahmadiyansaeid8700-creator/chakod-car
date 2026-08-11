@@ -1,49 +1,9 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
-
-import styles from "./account-layout.module.css";
 
 type AccountLayoutProps = {
   children: ReactNode;
 };
 
-const accountLinks = [
-  { href: "/account", label: "حساب من" },
-  { href: "/dashboard", label: "داشبورد" },
-  { href: "/account/profile", label: "پروفایل" },
-  { href: "/account/listings", label: "آگهی‌های من" },
-  { href: "/account/saved", label: "ذخیره‌شده‌ها" },
-  { href: "/account/business", label: "کسب‌وکار من" },
-  { href: "/account/business/dealers", label: "نمایشگاه‌های من" },
-  { href: "/account/wallet", label: "کیف پول" },
-  { href: "/account/payments", label: "پرداخت‌ها" },
-  { href: "/account/invoices", label: "فاکتورها" },
-  { href: "/account/refunds", label: "بازپرداخت" },
-  { href: "/account/promotions", label: "تبلیغات" },
-  { href: "/account/subscriptions", label: "اشتراک‌ها" },
-  { href: "/account/business/promotions/featured", label: "نمایشگاه منتخب" },
-  { href: "/support", label: "پشتیبانی" },
-  { href: "/account/notifications", label: "اعلان‌ها" },
-  { href: "/account/security", label: "امنیت" },
-  { href: "/account/payments/wallet-retry", label: "پیگیری پرداخت" },
-];
-
 export default function AccountLayout({ children }: AccountLayoutProps) {
-  return (
-    <div className={styles.layout} dir="rtl">
-      <div className={styles.navigationShell}>
-        <nav className={styles.navigation} aria-label="دسترسی‌های حساب کاربری">
-          {accountLinks.map((item) => (
-            <Link key={item.href} href={item.href} className={styles.navigationLink}>
-              {item.label}
-            </Link>
-          ))}
-          <Link href="/account/listings/new" className={styles.primaryLink}>
-            ثبت آگهی
-          </Link>
-        </nav>
-      </div>
-      {children}
-    </div>
-  );
+  return children;
 }

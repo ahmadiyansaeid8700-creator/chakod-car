@@ -49,6 +49,7 @@ async function loadGeo(params?: { province?: string; city?: string }) {
 
 export default function NewBusinessPage() {
   const [loading, setLoading] = useState(true);
+  const [serviceReady, setServiceReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [availableTypes, setAvailableTypes] = useState<ActivityType[]>([]);
@@ -66,28 +67,39 @@ export default function NewBusinessPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const [activitiesResponse, geo] = await Promise.all([
-          fetch("/api/auth/account-activities", { credentials: "include", cache: "no-store", headers: { Accept: "application/json" } }),
-          loadGeo(),
-        ]);
-        const activities = await readJson<ActivitiesResponse>(activitiesResponse);
-        if (!activitiesResponse.ok || !activities.success) throw new Error(activities.message || "کسب‌وکارهای حساب دریافت نشد.");
-        const available = Array.isArray(activities.available_types) ? activities.available_types : [];
-        setAvailableTypes(available);
-        setType(available[0] || "");
-        setProvinces(geo.items);
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "اطلاعات صفحه دریافت نشد.");
-      } finally {
-        setLoading(false);
+  async function loadPage() {
+    setLoading(true);
+    setServiceReady(false);
+    setError("");
+    try {
+      const [activitiesResponse, geo] = await Promise.all([
+        fetch("/api/auth/account-activities", {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        }),
+        loadGeo(),
+      ]);
+      const activities = await readJson<ActivitiesResponse>(activitiesResponse);
+      if (!activitiesResponse.ok || !activities.success) {
+        throw new Error(activities.message || "فهرست کسب‌وکارهای حساب فعلاً در دسترس نیست.");
       }
-    })();
-  }, []);
+
+      const available = Array.isArray(activities.available_types) ? activities.available_types : [];
+      setAvailableTypes(available);
+      setType(available[0] || "");
+      setProvinces(geo.items);
+      setServiceReady(true);
+    } catch (caught) {
+      setAvailableTypes([]);
+      setType("");
+      setError(caught instanceof Error ? caught.message : "اطلاعات صفحه دریافت نشد.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadPage(); }, []);
 
   useEffect(() => {
     void (async () => {
@@ -131,8 +143,8 @@ export default function NewBusinessPage() {
   }, [province, city]);
 
   const canSubmit = useMemo(
-    () => Boolean(type && name.trim().length >= 2 && province && city && !saving),
-    [city, name, province, saving, type],
+    () => Boolean(serviceReady && type && name.trim().length >= 2 && province && city && !saving),
+    [city, name, province, saving, serviceReady, type],
   );
 
   async function submit() {
@@ -180,15 +192,26 @@ export default function NewBusinessPage() {
           <p>از هر نوع فقط یک مجموعه می‌توانید مالک باشید. عضویت شما در مجموعه‌های دیگر جدا حساب می‌شود.</p>
         </section>
 
-        {error ? <div className={styles.error}>{error}</div> : null}
         {notice ? <div className={styles.notice}>{notice}</div> : null}
 
         {loading ? (
           <section className={styles.state}>در حال آماده‌سازی…</section>
+        ) : !serviceReady ? (
+          <section className={styles.state}>
+            <strong>افزودن کسب‌وکار فعلاً آماده نیست.</strong>
+            <span>{error || "ارتباط با سرویس کسب‌وکار برقرار نشد."}</span>
+            <button type="button" onClick={() => void loadPage()}>تلاش دوباره</button>
+            <Link href="/account">بازگشت به حساب</Link>
+          </section>
         ) : availableTypes.length === 0 ? (
-          <section className={styles.state}><strong>همه نوع‌های کسب‌وکار برای این حساب ثبت شده‌اند.</strong><Link href="/account">بازگشت به حساب</Link></section>
+          <section className={styles.state}>
+            <strong>از هر چهار نوع کسب‌وکار، یک مورد برای این حساب ثبت شده است.</strong>
+            <Link href="/account">بازگشت به حساب</Link>
+          </section>
         ) : (
           <section className={styles.card}>
+            {error ? <div className={styles.error}>{error}</div> : null}
+
             <div className={styles.types}>
               {TYPES.map((item) => {
                 const available = availableTypes.includes(item.type);
@@ -201,7 +224,7 @@ export default function NewBusinessPage() {
                     onClick={() => available && setType(item.type)}
                   >
                     <strong>{item.title}</strong>
-                    <span>{available ? item.description : "قبلاً برای حساب ثبت شده"}</span>
+                    <span>{available ? item.description : "این نوع قبلاً برای حساب ثبت شده"}</span>
                   </button>
                 );
               })}

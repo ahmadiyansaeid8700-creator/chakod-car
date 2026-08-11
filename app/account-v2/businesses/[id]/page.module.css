@@ -1,0 +1,27 @@
+.page { min-height: 100vh; color: #291a38; background: radial-gradient(circle at 88% 0%, rgba(126,48,213,.12), transparent 30%), linear-gradient(180deg,#fbf9ff,#f7f3fb); }
+.shell { width: min(720px,100%); margin: 0 auto; padding: 12px 12px 70px; }
+.topbar { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topbar > a:first-child { color: #6e25bc; font-size: 11px; font-weight: 850; text-decoration: none; }
+.logo { width: 108px; display: inline-flex; }
+.logo img { width: 100%; height: auto; display: block; }
+.hero,.card,.state,.actions { border: 1px solid rgba(89,49,127,.1); border-radius: 20px; background: rgba(255,255,255,.96); box-shadow: 0 14px 36px rgba(66,31,99,.055); }
+.hero { padding: 18px; }
+.hero > span { color: #7227c3; font-size: 10px; font-weight: 900; }
+.hero h1 { margin: 5px 0 4px; font-size: 22px; }
+.hero p { margin: 0; color: #8d7d97; font-size: 10px; line-height: 1.9; }
+.card { margin-top: 10px; padding: 14px; }
+.card label { display: grid; gap: 6px; margin-top: 10px; }
+.card label > span { font-size: 10px; font-weight: 850; }
+.card input,.card select,.card textarea { width: 100%; min-height: 44px; border: 1px solid #e8deef; border-radius: 12px; padding: 0 11px; background: #fff; color: #2a1938; font: inherit; font-size: 11px; outline: none; }
+.card textarea { min-height: 82px; padding-top: 10px; resize: vertical; }
+.card input:focus,.card select:focus,.card textarea:focus { border-color: #8d36d8; box-shadow: 0 0 0 3px rgba(141,54,216,.08); }
+.twoCols { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.card > button { width: 100%; min-height: 46px; margin-top: 14px; border: 0; border-radius: 13px; color: #fff; background: linear-gradient(135deg,#6320b9,#8b2edb); font: inherit; font-size: 11px; font-weight: 900; cursor: pointer; }
+.card > button:disabled { opacity: .5; cursor: not-allowed; }
+.state { margin-top: 10px; padding: 28px 16px; text-align: center; }
+.error,.notice { margin-top: 10px; padding: 11px 12px; border-radius: 13px; font-size: 10px; line-height: 1.8; }
+.error { color: #a62b43; background: #fff1f4; border: 1px solid #ffd5dd; }
+.notice { color: #08745a; background: #edfaf5; border: 1px solid #c9f0e2; }
+.actions { margin-top: 10px; padding: 11px; }
+.actions a { min-height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: #a32a43; background: #fff3f5; text-decoration: none; font-size: 10px; font-weight: 850; }
+@media (max-width: 620px) { .shell { padding: 8px 8px 50px; } .hero,.card,.state,.actions { border-radius: 17px; } .hero { padding: 15px; } .hero h1 { font-size: 19px; } .twoCols { grid-template-columns: 1fr; } }

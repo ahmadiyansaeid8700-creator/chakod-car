@@ -16,6 +16,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BASELINE_MEMBER_PERMISSION = "ads.manage";
+const LISTING_STATUS_LABELS: Record<string, string> = {
+  active: "فعال",
+  pending: "در انتظار بررسی",
+  rejected: "نیازمند اصلاح",
+  sold: "فروخته‌شده",
+  inactive: "غیرفعال",
+  expired: "منقضی‌شده",
+  deleted: "بایگانی‌شده",
+  draft: "پیش‌نویس",
+};
 
 type MutationPayload = Record<string, unknown>;
 
@@ -33,6 +43,25 @@ function isRecord(value: unknown): value is MutationPayload {
 function positiveId(value: unknown) {
   const id = Math.round(Number(value || 0));
   return Number.isSafeInteger(id) && id > 0 ? id : 0;
+}
+
+function localizeListingStatus(value: unknown) {
+  const code = String(value || "").trim().toLowerCase();
+  if (LISTING_STATUS_LABELS[code]) return LISTING_STATUS_LABELS[code];
+  if (typeof value === "string" && value && !/[A-Za-z]/.test(value)) return value;
+  return "وضعیت نامشخص";
+}
+
+function localizeCommandPayload(payload: unknown) {
+  if (!isRecord(payload) || !Array.isArray(payload.top_listings)) return payload;
+
+  return {
+    ...payload,
+    top_listings: payload.top_listings.map((item) => {
+      if (!isRecord(item)) return item;
+      return { ...item, status: localizeListingStatus(item.status) };
+    }),
+  };
 }
 
 async function readMutationPayload(request: NextRequest): Promise<MutationPayload | null> {
@@ -116,7 +145,21 @@ async function readCurrentMemberStatus(request: NextRequest, dealerId: number, m
 }
 
 export async function GET(request: NextRequest) {
-  return proxyAuthenticatedJson(request, endpoint(request));
+  try {
+    const response = await fetch(authApiUrl(endpoint(request)), {
+      method: "GET",
+      cache: "no-store",
+      headers: requestIdentityHeaders(request),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const payload = await parseJsonResponse(response);
+    if (!payload) {
+      return jsonResponse({ success: false, message: "پاسخ پنل نمایشگاه معتبر نیست." }, 502);
+    }
+    return jsonResponse(localizeCommandPayload(payload), response.status);
+  } catch {
+    return jsonResponse({ success: false, message: "ارتباط با سرویس پنل نمایشگاه برقرار نشد." }, 502);
+  }
 }
 
 export async function POST(request: NextRequest) {

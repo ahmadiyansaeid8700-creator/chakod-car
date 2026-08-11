@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "اطلاعات درخواست معتبر نیست." }, 400);
   }
 
+  const activityId = Math.round(Number(input.activity_id || 0));
   const activityType = clean(input.activity_type, 40);
   const dealerId = Math.round(Number(input.dealer_id || 0));
   const code = clean(input.code, 10)
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     .replace(/\D/g, "");
   const reason = clean(input.reason, 800);
 
-  const context = await readBusinessDeletionContext({ activityType, dealerId });
+  const context = await readBusinessDeletionContext({ activityId, activityType, dealerId });
   if (!context) {
     return jsonResponse(
       { success: false, message: "فقط مالک این کسب‌وکار می‌تواند درخواست حذف ثبت کند." },
@@ -113,11 +114,12 @@ export async function POST(request: NextRequest) {
     const ticketNo = createPublicReference("DEL");
     const message = [
       "درخواست حذف کسب‌وکار با احراز مجدد شماره موبایل صاحب حساب ثبت شده است.",
+      context.activityId ? `شناسه فعالیت چاکود: ${context.activityId}` : "",
       `کلید فعالیت: ${context.activityKey}`,
       `نوع فعالیت: ${context.activityType}`,
       `نام مجموعه: ${context.activityName}`,
       `شناسه کاربر درخواست‌کننده: ${context.userId}`,
-      context.activityExternalId ? `شناسه مجموعه: ${context.activityExternalId}` : "",
+      context.activityExternalId ? `شناسه خارجی مجموعه: ${context.activityExternalId}` : "",
       reason ? `توضیح کاربر: ${reason}` : "توضیح کاربر: ثبت نشده",
       "نکته اجرایی: تا زمان بررسی وابستگی‌ها و اجرای حذف سمت Backend، مجموعه نباید خودکار حذف یا غیرفعال شود.",
     ].filter(Boolean).join("\n");

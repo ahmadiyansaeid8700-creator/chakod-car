@@ -17,7 +17,7 @@ type LoginUser = {
   id?: number;
   mobile?: string;
   full_name?: string | null;
-  account_type?: "personal" | "dealer" | "parts_store" | "repair_shop" | "business";
+  account_type?: "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
   business_name?: string | null;
   business_city?: string | null;
   display_name?: string;
@@ -57,25 +57,8 @@ function formatCountdown(seconds: number) {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function isProfileComplete(user?: LoginUser | null) {
-  if (!user) return false;
-
-  const fullNameOk = Boolean(user.full_name && user.full_name.trim().length >= 2);
-  const type = user.account_type || "personal";
-
-  if (!fullNameOk || type === "business") return false;
-
-  if (type !== "personal") {
-    const businessNameOk = Boolean(
-      user.business_name && user.business_name.trim().length >= 2,
-    );
-    const businessCityOk = Boolean(
-      user.business_city && user.business_city.trim().length >= 2,
-    );
-    return businessNameOk && businessCityOk;
-  }
-
-  return true;
+function needsInitialSetup(user?: LoginUser | null) {
+  return !Boolean(user?.full_name && user.full_name.trim().length >= 2);
 }
 
 async function readApiResponse(res: Response) {
@@ -172,7 +155,7 @@ export default function LoginPage() {
       );
       window.dispatchEvent(new Event("chakod:auth-changed"));
       setMessage("ورود آزمایشی موفق بود. در حال انتقال...");
-      window.location.assign(postLoginDestination(session.redirectTo));
+      window.location.assign("/account-v2/onboarding");
     } catch {
       setError("ورود آزمایشی لوکال انجام نشد. دوباره تلاش کنید.");
     } finally {
@@ -281,10 +264,13 @@ export default function LoginPage() {
       );
       window.dispatchEvent(new Event("chakod:auth-changed"));
 
-      const defaultNextUrl = isProfileComplete(json.user)
-        ? safeReturnTo(json.redirect_to)
-        : "/account?complete=1";
-      const nextUrl = postLoginDestination(defaultNextUrl);
+      const initialSetupRequired = needsInitialSetup(json.user);
+      const defaultNextUrl = initialSetupRequired
+        ? "/account-v2/onboarding"
+        : safeReturnTo(json.redirect_to, "/account-v2");
+      const nextUrl = initialSetupRequired
+        ? defaultNextUrl
+        : postLoginDestination(defaultNextUrl);
 
       setMessage("");
       setStep("done");

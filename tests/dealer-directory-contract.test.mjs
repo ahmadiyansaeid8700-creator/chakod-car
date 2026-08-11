@@ -32,9 +32,13 @@ test("keeps dealer management reachable from Account V2 without legacy account n
   assert.doesNotMatch(directory, /\/dealers\/\$\{/);
 });
 
-test("removes homepage banner language from dealer command center", async () => {
+test("keeps dealer command center scoped to the selected dealer", async () => {
   const commandCenter = await source("app/account/business/DealerCommandCenter.tsx");
-  assert.match(commandCenter, /نمایشگاه منتخب/);
-  assert.match(commandCenter, /نمایشگاه‌های من/);
-  assert.doesNotMatch(commandCenter, /رزرو بنر/);
+  assert.match(commandCenter, /searchParams\.get\("dealer_id"\)/);
+  assert.match(commandCenter, /نمای کلی/);
+  assert.match(commandCenter, /آگهی‌ها/);
+  assert.match(commandCenter, /تیم/);
+  assert.match(commandCenter, /اطلاعات/);
+  assert.match(commandCenter, /مالی/);
+  assert.doesNotMatch(commandCenter, /رزرو بنر|نمایشگاه منتخب/);
 });

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
@@ -43,6 +44,12 @@ type PreparedDocument = {
 };
 
 const MAX_BYTES = 1_000_000;
+
+function safeReturnTo(value: string | null) {
+  if (!value) return "/account";
+  if (value === "/account" || value.startsWith("/account/") || value.startsWith("/account?")) return value;
+  return "/account";
+}
 
 async function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -110,6 +117,11 @@ function statusTitle(status?: string) {
 }
 
 export default function BusinessVerificationPage() {
+  const searchParams = useSearchParams();
+  const requestedDealerIdRaw = Math.round(Number(searchParams.get("dealer_id") || 0));
+  const requestedDealerId = Number.isSafeInteger(requestedDealerIdRaw) && requestedDealerIdRaw > 0 ? requestedDealerIdRaw : 0;
+  const returnTo = safeReturnTo(searchParams.get("return_to"));
+
   const [dealers, setDealers] = useState<DealerOption[]>([]);
   const [dealerId, setDealerId] = useState(0);
   const [dealerRole, setDealerRole] = useState("");
@@ -166,14 +178,14 @@ export default function BusinessVerificationPage() {
       setLoading(true);
       setError("");
       try {
-        await loadCenter();
+        await loadCenter(requestedDealerId || undefined);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "دریافت اطلاعات انجام نشد.");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [requestedDealerId]);
 
   const canSubmit = useMemo(() => {
     return dealerId > 0 && Boolean(document) && form.license_holder_name.trim().length >= 2 && !saving && !preparing;
@@ -250,14 +262,14 @@ export default function BusinessVerificationPage() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/account">بازگشت به حساب</Link>
+          <Link href={returnTo}>بازگشت</Link>
           <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
         </header>
 
         <section className={styles.hero}>
           <span>احراز مجموعه</span>
           <h1>{statusTitle(verification?.status)}</h1>
-          <p>برای فعال شدن مدیریت تیم و تبلیغات مجموعه، مالک یا مدیر مجاز باید مدرک فعالیت معتبر ارسال کند.</p>
+          <p>برای فعال شدن مدیریت تیم، مالک یا مدیر مجاز باید مدرک فعالیت معتبر ارسال کند و تأیید مدیریت چاکود را دریافت کند.</p>
         </section>
 
         {error ? <div className={styles.error}>{error}</div> : null}
@@ -332,8 +344,13 @@ export default function BusinessVerificationPage() {
               </form>
             ) : null}
 
-            {verification?.status === "pending" ? <div className={styles.info}>مدرک ثبت شده است. پس از بررسی، نتیجه همین‌جا نمایش داده می‌شود.</div> : null}
-            {verification?.status === "verified" ? <div className={styles.verified}>این مجموعه تأیید شده و پرونده فعلاً نیاز به اقدام دیگری ندارد.</div> : null}
+            {verification?.status === "pending" ? <div className={styles.info}>مدرک ثبت شده است. بعد از بررسی مدیریت چاکود، امکان افزودن پرسنل فعال می‌شود.</div> : null}
+            {verification?.status === "verified" ? (
+              <div className={styles.verified}>
+                <span>مدیریت این مجموعه تأیید شده و افزودن پرسنل فعال است.</span>
+                <Link href={returnTo}>بازگشت و افزودن پرسنل</Link>
+              </div>
+            ) : null}
             {verification?.status === "suspended" ? <div className={styles.info}>برای ادامه فرایند با پشتیبانی چاکود تماس بگیرید.</div> : null}
           </>
         ) : null}

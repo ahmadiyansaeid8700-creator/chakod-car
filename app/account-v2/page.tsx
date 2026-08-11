@@ -6,174 +6,89 @@ import { useEffect, useMemo, useState } from "react";
 import MobileBottomNav from "../components/MobileBottomNav";
 import styles from "./page.module.css";
 
-type AccountType = "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
-
 type AccountUser = {
   id?: number;
   mobile?: string;
   full_name?: string | null;
   display_name?: string | null;
-  business_name?: string | null;
-  business_city?: string | null;
-  business_location_label?: string | null;
-  account_type?: AccountType | string;
   profile_completed?: boolean;
   phone_verified?: boolean;
   mobile_verified?: boolean;
 };
 
-type Stats = {
-  total: number;
-  active: number;
-  pending: number;
-  rejected: number;
-  inactive: number;
-  sold: number;
+type Stats = { total: number; active: number; pending: number };
+type Activity = {
+  id: number;
+  type: "dealer" | "parts_store" | "repair_shop" | "car_service" | string;
+  name: string;
+  phone?: string;
+  province?: string;
+  city?: string;
+  external_dealer_id?: number | null;
+  status: string;
+  verification_status: string;
+  can_publish_vehicle?: boolean;
 };
-
-type MeResponse = {
+type Membership = {
+  type: string;
+  external_dealer_id?: number;
+  name: string;
+  role?: string;
+  can_publish_vehicle?: boolean;
+};
+type ActivitiesResponse = {
   success?: boolean;
-  logged_in?: boolean;
   message?: string;
-  user?: AccountUser | null;
+  activities?: Activity[];
+  memberships?: Membership[];
+  available_types?: string[];
 };
 
-type DashboardResponse = {
-  success?: boolean;
-  message?: string;
-  stats?: Partial<Stats>;
-  dealers?: unknown[];
-};
-
-const EMPTY_STATS: Stats = {
-  total: 0,
-  active: 0,
-  pending: 0,
-  rejected: 0,
-  inactive: 0,
-  sold: 0,
-};
+type MeResponse = { success?: boolean; logged_in?: boolean; message?: string; user?: AccountUser | null };
+type DashboardResponse = { success?: boolean; stats?: Partial<Stats> };
 
 function getToken() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("chakod_session_token") || "";
 }
-
 function authHeaders(): Record<string, string> {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }
-
 function clearAuth() {
   localStorage.removeItem("chakod_session_token");
   localStorage.removeItem("chakod_user");
   localStorage.removeItem("chakod_identity");
 }
-
-function readCachedUser(): AccountUser | null {
-  try {
-    const raw = localStorage.getItem("chakod_user");
-    return raw ? (JSON.parse(raw) as AccountUser) : null;
-  } catch {
-    return null;
-  }
-}
-
 async function readJson<T>(response: Response): Promise<T | null> {
-  try {
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
+  try { return (await response.json()) as T; } catch { return null; }
 }
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("fa-IR").format(value);
-}
-
+function formatNumber(value: number) { return new Intl.NumberFormat("fa-IR").format(value); }
 function maskMobile(value?: string) {
   const mobile = String(value || "").trim();
   if (!mobile) return "شماره ثبت نشده";
   if (mobile.length < 8) return mobile;
   return `${mobile.slice(0, 4)}••••${mobile.slice(-3)}`;
 }
-
-function normalizeAccountType(type?: string): AccountType {
-  if (type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service" || type === "business") return type;
-  return "personal";
-}
-
-function accountTypeLabel(type: AccountType) {
+function activityLabel(type: string) {
   if (type === "dealer") return "نمایشگاه خودرو";
   if (type === "parts_store") return "فروشگاه قطعات";
   if (type === "repair_shop") return "تعمیرگاه خودرو";
-  if (type === "car_service") return "خدمات خودرو";
-  if (type === "business") return "نوع کسب‌وکار تعیین نشده";
-  return "حساب شخصی";
+  if (type === "car_service") return "مرکز خدمات خودرو";
+  return "کسب‌وکار";
 }
-
-function isProfessionalAccount(type: AccountType) {
-  return type === "dealer" || type === "parts_store" || type === "repair_shop" || type === "car_service";
+function roleLabel(role?: string) {
+  if (role === "owner") return "مالک";
+  if (role === "manager") return "مدیر";
+  if (role === "sales") return "فروش";
+  if (role === "content") return "محتوا";
+  if (role === "finance") return "مالی";
+  return "عضو مجموعه";
 }
-
-function isVehicleListingAccount(type: AccountType) {
-  return type === "personal" || type === "dealer";
+function activityManageHref(activity: Activity) {
+  if (activity.type === "dealer" && activity.external_dealer_id) return `/account/business?dealer_id=${activity.external_dealer_id}`;
+  return `/account-v2/businesses/${activity.id}`;
 }
-
-function primaryAction(type: AccountType, total: number) {
-  if (type === "personal") {
-    return {
-      title: total > 0 ? "آگهی بعدی‌ات را ثبت کن" : "اولین آگهی‌ات را ثبت کن",
-      description: "ثبت خودرو کوتاه و مرحله‌ای انجام می‌شود.",
-      href: "/account/listings/new",
-      label: "ثبت آگهی",
-    };
-  }
-
-  if (type === "dealer") {
-    return {
-      title: "خودروی جدید نمایشگاه را ثبت کنید",
-      description: "آگهی خودرو و صفحه نمایشگاه جداگانه مدیریت می‌شوند.",
-      href: "/account/listings/new",
-      label: "ثبت خودرو",
-    };
-  }
-
-  if (type === "parts_store") {
-    return {
-      title: "صفحه فروشگاه را مدیریت کنید",
-      description: "تماس، موقعیت، قطعات و ساعات کاری را به‌روز نگه دارید.",
-      href: "/account-v2/business-profile",
-      label: "مدیریت فروشگاه",
-    };
-  }
-
-  if (type === "repair_shop") {
-    return {
-      title: "صفحه تعمیرگاه را مدیریت کنید",
-      description: "خدمات، تماس، آدرس و ساعت کاری تعمیرگاه را مدیریت کنید.",
-      href: "/account-v2/business-profile",
-      label: "مدیریت تعمیرگاه",
-    };
-  }
-
-  if (type === "car_service") {
-    return {
-      title: "صفحه خدمات خودرو را مدیریت کنید",
-      description: "خدمات، تماس، موقعیت و ساعت کاری مرکز را مدیریت کنید.",
-      href: "/account-v2/business-profile",
-      label: "مدیریت خدمات",
-    };
-  }
-
-  return {
-    title: "نوع کسب‌وکارتان را مشخص کنید",
-    description: "برای نمایش ابزارهای درست، ابتدا نوع فعالیت حساب را کامل کنید.",
-    href: "/account-v2/profile",
-    label: "تکمیل حساب",
-  };
-}
-
 function Icon({ name }: { name: "list" | "plus" | "bookmark" | "chart" | "profile" | "store" | "shield" | "chevron" }) {
   const paths = {
     list: <><path d="M7 6h12M7 12h12M7 18h12" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></>,
@@ -185,142 +100,110 @@ function Icon({ name }: { name: "list" | "plus" | "bookmark" | "chart" | "profil
     shield: <><path d="M12 3.8 19 7v4.8c0 4.1-2.4 7-7 8.4-4.6-1.4-7-4.3-7-8.4V7l7-3.2Z" /><path d="m9 12 2 2 4-4" /></>,
     chevron: <path d="m14.5 6.5-5.5 5.5 5.5 5.5" />,
   };
-
   return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
 }
 
 export default function AccountV2Page() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AccountUser | null>(null);
-  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
+  const [stats, setStats] = useState<Stats>({ total: 0, active: 0, pending: 0 });
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     document.body.dataset.chakodAccountV2 = "true";
-    return () => {
-      delete document.body.dataset.chakodAccountV2;
-    };
+    return () => { delete document.body.dataset.chakodAccountV2; };
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-
-    async function load() {
-      const token = getToken();
-      const cached = readCachedUser();
-      if (cached) setUser(cached);
-
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
+    void (async () => {
+      setLoading(true);
+      setError("");
       try {
         const meResponse = await fetch("/api/auth/me", {
-          credentials: "include",
-          cache: "no-store",
-          signal: controller.signal,
+          credentials: "include", cache: "no-store", signal: controller.signal,
           headers: { Accept: "application/json", ...authHeaders() },
         });
         const me = await readJson<MeResponse>(meResponse);
-
-        if (meResponse.status === 401 || meResponse.status === 403 || me?.logged_in === false) {
+        if (meResponse.status === 401 || meResponse.status === 403 || me?.logged_in === false || !me?.user) {
           clearAuth();
           setUser(null);
-          setError("نشست شما منقضی شده است. دوباره وارد شوید.");
           return;
         }
+        setUser(me.user);
+        localStorage.setItem("chakod_user", JSON.stringify(me.user));
 
-        if (meResponse.ok && me?.success && me.user) {
-          setUser(me.user);
-          localStorage.setItem("chakod_user", JSON.stringify(me.user));
-        } else if (!cached) {
-          setError(me?.message || "اطلاعات حساب دریافت نشد.");
-        }
-
-        try {
-          const dashboardResponse = await fetch("/api/auth/dashboard-summary", {
-            credentials: "include",
-            cache: "no-store",
-            signal: controller.signal,
+        const [dashboardResponse, activitiesResponse] = await Promise.all([
+          fetch("/api/auth/dashboard-summary", {
+            credentials: "include", cache: "no-store", signal: controller.signal,
             headers: { Accept: "application/json", ...authHeaders() },
-          });
+          }).catch(() => null),
+          fetch("/api/auth/account-activities", {
+            credentials: "include", cache: "no-store", signal: controller.signal,
+            headers: { Accept: "application/json", ...authHeaders() },
+          }),
+        ]);
+
+        if (dashboardResponse) {
           const dashboard = await readJson<DashboardResponse>(dashboardResponse);
           if (dashboardResponse.ok && dashboard?.success) {
             setStats({
               total: Number(dashboard.stats?.total || 0),
               active: Number(dashboard.stats?.active || 0),
               pending: Number(dashboard.stats?.pending || 0),
-              rejected: Number(dashboard.stats?.rejected || 0),
-              inactive: Number(dashboard.stats?.inactive || 0),
-              sold: Number(dashboard.stats?.sold || 0),
             });
           }
-        } catch {
-          // آمار برای نمایش صفحه ضروری نیست.
         }
-      } catch (loadError) {
-        if (loadError instanceof DOMException && loadError.name === "AbortError") return;
-        if (!cached) setError("ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
+
+        const activityPayload = await readJson<ActivitiesResponse>(activitiesResponse);
+        if (activitiesResponse.ok && activityPayload?.success) {
+          setActivities(Array.isArray(activityPayload.activities) ? activityPayload.activities : []);
+          setMemberships(Array.isArray(activityPayload.memberships) ? activityPayload.memberships : []);
+          setAvailableTypes(Array.isArray(activityPayload.available_types) ? activityPayload.available_types : []);
+        } else {
+          setError(activityPayload?.message || "کسب‌وکارهای حساب دریافت نشدند.");
+        }
+      } catch (caught) {
+        if (!(caught instanceof DOMException && caught.name === "AbortError")) {
+          setError("ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
+        }
       } finally {
         setLoading(false);
       }
-    }
-
-    void load();
+    })();
     return () => controller.abort();
   }, []);
 
-  const displayName = useMemo(() => {
-    if (!user) return "";
-    return user.business_name || user.display_name || user.full_name || "کاربر چاکود";
-  }, [user]);
-
-  const accountType = normalizeAccountType(user?.account_type);
-  const professional = isProfessionalAccount(accountType);
-  const vehicleAccount = isVehicleListingAccount(accountType);
-  const needsBusinessType = accountType === "business";
+  const displayName = useMemo(() => user?.display_name || user?.full_name || "کاربر چاکود", [user]);
   const verified = Boolean(user?.phone_verified || user?.mobile_verified);
-  const profileReady = Boolean(user?.profile_completed) && !needsBusinessType;
-  const location = user?.business_location_label || user?.business_city || "";
-  const primary = primaryAction(accountType, stats.total);
-  const hasActivity = vehicleAccount ? stats.total > 0 : professional;
 
   async function logout() {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
       await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
+        method: "POST", credentials: "include", cache: "no-store",
         headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({}),
       });
-    } catch {
-      // خروج محلی حتی در قطعی API انجام می‌شود.
-    } finally {
-      clearAuth();
-      window.dispatchEvent(new Event("chakod:auth-changed"));
-      window.location.assign("/");
-    }
+    } catch { /* خروج محلی ادامه پیدا می‌کند */ }
+    clearAuth();
+    window.dispatchEvent(new Event("chakod:auth-changed"));
+    window.location.assign("/");
   }
 
   if (loading && !user) {
     return <main className={styles.statePage} dir="rtl"><span className={styles.loader} /><strong>در حال آماده‌سازی حساب…</strong></main>;
   }
-
   if (!user) {
     return (
       <main className={styles.statePage} dir="rtl">
         <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
-        <section className={styles.loginCard}>
-          <h1>حساب چاکود</h1>
-          <p>{error || "برای مدیریت حساب خود وارد شوید."}</p>
-          <Link href="/login">ورود با شماره موبایل</Link>
-        </section>
+        <section className={styles.loginCard}><h1>حساب چاکود</h1><p>برای مدیریت حساب خود وارد شوید.</p><Link href="/login">ورود با شماره موبایل</Link></section>
       </main>
     );
   }
@@ -339,61 +222,78 @@ export default function AccountV2Page() {
           <div className={styles.identityTop}>
             <div className={styles.avatar}>{displayName.trim().charAt(0) || "چ"}</div>
             <div className={styles.identityCopy}>
-              <span className={styles.accountType}>{accountTypeLabel(accountType)}</span>
+              <span className={styles.accountType}>حساب اصلی</span>
               <h1>{displayName}</h1>
-              <p>{maskMobile(user.mobile)}{location ? ` · ${location}` : ""}</p>
+              <p>{maskMobile(user.mobile)}</p>
             </div>
           </div>
           <div className={styles.statusRow}>
             <span className={verified ? styles.goodStatus : styles.warnStatus}><Icon name="shield" />{verified ? "شماره تأیید شده" : "شماره نیازمند تأیید"}</span>
-            <span className={profileReady ? styles.goodStatus : styles.warnStatus}><Icon name="profile" />{needsBusinessType ? "نوع فعالیت مشخص نشده" : profileReady ? "پروفایل آماده" : "پروفایل ناقص"}</span>
+            <span className={user.profile_completed ? styles.goodStatus : styles.warnStatus}><Icon name="profile" />{user.profile_completed ? "اطلاعات حساب آماده" : "اطلاعات حساب ناقص"}</span>
           </div>
         </section>
 
         <section className={styles.primaryAction}>
-          <div><span>کار اصلی</span><h2>{primary.title}</h2><p>{primary.description}</p></div>
-          <Link href={primary.href}><Icon name={vehicleAccount ? "plus" : needsBusinessType ? "profile" : "store"} />{primary.label}</Link>
+          <div><span>کار اصلی</span><h2>{stats.total > 0 ? "آگهی خودروی جدید ثبت کنید" : "اولین آگهی خودرو را ثبت کنید"}</h2><p>در شروع ثبت، هویت انتشار بین شخصی و نمایشگاه‌های مجاز انتخاب می‌شود.</p></div>
+          <Link href="/account/listings/new"><Icon name="plus" />ثبت آگهی</Link>
         </section>
 
-        {vehicleAccount ? (
-          <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
-            <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
-            <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
-            <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
-          </section>
-        ) : null}
+        <section className={styles.stats} aria-label="وضعیت آگهی‌ها">
+          <div><strong>{formatNumber(stats.active)}</strong><span>فعال</span></div>
+          <div><strong>{formatNumber(stats.pending)}</strong><span>در بررسی</span></div>
+          <div><strong>{formatNumber(stats.total)}</strong><span>همه آگهی‌ها</span></div>
+        </section>
 
         <section className={styles.section}>
           <div className={styles.sectionHead}><h2>دسترسی سریع</h2></div>
           <div className={styles.quickGrid}>
-            {vehicleAccount ? (
-              <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
-            ) : professional ? (
-              <Link href="/account-v2/business-profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="store" /></span><span><strong>صفحه کسب‌وکار</strong><small>اطلاعات عمومی و خدمات</small></span><Icon name="chevron" /></Link>
-            ) : (
-              <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>تعیین نوع فعالیت</strong><small>تکمیل نوع حساب</small></span><Icon name="chevron" /></Link>
-            )}
-
-            {accountType === "dealer" ? (
-              <Link href="/account-v2/verification" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="shield" /></span><span><strong>تأیید مجموعه</strong><small>ارسال پروانه کسب یا مدرک فعالیت</small></span><Icon name="chevron" /></Link>
-            ) : null}
-
+            <Link href="/account/listings" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="list" /></span><span><strong>آگهی‌های من</strong><small>مشاهده و مدیریت</small></span><Icon name="chevron" /></Link>
             <Link href="/account/saved" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="bookmark" /></span><span><strong>نشان‌شده‌ها</strong><small>ذخیره‌های شما</small></span><Icon name="chevron" /></Link>
             <Link href="/dashboard" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="chart" /></span><span><strong>داشبورد</strong><small>آمار و وضعیت</small></span><Icon name="chevron" /></Link>
             <Link href="/account-v2/profile" className={styles.quickCard}><span className={styles.quickIcon}><Icon name="profile" /></span><span><strong>اطلاعات حساب</strong><small>ویرایش مشخصات پایه</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 
-        {professional ? (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <div><h2>مدیریت کسب‌وکار</h2><p>حساب شما ثابت است؛ کسب‌وکارها جداگانه به آن اضافه می‌شوند و از هر نوع حداکثر یکی مالک می‌شوید.</p></div>
+            {availableTypes.length > 0 ? <Link href="/account-v2/businesses/new">+ افزودن</Link> : null}
+          </div>
+
+          {activities.length === 0 ? (
+            <div className={styles.simpleList}><Link href="/account-v2/businesses/new"><span><strong>اولین کسب‌وکار را اضافه کنید</strong><small>نمایشگاه، قطعات، تعمیرگاه یا خدمات خودرو</small></span><Icon name="chevron" /></Link></div>
+          ) : (
+            <div style={{ display: "grid", gap: 8 }}>
+              {activities.map((activity) => (
+                <div key={activity.id}>
+                  <Link href={activityManageHref(activity)} className={styles.businessCard}>
+                    <span className={styles.businessIcon}><Icon name="store" /></span>
+                    <span className={styles.businessCopy}><strong>{activity.name}</strong><small>{activityLabel(activity.type)}{activity.city ? ` · ${activity.city}` : ""}</small></span>
+                    <span className={styles.businessState}>{activity.verification_status === "verified" ? "تأییدشده" : activity.status === "active" ? "فعال" : "تکمیل"}</span><Icon name="chevron" />
+                  </Link>
+                  <div className={styles.simpleList} style={{ marginTop: 5 }}>
+                    {activity.type === "dealer" && activity.external_dealer_id ? (
+                      <Link href={`/account-v2/verification?dealer_id=${activity.external_dealer_id}`}><span><strong>تأیید مجموعه</strong><small>احراز مالک یا مدیر اصلی</small></span><Icon name="chevron" /></Link>
+                    ) : null}
+                    <Link href={`/account-v2/business-delete?activity_id=${activity.id}`}><span><strong>درخواست حذف کسب‌وکار</strong><small>فقط مالک · با کد تأیید شماره حساب</small></span><Icon name="chevron" /></Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {memberships.length > 0 ? (
           <section className={styles.section}>
-            <div className={styles.sectionHead}><div><h2>مدیریت کسب‌وکار</h2><p>اطلاعات هر کسب‌وکار و عملیات حساس آن از همین بخش مدیریت می‌شود.</p></div></div>
-            <Link href="/account-v2/business-profile" className={styles.businessCard}>
-              <span className={styles.businessIcon}><Icon name="store" /></span>
-              <span className={styles.businessCopy}><strong>{user.business_name || accountTypeLabel(accountType)}</strong><small>{profileReady ? "ویرایش تماس، موقعیت، خدمات و ساعات کاری" : "اطلاعات کسب‌وکار را تکمیل کنید"}</small></span>
-              <span className={styles.businessState}>{profileReady ? "آماده" : "تکمیل"}</span><Icon name="chevron" />
-            </Link>
-            <div className={styles.simpleList} style={{ marginTop: 8 }}>
-              <Link href="/account-v2/business-delete"><span><strong>درخواست حذف کسب‌وکار</strong><small>فقط مالک · با کد تأیید شماره حساب</small></span><Icon name="chevron" /></Link>
+            <div className={styles.sectionHead}><div><h2>مجموعه‌هایی که در آن‌ها فعالیت می‌کنم</h2><p>عضویت در این مجموعه‌ها مالکیت شما محسوب نمی‌شود.</p></div></div>
+            <div style={{ display: "grid", gap: 8 }}>
+              {memberships.map((membership) => (
+                <Link key={`${membership.type}:${membership.external_dealer_id}:${membership.name}`} href={membership.external_dealer_id ? `/account/business?dealer_id=${membership.external_dealer_id}` : "/account/business"} className={styles.businessCard}>
+                  <span className={styles.businessIcon}><Icon name="store" /></span>
+                  <span className={styles.businessCopy}><strong>{membership.name}</strong><small>{activityLabel(membership.type)} · {roleLabel(membership.role)}</small></span>
+                  <span className={styles.businessState}>عضو</span><Icon name="chevron" />
+                </Link>
+              ))}
             </div>
           </section>
         ) : null}
@@ -402,7 +302,7 @@ export default function AccountV2Page() {
           <div className={styles.sectionHead}><h2>حساب و پشتیبانی</h2></div>
           <div className={styles.simpleList}>
             <Link href="/support"><span><strong>پشتیبانی چاکود</strong><small>پیگیری درخواست یا گزارش مشکل</small></span><Icon name="chevron" /></Link>
-            <Link href="/account/ads"><span><strong>تبلیغات و دیده‌شدن</strong><small>{hasActivity ? "مدیریت تبلیغات حساب" : "بعد از شروع فعالیت فعال می‌شود"}</small></span><Icon name="chevron" /></Link>
+            <Link href="/account/ads"><span><strong>تبلیغات و دیده‌شدن</strong><small>تبلیغات شخصی یا مجموعه‌های مجاز</small></span><Icon name="chevron" /></Link>
           </div>
         </section>
 

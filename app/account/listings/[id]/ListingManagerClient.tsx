@@ -6,19 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import MobileBottomNav from "../../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
-type ListingStatus = {
-  code?: string;
-  title?: string;
-  raw?: string;
-};
-
-type ListingImage = {
-  id?: number;
-  image_id?: number;
-  image_url?: string;
-  is_cover?: boolean;
-};
-
+type ListingStatus = { code?: string; title?: string; raw?: string };
+type ListingImage = { id?: number; image_id?: number; image_url?: string; is_cover?: boolean };
 type ManagedListing = {
   id: number;
   title?: string;
@@ -47,27 +36,15 @@ type ManagedListing = {
 type ManagerResponse = {
   success?: boolean;
   message?: string;
-  access?: {
-    can_view?: boolean;
-    can_manage?: boolean;
-    reason?: string;
-  };
+  access?: { can_view?: boolean; can_manage?: boolean; reason?: string };
   listing?: ManagedListing;
   images?: ListingImage[];
   data?: ManagedListing[];
 };
 
-type ManageAction =
-  | "mark_sold"
-  | "disable_listing"
-  | "reactivate_listing"
-  | "delete_listing";
-
-type LoadOptions = {
-  preserveFeedback?: boolean;
-};
-
-type UiIcon = "back" | "edit" | "eye" | "image" | "star" | "pin" | "gauge" | "calendar" | "seller" | "status";
+type ManageAction = "mark_sold" | "disable_listing" | "reactivate_listing" | "delete_listing";
+type LoadOptions = { preserveFeedback?: boolean };
+type UiIcon = "back" | "edit" | "image" | "star" | "pin" | "gauge" | "calendar" | "seller" | "status";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "فعال",
@@ -84,7 +61,6 @@ function Icon({ name }: { name: UiIcon }) {
   const paths: Record<UiIcon, React.ReactNode> = {
     back: <path d="m9 6 6 6-6 6" />,
     edit: <><path d="m4 20 4.2-1 9.9-9.9a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z"/><path d="m13.8 7.2 3 3"/></>,
-    eye: <><path d="M3 12s3.2-5 9-5 9 5 9 5-3.2 5-9 5-9-5-9-5Z"/><circle cx="12" cy="12" r="2.3"/></>,
     image: <><rect x="3.5" y="4" width="17" height="16" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="m5.5 17 4.2-4.2 3 3 2.4-2.4 3.4 3.6"/></>,
     star: <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/>,
     pin: <><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></>,
@@ -98,18 +74,12 @@ function Icon({ name }: { name: UiIcon }) {
 
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("chakod_session_token") || "";
-  return token
-    ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
-    : {};
+  return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }
 
 async function readJson<T>(response: Response): Promise<T | null> {
   const text = await response.text();
-  try {
-    return text ? (JSON.parse(text) as T) : null;
-  } catch {
-    return null;
-  }
+  try { return text ? JSON.parse(text) as T : null; } catch { return null; }
 }
 
 function formatNumber(value: number | string | null | undefined) {
@@ -120,21 +90,15 @@ function formatNumber(value: number | string | null | undefined) {
 function formatPrice(value: number | string | null | undefined) {
   const number = Number(value || 0);
   if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
-  if (number >= 1_000_000_000) {
-    return `${(number / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد تومان`;
-  }
-  if (number >= 1_000_000) {
-    return `${(number / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون تومان`;
-  }
+  if (number >= 1_000_000_000) return `${(number / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد تومان`;
+  if (number >= 1_000_000) return `${(number / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون تومان`;
   return `${number.toLocaleString("fa-IR")} تومان`;
 }
 
 function formatDate(value?: string) {
   if (!value) return "ثبت نشده";
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "ثبت نشده"
-    : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(date);
+  return Number.isNaN(date.getTime()) ? "ثبت نشده" : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(date);
 }
 
 function categoryTitle(code?: string) {
@@ -181,7 +145,7 @@ function isActionAvailable(status: string, action: ManageAction) {
   const code = String(status || "pending").toLowerCase();
   if (code === "active") return action === "mark_sold" || action === "disable_listing" || action === "delete_listing";
   if (code === "pending") return action === "disable_listing" || action === "delete_listing";
-  if (code === "rejected" || code === "inactive" || code === "expired") return action === "reactivate_listing" || action === "delete_listing";
+  if (["rejected", "inactive", "expired"].includes(code)) return action === "reactivate_listing" || action === "delete_listing";
   if (code === "sold" || code === "deleted") return action === "reactivate_listing";
   return action === "reactivate_listing" || action === "delete_listing";
 }
@@ -216,64 +180,34 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
   const validId = /^\d+$/.test(listingId);
 
   async function loadListing(options: LoadOptions = {}) {
-    if (!validId) {
-      setError("شناسه آگهی معتبر نیست.");
-      setLoading(false);
-      return;
-    }
+    if (!validId) { setError("شناسه آگهی معتبر نیست."); setLoading(false); return; }
     setLoading(true);
     setError("");
-    if (!options.preserveFeedback) {
-      setActionError("");
-      setActionMessage("");
-    }
+    if (!options.preserveFeedback) { setActionError(""); setActionMessage(""); }
     const token = localStorage.getItem("chakod_session_token") || "";
-    if (!token) {
-      window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}`)}`);
-      return;
-    }
+    if (!token) { window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}`)}`); return; }
     try {
-      const response = await fetch(`/api/auth/listings/manage/${listingId}`, {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-        headers: { Accept: "application/json", ...authHeaders() },
-      });
+      const response = await fetch(`/api/auth/listings/manage/${listingId}`, { method: "GET", credentials: "include", cache: "no-store", headers: { Accept: "application/json", ...authHeaders() } });
       const payload = await readJson<ManagerResponse>(response);
-      if (response.status === 401) {
-        window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}`)}`);
-        return;
-      }
+      if (response.status === 401) { window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}`)}`); return; }
       if (!response.ok || !payload?.success) {
         setError(payload?.message || "اطلاعات آگهی دریافت نشد.");
-        setListing(null);
-        setImages([]);
-        setCanManage(false);
-        return;
+        setListing(null); setImages([]); setCanManage(false); return;
       }
-      const directListing = payload.listing;
-      const collectionListing = Array.isArray(payload.data)
-        ? payload.data.find((item) => String(item.id) === listingId) || payload.data[0]
-        : undefined;
-      const nextListing = directListing || collectionListing || null;
-      if (!nextListing || String(nextListing.id) !== listingId) {
+      const direct = payload.listing;
+      const fromCollection = Array.isArray(payload.data) ? payload.data.find((item) => String(item.id) === listingId) || payload.data[0] : undefined;
+      const next = direct || fromCollection || null;
+      if (!next || String(next.id) !== listingId) {
         setError("این آگهی در فهرست آگهی‌های قابل مدیریت شما پیدا نشد.");
-        setListing(null);
-        setImages([]);
-        setCanManage(false);
-        return;
+        setListing(null); setImages([]); setCanManage(false); return;
       }
-      setListing(nextListing);
+      setListing(next);
       setImages(Array.isArray(payload.images) ? payload.images : []);
       setCanManage(payload.access?.can_manage !== false);
     } catch {
       setError("ارتباط با سرویس مدیریت آگهی برقرار نشد.");
-      setListing(null);
-      setImages([]);
-      setCanManage(false);
-    } finally {
-      setLoading(false);
-    }
+      setListing(null); setImages([]); setCanManage(false);
+    } finally { setLoading(false); }
   }
 
   useEffect(() => { void loadListing(); }, [listingId]);
@@ -281,39 +215,19 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
   async function runAction(action: ManageAction) {
     if (!listing || !canManage || actionLoading) return;
     const currentStatus = String(listing.status?.code || "pending").toLowerCase();
-    if (!isActionAvailable(currentStatus, action)) {
-      setActionError("این عملیات برای وضعیت فعلی آگهی قابل انجام نیست.");
-      return;
-    }
+    if (!isActionAvailable(currentStatus, action)) { setActionError("این عملیات برای وضعیت فعلی آگهی قابل انجام نیست."); return; }
     const confirmation = actionConfirmation(action);
     if (confirmation && !window.confirm(confirmation)) return;
-    setActionLoading(action);
-    setActionError("");
-    setActionMessage("");
+    setActionLoading(action); setActionError(""); setActionMessage("");
     try {
-      const response = await fetch(`/api/auth/listings/manage/${listing.id}`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ action }),
-      });
+      const response = await fetch(`/api/auth/listings/manage/${listing.id}`, { method: "POST", credentials: "include", cache: "no-store", headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ action }) });
       const payload = await readJson<ManagerResponse>(response);
-      if (response.status === 401) {
-        window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listing.id}`)}`);
-        return;
-      }
-      if (!response.ok || !payload?.success) {
-        setActionError(payload?.message || "عملیات مدیریت آگهی انجام نشد.");
-        return;
-      }
+      if (response.status === 401) { window.location.assign(`/login?returnTo=${encodeURIComponent(`/account/listings/${listing.id}`)}`); return; }
+      if (!response.ok || !payload?.success) { setActionError(payload?.message || "عملیات مدیریت آگهی انجام نشد."); return; }
       setActionMessage(payload.message || "وضعیت آگهی با موفقیت به‌روز شد.");
       await loadListing({ preserveFeedback: true });
-    } catch {
-      setActionError("ارتباط با سرور برای انجام عملیات برقرار نشد.");
-    } finally {
-      setActionLoading("");
-    }
+    } catch { setActionError("ارتباط با سرور برای انجام عملیات برقرار نشد."); }
+    finally { setActionLoading(""); }
   }
 
   const locationLabel = useMemo(() => [listing?.province, listing?.city, listing?.neighborhood].filter(Boolean).join("، ") || "موقعیت ثبت نشده", [listing]);
@@ -336,104 +250,56 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
           <span className={styles.topbarSpacer} />
         </header>
 
-        {loading ? (
-          <section className={styles.stateCard}><span className={styles.loader}/><h1>در حال آماده‌سازی آگهی</h1><p>اطلاعات مدیریتی در حال دریافت است.</p></section>
-        ) : null}
+        {loading ? <section className={styles.stateCard}><span className={styles.loader}/><h1>در حال آماده‌سازی آگهی</h1><p>اطلاعات مدیریتی در حال دریافت است.</p></section> : null}
+        {!loading && error ? <section className={styles.stateCard}><span className={styles.stateIcon}>!</span><h1>مدیریت آگهی در دسترس نیست</h1><p>{error}</p><div className={styles.stateActions}><button type="button" onClick={() => void loadListing()}>تلاش دوباره</button><Link href="/account/listings">بازگشت</Link></div></section> : null}
 
-        {!loading && error ? (
-          <section className={styles.stateCard}><span className={styles.stateIcon}>!</span><h1>مدیریت آگهی در دسترس نیست</h1><p>{error}</p><div className={styles.stateActions}><button type="button" onClick={() => void loadListing()}>تلاش دوباره</button><Link href="/account/listings">بازگشت</Link></div></section>
-        ) : null}
+        {!loading && !error && listing ? <>
+          <section className={styles.titleBar}>
+            <div className={styles.titleCopy}>
+              <div className={styles.eyebrows}><span className={`${styles.statusPill} ${statusClass(listing.status?.code)}`}>{currentStatusLabel}</span><span>شناسه {formatNumber(listing.id)}</span><span>{listing.listing_owner_type === "dealer" ? "آگهی نمایشگاهی" : "آگهی شخصی"}</span></div>
+              <h1>{listing.title || "آگهی بدون عنوان"}</h1>
+              <p>{[listing.brand, listing.model, listing.year].filter(Boolean).join(" · ") || "مشخصات خودرو تکمیل نشده است."}</p>
+            </div>
+            <div className={styles.titleActions}>
+              <Link href={`/account/listings/${listing.id}/edit`} className={styles.primaryButton}><Icon name="edit"/><span>ویرایش آگهی</span></Link>
+              <Link href={`/account/listings/${listing.id}/images`} className={styles.ghostButton}><Icon name="image"/><span>مدیریت تصاویر</span></Link>
+            </div>
+          </section>
 
-        {!loading && !error && listing ? (
-          <>
-            <section className={styles.titleBar}>
-              <div className={styles.titleCopy}>
-                <div className={styles.eyebrows}>
-                  <span className={`${styles.statusPill} ${statusClass(listing.status?.code)}`}>{currentStatusLabel}</span>
-                  <span>شناسه {formatNumber(listing.id)}</span>
-                  <span>{listing.listing_owner_type === "dealer" ? "آگهی نمایشگاهی" : "آگهی شخصی"}</span>
-                </div>
-                <h1>{listing.title || "آگهی بدون عنوان"}</h1>
-                <p>{[listing.brand, listing.model, listing.year].filter(Boolean).join(" · ") || "مشخصات خودرو تکمیل نشده است."}</p>
-              </div>
-              <div className={styles.titleActions}>
-                <Link href={`/account/listings/${listing.id}/edit`} className={styles.primaryButton}><Icon name="edit"/><span>ویرایش آگهی</span></Link>
-                <Link href={`/cars/${listing.id}`} className={styles.ghostButton}><Icon name="eye"/><span>نمایش عمومی</span></Link>
-              </div>
-            </section>
+          {rejectionText && currentStatus === "rejected" ? <section className={styles.rejectionCard}><div className={styles.rejectionIcon}>!</div><div><strong>این آگهی نیاز به اصلاح دارد</strong><p>{rejectionText}</p></div><Link href={`/account/listings/${listing.id}/edit`}>اصلاح آگهی</Link></section> : null}
 
-            {rejectionText && currentStatus === "rejected" ? (
-              <section className={styles.rejectionCard}><div className={styles.rejectionIcon}>!</div><div><strong>این آگهی نیاز به اصلاح دارد</strong><p>{rejectionText}</p></div><Link href={`/account/listings/${listing.id}/edit`}>اصلاح آگهی</Link></section>
-            ) : null}
+          <section className={styles.workspace}>
+            <article className={styles.mediaCard}>
+              <div className={styles.imageWrap}>{coverImage ? <img src={coverImage} alt={listing.title || "تصویر خودرو"} /> : <div className={styles.imagePlaceholder}><Icon name="image"/><strong>هنوز تصویری ثبت نشده</strong><Link href={`/account/listings/${listing.id}/images`}>افزودن تصویر</Link></div>}<div className={styles.imageBadge}>{formatNumber(listing.image_count || allImages.length || 0)} تصویر</div></div>
+              <div className={styles.mediaFooter}><div><span>موقعیت</span><strong><Icon name="pin"/>{locationLabel}</strong></div><Link href={`/account/listings/${listing.id}/images`}>مدیریت تصاویر</Link></div>
+            </article>
 
-            <section className={styles.workspace}>
-              <article className={styles.mediaCard}>
-                <div className={styles.imageWrap}>
-                  {coverImage ? <img src={coverImage} alt={listing.title || "تصویر خودرو"} /> : <div className={styles.imagePlaceholder}><Icon name="image"/><strong>هنوز تصویری ثبت نشده</strong><Link href={`/account/listings/${listing.id}/images`}>افزودن تصویر</Link></div>}
-                  <div className={styles.imageBadge}>{formatNumber(listing.image_count || allImages.length || 0)} تصویر</div>
-                </div>
-                <div className={styles.mediaFooter}>
-                  <div><span>موقعیت</span><strong><Icon name="pin"/>{locationLabel}</strong></div>
-                  <Link href={`/account/listings/${listing.id}/images`}>مدیریت تصاویر</Link>
-                </div>
-              </article>
+            <aside className={styles.sideRail}>
+              <section className={styles.priceCard}><span>قیمت ثبت‌شده</span><strong>{formatPrice(listing.price_toman)}</strong><small>برای تغییر قیمت از ویرایش آگهی استفاده کنید</small></section>
+              <section className={styles.statusCard}><div className={styles.statusHead}><span className={styles.iconBox}><Icon name="status"/></span><div><small>وضعیت انتشار</small><strong>{currentStatusLabel}</strong></div></div><p>{statusDescription(currentStatus)}</p><div className={styles.statusProgress}><i className={statusClass(listing.status?.code)} /></div></section>
+              <section className={styles.sideSpecs}><div><span className={styles.iconBox}><Icon name="gauge"/></span><p><small>کارکرد</small><strong>{formatNumber(listing.mileage_km)} کیلومتر</strong></p></div><div><span className={styles.iconBox}><Icon name="seller"/></span><p><small>فروشنده</small><strong>{listing.seller_display_name || "مالک آگهی"}</strong></p></div></section>
+            </aside>
+          </section>
 
-              <aside className={styles.sideRail}>
-                <section className={styles.priceCard}>
-                  <span>قیمت آگهی</span>
-                  <strong>{formatPrice(listing.price_toman)}</strong>
-                  <small>قیمت ثبت‌شده برای نمایش عمومی</small>
-                </section>
+          <section className={styles.toolDock} aria-label="ابزارهای آگهی">
+            <Link href={`/account/listings/${listing.id}/edit`}><span><Icon name="edit"/></span><div><strong>ویرایش مشخصات</strong><small>عنوان، قیمت و توضیحات</small></div></Link>
+            <Link href={`/account/listings/${listing.id}/images`}><span><Icon name="image"/></span><div><strong>تصاویر</strong><small>آپلود و انتخاب کاور</small></div></Link>
+            <Link href={`/account/listings/${listing.id}/promote`} className={styles.promoteTool}><span><Icon name="star"/></span><div><strong>ارتقای آگهی</strong><small>بالابر و جایگاه ویژه</small></div></Link>
+            <a href="#publishing-management"><span><Icon name="status"/></span><div><strong>مدیریت انتشار</strong><small>توقف، بایگانی یا تمدید</small></div></a>
+          </section>
 
-                <section className={styles.statusCard}>
-                  <div className={styles.statusHead}><span className={styles.iconBox}><Icon name="status"/></span><div><small>وضعیت انتشار</small><strong>{currentStatusLabel}</strong></div></div>
-                  <p>{statusDescription(currentStatus)}</p>
-                  <div className={styles.statusProgress}><i className={statusClass(listing.status?.code)} /></div>
-                </section>
+          <section className={styles.detailsCard}>
+            <header><div><span>جزئیات آگهی</span><h2>مشخصات ثبت‌شده</h2></div><Link href={`/account/listings/${listing.id}/edit`}>ویرایش</Link></header>
+            <div className={styles.detailGrid}><div><span>دسته‌بندی</span><strong>{categoryTitle(listing.category_code)}</strong></div><div><span>کارکرد</span><strong>{formatNumber(listing.mileage_km)} کیلومتر</strong></div><div><span>تعداد تصاویر</span><strong>{formatNumber(listing.image_count || allImages.length || 0)}</strong></div><div><span>فروشنده</span><strong>{listing.seller_display_name || "مالک آگهی"}</strong></div><div><span>تاریخ ثبت</span><strong>{formatDate(listing.created_at)}</strong></div><div><span>آخرین ویرایش</span><strong>{formatDate(listing.updated_at)}</strong></div></div>
+          </section>
 
-                <section className={styles.sideSpecs}>
-                  <div><span className={styles.iconBox}><Icon name="gauge"/></span><p><small>کارکرد</small><strong>{formatNumber(listing.mileage_km)} کیلومتر</strong></p></div>
-                  <div><span className={styles.iconBox}><Icon name="seller"/></span><p><small>فروشنده</small><strong>{listing.seller_display_name || "مالک آگهی"}</strong></p></div>
-                </section>
-              </aside>
-            </section>
-
-            <section className={styles.toolDock} aria-label="ابزارهای آگهی">
-              <Link href={`/account/listings/${listing.id}/edit`}><span><Icon name="edit"/></span><div><strong>ویرایش مشخصات</strong><small>عنوان، قیمت و توضیحات</small></div></Link>
-              <Link href={`/account/listings/${listing.id}/images`}><span><Icon name="image"/></span><div><strong>تصاویر</strong><small>آپلود و انتخاب کاور</small></div></Link>
-              <Link href={`/account/listings/${listing.id}/promote`} className={styles.promoteTool}><span><Icon name="star"/></span><div><strong>ارتقای آگهی</strong><small>بالابر و جایگاه ویژه</small></div></Link>
-              <Link href={`/cars/${listing.id}`}><span><Icon name="eye"/></span><div><strong>مشاهده عمومی</strong><small>نسخه‌ای که خریدار می‌بیند</small></div></Link>
-            </section>
-
-            <section className={styles.detailsCard}>
-              <header><div><span>جزئیات آگهی</span><h2>مشخصات ثبت‌شده</h2></div><Link href={`/account/listings/${listing.id}/edit`}>ویرایش</Link></header>
-              <div className={styles.detailGrid}>
-                <div><span>دسته‌بندی</span><strong>{categoryTitle(listing.category_code)}</strong></div>
-                <div><span>کارکرد</span><strong>{formatNumber(listing.mileage_km)} کیلومتر</strong></div>
-                <div><span>تعداد تصاویر</span><strong>{formatNumber(listing.image_count || allImages.length || 0)}</strong></div>
-                <div><span>فروشنده</span><strong>{listing.seller_display_name || "مالک آگهی"}</strong></div>
-                <div><span>تاریخ ثبت</span><strong>{formatDate(listing.created_at)}</strong></div>
-                <div><span>آخرین ویرایش</span><strong>{formatDate(listing.updated_at)}</strong></div>
-              </div>
-            </section>
-
-            <section className={styles.lifecycleCard}>
-              <header><div><span>مدیریت انتشار</span><h2>اقدامات وضعیت آگهی</h2><p>عملیات زیر مستقیماً وضعیت انتشار این آگهی را تغییر می‌دهند.</p></div><span className={`${styles.statusPill} ${statusClass(listing.status?.code)}`}>{currentStatusLabel}</span></header>
-              {actionMessage ? <div className={styles.actionSuccess}>{actionMessage}</div> : null}
-              {actionError ? <div className={styles.actionError}>{actionError}</div> : null}
-              {canManage ? (
-                <div className={styles.lifecycleActions}>
-                  {availableActions.map((action) => {
-                    const copy = actionCopy(action, currentStatus);
-                    const destructive = action === "delete_listing";
-                    return <button type="button" key={action} className={destructive ? styles.dangerAction : ""} disabled={Boolean(actionLoading)} onClick={() => void runAction(action)}><span>{actionLoading === action ? "…" : copy.icon}</span><div><strong>{actionLoading === action ? "در حال انجام" : copy.title}</strong><small>{copy.text}</small></div></button>;
-                  })}
-                  {canRenew ? <Link className={styles.renewAction} href={`/account/payments/checkout?type=service&service_key=${renewServiceKey}&listing_id=${listing.id}`}><span>↻</span><div><strong>تمدید آگهی</strong><small>افزایش اعتبار نمایش آگهی</small></div></Link> : null}
-                </div>
-              ) : <div className={styles.noManageNotice}>این حساب مجوز تغییر وضعیت این آگهی را ندارد.</div>}
-            </section>
-          </>
-        ) : null}
+          <section className={styles.lifecycleCard} id="publishing-management">
+            <header><div><span>مدیریت انتشار</span><h2>اقدامات وضعیت آگهی</h2><p>عملیات زیر مستقیماً وضعیت انتشار این آگهی را تغییر می‌دهند.</p></div><span className={`${styles.statusPill} ${statusClass(listing.status?.code)}`}>{currentStatusLabel}</span></header>
+            {actionMessage ? <div className={styles.actionSuccess}>{actionMessage}</div> : null}
+            {actionError ? <div className={styles.actionError}>{actionError}</div> : null}
+            {canManage ? <div className={styles.lifecycleActions}>{availableActions.map((action) => { const copy = actionCopy(action, currentStatus); const destructive = action === "delete_listing"; return <button type="button" key={action} className={destructive ? styles.dangerAction : ""} disabled={Boolean(actionLoading)} onClick={() => void runAction(action)}><span>{actionLoading === action ? "…" : copy.icon}</span><div><strong>{actionLoading === action ? "در حال انجام" : copy.title}</strong><small>{copy.text}</small></div></button>; })}{canRenew ? <Link className={styles.renewAction} href={`/account/payments/checkout?type=service&service_key=${renewServiceKey}&listing_id=${listing.id}`}><span>↻</span><div><strong>تمدید آگهی</strong><small>افزایش اعتبار نمایش آگهی</small></div></Link> : null}</div> : <div className={styles.noManageNotice}>این حساب مجوز تغییر وضعیت این آگهی را ندارد.</div>}
+          </section>
+        </> : null}
       </div>
       <MobileBottomNav />
     </main>

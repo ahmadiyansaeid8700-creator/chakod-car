@@ -27,6 +27,12 @@ export default defineConfig(async () => {
           main: "./worker/index.ts",
           compatibility_date: "2026-08-07",
           compatibility_flags: ["nodejs_compat"],
+          routes: [
+            {
+              pattern: "staging.chakod.com",
+              custom_domain: true,
+            },
+          ],
           assets: {
             binding: "ASSETS",
           },

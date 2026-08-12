@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import MobileBottomNav from "../../../components/MobileBottomNav";
 import styles from "./page.module.css";
@@ -96,7 +96,7 @@ function getToken() {
   return localStorage.getItem("chakod_session_token") || "";
 }
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
 }
@@ -287,7 +287,7 @@ export default function SubmitListingPage() {
       setBooting(true);
       try {
         const [meResponse, brandItems, geo] = await Promise.all([
-          fetch(`${API_BASE}/api/me.php`, { cache: "no-store", headers: { ...authHeaders() } }),
+          fetch(`${API_BASE}/api/me.php`, { cache: "no-store", headers: authHeaders() }),
           fetchBrands(),
           fetchGeo(),
         ]);
@@ -297,7 +297,7 @@ export default function SubmitListingPage() {
         } else {
           setLoggedIn(true);
           setUser(me.user);
-          const dealerResponse = await fetch(`${API_BASE}/api/my-dealers.php`, { cache: "no-store", headers: { ...authHeaders() } });
+          const dealerResponse = await fetch(`${API_BASE}/api/my-dealers.php`, { cache: "no-store", headers: authHeaders() });
           const dealerPayload = await readJson<{ success?: boolean; data?: Array<Record<string, unknown>> }>(dealerResponse);
           const normalized = (Array.isArray(dealerPayload?.data) ? dealerPayload!.data! : [])
             .map((item) => ({
@@ -374,7 +374,7 @@ export default function SubmitListingPage() {
   const ownerOk = listingOwnerType === "personal" || Number(selectedDealerId) > 0;
   const customModelOk = vehicleModelCode !== "other" || vehicleCustomModelName.trim().length >= 2;
   const neighborhoodOk = !cityHasNeighborhoods || neighborhood.trim().length >= 2;
-  const canSubmit = ownerOk && title.trim().length >= 5 && vehicleBrandCode && vehicleModelCode && customModelOk && productionYear.length >= 4 && province && city && neighborhoodOk && loggedIn;
+  const canSubmit = Boolean(ownerOk && title.trim().length >= 5 && vehicleBrandCode && vehicleModelCode && customModelOk && productionYear.length >= 4 && province && city && neighborhoodOk && loggedIn);
 
   function stepValid(step: number) {
     if (step === 1) return ownerOk;
@@ -384,7 +384,7 @@ export default function SubmitListingPage() {
     if (step === 5) return true;
     if (step === 6) return Boolean(province && city && neighborhoodOk);
     if (step === 7) return true;
-    return Boolean(canSubmit);
+    return canSubmit;
   }
 
   function goStep(next: number) {

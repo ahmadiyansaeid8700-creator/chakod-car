@@ -229,14 +229,11 @@ function actionConfirmation(action: ManageAction) {
   return "";
 }
 
-function SpecItem({ icon, label, value }: { icon: IconName; label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.specItem}>
-      <span className={styles.specIcon}><Icon name={icon} /></span>
-      <div>
-        <small>{label}</small>
-        <strong>{value}</strong>
-      </div>
+    <div className={styles.detailRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -476,8 +473,62 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
               </section>
             ) : null}
 
-            <div className={styles.listingLayout}>
-              <section className={styles.infoPanel}>
+            <div className={styles.marketLayout}>
+              <div className={styles.mediaColumn}>
+                <section className={styles.galleryPanel}>
+                  <div className={styles.mainImage}>
+                    {activeImage ? (
+                      <img src={activeImage} alt={listingTitle} />
+                    ) : (
+                      <div className={styles.emptyImage}>
+                        <Icon name="image" />
+                        <strong>تصویری ثبت نشده</strong>
+                        <p>برای این آگهی هنوز تصویری وجود ندارد.</p>
+                      </div>
+                    )}
+                    <span className={styles.imageCounter}>{formatNumber(galleryImages.length || listing.image_count || 0)} تصویر</span>
+                    {galleryImages.length > 1 ? (
+                      <>
+                        <button type="button" className={`${styles.galleryArrow} ${styles.galleryPrev}`} onClick={showPreviousImage} aria-label="تصویر قبلی"><Icon name="chevronRight" /></button>
+                        <button type="button" className={`${styles.galleryArrow} ${styles.galleryNext}`} onClick={showNextImage} aria-label="تصویر بعدی"><Icon name="chevronLeft" /></button>
+                      </>
+                    ) : null}
+                  </div>
+
+                  {galleryImages.length > 1 ? (
+                    <div className={styles.thumbnails}>
+                      {galleryImages.slice(0, 8).map((image, index) => (
+                        <button
+                          key={image.image_id || image.id || image.image_url || index}
+                          type="button"
+                          className={index === activeImageIndex ? styles.thumbActive : styles.thumbButton}
+                          onClick={() => setActiveImageIndex(index)}
+                        >
+                          {image.image_url ? <img src={image.image_url} alt={`تصویر ${formatNumber(index + 1)}`} /> : null}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className={styles.descriptionSection}>
+                  <div className={styles.sectionTitleRow}>
+                    <h2>توضیحات</h2>
+                    {canManage ? <Link href={`/account/listings/${listing.id}/edit`}>ویرایش</Link> : null}
+                  </div>
+                  <p className={description ? styles.descriptionText : styles.emptyText}>
+                    {description || "برای این آگهی توضیحی ثبت نشده است."}
+                  </p>
+                </section>
+
+                <section className={styles.locationSection}>
+                  <div className={styles.sectionTitleRow}><h2>موقعیت</h2></div>
+                  <div className={styles.mapPreview} aria-hidden="true"><span><Icon name="pin" /></span></div>
+                  <div className={styles.locationLine}><Icon name="pin" /><strong>{locationLabel}</strong></div>
+                </section>
+              </div>
+
+              <aside className={styles.detailColumn}>
                 <div className={styles.infoTopline}>
                   <span className={`${styles.statusBadge} ${statusTone(currentStatus)}`}>{currentStatusLabel}</span>
                   <span className={styles.metaBadge}>شناسه {formatNumber(listing.id)}</span>
@@ -487,147 +538,79 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
                 <h1>{listingTitle}</h1>
                 <p className={styles.subTitle}>{brand} · {model}{productionYear ? ` · مدل ${formatNumber(productionYear)}` : ""}</p>
 
-                <div className={styles.priceBlock}>
-                  <span>قیمت آگهی</span>
-                  <strong>{formatPrice(listing.price_toman)}</strong>
+                <div className={styles.noticeLine}>
+                  <Icon name="shield" />
+                  <span>{statusDescription(currentStatus)}</span>
                 </div>
 
                 <div className={styles.ownerActions}>
                   {canManage ? <Link href={`/account/listings/${listing.id}/edit`} className={styles.primaryAction}><Icon name="edit" />ویرایش آگهی</Link> : null}
                   {canManage ? <Link href={`/account/listings/${listing.id}/images`} className={styles.secondaryAction}><Icon name="image" />تصاویر</Link> : null}
-                  {canManage ? <Link href={`/account/listings/${listing.id}/promote`} className={styles.secondaryAction}><Icon name="spark" />ارتقا</Link> : null}
+                  {canManage ? <Link href={`/account/listings/${listing.id}/promote`} className={styles.iconAction} aria-label="ارتقای آگهی"><Icon name="spark" /></Link> : null}
                 </div>
 
-                <div className={styles.quickFacts}>
+                <div className={styles.heroFacts}>
                   <div><span>کارکرد</span><strong>{formatNumber(listing.mileage_km)} کیلومتر</strong></div>
+                  <div><span>مدل</span><strong>{productionYear ? formatNumber(productionYear) : "ثبت نشده"}</strong></div>
                   <div><span>رنگ</span><strong>{listing.color || "ثبت نشده"}</strong></div>
-                  <div><span>فروشنده</span><strong>{sellerName}</strong></div>
                 </div>
 
-                <div className={styles.statusStrip}>
-                  <span className={styles.statusIcon}><Icon name="shield" /></span>
-                  <div>
-                    <small>وضعیت انتشار</small>
-                    <strong>{currentStatusLabel}</strong>
-                    <p>{statusDescription(currentStatus)}</p>
+                <section className={styles.rowsSection}>
+                  <DetailRow label="برند و مدل" value={`${brand} ${model}`} />
+                  <DetailRow label="وضعیت بدنه" value={listing.body_status || listing.body_condition || "ثبت نشده"} />
+                  <DetailRow label="گیربکس" value={listing.transmission || listing.gearbox || "ثبت نشده"} />
+                  <DetailRow label="نوع سوخت" value={listing.fuel_type || "ثبت نشده"} />
+                  <DetailRow label="دسته‌بندی" value={categoryTitle(listing.category_code)} />
+                </section>
+
+                <section className={styles.priceSection}>
+                  <span>قیمت آگهی</span>
+                  <strong>{formatPrice(listing.price_toman)}</strong>
+                </section>
+
+                <section className={styles.sellerSection}>
+                  <div className={styles.sellerHeading}>
+                    <span className={styles.sellerIcon}><Icon name="user" /></span>
+                    <div><small>فروشنده</small><strong>{sellerName}</strong></div>
                   </div>
-                  {canRenew ? (
-                    <Link href={`/account/payments/checkout?type=service&service_key=${renewServiceKey}&listing_id=${listing.id}`}>تمدید</Link>
-                  ) : null}
-                </div>
-              </section>
-
-              <section className={styles.galleryPanel}>
-                <div className={styles.mainImage}>
-                  {activeImage ? (
-                    <img src={activeImage} alt={listingTitle} />
-                  ) : (
-                    <div className={styles.emptyImage}><Icon name="image" /><strong>تصویری ثبت نشده</strong><p>برای این آگهی هنوز تصویری وجود ندارد.</p></div>
-                  )}
-                  <span className={styles.imageCounter}>{formatNumber(galleryImages.length || listing.image_count || 0)} تصویر</span>
-                  {galleryImages.length > 1 ? (
-                    <>
-                      <button type="button" className={`${styles.galleryArrow} ${styles.galleryPrev}`} onClick={showPreviousImage} aria-label="تصویر قبلی"><Icon name="chevronRight" /></button>
-                      <button type="button" className={`${styles.galleryArrow} ${styles.galleryNext}`} onClick={showNextImage} aria-label="تصویر بعدی"><Icon name="chevronLeft" /></button>
-                    </>
-                  ) : null}
-                </div>
-
-                {galleryImages.length > 1 ? (
-                  <div className={styles.thumbnails}>
-                    {galleryImages.slice(0, 8).map((image, index) => (
-                      <button
-                        key={image.image_id || image.id || image.image_url || index}
-                        type="button"
-                        className={index === activeImageIndex ? styles.thumbActive : styles.thumbButton}
-                        onClick={() => setActiveImageIndex(index)}
-                      >
-                        {image.image_url ? <img src={image.image_url} alt={`تصویر ${formatNumber(index + 1)}`} /> : null}
-                      </button>
-                    ))}
+                  <div className={styles.sellerMeta}>
+                    <span>ثبت آگهی: {formatDate(listing.created_at)}</span>
+                    <span>آخرین ویرایش: {formatDate(listing.updated_at)}</span>
                   </div>
-                ) : null}
-              </section>
+                </section>
+
+                <section className={styles.manageSection}>
+                  <div className={styles.manageHeading}>
+                    <div><small>مدیریت انتشار</small><strong>{currentStatusLabel}</strong></div>
+                    {canRenew ? <Link href={`/account/payments/checkout?type=service&service_key=${renewServiceKey}&listing_id=${listing.id}`}>تمدید</Link> : null}
+                  </div>
+
+                  {actionMessage ? <div className={styles.successMessage}>{actionMessage}</div> : null}
+                  {actionError ? <div className={styles.errorMessage}>{actionError}</div> : null}
+
+                  {canManage ? (
+                    <div className={styles.manageActions}>
+                      {availableActions.map((action) => {
+                        const copy = actionCopy(action, currentStatus);
+                        const destructive = action === "delete_listing";
+                        return (
+                          <button
+                            type="button"
+                            key={action}
+                            className={destructive ? styles.dangerButton : styles.manageButton}
+                            disabled={Boolean(actionLoading)}
+                            onClick={() => void runAction(action)}
+                          >
+                            <span>{actionLoading === action ? "…" : copy.symbol}</span>
+                            <div><strong>{actionLoading === action ? "در حال انجام" : copy.title}</strong><small>{copy.text}</small></div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : <div className={styles.noPermission}>این حساب مجوز تغییر وضعیت این آگهی را ندارد.</div>}
+                </section>
+              </aside>
             </div>
-
-            <section className={styles.specsCard}>
-              <div className={styles.sectionHeading}>
-                <div><span>مشخصات خودرو</span><h2>اطلاعات اصلی</h2></div>
-                {canManage ? <Link href={`/account/listings/${listing.id}/edit`}>ویرایش مشخصات <Icon name="edit" /></Link> : null}
-              </div>
-              <div className={styles.specsGrid}>
-                <SpecItem icon="calendar" label="سال تولید" value={productionYear ? formatNumber(productionYear) : "ثبت نشده"} />
-                <SpecItem icon="gauge" label="کارکرد" value={`${formatNumber(listing.mileage_km)} کیلومتر`} />
-                <SpecItem icon="palette" label="رنگ" value={listing.color || "ثبت نشده"} />
-                <SpecItem icon="car" label="وضعیت بدنه" value={listing.body_status || listing.body_condition || "ثبت نشده"} />
-                <SpecItem icon="gear" label="گیربکس" value={listing.transmission || listing.gearbox || "ثبت نشده"} />
-                <SpecItem icon="fuel" label="سوخت" value={listing.fuel_type || "ثبت نشده"} />
-                <SpecItem icon="tag" label="دسته‌بندی" value={categoryTitle(listing.category_code)} />
-                <SpecItem icon="user" label="فروشنده" value={sellerName} />
-              </div>
-            </section>
-
-            <div className={styles.lowerGrid}>
-              <section className={styles.descriptionCard}>
-                <div className={styles.sectionHeadingCompact}>
-                  <div><span>توضیحات آگهی</span><h2>توضیحات فروشنده</h2></div>
-                  {canManage ? <Link href={`/account/listings/${listing.id}/edit`}>ویرایش</Link> : null}
-                </div>
-                <p className={description ? styles.descriptionText : styles.emptyText}>
-                  {description || "برای این آگهی توضیحی ثبت نشده است."}
-                </p>
-              </section>
-
-              <section className={styles.locationCard}>
-                <div className={styles.sectionHeadingCompact}>
-                  <div><span>موقعیت</span><h2>محل ثبت آگهی</h2></div>
-                </div>
-                <div className={styles.mapPreview} aria-hidden="true">
-                  <span><Icon name="pin" /></span>
-                </div>
-                <div className={styles.locationLine}><Icon name="pin" /><strong>{locationLabel}</strong></div>
-              </section>
-            </div>
-
-            <section className={styles.publishCard}>
-              <div className={styles.publishIntro}>
-                <div className={styles.publishTitle}>
-                  <span className={styles.publishIcon}><Icon name="shield" /></span>
-                  <div><span>مدیریت انتشار</span><h2>{currentStatusLabel}</h2></div>
-                </div>
-                <p>{statusDescription(currentStatus)}</p>
-                <div className={styles.publishMeta}>
-                  <span>ثبت: {formatDate(listing.created_at)}</span>
-                  <span>آخرین ویرایش: {formatDate(listing.updated_at)}</span>
-                </div>
-              </div>
-
-              <div className={styles.publishActionsWrap}>
-                {actionMessage ? <div className={styles.successMessage}>{actionMessage}</div> : null}
-                {actionError ? <div className={styles.errorMessage}>{actionError}</div> : null}
-
-                {canManage ? (
-                  <div className={styles.manageActions}>
-                    {availableActions.map((action) => {
-                      const copy = actionCopy(action, currentStatus);
-                      const destructive = action === "delete_listing";
-                      return (
-                        <button
-                          type="button"
-                          key={action}
-                          className={destructive ? styles.dangerButton : styles.manageButton}
-                          disabled={Boolean(actionLoading)}
-                          onClick={() => void runAction(action)}
-                        >
-                          <span>{actionLoading === action ? "…" : copy.symbol}</span>
-                          <div><strong>{actionLoading === action ? "در حال انجام" : copy.title}</strong><small>{copy.text}</small></div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : <div className={styles.noPermission}>این حساب مجوز تغییر وضعیت این آگهی را ندارد.</div>}
-              </div>
-            </section>
           </>
         ) : null}
       </div>

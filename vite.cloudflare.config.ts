@@ -8,6 +8,10 @@ import { defineConfig } from "vite";
  * vite.config.ts (`.openai/hosting.json` and `build/sites-vite-plugin`). It is
  * used by the dedicated staging Worker created in the Cloudflare dashboard.
  * The production/Sites build continues to use vite.config.ts unchanged.
+ *
+ * The staging custom domain is intentionally managed outside this deploy
+ * config. Keeping routes out of Wrangler prevents normal code deploys from
+ * re-applying or overriding the staging domain binding.
  */
 export default defineConfig(async () => {
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -27,12 +31,7 @@ export default defineConfig(async () => {
           main: "./worker/index.ts",
           compatibility_date: "2026-08-07",
           compatibility_flags: ["nodejs_compat"],
-          routes: [
-            {
-              pattern: "staging.chakod.com",
-              custom_domain: true,
-            },
-          ],
+          workers_dev: false,
           assets: {
             binding: "ASSETS",
           },

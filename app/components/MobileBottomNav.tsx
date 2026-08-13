@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthStatus from "./AuthStatus";
 import styles from "./MobileBottomNav.module.css";
 
 type NavItem = {
@@ -65,7 +66,7 @@ function resolveAccountDestination() {
   const identity = readJson<CachedIdentity>("chakod_identity") || {};
   const loggedIn = Boolean(localStorage.getItem("chakod_session_token") || localStorage.getItem("chakod_user"));
 
-  if (!loggedIn) return { href: "/login", title: "ورود" };
+  if (!loggedIn) return { href: "/login", title: "ورود", switcher: false };
 
   const hasAdminAccess = Boolean(identity.is_site_owner) ||
     [identity.primary_role, ...(identity.roles || [])].some((role) => role && ADMIN_ROLES.has(role));
@@ -74,15 +75,16 @@ function resolveAccountDestination() {
     return {
       href: safePath(identity.redirect_to) ? identity.redirect_to! : "/admin",
       title: "مدیریت",
+      switcher: false,
     };
   }
 
-  return { href: "/account", title: "حساب" };
+  return { href: "/account-v2/profile", title: "حساب", switcher: true };
 }
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
-  const [accountDestination, setAccountDestination] = useState({ href: "/login", title: "ورود" });
+  const [accountDestination, setAccountDestination] = useState({ href: "/login", title: "ورود", switcher: false });
 
   useEffect(() => {
     const syncDestination = () => setAccountDestination(resolveAccountDestination());
@@ -113,26 +115,37 @@ export default function MobileBottomNav() {
     },
   ], [accountDestination]);
 
+  function openAccountSwitcher() {
+    const trigger = document.querySelector<HTMLButtonElement>("[data-mobile-account-switcher] .authStatusUser");
+    if (trigger) trigger.click();
+  }
+
   if (pathname.startsWith("/admin") || pathname.startsWith("/super-admin")) return null;
 
   return (
     <>
+      <div className={styles.accountSwitcherHost} data-mobile-account-switcher aria-hidden="true"><AuthStatus /></div>
       <div className={styles.pageSpacer} aria-hidden="true" />
       <div className={styles.navigationShell}>
         <nav className={styles.navigation} aria-label="منوی اصلی نسخه موبایل">
           {navItems.map((item) => {
             const active = item.isActive(pathname);
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                aria-label={item.title}
-                aria-current={active ? "page" : undefined}
-                className={[styles.navigationItem, item.primary ? styles.primaryItem : "", active ? styles.activeItem : ""].filter(Boolean).join(" ")}
-              >
+            const className = [styles.navigationItem, item.primary ? styles.primaryItem : "", active ? styles.activeItem : ""].filter(Boolean).join(" ");
+            const content = (
+              <>
                 <span className={item.primary ? styles.primaryIcon : styles.navigationIcon}>{item.icon}</span>
                 <span className={item.primary ? styles.primaryTitle : styles.navigationTitle}>{item.title}</span>
                 {!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}
+              </>
+            );
+
+            if (item.id === "account" && accountDestination.switcher) {
+              return <button key={item.id} type="button" aria-label="باز کردن منوی حساب" className={className} onClick={openAccountSwitcher}>{content}</button>;
+            }
+
+            return (
+              <Link key={item.id} href={item.href} aria-label={item.title} aria-current={active ? "page" : undefined} className={className}>
+                {content}
               </Link>
             );
           })}

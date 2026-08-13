@@ -1,6 +1,13 @@
 .pageSpacer,
-.navigationShell {
+.navigationShell,
+.accountSwitcherHost {
   display: none;
+}
+
+@media (min-width: 1025px) {
+  :global(.authStatusUser) :global(.authAvatar) {
+    display: none !important;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -8,6 +15,41 @@
     display: block;
     height: calc(118px + env(safe-area-inset-bottom, 0px));
     pointer-events: none;
+  }
+
+  .accountSwitcherHost {
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: 2147483644;
+    display: block;
+    width: 0;
+    height: 0;
+  }
+
+  .accountSwitcherHost :global(.authStatus) {
+    position: fixed !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .accountSwitcherHost :global(.authMenu) {
+    position: fixed !important;
+    top: auto !important;
+    right: 12px !important;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    z-index: 2147483646 !important;
+    width: auto !important;
+    max-width: 520px !important;
+    max-height: min(62vh, 520px) !important;
+    margin-inline: auto !important;
+    overflow-y: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   .navigationShell {
@@ -46,6 +88,7 @@
     min-width: 0;
     min-height: 56px;
     padding: 5px 2px;
+    border: 0;
     border-radius: 16px;
     display: flex;
     flex-direction: column;
@@ -53,7 +96,10 @@
     justify-content: center;
     gap: 3px;
     color: #7b7083;
+    background: transparent;
+    font: inherit;
     text-decoration: none;
+    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
   }
@@ -146,6 +192,11 @@
   .navigationShell {
     right: 6px;
     left: 6px;
+  }
+
+  .accountSwitcherHost :global(.authMenu) {
+    right: 8px !important;
+    left: 8px !important;
   }
 
   .navigation {

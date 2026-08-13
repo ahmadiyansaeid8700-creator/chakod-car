@@ -104,7 +104,7 @@
     transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
   }
 
-  .navigationItem:active {
+  a.navigationItem:active {
     transform: scale(0.95);
   }
 

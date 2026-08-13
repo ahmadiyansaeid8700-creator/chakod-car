@@ -52,8 +52,27 @@ jobs:
       - name: Build Cloudflare Worker
         run: npm run build:cloudflare
 
-      - name: Deploy staging Worker
-        run: npx wrangler deploy
+      - name: Upload staging Worker version
+        id: upload_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_tag="staging-${GITHUB_SHA:0:12}"
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          npx wrangler versions upload \
+            --tag "$version_tag" \
+            --message "Staging ${GITHUB_SHA}"
+
+      - name: Deploy staging Worker version
+        shell: bash
+        env:
+          VERSION_TAG: ${{ steps.upload_version.outputs.version_tag }}
+        run: |
+          set -euo pipefail
+          npx wrangler versions deploy \
+            --version-tag "${VERSION_TAG}@100%" \
+            --message "Staging ${GITHUB_SHA}" \
+            -y
 
       - name: Smoke staging homepage
         shell: bash
@@ -87,6 +106,27 @@ jobs:
             echo "Staging homepage returned an empty response body."
             exit 1
           fi
+
+      - name: Smoke staging homepage after settling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 20
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --header 'Accept: text/html' \
+            'https://staging.chakod.com/')"
+          echo "Settled homepage HTTP $status"
+          test "$status" = "200"
 
       - name: Smoke staging auth route
         shell: bash

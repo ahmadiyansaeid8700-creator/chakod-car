@@ -10,6 +10,7 @@ type Props = {
   iconClassName: string;
   titleClassName: string;
   icon: ReactNode;
+  placement?: "up" | "down";
 };
 
 type ActionId = "story" | "featured" | "listing";
@@ -22,16 +23,15 @@ type Action = {
 };
 
 const actions: Action[] = [
-  { id: "story", title: "استوری تبلیغاتی", description: "آگهی واقعی یا ویترین منتخب", href: "/advertising/stories" },
-  { id: "featured", title: "رزرو منتخب", description: "نمایشگاه، تعمیرگاه، یدکی یا خدمات", href: "/advertising/selected" },
+  { id: "story", title: "استوری تبلیغاتی", description: "آگهی واقعی یا ویترین منتخب", href: "/account/stories" },
+  { id: "featured", title: "رزرو منتخب", description: "نمایشگاه، تعمیرگاه، یدکی یا خدمات", href: "/account/selected" },
   { id: "listing", title: "ثبت آگهی", description: "ثبت آگهی جدید خودرو", href: "/account/listings/new" },
 ];
 
-const menuStyle: CSSProperties = {
+const menuBaseStyle: CSSProperties = {
   position: "absolute",
   left: "50%",
-  bottom: "calc(100% + 18px)",
-  zIndex: 20,
+  zIndex: 120,
   width: "min(292px, calc(100vw - 28px))",
   padding: 9,
   border: "1px solid rgba(110,72,144,.14)",
@@ -42,6 +42,12 @@ const menuStyle: CSSProperties = {
   backdropFilter: "blur(22px) saturate(145%)",
   transform: "translateX(-50%)",
 };
+
+function menuStyle(placement: "up" | "down"): CSSProperties {
+  return placement === "down"
+    ? { ...menuBaseStyle, top: "calc(100% + 10px)", bottom: "auto" }
+    : { ...menuBaseStyle, top: "auto", bottom: "calc(100% + 18px)" };
+}
 
 const rowStyle: CSSProperties = {
   minHeight: 58,
@@ -71,7 +77,7 @@ function ActionIcon({ id }: { id: ActionId }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true" style={svgStyle}><path d="M12 5v14M5 12h14"/></svg>;
 }
 
-export default function CreateActionMenu({ triggerClassName, iconClassName, titleClassName, icon }: Props) {
+export default function CreateActionMenu({ triggerClassName, iconClassName, titleClassName, icon, placement = "up" }: Props) {
   const pathname = usePathname();
   const hostRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -96,9 +102,9 @@ export default function CreateActionMenu({ triggerClassName, iconClassName, titl
   }, [open]);
 
   return (
-    <div ref={hostRef} style={{ position: "relative", zIndex: 6, minWidth: 0, height: "100%" }}>
+    <div ref={hostRef} style={{ position: "relative", zIndex: 80, minWidth: 0, height: "100%" }}>
       {open ? (
-        <div style={menuStyle} role="menu" aria-label="اقدام جدید">
+        <div style={menuStyle(placement)} role="menu" aria-label="اقدام جدید">
           <div style={{ display: "grid", gap: 3, padding: "5px 7px 9px" }}>
             <strong style={{ color: "#2e1c3c", fontSize: 12, fontWeight: 950 }}>چه کاری می‌خواهید انجام دهید؟</strong>
             <span style={{ color: "#8c7d96", fontSize: 9, lineHeight: 1.6 }}>تبلیغ و ثبت محتوا از یک مسیر کنترل می‌شود</span>
@@ -118,7 +124,7 @@ export default function CreateActionMenu({ triggerClassName, iconClassName, titl
 
       <button type="button" className={triggerClassName} style={{ width: "100%", height: "100%" }} aria-label={open ? "بستن منوی ثبت و تبلیغ" : "باز کردن منوی ثبت و تبلیغ"} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
         <span className={iconClassName} style={open ? { transform: "rotate(45deg)" } : undefined}>{icon}</span>
-        <span className={titleClassName}>ثبت آگهی</span>
+        <b className={titleClassName}>ثبت آگهی</b>
       </button>
     </div>
   );

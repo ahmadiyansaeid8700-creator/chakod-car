@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import AuthStatus from "./AuthStatus";
+import MobileAccountSwitcher from "./MobileAccountSwitcher";
 import styles from "./MobileBottomNav.module.css";
 
 type NavItem = {
@@ -127,7 +127,7 @@ export default function MobileBottomNav() {
             const className = [styles.navigationItem, item.primary ? styles.primaryItem : "", active ? styles.activeItem : ""].filter(Boolean).join(" ");
 
             if (item.id === "account" && accountDestination.switcher) {
-              return <div key={item.id} className={`${className} mobileAccountControl`}><AuthStatus /></div>;
+              return <div key={item.id} className={className}><MobileAccountSwitcher />{!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}</div>;
             }
 
             return (
@@ -140,7 +140,6 @@ export default function MobileBottomNav() {
           })}
         </nav>
       </div>
-      <style>{`@media(max-width:1024px){.mobileAccountControl{padding:0!important}.mobileAccountControl>.authStatusShell{width:100%;height:100%;position:static!important}.mobileAccountControl>.authStatusShell>.authStatusUser{width:100%!important;height:56px!important;min-width:0!important;min-height:56px!important;padding:4px 2px!important;border:0!important;border-radius:16px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;color:inherit!important;background:transparent!important}.mobileAccountControl .authStatusText{display:flex!important;flex-direction:column!important;align-items:center!important;gap:2px!important}.mobileAccountControl .authStatusText strong{display:block!important;width:28px;height:28px;font-size:0!important;position:relative}.mobileAccountControl .authStatusText strong:before{content:'♙';display:block;font-size:24px;line-height:28px;font-weight:400}.mobileAccountControl .authStatusText span{display:block!important;font-size:10px!important;font-weight:900!important;line-height:1.3!important;color:inherit!important}.mobileAccountControl .authStatusText span{font-size:0!important}.mobileAccountControl .authStatusText span:after{content:'حساب';font-size:10px}.mobileAccountControl .authMenuChevron{display:none!important}.mobileAccountControl .authMenu{position:fixed!important;top:auto!important;right:12px!important;bottom:calc(96px + env(safe-area-inset-bottom,0px))!important;left:12px!important;z-index:2147483647!important;width:auto!important;max-width:520px!important;max-height:min(62vh,520px)!important;margin-inline:auto!important;overflow-y:auto!important}}`}</style>
     </>
   );
 }

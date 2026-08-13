@@ -53,7 +53,7 @@ export default function MobileAccountSwitcher() {
   const displayName = user?.display_name?.trim() || user?.business_name?.trim() || user?.full_name?.trim() || "حساب شخصی";
 
   useEffect(() => {
-    if (!open || loaded || loading) return;
+    if (!open || loaded) return;
     const controller = new AbortController();
     void (async () => {
       setLoading(true);
@@ -78,7 +78,7 @@ export default function MobileAccountSwitcher() {
       }
     })();
     return () => controller.abort();
-  }, [open, loaded, loading]);
+  }, [open, loaded]);
 
   useEffect(() => {
     const close = () => setOpen(false);

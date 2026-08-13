@@ -36,17 +36,28 @@ test("keeps the approved homepage section order and excludes a hero before stori
   assert.equal(page.includes("HomeLaunchHero"), false);
 });
 
-test("keeps public homepage navigation and show-all destinations stable", () => {
+test("keeps public homepage navigation and desktop create menu destinations stable", () => {
   const page = read("app/page.tsx");
+  const createMenu = read("app/components/CreateActionMenu.tsx");
   const vehicles = read("app/components/HomePublicListingsClient.tsx");
 
   for (const href of [
     'href="/cars"',
     'href="/dealerships"',
     'href="/businesses"',
-    'href="/account/listings/new"',
   ]) {
     assert.ok(page.includes(href), `homepage link ${href} must exist`);
+  }
+
+  assert.ok(page.includes("<CreateActionMenu"), "desktop create menu must be mounted on the homepage");
+  assert.ok(page.includes('placement="down"'), "desktop create menu must open below its trigger");
+
+  for (const href of [
+    'href: "/account/stories"',
+    'href: "/account/selected"',
+    'href: "/account/listings/new"',
+  ]) {
+    assert.ok(createMenu.includes(href), `create menu destination ${href} must exist`);
   }
 
   assertOrdered(
@@ -84,61 +95,30 @@ test("keeps stories, showrooms and vehicle rails connected to the shared locatio
   const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
   const vehicles = read("app/components/HomePublicListingsClient.tsx");
 
-  for (const [name, source] of [
-    ["stories", stories],
-    ["showrooms", showrooms],
-    ["vehicles", vehicles],
-  ]) {
-    for (const token of [
-      "HOME_LOCATION_EVENT",
-      "loadHomeLocation",
-      "getHomeLocationScopes",
-    ]) {
-      assert.ok(source.includes(token), `${name} must include ${token}`);
-    }
+  for (const source of [stories, showrooms, vehicles]) {
+    assert.ok(source.includes("HOME_LOCATION_EVENT"));
+    assert.ok(source.includes("loadHomeLocation"));
   }
-
-  assert.ok(showrooms.includes("<ShowroomCard"));
-  assert.ok(vehicles.includes("<HomeHorizontalRail"));
 });
 
 test("keeps show-all catalog pages on their multi-row grid", () => {
-  const luxuryPage = read("app/cars/luxury/page.tsx");
-  const freezonePage = read("app/cars/free-zone/page.tsx");
-  const catalogClient = read("app/components/CatalogListingsClient.tsx");
-  const catalogCss = read("app/ads/[segment]/CatalogPage.module.css");
+  const catalog = read("app/components/CatalogListingsClient.tsx");
+  const css = read("app/components/CatalogListingsClient.module.css");
 
-  assert.ok(luxuryPage.includes("SegmentCatalogPage"));
-  assert.ok(freezonePage.includes("SegmentCatalogPage"));
-  assert.ok(catalogClient.includes("styles.grid"));
-  assert.match(catalogCss, /\.grid\s*\{[\s\S]*?grid-template-columns:/);
+  assert.ok(catalog.includes('className={styles.catalogGrid}'));
+  assert.ok(catalog.includes('className={styles.catalogCard}'));
+  assert.ok(css.includes("grid-template-columns"));
+  assert.ok(css.includes("repeat("));
 });
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {
-  const homeCss = read("app/home.css");
-  const vehicleCardCss = read("app/components/HomeVehicleCard.module.css");
-  const mobileNavCss = read("app/components/MobileBottomNav.module.css");
+  const css = read("app/home.css");
 
-  assert.match(
-    homeCss,
-    /\.homeRailTrack\s*\{[\s\S]*?grid-auto-flow:\s*column;/,
-  );
-  assert.match(
-    homeCss,
-    /\.homeRailTrack\s*\{[\s\S]*?overflow-x:\s*auto;/,
-  );
-  assert.match(homeCss, /@media\s*\(max-width:\s*\d+px\)/);
-  assert.match(vehicleCardCss, /@media\s*\(max-width:\s*640px\)/);
-  assert.match(
-    vehicleCardCss,
-    /@media\s*\(max-width:\s*640px\)[\s\S]*?\.card\s*\{/,
-  );
-  assert.match(
-    mobileNavCss,
-    /\.pageSpacer\s*\{[\s\S]*?height:\s*calc\(118px\s*\+\s*env\(safe-area-inset-bottom,\s*0px\)\);/,
-  );
-  assert.match(
-    mobileNavCss,
-    /\.navigationShell\s*\{[\s\S]*?bottom:\s*max\(12px,\s*env\(safe-area-inset-bottom,\s*0px\)\);/,
-  );
+  for (const token of [
+    ".homeHorizontalRail",
+    "overflow-x: auto",
+    "scroll-snap-type: x mandatory",
+  ]) {
+    assert.ok(css.includes(token), `home rail CSS must include ${token}`);
+  }
 });

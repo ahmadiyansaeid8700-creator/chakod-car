@@ -1,6 +1,7 @@
 import Link from "next/link";
 import "./home.css";
 import AuthStatus from "./components/AuthStatus";
+import CreateActionMenu from "./components/CreateActionMenu";
 import HomeStories from "./components/HomeStories";
 import HomeFeaturedShowrooms from "./components/HomeFeaturedShowrooms";
 import HomeLocationSelector from "./components/HomeLocationSelector";
@@ -58,10 +59,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
             <AuthStatus />
 
-            <Link className="masterSubmitButton" href="/account/listings/new">
-              <span aria-hidden="true">＋</span>
-              <b>ثبت آگهی</b>
-            </Link>
+            <CreateActionMenu
+              triggerClassName="masterSubmitButton"
+              iconClassName="masterSubmitIcon"
+              titleClassName="masterSubmitTitle"
+              icon={<span aria-hidden="true">＋</span>}
+              placement="down"
+            />
           </div>
         </nav>
 

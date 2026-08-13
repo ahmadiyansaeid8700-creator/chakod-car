@@ -55,6 +55,39 @@ jobs:
       - name: Deploy staging Worker
         run: npx wrangler deploy
 
+      - name: Smoke staging homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            --header 'Accept: text/html' \
+            'https://staging.chakod.com/')"
+
+          echo "Homepage HTTP $status"
+
+          if [ "$status" != "200" ]; then
+            echo "Expected staging homepage HTTP 200, got $status."
+            head -c 1000 "$body_file" || true
+            echo
+            exit 1
+          fi
+
+          if [ ! -s "$body_file" ]; then
+            echo "Staging homepage returned an empty response body."
+            exit 1
+          fi
+
       - name: Smoke staging auth route
         shell: bash
         run: |

@@ -31,15 +31,17 @@ type MeResponse = IdentityCache & {
   user?: ChakodUser | null;
 };
 
-const ADMIN_ROLES = new Set([
-  "site_owner",
-  "super_admin",
-  "admin",
-  "moderator",
-  "support",
-  "finance",
-  "viewer",
-]);
+type AccountActivity = {
+  id: number;
+  type: string;
+  name: string;
+  external_dealer_id?: number | null;
+};
+
+type ActivitiesResponse = {
+  success?: boolean;
+  activities?: AccountActivity[];
+};
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -48,7 +50,6 @@ function getToken() {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
-
   return token
     ? {
         Authorization: `Bearer ${token}`,
@@ -81,6 +82,20 @@ function clearLocalAuth() {
   localStorage.removeItem("chakod_identity");
 }
 
+function activityLabel(type: string) {
+  if (type === "dealer") return "نمایشگاه خودرو";
+  if (type === "parts_store") return "فروشگاه قطعات";
+  if (type === "repair_shop") return "تعمیرگاه خودرو";
+  if (type === "car_service") return "مرکز خدمات خودرو";
+  return "کسب‌وکار";
+}
+
+function activityManageHref(activity: AccountActivity) {
+  if (activity.type === "dealer" && activity.external_dealer_id) {
+    return `/account/business?dealer_id=${activity.external_dealer_id}`;
+  }
+  return `/account-v2/businesses/${activity.id}`;
+}
 
 function UserAvatarIcon({ crowned = false }: { crowned?: boolean }) {
   return (
@@ -101,13 +116,7 @@ function UserAvatarIcon({ crowned = false }: { crowned?: boolean }) {
           strokeLinejoin="round"
         />
       ) : null}
-      <circle
-        cx="16"
-        cy={crowned ? "16" : "12.8"}
-        r="4.2"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <circle cx="16" cy={crowned ? "16" : "12.8"} r="4.2" stroke="currentColor" strokeWidth="2" />
       <path
         d={
           crowned
@@ -122,18 +131,13 @@ function UserAvatarIcon({ crowned = false }: { crowned?: boolean }) {
   );
 }
 
-function userHasAdminAccess(identity: IdentityCache) {
-  if (identity.is_site_owner) return true;
-
-  return [identity.primary_role, ...(identity.roles || [])].some(
-    (role) => role && ADMIN_ROLES.has(role),
-  );
-}
-
 export default function AuthStatus() {
   const [user, setUser] = useState<ChakodUser | null>(null);
   const [identity, setIdentity] = useState<IdentityCache>({});
+  const [activities, setActivities] = useState<AccountActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [businessesLoading, setBusinessesLoading] = useState(false);
+  const [businessesLoaded, setBusinessesLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -170,7 +174,6 @@ export default function AuthStatus() {
 
         setUser(json.user);
         setIdentity(nextIdentity);
-
         localStorage.setItem("chakod_user", JSON.stringify(json.user));
         localStorage.setItem("chakod_identity", JSON.stringify(nextIdentity));
         return;
@@ -180,6 +183,8 @@ export default function AuthStatus() {
         clearLocalAuth();
         setUser(null);
         setIdentity({});
+        setActivities([]);
+        setBusinessesLoaded(false);
       }
     } catch {
       // هنگام قطع موقت API، اطلاعات محلی برای حفظ تجربه کاربر باقی می‌ماند.
@@ -188,12 +193,40 @@ export default function AuthStatus() {
     }
   }, []);
 
+  const loadBusinesses = useCallback(async () => {
+    if (businessesLoading) return;
+    setBusinessesLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/account-activities", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          ...authHeaders(),
+        },
+        credentials: "include",
+        cache: "no-store",
+      });
+      const json = (await res.json()) as ActivitiesResponse;
+      if (res.ok && json.success) {
+        setActivities(Array.isArray(json.activities) ? json.activities : []);
+      }
+    } catch {
+      // منوی حساب باید حتی در قطع موقت این API قابل استفاده بماند.
+    } finally {
+      setBusinessesLoaded(true);
+      setBusinessesLoading(false);
+    }
+  }, [businessesLoading]);
+
   useEffect(() => {
     void loadUser();
 
     const handleAuthChange = () => {
       setLoading(true);
       setMenuOpen(false);
+      setActivities([]);
+      setBusinessesLoaded(false);
       void loadUser();
     };
 
@@ -208,6 +241,7 @@ export default function AuthStatus() {
 
   useEffect(() => {
     if (!menuOpen) return;
+    if (!businessesLoaded) void loadBusinesses();
 
     const handlePointerDown = (event: PointerEvent) => {
       if (
@@ -230,11 +264,10 @@ export default function AuthStatus() {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [menuOpen]);
+  }, [menuOpen, businessesLoaded, loadBusinesses]);
 
   async function logout() {
     if (loggingOut) return;
-
     setLoggingOut(true);
 
     try {
@@ -254,6 +287,8 @@ export default function AuthStatus() {
       clearLocalAuth();
       setUser(null);
       setIdentity({});
+      setActivities([]);
+      setBusinessesLoaded(false);
       setMenuOpen(false);
       setLoggingOut(false);
       window.dispatchEvent(new Event("chakod:auth-changed"));
@@ -289,13 +324,6 @@ export default function AuthStatus() {
     user.business_name?.trim() ||
     user.full_name?.trim() ||
     "همراه چاکود";
-
-  const accountHref =
-    user.account_type === "dealer" || user.account_type === "business"
-      ? "/dashboard"
-      : "/account";
-
-  const hasAdminAccess = userHasAdminAccess(identity);
   const roleTitle = identity.role_title?.trim();
 
   return (
@@ -314,9 +342,7 @@ export default function AuthStatus() {
           <strong>{displayName}</strong>
           <span>حساب کاربری</span>
         </div>
-        <span className="authMenuChevron" aria-hidden="true">
-          ⌄
-        </span>
+        <span className="authMenuChevron" aria-hidden="true">⌄</span>
       </button>
 
       {menuOpen ? (
@@ -326,28 +352,42 @@ export default function AuthStatus() {
             {roleTitle ? <span>{roleTitle}</span> : null}
           </div>
 
-          <Link role="menuitem" href={accountHref} onClick={() => setMenuOpen(false)}>
-            <span aria-hidden="true">⌂</span>
-            {user.account_type === "dealer" || user.account_type === "business"
-              ? "داشبورد نمایشگاه"
-              : "حساب کاربری"}
+          <Link className="authMenuRow" role="menuitem" href="/account-v2" onClick={() => setMenuOpen(false)}>
+            <span className="authMenuIcon" aria-hidden="true">♙</span>
+            <span className="authMenuItemCopy">
+              <strong>حساب شخصی</strong>
+              <small>{displayName}</small>
+            </span>
           </Link>
 
-          <Link role="menuitem" href="/account/saved" onClick={() => setMenuOpen(false)}>
-            <span aria-hidden="true">♡</span>
-            نشان‌شده‌ها
-          </Link>
-
-          {hasAdminAccess ? (
-            <Link role="menuitem" href="/admin" onClick={() => setMenuOpen(false)}>
-              <span aria-hidden="true">⚙</span>
-              پنل مدیریت
-            </Link>
+          {businessesLoading && activities.length === 0 ? (
+            <div className="authMenuLoading">در حال دریافت کسب‌وکارها…</div>
           ) : null}
 
-          <button type="button" role="menuitem" onClick={() => void logout()}>
-            <span aria-hidden="true">↪</span>
-            {loggingOut ? "در حال خروج..." : "خروج از حساب"}
+          {activities.map((activity) => (
+            <Link
+              className="authMenuRow"
+              role="menuitem"
+              key={activity.id}
+              href={activityManageHref(activity)}
+              onClick={() => setMenuOpen(false)}
+            >
+              <span className="authMenuIcon" aria-hidden="true">▣</span>
+              <span className="authMenuItemCopy">
+                <strong>{activity.name}</strong>
+                <small>{activityLabel(activity.type)}</small>
+              </span>
+            </Link>
+          ))}
+
+          <Link className="authMenuRow authMenuAdd" role="menuitem" href="/account-v2/businesses/new" onClick={() => setMenuOpen(false)}>
+            <span className="authMenuIcon" aria-hidden="true">＋</span>
+            <span className="authMenuItemCopy"><strong>افزودن کسب‌وکار</strong></span>
+          </Link>
+
+          <button className="authMenuRow authMenuLogout" type="button" role="menuitem" onClick={() => void logout()}>
+            <span className="authMenuIcon" aria-hidden="true">↪</span>
+            <span className="authMenuItemCopy"><strong>{loggingOut ? "در حال خروج..." : "خروج از حساب"}</strong></span>
           </button>
         </div>
       ) : null}
@@ -389,7 +429,9 @@ export default function AuthStatus() {
           top: calc(100% + 10px);
           left: 0;
           z-index: 180;
-          width: 230px;
+          width: 250px;
+          max-height: min(520px, calc(100vh - 96px));
+          overflow-y: auto;
           padding: 8px;
           border: 1px solid #e8def5;
           border-radius: 18px;
@@ -413,21 +455,17 @@ export default function AuthStatus() {
           text-overflow: ellipsis;
         }
 
-        .authMenuHead strong {
-          font-size: 12px;
-        }
-
+        .authMenuHead strong { font-size: 12px; }
         .authMenuHead span {
           margin-top: 4px;
           color: #7c6e89;
           font-size: 9px;
         }
 
-        .authMenu > a,
-        .authMenu > button {
+        .authMenuRow {
           width: 100%;
-          min-height: 41px;
-          padding: 0 10px;
+          min-height: 47px;
+          padding: 5px 9px;
           border: 0;
           border-radius: 11px;
           display: flex;
@@ -436,42 +474,77 @@ export default function AuthStatus() {
           color: #493a55;
           background: transparent;
           font-family: inherit;
-          font-size: 10px;
-          font-weight: 800;
           text-align: right;
           text-decoration: none;
           cursor: pointer;
         }
 
-        .authMenu > a:hover,
-        .authMenu > button:hover,
-        .authMenu > a:focus-visible,
-        .authMenu > button:focus-visible {
+        .authMenuRow:hover,
+        .authMenuRow:focus-visible {
           color: #5b21b6;
           background: #f5f0ff;
           outline: 0;
         }
 
-        .authMenu > a > span,
-        .authMenu > button > span {
-          width: 27px;
-          height: 27px;
+        .authMenuIcon {
+          flex: 0 0 29px;
+          width: 29px;
+          height: 29px;
           border-radius: 9px;
           display: grid;
           place-items: center;
           color: #6d28d9;
           background: #f2ebff;
-          font-size: 13px;
+          font-size: 14px;
         }
 
-        .authMenu > button:last-child {
-          margin-top: 5px;
-          color: #b42318;
+        .authMenuItemCopy {
+          min-width: 0;
+          display: block;
+          flex: 1 1 auto;
+        }
+
+        .authMenuItemCopy strong,
+        .authMenuItemCopy small {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .authMenuItemCopy strong {
+          font-size: 10.5px;
+          font-weight: 900;
+        }
+
+        .authMenuItemCopy small {
+          margin-top: 2px;
+          color: #8b7d95;
+          font-size: 8.5px;
+          font-weight: 700;
+        }
+
+        .authMenuLoading {
+          padding: 9px 12px;
+          color: #8b7d95;
+          font-size: 9px;
+        }
+
+        .authMenuAdd {
+          margin-top: 6px;
+          border-top: 1px solid #eee7f6;
+          border-radius: 0;
+          color: #6422b8;
+        }
+
+        .authMenuLogout {
+          margin-top: 3px;
           border-top: 1px solid #f1e9f7;
           border-radius: 0 0 11px 11px;
+          color: #b42318;
         }
 
-        .authMenu > button:last-child > span {
+        .authMenuLogout .authMenuIcon {
           color: #b42318;
           background: #fff1f0;
         }

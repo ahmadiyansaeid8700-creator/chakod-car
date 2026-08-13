@@ -103,21 +103,21 @@ test("keeps stories, showrooms and vehicle rails connected to the shared locatio
 
 test("keeps show-all catalog pages on their multi-row grid", () => {
   const catalog = read("app/components/CatalogListingsClient.tsx");
-  const css = read("app/components/CatalogListingsClient.module.css");
+  const css = read("app/ads/[segment]/CatalogPage.module.css");
 
-  assert.ok(catalog.includes('className={styles.catalogGrid}'));
-  assert.ok(catalog.includes('className={styles.catalogCard}'));
-  assert.ok(css.includes("grid-template-columns"));
-  assert.ok(css.includes("repeat("));
+  assert.ok(catalog.includes('className={styles.grid}'));
+  assert.ok(catalog.includes("<MarketListingItem"));
+  assert.ok(css.includes(".grid {"));
+  assert.ok(css.includes("grid-template-columns: repeat(3, minmax(0, 1fr))"));
 });
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const css = read("app/home.css");
 
   for (const token of [
-    ".homeHorizontalRail",
+    ".homeRailTrack",
     "overflow-x: auto",
-    "scroll-snap-type: x mandatory",
+    "scroll-snap-type: inline mandatory",
   ]) {
     assert.ok(css.includes(token), `home rail CSS must include ${token}`);
   }

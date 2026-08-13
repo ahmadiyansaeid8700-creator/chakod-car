@@ -398,13 +398,6 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
   }, [images, listing]);
 
   const activeImage = galleryImages[activeImageIndex]?.image_url || "";
-  const locationLabel = useMemo(
-    () => [listing?.province || listing?.province_name, listing?.city || listing?.city_name, listing?.neighborhood]
-      .filter(Boolean)
-      .join("، ") || "موقعیت ثبت نشده",
-    [listing],
-  );
-
   const currentStatus = getStatusCode(listing?.status);
   const currentStatusLabel = getStatusTitle(listing?.status);
   const rejectionText = listing?.rejection_reason || listing?.moderation_note || "";
@@ -519,12 +512,6 @@ export default function ListingManagerClient({ listingId }: { listingId: string 
                   <p className={description ? styles.descriptionText : styles.emptyText}>
                     {description || "برای این آگهی توضیحی ثبت نشده است."}
                   </p>
-                </section>
-
-                <section className={styles.locationSection}>
-                  <div className={styles.sectionTitleRow}><h2>موقعیت</h2></div>
-                  <div className={styles.mapPreview} aria-hidden="true"><span><Icon name="pin" /></span></div>
-                  <div className={styles.locationLine}><Icon name="pin" /><strong>{locationLabel}</strong></div>
                 </section>
               </div>
 

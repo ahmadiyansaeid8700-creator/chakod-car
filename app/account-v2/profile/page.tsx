@@ -99,8 +99,6 @@ export default function AccountProfileV2Page() {
         },
         body: JSON.stringify({
           full_name: cleanName,
-          // این دو مقدار فقط برای سازگاری Backend قدیمی حفظ می‌شوند.
-          // نوع حساب اصلی در Account V2 همیشه شخصی است و کسب‌وکارها مستقل مدیریت می‌شوند.
           account_type: user.account_type || "personal",
           business_name: user.business_name || "",
         }),
@@ -128,14 +126,16 @@ export default function AccountProfileV2Page() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.header}>
-          <Link href="/account">بازگشت</Link>
-          <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          <Link href="/">صفحه اصلی</Link>
+          <Link href="/" aria-label="صفحه اصلی چاکود">
+            <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
         </header>
 
         <section className={styles.titleBlock}>
           <span>حساب اصلی</span>
           <h1>اطلاعات پایه</h1>
-          <p>این صفحه فقط اطلاعات شخصی صاحب حساب را نگه می‌دارد. نمایشگاه، فروشگاه، تعمیرگاه و خدمات خودرو در بخش «مدیریت کسب‌وکار» جدا هستند.</p>
+          <p>این صفحه فقط اطلاعات شخصی صاحب حساب را نگه می‌دارد. کسب‌وکارها از منوی حساب بالای سایت مستقیم وارد صفحه مدیریت خودشان می‌شوند.</p>
         </section>
 
         {loading ? <div className={styles.state}>در حال دریافت اطلاعات…</div> : null}
@@ -160,10 +160,6 @@ export default function AccountProfileV2Page() {
             </div>
 
             <button type="submit" disabled={saving}>{saving ? "در حال ذخیره…" : "ذخیره تغییرات"}</button>
-
-            <Link href="/account#businesses" className={styles.spacedField}>
-              مدیریت کسب‌وکارهای متصل به این حساب
-            </Link>
           </form>
         ) : null}
 

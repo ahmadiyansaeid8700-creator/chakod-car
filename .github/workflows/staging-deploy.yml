@@ -74,6 +74,31 @@ jobs:
             --message "Staging ${GITHUB_SHA}" \
             -y
 
+      - name: Apply staging domain trigger
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler triggers deploy
+
+      - name: Verify Cloudflare custom domain binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+                const fs = require("fs");
+                const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+                const domains = Array.isArray(payload.result) ? payload.result : [];
+                const match = domains.find((item) => item.hostname === "staging.chakod.com" && item.service === "chakod-car-staging");
+                if (!payload.success || !match) {
+                  console.error("staging.chakod.com is not attached to chakod-car-staging");
+                  process.exit(1);
+                }
+                console.log(`Verified custom domain: ${match.hostname} -> ${match.service}`);
+              '
+
       - name: Smoke staging homepage
         shell: bash
         run: |
@@ -83,11 +108,11 @@ jobs:
             --silent \
             --show-error \
             --location \
-            --retry 3 \
-            --retry-delay 2 \
+            --retry 5 \
+            --retry-delay 3 \
             --retry-all-errors \
             --connect-timeout 10 \
-            --max-time 25 \
+            --max-time 30 \
             --output "$body_file" \
             --write-out '%{http_code}' \
             --header 'Accept: text/html' \
@@ -107,26 +132,45 @@ jobs:
             exit 1
           fi
 
-      - name: Smoke staging homepage after settling
+      - name: Smoke staging homepage after five minutes
         shell: bash
         run: |
           set -euo pipefail
-          sleep 20
+          sleep 300
           status="$(curl \
             --silent \
             --show-error \
             --location \
-            --retry 3 \
-            --retry-delay 2 \
+            --retry 5 \
+            --retry-delay 3 \
             --retry-all-errors \
             --connect-timeout 10 \
-            --max-time 25 \
+            --max-time 30 \
             --output /dev/null \
             --write-out '%{http_code}' \
             --header 'Accept: text/html' \
             'https://staging.chakod.com/')"
-          echo "Settled homepage HTTP $status"
+          echo "Five-minute homepage HTTP $status"
           test "$status" = "200"
+
+      - name: Verify custom domain binding after five minutes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+                const fs = require("fs");
+                const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+                const domains = Array.isArray(payload.result) ? payload.result : [];
+                const match = domains.find((item) => item.hostname === "staging.chakod.com" && item.service === "chakod-car-staging");
+                if (!payload.success || !match) {
+                  console.error("Custom domain disappeared during the five-minute stability window");
+                  process.exit(1);
+                }
+                console.log(`Custom domain still attached: ${match.hostname} -> ${match.service}`);
+              '
 
       - name: Smoke staging auth route
         shell: bash

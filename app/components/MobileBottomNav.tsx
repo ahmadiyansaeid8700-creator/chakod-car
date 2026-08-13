@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import CreateActionMenu from "./CreateActionMenu";
 import MobileAccountSwitcher from "./MobileAccountSwitcher";
 import styles from "./MobileBottomNav.module.css";
 
@@ -100,7 +101,17 @@ export default function MobileBottomNav() {
   const navItems = useMemo<NavItem[]>(() => [
     { id: "home", title: "خانه", href: "/", icon: <HomeIcon />, isActive: (p) => p === "/" },
     { id: "market", title: "بازار", href: "/cars", icon: <MarketIcon />, isActive: (p) => p === "/cars" || p.startsWith("/cars/") },
-    { id: "submit", title: "ثبت آگهی", href: "/account/listings/new", icon: <SubmitIcon />, primary: true, isActive: (p) => p === "/account/listings/new" },
+    {
+      id: "submit",
+      title: "ثبت آگهی",
+      href: "/account/listings/new",
+      icon: <SubmitIcon />,
+      primary: true,
+      isActive: (p) =>
+        p === "/account/listings/new" ||
+        p.startsWith("/advertising/stories") ||
+        p.startsWith("/advertising/selected"),
+    },
     { id: "services", title: "خدمات", href: "/businesses?type=car_service", icon: <ServicesIcon />, isActive: (p) => p.startsWith("/businesses") },
     {
       id: "account",
@@ -125,6 +136,18 @@ export default function MobileBottomNav() {
           {navItems.map((item) => {
             const active = item.isActive(pathname);
             const className = [styles.navigationItem, item.primary ? styles.primaryItem : "", active ? styles.activeItem : ""].filter(Boolean).join(" ");
+
+            if (item.id === "submit") {
+              return (
+                <CreateActionMenu
+                  key={item.id}
+                  triggerClassName={className}
+                  iconClassName={styles.primaryIcon}
+                  titleClassName={styles.primaryTitle}
+                  icon={item.icon}
+                />
+              );
+            }
 
             if (item.id === "account" && accountDestination.switcher) {
               return <div key={item.id} className={className}><MobileAccountSwitcher />{!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}</div>;

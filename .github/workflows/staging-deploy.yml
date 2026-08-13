@@ -54,3 +54,39 @@ jobs:
 
       - name: Deploy staging Worker
         run: npx wrangler deploy
+
+      - name: Smoke staging auth route
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data '{"mobile":"0900000000","accept_terms":true}' \
+            'https://staging.chakod.com/api/auth/send-code')"
+
+          cat "$body_file"
+          echo
+          echo "HTTP $status"
+
+          if [ "$status" != "400" ]; then
+            echo "Expected auth route validation HTTP 400, got $status."
+            exit 1
+          fi
+
+          if ! grep -q '"success":false' "$body_file"; then
+            echo "Auth smoke response is not the expected JSON payload."
+            exit 1
+          fi

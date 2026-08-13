@@ -43,6 +43,14 @@ type CommerceResponse = {
   payment_gateway_ready?: boolean;
 };
 
+type Props = {
+  mode: CommerceMode;
+  serviceKeys?: string[];
+  titleOverride?: string;
+  descriptionOverride?: string;
+  eyebrowOverride?: string;
+};
+
 const promotionKeys = new Set([
   "listing_bump",
   "listing_featured",
@@ -111,7 +119,13 @@ function serviceHref(service: CommerceService, businessId: number) {
   return `/account/payments/checkout?type=service&service_key=${encodeURIComponent(service.service_key)}${businessId ? `&dealer_id=${businessId}` : ""}`;
 }
 
-export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
+export default function CommerceProductsPage({
+  mode,
+  serviceKeys,
+  titleOverride,
+  descriptionOverride,
+  eyebrowOverride,
+}: Props) {
   const [data, setData] = useState<CommerceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -129,9 +143,8 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
       const payload = await readJson<CommerceResponse>(response);
 
       if (response.status === 401 || response.status === 403) {
-        window.location.assign(
-          `/login?returnTo=${encodeURIComponent(mode === "promotions" ? "/account/promotions" : "/account/subscriptions")}`,
-        );
+        const returnTo = mode === "promotions" ? "/account/promotions" : "/account/subscriptions";
+        window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
         return;
       }
 
@@ -155,10 +168,14 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
 
   const services = useMemo(() => {
     const active = (data?.services || []).filter((service) => service.is_active);
-    return mode === "promotions"
+    const byMode = mode === "promotions"
       ? active.filter((service) => promotionKeys.has(service.service_key))
       : active.filter((service) => service.service_key.startsWith("professional_profile_"));
-  }, [data?.services, mode]);
+
+    return serviceKeys?.length
+      ? byMode.filter((service) => serviceKeys.includes(service.service_key))
+      : byMode;
+  }, [data?.services, mode, serviceKeys]);
 
   const requiresBusinessTarget = useMemo(
     () => mode === "subscriptions" || services.some((service) => service.service_key === "business_placement"),
@@ -172,10 +189,11 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
     [data?.subscriptions, businessId],
   );
 
-  const title = mode === "promotions" ? "تبلیغات و دیده‌شدن بیشتر" : "اشتراک‌های حرفه‌ای";
-  const description = mode === "promotions"
+  const title = titleOverride || (mode === "promotions" ? "تبلیغات و دیده‌شدن بیشتر" : "اشتراک‌های حرفه‌ای");
+  const description = descriptionOverride || (mode === "promotions"
     ? "تعرفه‌های فعال تبلیغاتی مستقیماً از تنظیمات مدیریت چاکود خوانده می‌شوند."
-    : "پلن حرفه‌ای مجموعه را با مبلغ و مدت ثبت‌شده در Commerce انتخاب کنید.";
+    : "پلن حرفه‌ای مجموعه را با مبلغ و مدت ثبت‌شده در Commerce انتخاب کنید.");
+  const eyebrow = eyebrowOverride || (mode === "promotions" ? "CHAKOD PROMOTIONS" : "CHAKOD SUBSCRIPTIONS");
 
   return (
     <main className={styles.page} dir="rtl">
@@ -188,7 +206,7 @@ export default function CommerceProductsPage({ mode }: { mode: CommerceMode }) {
         </header>
 
         <section className={styles.hero}>
-          <span>{mode === "promotions" ? "CHAKOD PROMOTIONS" : "CHAKOD SUBSCRIPTIONS"}</span>
+          <span>{eyebrow}</span>
           <h1>{title}</h1>
           <p>{description}</p>
           <div className={styles.heroLinks}>

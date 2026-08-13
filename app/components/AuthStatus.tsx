@@ -133,7 +133,7 @@ function UserAvatarIcon({ crowned = false }: { crowned?: boolean }) {
 
 export default function AuthStatus() {
   const [user, setUser] = useState<ChakodUser | null>(null);
-  const [identity, setIdentity] = useState<IdentityCache>({});
+  const [, setIdentity] = useState<IdentityCache>({});
   const [activities, setActivities] = useState<AccountActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [businessesLoading, setBusinessesLoading] = useState(false);
@@ -324,7 +324,6 @@ export default function AuthStatus() {
     user.business_name?.trim() ||
     user.full_name?.trim() ||
     "همراه چاکود";
-  const roleTitle = identity.role_title?.trim();
 
   return (
     <div className="authStatusShell" ref={shellRef}>
@@ -347,11 +346,6 @@ export default function AuthStatus() {
 
       {menuOpen ? (
         <div className="authMenu" role="menu">
-          <div className="authMenuHead">
-            <strong>{displayName}</strong>
-            {roleTitle ? <span>{roleTitle}</span> : null}
-          </div>
-
           <Link className="authMenuRow" role="menuitem" href="/account-v2" onClick={() => setMenuOpen(false)}>
             <span className="authMenuIcon" aria-hidden="true">♙</span>
             <span className="authMenuItemCopy">
@@ -439,27 +433,6 @@ export default function AuthStatus() {
           background: rgba(255, 255, 255, 0.98);
           box-shadow: 0 24px 65px rgba(39, 20, 62, 0.2);
           backdrop-filter: blur(18px);
-        }
-
-        .authMenuHead {
-          margin-bottom: 6px;
-          padding: 10px 11px 11px;
-          border-bottom: 1px solid #eee7f6;
-        }
-
-        .authMenuHead strong,
-        .authMenuHead span {
-          display: block;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-
-        .authMenuHead strong { font-size: 12px; }
-        .authMenuHead span {
-          margin-top: 4px;
-          color: #7c6e89;
-          font-size: 9px;
         }
 
         .authMenuRow {

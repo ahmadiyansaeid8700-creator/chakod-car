@@ -1,0 +1,358 @@
+.page {
+  min-height: 100vh;
+  padding: 22px 16px 96px;
+  direction: rtl;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(124, 58, 237, .12), transparent 28%),
+    linear-gradient(180deg, #fbf9ff 0%, #f7f4fb 58%, #fff 100%);
+  color: #21142f;
+}
+
+.shell {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.header a {
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.logo {
+  width: 122px;
+  height: auto;
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid rgba(82, 54, 110, .12);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 24px 60px rgba(58, 31, 88, .1);
+}
+
+.top {
+  padding: 28px 28px 20px;
+  text-align: center;
+}
+
+.top > span {
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.top h1 {
+  margin: 7px 0 5px;
+  font-size: clamp(23px, 4vw, 32px);
+}
+
+.top p {
+  margin: 0;
+  color: #7d7186;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0 28px;
+  padding: 18px;
+  border: 1px solid rgba(124, 58, 237, .13);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fbf8ff, #f3edff);
+}
+
+.bubble {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  flex: 0 0 92px;
+  padding: 4px;
+  border-radius: 999px;
+  background: conic-gradient(from 210deg, #4c1d95, #7c3aed, #c084fc, #7c3aed, #4c1d95);
+  box-shadow: 0 13px 28px rgba(109, 40, 217, .2);
+}
+
+.bubble > span {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 4px solid #fff;
+  border-radius: inherit;
+  color: #6d28d9;
+  background: #efe8ff;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.bubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bubble::after {
+  content: "استوری";
+  position: absolute;
+  right: 50%;
+  bottom: -8px;
+  transform: translateX(50%);
+  padding: 4px 8px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  background: #6d28d9;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.previewCopy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.previewCopy small {
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.previewCopy strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 18px;
+}
+
+.previewCopy span {
+  color: #74687d;
+  font-size: 12px;
+}
+
+.payment {
+  display: grid;
+  gap: 16px;
+  padding: 24px 28px 28px;
+}
+
+.rows {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(82, 54, 110, .09);
+  border-bottom: 1px solid rgba(82, 54, 110, .09);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+}
+
+.row + .row {
+  border-top: 1px solid rgba(82, 54, 110, .07);
+}
+
+.row span {
+  color: #7f7388;
+  font-size: 12px;
+}
+
+.row strong {
+  font-size: 14px;
+}
+
+.discount strong {
+  color: #15803d;
+}
+
+.total strong {
+  color: #6d28d9;
+  font-size: 19px;
+}
+
+.couponLabel {
+  display: grid;
+  gap: 8px;
+  color: #352443;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.couponBox {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.couponBox input {
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(109, 40, 217, .2);
+  border-radius: 14px;
+  outline: none;
+  background: #fbfaff;
+  color: #21142f;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  direction: ltr;
+  text-align: left;
+}
+
+.couponBox input:focus {
+  border-color: rgba(109, 40, 217, .55);
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, .08);
+}
+
+.couponBox button {
+  min-width: 90px;
+  border: 0;
+  border-radius: 14px;
+  color: #6d28d9;
+  background: #efe7ff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hint,
+.message,
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.hint {
+  color: #6b4f85;
+  background: #f7f2ff;
+}
+
+.hint code {
+  color: #6d28d9;
+  font-family: inherit;
+  font-weight: 950;
+  direction: ltr;
+}
+
+.message {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.error {
+  color: #b91c1c;
+  background: #fff1f2;
+}
+
+.action {
+  min-height: 54px;
+  border: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  box-shadow: 0 15px 30px rgba(109, 40, 217, .2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.action:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+  box-shadow: none;
+}
+
+.afterPay {
+  margin: -5px 0 0;
+  color: #83768c;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.state {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.state > div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.state strong {
+  font-size: 20px;
+}
+
+.state p {
+  max-width: 420px;
+  margin: 0;
+  color: #75677f;
+  line-height: 1.8;
+}
+
+.state a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 13px;
+  color: #fff;
+  background: #6d28d9;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.successMark {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #15803d;
+  background: #dcfce7;
+  font-size: 26px;
+  font-weight: 950;
+}
+
+@media (max-width: 620px) {
+  .page { padding: 12px 10px 110px; }
+  .header { margin-bottom: 12px; }
+  .logo { width: 105px; }
+  .card { border-radius: 22px; }
+  .top { padding: 22px 18px 16px; }
+  .preview { margin: 0 16px; padding: 14px; gap: 13px; }
+  .bubble { width: 76px; height: 76px; flex-basis: 76px; }
+  .previewCopy strong { font-size: 15px; }
+  .payment { padding: 20px 16px 22px; }
+  .couponBox { grid-template-columns: 1fr 78px; }
+}

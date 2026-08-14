@@ -30,6 +30,32 @@ type ListingItem = {
   cover_image?: { image_id: number; image_url: string } | null;
 };
 
+type AccountActivity = {
+  id: number;
+  type: string;
+  name: string;
+  city?: string;
+  province?: string;
+  status?: string;
+  verification_status?: string;
+  external_dealer_id?: number | null;
+  can_publish_vehicle?: boolean;
+};
+
+type AccountMembership = {
+  type: string;
+  name: string;
+  role?: string;
+  external_dealer_id?: number | null;
+  can_publish_vehicle?: boolean;
+};
+
+type ActivitiesResponse = {
+  success?: boolean;
+  activities?: AccountActivity[];
+  memberships?: AccountMembership[];
+};
+
 type ListingsResponse = {
   success?: boolean;
   message?: string;
@@ -45,10 +71,17 @@ type ListingsResponse = {
   data?: ListingItem[];
 };
 
-type Identity =
-  | { key: "all"; label: string; typeLabel: string; owner: "all"; dealerId: 0 }
-  | { key: "personal"; label: string; typeLabel: string; owner: "personal"; dealerId: 0 }
-  | { key: string; label: string; typeLabel: string; owner: "dealer"; dealerId: number };
+type Identity = {
+  key: string;
+  label: string;
+  typeLabel: string;
+  kind: "all" | "personal" | "dealer" | "business";
+  owner: "all" | "personal" | "dealer";
+  dealerId: number;
+  activityId: number;
+  activityType?: string;
+  activity?: AccountActivity;
+};
 
 const STATUS_LABELS: Record<string, string> = {
   active: "فعال",
@@ -60,6 +93,22 @@ const STATUS_LABELS: Record<string, string> = {
   deleted: "بایگانی‌شده",
   draft: "پیش‌نویس",
 };
+
+function authHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("chakod_session_token") || "";
+  return token
+    ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
+    : {};
+}
+
+function activityTypeLabel(type?: string) {
+  if (type === "dealer") return "نمایشگاه";
+  if (type === "parts_store") return "فروشگاه لوازم یدکی";
+  if (type === "repair_shop") return "تعمیرگاه";
+  if (type === "car_service") return "مرکز خدمات خودرو";
+  return "کسب‌وکار";
+}
 
 function formatNumber(value: number | string | null | undefined) {
   const number = Number(value || 0);
@@ -101,6 +150,8 @@ export default function StoryListingSelectorClient() {
   const [error, setError] = useState("");
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [dealers, setDealers] = useState<DealerItem[]>([]);
+  const [activities, setActivities] = useState<AccountActivity[]>([]);
+  const [memberships, setMemberships] = useState<AccountMembership[]>([]);
   const [identityKey, setIdentityKey] = useState("all");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -114,23 +165,128 @@ export default function StoryListingSelectorClient() {
     has_prev: false,
   });
 
-  const identities = useMemo<Identity[]>(() => [
-    { key: "all", label: "همه", typeLabel: "همه آگهی‌ها", owner: "all", dealerId: 0 },
-    { key: "personal", label: "شخصی", typeLabel: "حساب شخصی", owner: "personal", dealerId: 0 },
-    ...dealers.map((dealer) => ({
-      key: `dealer:${dealer.id}`,
-      label: dealer.dealer_name || `نمایشگاه ${dealer.id}`,
-      typeLabel: "نمایشگاه",
-      owner: "dealer" as const,
-      dealerId: dealer.id,
-    })),
-  ], [dealers]);
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadAccountActivities() {
+      try {
+        const response = await fetch("/api/auth/account-activities", {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const payload = (await response.json().catch(() => null)) as ActivitiesResponse | null;
+        if (ignore || !response.ok || !payload?.success) return;
+        setActivities(Array.isArray(payload.activities) ? payload.activities : []);
+        setMemberships(Array.isArray(payload.memberships) ? payload.memberships : []);
+      } catch {
+        // فهرست آگهی‌ها همچنان باید در دسترس بماند.
+      }
+    }
+
+    void loadAccountActivities();
+    return () => { ignore = true; };
+  }, []);
+
+  const identities = useMemo<Identity[]>(() => {
+    const result: Identity[] = [
+      { key: "all", label: "همه", typeLabel: "همه آگهی‌ها", kind: "all", owner: "all", dealerId: 0, activityId: 0 },
+      { key: "personal", label: "شخصی", typeLabel: "حساب شخصی", kind: "personal", owner: "personal", dealerId: 0, activityId: 0 },
+    ];
+    const keys = new Set(result.map((item) => item.key));
+
+    activities.forEach((activity) => {
+      const dealerId = Number(activity.external_dealer_id || 0);
+      if (activity.type === "dealer" && dealerId > 0) {
+        const key = `dealer:${dealerId}`;
+        if (!keys.has(key)) {
+          result.push({
+            key,
+            label: activity.name || `نمایشگاه ${dealerId}`,
+            typeLabel: "نمایشگاه",
+            kind: "dealer",
+            owner: "dealer",
+            dealerId,
+            activityId: activity.id,
+            activityType: activity.type,
+            activity,
+          });
+          keys.add(key);
+        }
+        return;
+      }
+
+      if (activity.type !== "dealer") {
+        const key = `business:${activity.id}`;
+        if (!keys.has(key)) {
+          result.push({
+            key,
+            label: activity.name || activityTypeLabel(activity.type),
+            typeLabel: activityTypeLabel(activity.type),
+            kind: "business",
+            owner: "all",
+            dealerId: 0,
+            activityId: activity.id,
+            activityType: activity.type,
+            activity,
+          });
+          keys.add(key);
+        }
+      }
+    });
+
+    memberships.forEach((membership) => {
+      const dealerId = Number(membership.external_dealer_id || 0);
+      if (membership.type !== "dealer" || dealerId <= 0) return;
+      const key = `dealer:${dealerId}`;
+      if (keys.has(key)) return;
+      result.push({
+        key,
+        label: membership.name || `نمایشگاه ${dealerId}`,
+        typeLabel: "نمایشگاه",
+        kind: "dealer",
+        owner: "dealer",
+        dealerId,
+        activityId: 0,
+        activityType: "dealer",
+      });
+      keys.add(key);
+    });
+
+    dealers.forEach((dealer) => {
+      const dealerId = Number(dealer.id || 0);
+      if (dealerId <= 0) return;
+      const key = `dealer:${dealerId}`;
+      if (keys.has(key)) return;
+      result.push({
+        key,
+        label: dealer.dealer_name || `نمایشگاه ${dealerId}`,
+        typeLabel: "نمایشگاه",
+        kind: "dealer",
+        owner: "dealer",
+        dealerId,
+        activityId: 0,
+        activityType: "dealer",
+      });
+      keys.add(key);
+    });
+
+    return result;
+  }, [activities, dealers, memberships]);
 
   const selectedIdentity = useMemo<Identity>(() => {
     return identities.find((item) => item.key === identityKey) || identities[0];
   }, [identities, identityKey]);
 
   async function loadListings(targetPage = page) {
+    if (selectedIdentity.kind === "business") {
+      setLoading(false);
+      setError("");
+      setListings([]);
+      setPagination({ page: 1, per_page: 12, total: 0, total_pages: 1, has_next: false, has_prev: false });
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -147,7 +303,7 @@ export default function StoryListingSelectorClient() {
       const response = await fetch(`/api/auth/dashboard-listings?${params.toString()}`, {
         credentials: "include",
         cache: "no-store",
-        headers: { Accept: "application/json" },
+        headers: { Accept: "application/json", ...authHeaders() },
       });
       const payload = (await response.json().catch(() => null)) as ListingsResponse | null;
 
@@ -176,10 +332,12 @@ export default function StoryListingSelectorClient() {
   useEffect(() => {
     void loadListings(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, identityKey, appliedSearch]);
+  }, [page, identityKey, appliedSearch, selectedIdentity.kind]);
 
   function chooseIdentity(key: string) {
     setIdentityKey(key);
+    setSearch("");
+    setAppliedSearch("");
     setPage(1);
   }
 
@@ -187,6 +345,8 @@ export default function StoryListingSelectorClient() {
     setAppliedSearch(search.trim());
     setPage(1);
   }
+
+  const businessActivity = selectedIdentity.kind === "business" ? selectedIdentity.activity : undefined;
 
   return (
     <main className={styles.page} dir="rtl">
@@ -200,14 +360,22 @@ export default function StoryListingSelectorClient() {
 
         <section className={styles.hero}>
           <span>استوری چاکود</span>
-          <h1>کدام آگهی را استوری می‌کنی؟</h1>
-          <p>اول هویت انتشار را انتخاب کن، بعد روی «استوری کن» بزن.</p>
+          <h1>{selectedIdentity.kind === "business" ? "استوری کسب‌وکار" : "کدام آگهی را استوری می‌کنی؟"}</h1>
+          <p>
+            {selectedIdentity.kind === "business"
+              ? "برای کسب‌وکارهای خدماتی، استوری از پروفایل همان کسب‌وکار ساخته می‌شود."
+              : "اول هویت انتشار را انتخاب کن، بعد روی «استوری کن» بزن."}
+          </p>
         </section>
 
         <section className={styles.identityPanel} aria-label="انتخاب هویت انتشار">
           <div className={styles.identityHeader}>
-            <strong>آگهی‌های کدام حساب؟</strong>
-            <span>{formatNumber(pagination.total)} آگهی</span>
+            <strong>استوری برای کدام حساب؟</strong>
+            <span>
+              {selectedIdentity.kind === "business"
+                ? selectedIdentity.typeLabel
+                : `${formatNumber(pagination.total)} آگهی`}
+            </span>
           </div>
           <div className={styles.identityRow}>
             {identities.map((item) => (
@@ -223,18 +391,42 @@ export default function StoryListingSelectorClient() {
             ))}
           </div>
 
-          <div className={styles.searchRow}>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => { if (event.key === "Enter") applySearch(); }}
-              placeholder="جستجو در آگهی‌ها"
-            />
-            <button type="button" onClick={applySearch}>جستجو</button>
-          </div>
+          {selectedIdentity.kind !== "business" ? (
+            <div className={styles.searchRow}>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") applySearch(); }}
+                placeholder="جستجو در آگهی‌ها"
+              />
+              <button type="button" onClick={applySearch}>جستجو</button>
+            </div>
+          ) : null}
         </section>
 
-        {loading ? (
+        {selectedIdentity.kind === "business" && businessActivity ? (
+          <section className={styles.businessStoryCard} aria-label={`استوری ${businessActivity.name}`}>
+            <div className={styles.businessStoryIcon} aria-hidden="true">▣</div>
+            <div className={styles.businessStoryCopy}>
+              <span>{activityTypeLabel(businessActivity.type)}</span>
+              <h2>{businessActivity.name}</h2>
+              {(businessActivity.city || businessActivity.province) ? (
+                <p>{[businessActivity.city, businessActivity.province].filter(Boolean).join("، ")}</p>
+              ) : (
+                <p>استوری از اطلاعات واقعی پروفایل این کسب‌وکار ساخته می‌شود.</p>
+              )}
+              <Link
+                href={`/account/selected?intent=story&activity_id=${businessActivity.id}`}
+                className={styles.storyButton}
+              >
+                استوری کسب‌وکار
+              </Link>
+              <Link href={`/account-v2/businesses/${businessActivity.id}`} className={styles.businessManageLink}>
+                مشاهده و تکمیل پروفایل کسب‌وکار
+              </Link>
+            </div>
+          </section>
+        ) : loading ? (
           <section className={styles.state}>
             <span className={styles.loader} />
             <strong>در حال دریافت آگهی‌ها…</strong>
@@ -307,7 +499,7 @@ export default function StoryListingSelectorClient() {
           </section>
         )}
 
-        {!loading && !error && pagination.total_pages > 1 ? (
+        {selectedIdentity.kind !== "business" && !loading && !error && pagination.total_pages > 1 ? (
           <div className={styles.pagination}>
             <button type="button" disabled={!pagination.has_prev} onClick={() => setPage((value) => Math.max(1, value - 1))}>قبلی</button>
             <span>صفحه {formatNumber(pagination.page)} از {formatNumber(pagination.total_pages)}</span>

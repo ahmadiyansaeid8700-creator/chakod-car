@@ -37,8 +37,8 @@ const ADMIN_ROLES = new Set([
 function HomeIcon() {
   return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M3.5 10.7 12 3.8l8.5 6.9v8a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8v-8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M9.2 20.5v-6.2h5.6v6.2" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>;
 }
-function MarketIcon() {
-  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M4.2 10.2h15.6l-1.1-4.1a1.8 1.8 0 0 0-1.7-1.3H7a1.8 1.8 0 0 0-1.7 1.3l-1.1 4.1Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M5.3 10.2v7.2c0 1 .8 1.8 1.8 1.8h9.8c1 0 1.8-.8 1.8-1.8v-7.2" stroke="currentColor" strokeWidth="1.8"/><path d="M8 19.2v-4.5h8v4.5" stroke="currentColor" strokeWidth="1.8"/></svg>;
+function ShowcaseIcon() {
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M12 3.4 14 8l4.9.5-3.7 3.3 1.1 4.8L12 14.1l-4.3 2.5 1.1-4.8-3.7-3.3L10 8l2-4.6Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round"/><path d="M18.5 4.6v3.2M20.1 6.2h-3.2M5.4 16.7v2.7M6.8 18.05H4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>;
 }
 function SubmitIcon() {
   return <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>;
@@ -100,7 +100,7 @@ export default function MobileBottomNav() {
 
   const navItems = useMemo<NavItem[]>(() => [
     { id: "home", title: "خانه", href: "/", icon: <HomeIcon />, isActive: (p) => p === "/" },
-    { id: "market", title: "بازار", href: "/cars", icon: <MarketIcon />, isActive: (p) => p === "/cars" || p.startsWith("/cars/") },
+    { id: "showcase", title: "ویترین من", href: "/account/showcase", icon: <ShowcaseIcon />, isActive: (p) => p === "/account/showcase" || p.startsWith("/account/showcase/") },
     {
       id: "submit",
       title: "ثبت آگهی",

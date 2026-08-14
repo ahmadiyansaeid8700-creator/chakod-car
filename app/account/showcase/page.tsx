@@ -171,13 +171,14 @@ export default function ShowcasePage() {
     if (!ctx) return null;
 
     const background = ctx.createLinearGradient(1080, 0, 0, 1920);
-    background.addColorStop(0, "#1f0a38");
-    background.addColorStop(0.55, "#5b21b6");
-    background.addColorStop(1, "#8b5cf6");
+    background.addColorStop(0, "#21082f");
+    background.addColorStop(0.48, "#4c1d95");
+    background.addColorStop(0.8, "#7c3aed");
+    background.addColorStop(1, "#9b6df1");
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    ctx.globalAlpha = 0.12;
+    ctx.globalAlpha = 0.11;
     ctx.fillStyle = "#ffffff";
     ctx.beginPath(); ctx.arc(120, 1720, 360, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(1000, 120, 290, 0, Math.PI * 2); ctx.fill();
@@ -258,8 +259,7 @@ export default function ShowcasePage() {
         }
       }
     } else {
-      const names = businesses.slice(0, 3);
-      names.forEach((name, index) => {
+      businesses.slice(0, 3).forEach((name, index) => {
         const y = 785 + index * 155;
         roundedRect(ctx, 80, y, 920, 120, 30);
         ctx.fillStyle = "rgba(255,255,255,.94)";
@@ -270,13 +270,19 @@ export default function ShowcasePage() {
       });
     }
 
+    roundedRect(ctx, 250, 1650, 580, 100, 28);
+    ctx.fillStyle = "rgba(255,255,255,.11)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.20)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.fillStyle = "rgba(255,255,255,.96)";
     ctx.font = "900 30px sans-serif";
-    ctx.fillText("اعتبار من در چاکود ✦", 540, 1710);
-    ctx.fillStyle = "rgba(255,255,255,.62)";
-    ctx.font = "700 23px sans-serif";
-    ctx.fillText(window.location.host, 540, 1760);
+    ctx.fillText("✦  امضای چاکود", 540, 1703);
+    ctx.fillStyle = "rgba(255,255,255,.58)";
+    ctx.font = "700 20px sans-serif";
+    ctx.fillText("CHAKOD VERIFIED SHOWCASE", 540, 1733);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 0.96));
     return blob ? new File([blob], "chakod-showcase.png", { type: "image/png" }) : null;
@@ -365,9 +371,9 @@ export default function ShowcasePage() {
                 )}
               </div>
 
-              <div className={styles.footerMark}>
-                <strong>✦ اعتبار من در چاکود</strong>
-                <span>chakod.com</span>
+              <div className={styles.footerMark} aria-label="امضای چاکود">
+                <strong>امضای چاکود</strong>
+                <span>CHAKOD VERIFIED SHOWCASE</span>
               </div>
             </>
           )}

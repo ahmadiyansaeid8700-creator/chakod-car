@@ -485,7 +485,7 @@ export default function HomeStories() {
                 <div>
                   <strong>{activeGroup.label}</strong>
                   <small>
-                    {getStoryLocation(activeStory)} · {`${activeItemIndex + 1}`.toLocaleString("fa-IR")} از {`${activeGroup.items.length}`.toLocaleString("fa-IR")}
+                    {getStoryLocation(activeStory)} · {Number(activeItemIndex + 1).toLocaleString("fa-IR")} از {Number(activeGroup.items.length).toLocaleString("fa-IR")}
                   </small>
                 </div>
               </div>

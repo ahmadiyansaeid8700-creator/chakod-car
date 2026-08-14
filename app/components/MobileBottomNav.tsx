@@ -121,6 +121,7 @@ export default function MobileBottomNav() {
       isActive: (p) => {
         if (accountDestination.href === "/admin") return p.startsWith("/admin");
         if (accountDestination.href === "/login") return p.startsWith("/login");
+        if (p === "/account/showcase" || p.startsWith("/account/showcase/")) return false;
         return p === "/account" || p.startsWith("/account/") || p.startsWith("/account-v2/");
       },
     },

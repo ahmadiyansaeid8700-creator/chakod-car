@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
@@ -30,6 +31,13 @@ function metadata(value: string) {
   } catch {
     return {};
   }
+}
+
+function publicOwnerKey(ownerKey: string) {
+  return createHash("sha256")
+    .update(`chakod-story-owner:${ownerKey}`)
+    .digest("hex")
+    .slice(0, 24);
 }
 
 export async function GET(request: NextRequest) {
@@ -91,7 +99,10 @@ export async function GET(request: NextRequest) {
             listing_owner_type: ownerType,
             seller_display_name: clean(data.seller_display_name, 160),
             dealer_id: dealerId,
-            story_owner_key: ownerType === "dealer" && dealerId ? null : `staging:${row.ownerKey}`,
+            story_owner_key:
+              ownerType === "dealer" && dealerId
+                ? null
+                : `story:${publicOwnerKey(row.ownerKey)}`,
             cover_image: coverImageUrl ? { image_id: storyId, image_url: coverImageUrl } : null,
             media_type: "image",
             media_url: coverImageUrl || null,

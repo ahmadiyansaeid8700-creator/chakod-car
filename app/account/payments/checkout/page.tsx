@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import BusinessPlacementOrderClient from "./BusinessPlacementOrderClient";
 import CheckoutClient from "./CheckoutClient";
+import StoryCheckoutClient from "./StoryCheckoutClient";
 
 export default async function AccountPaymentCheckoutPage({
   searchParams,
@@ -10,6 +11,7 @@ export default async function AccountPaymentCheckoutPage({
     order_no?: string;
     service_key?: string;
     dealer_id?: string;
+    listing_id?: string;
   }>;
 }) {
   const query = await searchParams;
@@ -21,6 +23,11 @@ export default async function AccountPaymentCheckoutPage({
 
   const serviceKey = String(query.service_key || "").trim();
   const dealerId = Math.round(Number(query.dealer_id || 0));
+  const listingId = Math.round(Number(query.listing_id || 0));
+
+  if (serviceKey === "listing_story" && Number.isSafeInteger(listingId) && listingId > 0) {
+    return <StoryCheckoutClient listingId={listingId} />;
+  }
 
   if (serviceKey === "business_placement" && Number.isSafeInteger(dealerId) && dealerId > 0) {
     return <BusinessPlacementOrderClient dealerId={dealerId} />;

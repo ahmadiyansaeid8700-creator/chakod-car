@@ -142,6 +142,7 @@ function cleanDealers(items?: DealerItem[]) {
 
 export default function AccountListingsPage() {
   const searchParams = useSearchParams();
+  const storyMode = searchParams.get("intent") === "story";
   const requestedDealerId = Math.max(0, Math.round(Number(searchParams.get("dealer_id") || 0)));
   const requestedIdentityKey = requestedDealerId ? `dealer:${requestedDealerId}` : "all";
 
@@ -283,22 +284,38 @@ export default function AccountListingsPage() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/account" className={styles.back}>بازگشت به حساب</Link>
+          <Link href={storyMode ? "/" : "/account"} className={styles.back}>
+            {storyMode ? "بازگشت به صفحه اصلی" : "بازگشت به حساب"}
+          </Link>
           <Link href="/" className={styles.logo} aria-label="چاکود"><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link>
         </header>
 
         <section className={styles.headerCard}>
           <div>
-            <span>مدیریت آگهی‌ها</span>
-            <h1>{scopedDealer ? `آگهی‌های ${scopedDealer.label}` : "آگهی‌های من"}</h1>
-            <p>{scopedDealer ? "فقط آگهی‌های همین مجموعه نمایش داده می‌شوند." : "آگهی‌های شخصی و نمایشگاه‌های مجاز در یک لیست."}</p>
+            <span>{storyMode ? "انتخاب آگهی برای استوری" : "مدیریت آگهی‌ها"}</span>
+            <h1>
+              {storyMode
+                ? scopedDealer
+                  ? `استوری برای ${scopedDealer.label}`
+                  : "کدام آگهی را استوری می‌کنی؟"
+                : scopedDealer
+                  ? `آگهی‌های ${scopedDealer.label}`
+                  : "آگهی‌های من"}
+            </h1>
+            <p>
+              {storyMode
+                ? "همه آگهی‌های ثبت‌شده‌ات را اینجا می‌بینی؛ آگهی فعال را انتخاب کن تا استوری همان آگهی ساخته شود."
+                : scopedDealer
+                  ? "فقط آگهی‌های همین مجموعه نمایش داده می‌شوند."
+                  : "آگهی‌های شخصی و نمایشگاه‌های مجاز در یک لیست."}
+            </p>
           </div>
           <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"} className={styles.addButton}>+ ثبت آگهی</Link>
         </section>
 
         <section className={styles.summary} aria-label="خلاصه آگهی‌ها">
           <div><strong>{formatNumber(summary.total)}</strong><span>همه</span></div>
-          <div><strong>{formatNumber(summary.active)}</strong><span>فعال</span></div>
+          <div><strong>{formatNumber(summary.active)}</strong><span>{storyMode ? "قابل استوری" : "فعال"}</span></div>
           <div><strong>{formatNumber(attentionCount)}</strong><span>نیازمند توجه</span></div>
         </section>
 
@@ -360,7 +377,7 @@ export default function AccountListingsPage() {
         ) : listings.length === 0 ? (
           <section className={styles.state}>
             <strong>آگهی‌ای پیدا نشد</strong>
-            <span>فیلتر را تغییر دهید یا یک آگهی جدید ثبت کنید.</span>
+            <span>{storyMode ? "برای ساخت استوری اول یک آگهی ثبت کن." : "فیلتر را تغییر دهید یا یک آگهی جدید ثبت کنید."}</span>
             <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"}>ثبت آگهی</Link>
           </section>
         ) : (
@@ -371,6 +388,7 @@ export default function AccountListingsPage() {
               const ownerLabel = listing.listing_owner_type === "dealer"
                 ? (listing.seller_display_name || dealers.find((dealer) => dealer.id === Number(listing.dealer_id))?.dealer_name || "نمایشگاه")
                 : "شخصی";
+              const canStory = String(listing.status?.code || "").toLowerCase() === "active";
 
               return (
                 <article className={styles.card} key={listing.id}>
@@ -389,8 +407,26 @@ export default function AccountListingsPage() {
                     <div className={styles.meta}>{location}{listing.mileage_km ? ` · ${formatNumber(listing.mileage_km)} کیلومتر` : ""}</div>
                     <span className={styles.owner}>{ownerLabel}</span>
                     <div className={styles.actions}>
-                      <Link href={`/account/listings/${listing.id}`} className={styles.manage}>مدیریت</Link>
-                      <Link href={`/cars/${listing.id}`} className={styles.view}>نمایش</Link>
+                      {storyMode ? (
+                        <>
+                          {canStory ? (
+                            <Link
+                              href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
+                              className={styles.manage}
+                            >
+                              استوری کن
+                            </Link>
+                          ) : (
+                            <span className={styles.storyUnavailable}>برای استوری باید فعال باشد</span>
+                          )}
+                          <Link href={`/account/listings/${listing.id}`} className={styles.view}>مدیریت</Link>
+                        </>
+                      ) : (
+                        <>
+                          <Link href={`/account/listings/${listing.id}`} className={styles.manage}>مدیریت</Link>
+                          <Link href={`/cars/${listing.id}`} className={styles.view}>نمایش</Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 </article>

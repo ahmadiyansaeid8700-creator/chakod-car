@@ -1,0 +1,319 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  DEFAULT_HOME_LOCATION,
+  HOME_LOCATION_EVENT,
+  getHomeLocationScopes,
+  loadHomeLocation,
+  type HomeLocationSelection,
+} from "./home-location";
+import styles from "./HomeStoriesUnified.module.css";
+
+const API_BASE = "https://api.chakod.com";
+const STORY_DURATION_MS = 6500;
+const MAX_STORIES_PER_OWNER = 10;
+const MAX_OWNER_BUBBLES = 12;
+const LOCAL_STORY_ID_BASE = 1_000_000_000;
+
+type StoryItem = {
+  story_id: number;
+  listing_id: number;
+  title: string;
+  brand?: string;
+  model?: string;
+  year?: string | number | null;
+  price_toman?: string | number | null;
+  province?: string;
+  city?: string;
+  neighborhood?: string;
+  listing_owner_type?: "personal" | "dealer";
+  seller_display_name?: string;
+  cover_image?: { image_id: number; image_url: string } | null;
+  public_url: string;
+  media_type?: "image" | "video";
+  media_url?: string | null;
+  thumbnail_url?: string | null;
+  story_owner_key?: string | null;
+  owner_key?: string | null;
+  dealer_id?: number | null;
+  owner_id?: number | null;
+  owner_user_id?: number | null;
+  user_id?: number | null;
+  account_id?: number | null;
+  publisher_id?: number | null;
+};
+
+type StoriesResponse = { success?: boolean; data?: StoryItem[] };
+type StoryGroup = { key: string; label: string; items: StoryItem[] };
+
+function formatPrice(value: number | string | null | undefined) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
+  if (number >= 1_000_000_000) return `${(number / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد`;
+  if (number >= 1_000_000) return `${(number / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون`;
+  return `${number.toLocaleString("fa-IR")} تومان`;
+}
+
+function shortTitle(value: string, maxLength = 14) {
+  if (!value) return "چاکود";
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength)}…`;
+}
+
+function mediaUrl(value: string | null | undefined) {
+  if (!value) return "";
+  if (value.startsWith("http")) return value;
+  return `${API_BASE}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+function storyImage(item: StoryItem) {
+  return mediaUrl(item.thumbnail_url || item.cover_image?.image_url || item.media_url);
+}
+
+function storyMedia(item: StoryItem) {
+  return mediaUrl(item.media_url || item.cover_image?.image_url);
+}
+
+function storyLocation(item: StoryItem) {
+  return [item.city, item.neighborhood].filter(Boolean).join("، ") || "ایران";
+}
+
+function sellerName(item: StoryItem) {
+  return String(item.seller_display_name || "").trim();
+}
+
+function isGenericPersonal(value: string) {
+  return !value || /^(شخصی|فروشنده شخصی|کاربر چاکود|فروشنده)$/u.test(value);
+}
+
+function ownerKey(item: StoryItem) {
+  const explicit = String(item.story_owner_key || item.owner_key || "").trim();
+  if (explicit) return `owner:${explicit}`;
+
+  const numeric = [item.dealer_id, item.owner_id, item.owner_user_id, item.user_id, item.account_id, item.publisher_id]
+    .find((value) => Number.isSafeInteger(Number(value)) && Number(value) > 0);
+  if (numeric) return `${item.listing_owner_type || "owner"}:${Number(numeric)}`;
+
+  const seller = sellerName(item);
+  if (item.listing_owner_type === "dealer" && seller) return `dealer-name:${seller}`;
+  if (item.listing_owner_type === "personal" && !isGenericPersonal(seller)) return `personal-name:${seller}`;
+  return `story:${item.story_id}`;
+}
+
+function ownerLabel(item: StoryItem) {
+  const seller = sellerName(item);
+  if (item.listing_owner_type === "dealer") return seller || "نمایشگاه";
+  if (seller && !isGenericPersonal(seller)) return seller;
+  return "فروشنده شخصی";
+}
+
+function groupStories(items: StoryItem[]) {
+  const groups = new Map<string, StoryGroup>();
+  items.forEach((item) => {
+    const key = ownerKey(item);
+    const current = groups.get(key);
+    if (current) {
+      if (current.items.length < MAX_STORIES_PER_OWNER) current.items.push(item);
+      return;
+    }
+    groups.set(key, { key, label: ownerLabel(item), items: [item] });
+  });
+  return Array.from(groups.values()).slice(0, MAX_OWNER_BUBBLES);
+}
+
+async function readStories(response: Response) {
+  if (!response.ok) return [] as StoryItem[];
+  const payload = (await response.json().catch(() => null)) as StoriesResponse | null;
+  return payload?.success && Array.isArray(payload.data) ? payload.data : [];
+}
+
+export default function HomeStoriesUnified() {
+  const [loading, setLoading] = useState(true);
+  const [stories, setStories] = useState<StoryItem[]>([]);
+  const [location, setLocation] = useState<HomeLocationSelection>(DEFAULT_HOME_LOCATION);
+  const [groupIndex, setGroupIndex] = useState<number | null>(null);
+  const [itemIndex, setItemIndex] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  const groups = useMemo(() => groupStories(stories), [stories]);
+  const activeGroup = groupIndex === null ? null : groups[groupIndex] || null;
+  const activeStory = activeGroup && itemIndex !== null ? activeGroup.items[itemIndex] || null : null;
+
+  useEffect(() => {
+    setLocation(loadHomeLocation());
+    const change = (event: Event) => {
+      const custom = event as CustomEvent<HomeLocationSelection>;
+      setLocation(custom.detail || loadHomeLocation());
+      setGroupIndex(null);
+      setItemIndex(null);
+    };
+    window.addEventListener(HOME_LOCATION_EVENT, change);
+    return () => window.removeEventListener(HOME_LOCATION_EVENT, change);
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const scopes = getHomeLocationScopes(location);
+        const queries = location.mode === "all" || scopes.length === 0
+          ? [new URLSearchParams({ scope: "all", limit: "80" })]
+          : scopes.map((scope) => {
+              const params = new URLSearchParams({ province: scope.province, limit: "80" });
+              if (!scope.allCities) scope.cities.forEach((city) => params.append("cities[]", city));
+              return params;
+            });
+
+        const batches = await Promise.all(
+          queries.map(async (params) => {
+            const [remote, local] = await Promise.all([
+              fetch(`${API_BASE}/api/home-stories.php?${params.toString()}`, { method: "GET", cache: "no-store" }).then(readStories).catch(() => [] as StoryItem[]),
+              fetch(`/api/stories/public?${params.toString()}`, { method: "GET", cache: "no-store" }).then(readStories).catch(() => [] as StoryItem[]),
+            ]);
+            return [...local, ...remote];
+          }),
+        );
+
+        if (!ignore) {
+          const merged = new Map<number, StoryItem>();
+          batches.flat().forEach((item) => merged.set(item.story_id, item));
+          setStories(Array.from(merged.values()));
+        }
+      } catch {
+        if (!ignore) setStories([]);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    void load();
+    return () => { ignore = true; };
+  }, [location]);
+
+  const track = useCallback((item: StoryItem) => {
+    if (item.story_id >= LOCAL_STORY_ID_BASE) return;
+    try {
+      const payload = JSON.stringify({ story_id: item.story_id, event: "click" });
+      if ("sendBeacon" in navigator) {
+        navigator.sendBeacon(`${API_BASE}/api/story-track.php`, new Blob([payload], { type: "application/json" }));
+        return;
+      }
+      fetch(`${API_BASE}/api/story-track.php`, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true }).catch(() => undefined);
+    } catch {
+      // آمار نباید نمایش استوری را مختل کند.
+    }
+  }, []);
+
+  const close = useCallback(() => { setGroupIndex(null); setItemIndex(null); }, []);
+
+  function open(index: number) {
+    const group = groups[index];
+    if (!group?.items[0]) return;
+    setGroupIndex(index);
+    setItemIndex(0);
+    track(group.items[0]);
+  }
+
+  const previous = useCallback(() => {
+    if (!activeGroup || itemIndex === null || itemIndex === 0) return;
+    const next = itemIndex - 1;
+    setItemIndex(next);
+    track(activeGroup.items[next]);
+  }, [activeGroup, itemIndex, track]);
+
+  const next = useCallback(() => {
+    if (!activeGroup || itemIndex === null) return;
+    const nextIndex = itemIndex + 1;
+    if (nextIndex >= activeGroup.items.length) { close(); return; }
+    setItemIndex(nextIndex);
+    track(activeGroup.items[nextIndex]);
+  }, [activeGroup, itemIndex, close, track]);
+
+  useEffect(() => {
+    if (!activeStory) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+      if (event.key === "ArrowLeft") next();
+      if (event.key === "ArrowRight") previous();
+    };
+    window.addEventListener("keydown", key);
+    return () => { document.body.style.overflow = overflow; window.removeEventListener("keydown", key); };
+  }, [activeStory, close, next, previous]);
+
+  useEffect(() => {
+    if (!activeStory || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setTimeout(next, STORY_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeStory, itemIndex, next]);
+
+  function touchStart(event: React.TouchEvent<HTMLDivElement>) {
+    touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+  }
+
+  function touchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    const start = touchStartX.current;
+    const end = event.changedTouches[0]?.clientX;
+    touchStartX.current = null;
+    if (start === null || end === undefined || Math.abs(end - start) < 48) return;
+    if (end - start > 0) previous(); else next();
+  }
+
+  return (
+    <section className={styles.root} dir="rtl" aria-label="استوری‌های چاکود">
+      <div className={styles.scroller}>
+        <a className={styles.item} href="/account/stories" aria-label="انتخاب آگهی برای استوری شما">
+          <span className={`${styles.ring} ${styles.ownRing}`}>
+            <span className={`${styles.avatar} ${styles.ownAvatar}`}><img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" /></span>
+          </span>
+          <strong>استوری شما</strong>
+        </a>
+
+        {loading ? [1,2,3,4,5].map((value) => <div className={styles.skeleton} key={value} aria-hidden="true"><div /><span /></div>) : groups.map((group, index) => {
+          const first = group.items[0];
+          const image = first ? storyImage(first) : "";
+          return (
+            <button type="button" className={styles.item} key={group.key} onClick={() => open(index)} aria-label={`بازکردن ${group.items.length.toLocaleString("fa-IR")} استوری از ${group.label}`}>
+              <span className={styles.ring}>
+                <span className={styles.avatar}>{image ? <img src={image} alt="" loading="lazy" decoding="async" /> : <b>چ</b>}</span>
+                {group.items.length > 1 ? <span className={styles.count}>{group.items.length.toLocaleString("fa-IR")}</span> : null}
+              </span>
+              <strong>{shortTitle(group.label)}</strong>
+            </button>
+          );
+        })}
+      </div>
+
+      {activeStory && activeGroup && itemIndex !== null ? (
+        <div className={styles.viewer} role="dialog" aria-modal="true" aria-label={`استوری‌های ${activeGroup.label}`} onTouchStart={touchStart} onTouchEnd={touchEnd}>
+          <button type="button" className={styles.backdrop} onClick={close} aria-label="بستن استوری" />
+          <article className={styles.viewerCard}>
+            <div className={styles.progress} aria-hidden="true">
+              {activeGroup.items.map((story, index) => <span key={story.story_id}><i key={`${activeStory.story_id}-${index}`} className={index < itemIndex ? styles.done : index === itemIndex ? styles.active : ""} /></span>)}
+            </div>
+            <div className={styles.top}>
+              <div className={styles.identity}>
+                <span>{storyImage(activeStory) ? <img src={storyImage(activeStory)} alt="" /> : "چ"}</span>
+                <div><strong>{activeGroup.label}</strong><small>{storyLocation(activeStory)} · {Number(itemIndex + 1).toLocaleString("fa-IR")} از {Number(activeGroup.items.length).toLocaleString("fa-IR")}</small></div>
+              </div>
+              <button type="button" className={styles.close} onClick={close} aria-label="بستن">×</button>
+            </div>
+            <div className={styles.media}>
+              {activeStory.media_type === "video" && storyMedia(activeStory) ? <video key={activeStory.story_id} src={storyMedia(activeStory)} poster={storyImage(activeStory)} autoPlay muted playsInline preload="metadata" /> : storyMedia(activeStory) ? <img key={activeStory.story_id} src={storyMedia(activeStory)} alt={activeStory.title} /> : <div className={styles.fallback}>چاکود</div>}
+              <div className={styles.shade} aria-hidden="true" />
+              <div className={styles.details}>
+                <span>{formatPrice(activeStory.price_toman)}</span>
+                <h3>{activeStory.title}</h3>
+                <p>{[activeStory.brand, activeStory.model, activeStory.year].filter(Boolean).join(" · ")}</p>
+                <a href={activeStory.public_url || `/cars/${encodeURIComponent(activeStory.listing_id)}`}>مشاهده آگهی کامل</a>
+              </div>
+            </div>
+            {activeGroup.items.length > 1 ? <><button type="button" className={`${styles.nav} ${styles.prev}`} onClick={previous} disabled={itemIndex === 0} aria-label="استوری قبلی همین حساب">‹</button><button type="button" className={`${styles.nav} ${styles.next}`} onClick={next} aria-label="استوری بعدی همین حساب">›</button></> : null}
+          </article>
+        </div>
+      ) : null}
+    </section>
+  );
+}

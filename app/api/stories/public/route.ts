@@ -1,14 +1,35 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
-import { storyPromotions } from "../../../../db/story-schema";
+import { commerceOrders } from "../../../../db/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function clean(value: string | null, max = 120) {
+const STORY_PRODUCT_CODE = "listing_story";
+const LOCAL_STORY_ID_BASE = 1_000_000_000;
+
+type JsonObject = Record<string, unknown>;
+
+function clean(value: unknown, max = 120) {
   return String(value || "").trim().slice(0, max);
+}
+
+function numberValue(value: unknown) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) && number > 0 ? Math.round(number) : 0;
+}
+
+function metadata(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as JsonObject)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -22,44 +43,62 @@ export async function GET(request: NextRequest) {
   try {
     const rows = await getDb()
       .select()
-      .from(storyPromotions)
-      .where(and(eq(storyPromotions.status, "active"), gt(storyPromotions.expiresAt, now)))
-      .orderBy(desc(storyPromotions.createdAt))
-      .limit(80);
+      .from(commerceOrders)
+      .where(
+        and(
+          eq(commerceOrders.orderType, "promotion"),
+          eq(commerceOrders.productCode, STORY_PRODUCT_CODE),
+          eq(commerceOrders.status, "paid"),
+        ),
+      )
+      .orderBy(desc(commerceOrders.id))
+      .limit(120);
 
-    const filtered = rows.filter((row) => {
-      if (province && row.province !== province) return false;
-      if (requestedCities.length > 0 && row.city && !requestedCities.includes(row.city)) return false;
-      return true;
-    });
+    const stories = rows
+      .map((row) => ({ row, data: metadata(row.metadataJson) }))
+      .filter(({ data }) => clean(data.expires_at, 60) > now)
+      .filter(({ data }) => {
+        const storyProvince = clean(data.province);
+        const storyCity = clean(data.city);
+        if (province && storyProvince !== province) return false;
+        if (requestedCities.length > 0 && storyCity && !requestedCities.includes(storyCity)) return false;
+        return true;
+      })
+      .slice(0, 80);
 
     return Response.json(
       {
         success: true,
-        count: filtered.length,
-        data: filtered.map((row) => ({
-          story_id: 1_000_000_000 + row.id,
-          listing_id: row.listingId,
-          title: row.title,
-          brand: row.brand,
-          model: row.model,
-          year: row.year,
-          price_toman: row.priceToman,
-          province: row.province,
-          city: row.city,
-          neighborhood: row.neighborhood,
-          listing_owner_type: row.listingOwnerType === "dealer" ? "dealer" : "personal",
-          seller_display_name: row.sellerDisplayName,
-          dealer_id: row.dealerId,
-          story_owner_key: `staging:${row.ownerKey}`,
-          cover_image: row.coverImageUrl
-            ? { image_id: 1_000_000_000 + row.id, image_url: row.coverImageUrl }
-            : null,
-          media_type: "image",
-          media_url: row.coverImageUrl || null,
-          thumbnail_url: row.coverImageUrl || null,
-          public_url: row.publicUrl,
-        })),
+        count: stories.length,
+        data: stories.map(({ row, data }) => {
+          const storyId = LOCAL_STORY_ID_BASE + row.id;
+          const listingId = numberValue(data.listing_id);
+          const dealerId = numberValue(data.dealer_id) || null;
+          const ownerType = clean(data.listing_owner_type) === "dealer" ? "dealer" : "personal";
+          const coverImageUrl = clean(data.cover_image_url, 1000);
+
+          return {
+            story_id: storyId,
+            listing_id: listingId,
+            title: clean(data.title, 180) || "آگهی خودرو",
+            brand: clean(data.brand, 100),
+            model: clean(data.model, 100),
+            year: clean(data.year, 20),
+            price_toman: numberValue(data.price_toman),
+            province: clean(data.province, 100),
+            city: clean(data.city, 100),
+            neighborhood: clean(data.neighborhood, 120),
+            listing_owner_type: ownerType,
+            seller_display_name: clean(data.seller_display_name, 160),
+            dealer_id: dealerId,
+            story_owner_key: ownerType === "dealer" && dealerId ? null : `staging:${row.ownerKey}`,
+            cover_image: coverImageUrl ? { image_id: storyId, image_url: coverImageUrl } : null,
+            media_type: "image",
+            media_url: coverImageUrl || null,
+            thumbnail_url: coverImageUrl || null,
+            public_url: clean(data.public_url, 500) || `/cars/${listingId}`,
+          };
+        }),
       },
       { headers: { "Cache-Control": "no-store" } },
     );

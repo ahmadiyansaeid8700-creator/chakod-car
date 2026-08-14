@@ -72,6 +72,14 @@ function shortTitle(listing: Listing) {
   return listing.title || [listing.brand, listing.model, listing.year].filter(Boolean).join(" ") || "آگهی فعال";
 }
 
+function todayLabel() {
+  try {
+    return new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" }).format(new Date());
+  } catch {
+    return "امروز";
+  }
+}
+
 function loadCanvasImage(src?: string) {
   return new Promise<HTMLImageElement | null>((resolve) => {
     if (!src) return resolve(null);
@@ -92,6 +100,31 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
   ctx.arcTo(x, y + height, x, y, r);
   ctx.arcTo(x, y, x + width, y, r);
   ctx.closePath();
+}
+
+function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement | null, x: number, y: number, width: number, height: number, radius: number) {
+  roundedRect(ctx, x, y, width, height, radius);
+  ctx.save();
+  ctx.clip();
+  if (image) {
+    const scale = Math.max(width / image.width, height / image.height);
+    const renderedWidth = image.width * scale;
+    const renderedHeight = image.height * scale;
+    ctx.drawImage(
+      image,
+      x + (width - renderedWidth) / 2,
+      y + (height - renderedHeight) / 2,
+      renderedWidth,
+      renderedHeight,
+    );
+  } else {
+    const placeholder = ctx.createLinearGradient(x, y, x + width, y + height);
+    placeholder.addColorStop(0, "#ede9fe");
+    placeholder.addColorStop(1, "#c4b5fd");
+    ctx.fillStyle = placeholder;
+    ctx.fillRect(x, y, width, height);
+  }
+  ctx.restore();
 }
 
 export default function ShowcasePage() {
@@ -155,13 +188,19 @@ export default function ShowcasePage() {
     return Array.from(items.values());
   }, [activities, memberships]);
 
-  const headline = activeTotal >= 6
-    ? "این روزها پرقدرت روی ویترینم"
-    : activeTotal >= 2
-      ? "این انتخاب‌ها الآن روی ویترین من‌اند"
-      : businesses.length > 0
-        ? "اعتبار حرفه‌ای من در چاکود"
-        : "ویترین من در چاکود";
+  const heroMetric = activeTotal > 0 ? activeTotal : businesses.length;
+  const heroMetricLabel = activeTotal > 0 ? "آگهی فعال در ویترین من" : "هویت حرفه‌ای متصل";
+  const headline = listings.length >= 3
+    ? "این سه انتخاب، ویترین این روزهای من‌اند"
+    : activeTotal >= 6
+      ? "ویترین من این روزها حسابی پر شده"
+      : listings.length > 0
+        ? "تازه‌های ویترین من"
+        : businesses.length > 0
+          ? "هویت حرفه‌ای من، یک‌جا"
+          : "ویترین من در چاکود";
+  const firstListing = listings[0];
+  const secondaryListings = listings.slice(1, 3);
 
   async function createShareFile() {
     const canvas = document.createElement("canvas");
@@ -171,118 +210,127 @@ export default function ShowcasePage() {
     if (!ctx) return null;
 
     const background = ctx.createLinearGradient(1080, 0, 0, 1920);
-    background.addColorStop(0, "#21082f");
-    background.addColorStop(0.48, "#4c1d95");
-    background.addColorStop(0.8, "#7c3aed");
-    background.addColorStop(1, "#9b6df1");
+    background.addColorStop(0, "#170523");
+    background.addColorStop(0.44, "#3b0f67");
+    background.addColorStop(0.78, "#6d28d9");
+    background.addColorStop(1, "#8b5cf6");
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    ctx.globalAlpha = 0.11;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath(); ctx.arc(120, 1720, 360, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(1000, 120, 290, 0, Math.PI * 2); ctx.fill();
+    const glow = ctx.createRadialGradient(920, 160, 10, 920, 160, 420);
+    glow.addColorStop(0, "rgba(216,180,254,.34)");
+    glow.addColorStop(1, "rgba(216,180,254,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(500, 0, 580, 580);
+
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    for (let index = 0; index < 5; index += 1) {
+      ctx.beginPath();
+      ctx.arc(70, 1740, 180 + index * 46, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1;
 
     ctx.direction = "rtl";
     ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.font = "800 27px sans-serif";
+    ctx.fillText(`ویترین من · ${todayLabel()}`, 950, 120);
+
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 42px sans-serif";
-    ctx.fillText("ویترین من · چاکود", 940, 150);
-    ctx.font = "900 70px sans-serif";
-    ctx.fillText(headline, 940, 300, 860);
+    ctx.font = "900 126px sans-serif";
+    ctx.fillText(formatNumber(heroMetric), 950, 285);
+    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.font = "800 29px sans-serif";
+    ctx.fillText(heroMetricLabel, 950, 340);
 
-    ctx.fillStyle = "rgba(255,255,255,.82)";
-    ctx.font = "700 30px sans-serif";
-    ctx.fillText("ساخته‌شده از داده‌های واقعی حساب من", 940, 360);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 61px sans-serif";
+    ctx.fillText(headline, 950, 455, 870);
 
-    const stats = [
-      [formatNumber(activeTotal), "آگهی فعال"],
-      [formatNumber(businesses.length), "کسب‌وکار متصل"],
-      [formatNumber(listings.length), "انتخاب تازه"],
-    ];
-    stats.forEach(([value, label], index) => {
-      const x = 80 + index * 310;
-      roundedRect(ctx, x, 440, 285, 185, 34);
-      ctx.fillStyle = "rgba(255,255,255,.13)";
-      ctx.fill();
-      ctx.textAlign = "center";
+    const images = await Promise.all(listings.map((item) => loadCanvasImage(item.cover_image?.image_url)));
+
+    if (firstListing) {
+      drawCoverImage(ctx, images[0], 80, 535, 920, 650, 54);
+      const overlay = ctx.createLinearGradient(0, 800, 0, 1185);
+      overlay.addColorStop(0, "rgba(14,4,25,0)");
+      overlay.addColorStop(1, "rgba(14,4,25,.88)");
+      roundedRect(ctx, 80, 535, 920, 650, 54);
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = overlay;
+      ctx.fillRect(80, 535, 920, 650);
+      ctx.restore();
+
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 55px sans-serif";
-      ctx.fillText(value, x + 142, 520);
-      ctx.fillStyle = "rgba(255,255,255,.76)";
-      ctx.font = "800 25px sans-serif";
-      ctx.fillText(label, x + 142, 570);
-    });
+      ctx.font = "900 45px sans-serif";
+      ctx.fillText(shortTitle(firstListing), 925, 1072, 760);
+      ctx.fillStyle = "#ddd6fe";
+      ctx.font = "900 31px sans-serif";
+      ctx.fillText(formatPrice(firstListing.price_toman), 925, 1125, 760);
+    }
 
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 36px sans-serif";
-    ctx.fillText(listings.length ? "سه انتخاب تازه من" : "هویت حرفه‌ای من", 940, 720);
-
-    if (listings.length) {
-      const images = await Promise.all(listings.map((item) => loadCanvasImage(item.cover_image?.image_url)));
-      for (let index = 0; index < listings.length; index += 1) {
-        const listing = listings[index];
-        const y = 770 + index * 300;
-        roundedRect(ctx, 80, y, 920, 250, 34);
-        ctx.fillStyle = "rgba(255,255,255,.94)";
-        ctx.fill();
-
-        const image = images[index];
-        roundedRect(ctx, 710, y + 18, 270, 214, 26);
+    if (secondaryListings.length > 0) {
+      const cardWidth = secondaryListings.length === 1 ? 920 : 444;
+      secondaryListings.forEach((listing, index) => {
+        const x = secondaryListings.length === 1 ? 80 : 80 + index * 476;
+        drawCoverImage(ctx, images[index + 1], x, 1220, cardWidth, 320, 42);
+        roundedRect(ctx, x, 1220, cardWidth, 320, 42);
         ctx.save();
         ctx.clip();
-        if (image) {
-          const scale = Math.max(270 / image.width, 214 / image.height);
-          const width = image.width * scale;
-          const height = image.height * scale;
-          ctx.drawImage(image, 710 + (270 - width) / 2, y + 18 + (214 - height) / 2, width, height);
-        } else {
-          ctx.fillStyle = "#eee6fb";
-          ctx.fillRect(710, y + 18, 270, 214);
-        }
+        const overlay = ctx.createLinearGradient(0, 1360, 0, 1540);
+        overlay.addColorStop(0, "rgba(17,5,31,0)");
+        overlay.addColorStop(1, "rgba(17,5,31,.84)");
+        ctx.fillStyle = overlay;
+        ctx.fillRect(x, 1220, cardWidth, 320);
         ctx.restore();
-
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#24122e";
-        ctx.font = "900 31px sans-serif";
-        ctx.fillText(shortTitle(listing), 665, y + 82, 530);
-        ctx.fillStyle = "#6d28d9";
+        ctx.fillStyle = "#ffffff";
         ctx.font = "900 27px sans-serif";
-        ctx.fillText(formatPrice(listing.price_toman), 665, y + 145, 530);
-        const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
-        if (vehicle) {
-          ctx.fillStyle = "#776982";
-          ctx.font = "700 23px sans-serif";
-          ctx.fillText(vehicle, 665, y + 195, 530);
-        }
-      }
-    } else {
+        ctx.textAlign = "right";
+        ctx.fillText(shortTitle(listing), x + cardWidth - 28, 1468, cardWidth - 56);
+        ctx.fillStyle = "#ddd6fe";
+        ctx.font = "800 22px sans-serif";
+        ctx.fillText(formatPrice(listing.price_toman), x + cardWidth - 28, 1510, cardWidth - 56);
+      });
+    } else if (!firstListing && businesses.length > 0) {
       businesses.slice(0, 3).forEach((name, index) => {
-        const y = 785 + index * 155;
-        roundedRect(ctx, 80, y, 920, 120, 30);
-        ctx.fillStyle = "rgba(255,255,255,.94)";
+        const y = 640 + index * 170;
+        roundedRect(ctx, 80, y, 920, 132, 38);
+        ctx.fillStyle = "rgba(255,255,255,.12)";
         ctx.fill();
-        ctx.fillStyle = "#35134d";
-        ctx.font = "900 29px sans-serif";
-        ctx.fillText(name, 940, y + 72, 820);
+        ctx.strokeStyle = "rgba(255,255,255,.18)";
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 30px sans-serif";
+        ctx.fillText(name, 940, y + 80, 820);
       });
     }
 
-    roundedRect(ctx, 250, 1650, 580, 100, 28);
-    ctx.fillStyle = "rgba(255,255,255,.11)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,.20)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    ctx.font = "900 30px sans-serif";
-    ctx.fillText("✦  امضای چاکود", 540, 1703);
-    ctx.fillStyle = "rgba(255,255,255,.58)";
-    ctx.font = "700 20px sans-serif";
-    ctx.fillText("CHAKOD VERIFIED SHOWCASE", 540, 1733);
+    const statsY = 1600;
+    const miniStats = [
+      [formatNumber(businesses.length), "کسب‌وکار"],
+      [formatNumber(listings.length), "انتخاب تازه"],
+    ];
+    miniStats.forEach(([value, label], index) => {
+      const x = 80 + index * 250;
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 38px sans-serif";
+      ctx.fillText(value, x + 190, statsY + 42);
+      ctx.fillStyle = "rgba(255,255,255,.58)";
+      ctx.font = "800 20px sans-serif";
+      ctx.fillText(label, x + 190, statsY + 78);
+    });
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,255,255,.66)";
+    ctx.font = "900 26px sans-serif";
+    ctx.fillText("CHAKOD", 80, 1815);
+    ctx.fillStyle = "rgba(255,255,255,.38)";
+    ctx.font = "700 19px sans-serif";
+    ctx.fillText(window.location.host, 80, 1852);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 0.96));
     return blob ? new File([blob], "chakod-showcase.png", { type: "image/png" }) : null;
@@ -328,52 +376,66 @@ export default function ShowcasePage() {
             <div className={styles.state}><strong>{error}</strong></div>
           ) : (
             <>
-              <div className={styles.brandRow}>
+              <div className={styles.topline}>
+                <span>ویترین من · {todayLabel()}</span>
                 <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
-                <span>ویترین من</span>
               </div>
 
-              <div className={styles.intro}>
-                <span>اعتبار من در چاکود</span>
+              <section className={styles.hero}>
+                <div className={styles.metricBlock}>
+                  <strong>{formatNumber(heroMetric)}</strong>
+                  <span>{heroMetricLabel}</span>
+                </div>
                 <h1>{headline}</h1>
-                <p>این ویترین از فعالیت واقعی من ساخته شده.</p>
-              </div>
+              </section>
 
-              <div className={styles.stats}>
-                <article><strong>{formatNumber(activeTotal)}</strong><span>آگهی فعال</span></article>
-                <article><strong>{formatNumber(businesses.length)}</strong><span>کسب‌وکار</span></article>
-                <article><strong>{formatNumber(listings.length)}</strong><span>انتخاب تازه</span></article>
-              </div>
-
-              <div className={styles.featured}>
-                <span className={styles.featuredLabel}>{listings.length ? "سه انتخاب تازه من" : "هویت حرفه‌ای من"}</span>
-                {listings.length ? (
-                  <div className={styles.listings}>
-                    {listings.map((listing) => (
-                      <article className={styles.listing} key={listing.id}>
-                        <div className={styles.imageWrap}>
-                          {listing.cover_image?.image_url
-                            ? <img src={listing.cover_image.image_url} alt={shortTitle(listing)} loading="eager" decoding="async" />
-                            : <span>چاکود</span>}
-                        </div>
-                        <div className={styles.listingCopy}>
-                          <strong>{shortTitle(listing)}</strong>
-                          <b>{formatPrice(listing.price_toman)}</b>
-                          <small>{[listing.brand, listing.model, listing.year].filter(Boolean).join(" · ")}</small>
-                        </div>
-                      </article>
-                    ))}
+              {firstListing ? (
+                <section className={styles.coverStory}>
+                  <div className={styles.coverImage}>
+                    {firstListing.cover_image?.image_url
+                      ? <img src={firstListing.cover_image.image_url} alt={shortTitle(firstListing)} loading="eager" decoding="async" />
+                      : <span>CHAKOD</span>}
                   </div>
-                ) : (
-                  <div className={styles.businesses}>
-                    {businesses.slice(0, 3).map((name) => <strong key={name}>{name}</strong>)}
+                  <div className={styles.coverCopy}>
+                    <small>انتخاب اول ویترین</small>
+                    <strong>{shortTitle(firstListing)}</strong>
+                    <b>{formatPrice(firstListing.price_toman)}</b>
                   </div>
-                )}
-              </div>
+                </section>
+              ) : null}
 
-              <div className={styles.footerMark} aria-label="امضای چاکود">
-                <strong>امضای چاکود</strong>
-                <span>CHAKOD VERIFIED SHOWCASE</span>
+              {secondaryListings.length > 0 ? (
+                <div className={`${styles.secondaryGrid} ${secondaryListings.length === 1 ? styles.singleSecondary : ""}`}>
+                  {secondaryListings.map((listing, index) => (
+                    <article className={styles.secondaryCard} key={listing.id}>
+                      <div className={styles.secondaryImage}>
+                        {listing.cover_image?.image_url
+                          ? <img src={listing.cover_image.image_url} alt={shortTitle(listing)} loading="eager" decoding="async" />
+                          : <span>{formatNumber(index + 2)}</span>}
+                      </div>
+                      <div className={styles.secondaryCopy}>
+                        <strong>{shortTitle(listing)}</strong>
+                        <b>{formatPrice(listing.price_toman)}</b>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : !firstListing && businesses.length > 0 ? (
+                <div className={styles.businessStack}>
+                  {businesses.slice(0, 3).map((name) => <strong key={name}>{name}</strong>)}
+                </div>
+              ) : null}
+
+              <div className={styles.bottomMeta}>
+                <div className={styles.miniMetric}>
+                  <strong>{formatNumber(businesses.length)}</strong>
+                  <span>کسب‌وکار</span>
+                </div>
+                <div className={styles.miniMetric}>
+                  <strong>{formatNumber(listings.length)}</strong>
+                  <span>انتخاب تازه</span>
+                </div>
+                <div className={styles.chakodMark} aria-label="چاکود">CHAKOD</div>
               </div>
             </>
           )}

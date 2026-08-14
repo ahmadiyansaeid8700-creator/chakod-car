@@ -1,8 +1,8 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
-import { storyPromotions } from "../../../../db/story-schema";
+import { commerceOrders } from "../../../../db/schema";
 import {
   authApiUrl,
   jsonResponse,
@@ -10,7 +10,10 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
-import { getFinanceOwnerKey } from "../../../../lib/finance-core";
+import {
+  createPublicReference,
+  getFinanceOwnerKey,
+} from "../../../../lib/finance-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +22,7 @@ const STORY_TRIAL_PRICE_TOMAN = 100_000;
 const STORY_TEST_COUPON = "STORY100";
 const STORY_DURATION_HOURS = 24;
 const MAX_ACTIVE_STORIES_PER_OWNER = 10;
+const STORY_PRODUCT_CODE = "listing_story";
 
 type JsonObject = Record<string, unknown>;
 
@@ -62,6 +66,21 @@ function statusCode(listing: ManagedListing) {
 function numericValue(value: unknown) {
   const number = Number(value || 0);
   return Number.isFinite(number) && number > 0 ? Math.round(number) : 0;
+}
+
+function parseMetadata(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as JsonObject)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function isLiveStoryMetadata(metadata: JsonObject, nowIso: string) {
+  return cleanText(metadata.expires_at, 60) > nowIso;
 }
 
 function isTestCouponHost(hostname: string) {
@@ -212,60 +231,59 @@ export async function POST(request: NextRequest) {
     const nowIso = now.toISOString();
     const expiresAt = new Date(now.getTime() + STORY_DURATION_HOURS * 60 * 60 * 1000).toISOString();
 
-    const [existing] = await db
+    const storyOrders = await db
       .select()
-      .from(storyPromotions)
+      .from(commerceOrders)
       .where(
         and(
-          eq(storyPromotions.ownerKey, ownerKey),
-          eq(storyPromotions.listingId, listingId),
-          eq(storyPromotions.status, "active"),
-          gt(storyPromotions.expiresAt, nowIso),
+          eq(commerceOrders.ownerKey, ownerKey),
+          eq(commerceOrders.orderType, "promotion"),
+          eq(commerceOrders.productCode, STORY_PRODUCT_CODE),
+          eq(commerceOrders.status, "paid"),
         ),
       )
-      .orderBy(desc(storyPromotions.id))
-      .limit(1);
+      .orderBy(desc(commerceOrders.id))
+      .limit(50);
 
-    const snapshot = {
+    const liveOrders = storyOrders.filter((order) => isLiveStoryMetadata(parseMetadata(order.metadataJson), nowIso));
+    const existing = liveOrders.find((order) => Number(parseMetadata(order.metadataJson).listing_id || 0) === listingId);
+
+    const metadata = {
+      source: "story_checkout",
+      service_key: STORY_PRODUCT_CODE,
+      listing_id: listing.id,
       title: listing.title,
       brand: listing.brand,
       model: listing.model,
       year: listing.year,
-      priceToman: listing.price_toman,
+      price_toman: listing.price_toman,
       province: listing.province,
       city: listing.city,
       neighborhood: listing.neighborhood,
-      listingOwnerType: listing.listing_owner_type,
-      sellerDisplayName: listing.seller_display_name,
-      dealerId: listing.dealer_id,
-      coverImageUrl: listing.cover_image_url,
-      publicUrl: listing.public_url,
-      couponCode: quote.coupon_code,
-      originalAmountToman: quote.original_amount_toman,
-      discountAmountToman: quote.discount_amount_toman,
-      finalAmountToman: quote.final_amount_toman,
-      status: "active",
-      startsAt: nowIso,
-      expiresAt,
-      updatedAt: nowIso,
+      listing_owner_type: listing.listing_owner_type,
+      seller_display_name: listing.seller_display_name,
+      dealer_id: listing.dealer_id,
+      cover_image_url: listing.cover_image_url,
+      public_url: listing.public_url,
+      coupon_code: quote.coupon_code,
+      starts_at: nowIso,
+      expires_at: expiresAt,
     };
 
     let storyId = existing?.id || 0;
     if (existing) {
-      await db.update(storyPromotions).set(snapshot).where(eq(storyPromotions.id, existing.id));
+      await db
+        .update(commerceOrders)
+        .set({
+          amountToman: quote.original_amount_toman,
+          discountToman: quote.discount_amount_toman,
+          finalAmountToman: quote.final_amount_toman,
+          metadataJson: JSON.stringify(metadata),
+          updatedAt: nowIso,
+        })
+        .where(eq(commerceOrders.id, existing.id));
     } else {
-      const activeStories = await db
-        .select({ id: storyPromotions.id })
-        .from(storyPromotions)
-        .where(
-          and(
-            eq(storyPromotions.ownerKey, ownerKey),
-            eq(storyPromotions.status, "active"),
-            gt(storyPromotions.expiresAt, nowIso),
-          ),
-        );
-
-      if (activeStories.length >= MAX_ACTIVE_STORIES_PER_OWNER) {
+      if (liveOrders.length >= MAX_ACTIVE_STORIES_PER_OWNER) {
         return jsonResponse(
           { success: false, message: "هر حساب هم‌زمان حداکثر ۱۰ استوری فعال می‌تواند داشته باشد." },
           409,
@@ -273,9 +291,22 @@ export async function POST(request: NextRequest) {
       }
 
       const [created] = await db
-        .insert(storyPromotions)
-        .values({ ownerKey, listingId, ...snapshot, createdAt: nowIso })
-        .returning({ id: storyPromotions.id });
+        .insert(commerceOrders)
+        .values({
+          orderNo: createPublicReference("STR"),
+          idempotencyKey: createPublicReference("STI"),
+          ownerKey,
+          orderType: "promotion",
+          productCode: STORY_PRODUCT_CODE,
+          amountToman: quote.original_amount_toman,
+          discountToman: quote.discount_amount_toman,
+          finalAmountToman: quote.final_amount_toman,
+          currency: "TOMAN",
+          status: "paid",
+          metadataJson: JSON.stringify(metadata),
+          updatedAt: nowIso,
+        })
+        .returning({ id: commerceOrders.id });
       storyId = created?.id || 0;
     }
 

@@ -1,0 +1,392 @@
+.page {
+  min-height: 100vh;
+  color: #23112f;
+  background:
+    radial-gradient(circle at 85% 4%, rgba(168, 85, 247, 0.14), transparent 30%),
+    radial-gradient(circle at 10% 30%, rgba(124, 58, 237, 0.08), transparent 28%),
+    #fbf9ff;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 40px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.logo img {
+  display: block;
+  width: 108px;
+  height: auto;
+}
+
+.back {
+  padding: 10px 14px;
+  border: 1px solid #e7ddf2;
+  border-radius: 14px;
+  color: #5b21b6;
+  background: rgba(255,255,255,.82);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 42px;
+  border: 1px solid rgba(124, 58, 237, 0.16);
+  border-radius: 32px;
+  background: linear-gradient(135deg, #25073d 0%, #5b21b6 55%, #8b5cf6 100%);
+  box-shadow: 0 28px 70px rgba(76, 29, 149, 0.18);
+  color: white;
+}
+
+.heroGlow {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  left: -60px;
+  bottom: -150px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  filter: blur(6px);
+}
+
+.eyebrow,
+.signature {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.eyebrow {
+  padding: 8px 12px;
+  background: rgba(255,255,255,.14);
+  font-size: 12px;
+}
+
+.hero h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 690px;
+  margin: 18px 0 12px;
+  font-size: clamp(30px, 5vw, 54px);
+  line-height: 1.25;
+}
+
+.hero p {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255,255,255,.82);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 2;
+}
+
+.signature {
+  margin-top: 24px;
+  padding: 9px 13px;
+  color: #33104c;
+  background: white;
+  font-size: 12px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.stats article {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+  border: 1px solid #eadff5;
+  border-radius: 24px;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 14px 36px rgba(73, 42, 99, .06);
+}
+
+.stats strong {
+  color: #5b21b6;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.stats span {
+  margin-top: 8px;
+  color: #7f7189;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.businesses,
+.latest,
+.shareTeaser {
+  margin-top: 18px;
+  padding: 24px;
+  border: 1px solid #eadff5;
+  border-radius: 28px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 14px 38px rgba(76, 29, 149, .06);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sectionHeading span,
+.shareTeaser > span {
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.sectionHeading h2,
+.shareTeaser h2 {
+  margin: 5px 0 0;
+  font-size: 21px;
+  line-height: 1.5;
+}
+
+.sectionHeading > a {
+  color: #5b21b6;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.businessRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.businessRow span {
+  padding: 10px 13px;
+  border: 1px solid #e6d7f7;
+  border-radius: 999px;
+  color: #4c1d95;
+  background: #faf7ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.listingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.listingCard {
+  overflow: hidden;
+  border: 1px solid #eadff5;
+  border-radius: 22px;
+  background: white;
+}
+
+.imageWrap {
+  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #9b8ba8;
+  background: linear-gradient(135deg, #f7f1ff, #efe5fb);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.imageWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listingBody {
+  display: flex;
+  min-height: 130px;
+  flex-direction: column;
+  gap: 7px;
+  padding: 15px;
+}
+
+.listingBody strong {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.listingBody small {
+  color: #897a92;
+  font-size: 11px;
+}
+
+.listingBody b {
+  margin-top: auto;
+  color: #5b21b6;
+  font-size: 13px;
+}
+
+.empty,
+.state {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  padding: 30px;
+  text-align: center;
+}
+
+.empty {
+  border: 1px dashed #d9c5ee;
+  border-radius: 20px;
+  color: #75667e;
+  background: #fbf9fe;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.state {
+  margin-top: 18px;
+  border: 1px solid #eadff5;
+  border-radius: 28px;
+  background: rgba(255,255,255,.88);
+  color: #675670;
+}
+
+.state a {
+  margin-top: 10px;
+  color: #6d28d9;
+  font-weight: 900;
+}
+
+.loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e8ddf4;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+.shareTeaser {
+  background: linear-gradient(135deg, #fff 0%, #f7f0ff 100%);
+}
+
+.shareTeaser p {
+  max-width: 700px;
+  margin: 8px 0 0;
+  color: #7a6b83;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.9;
+}
+
+.bottomSpace {
+  height: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(100% - 20px, 560px);
+    padding-top: 14px;
+  }
+
+  .topbar {
+    margin-bottom: 12px;
+  }
+
+  .logo img {
+    width: 94px;
+  }
+
+  .hero {
+    padding: 26px 20px;
+    border-radius: 26px;
+  }
+
+  .hero h1 {
+    margin-top: 14px;
+    font-size: 30px;
+  }
+
+  .hero p {
+    font-size: 13px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stats article {
+    min-height: 96px;
+    padding: 13px 10px;
+    border-radius: 18px;
+  }
+
+  .stats strong {
+    font-size: 23px;
+  }
+
+  .stats span {
+    font-size: 9px;
+  }
+
+  .businesses,
+  .latest,
+  .shareTeaser {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .sectionHeading h2,
+  .shareTeaser h2 {
+    font-size: 18px;
+  }
+
+  .listingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .listingCard {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+  }
+
+  .imageWrap {
+    aspect-ratio: auto;
+    min-height: 124px;
+  }
+
+  .listingBody {
+    min-height: 124px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader { animation: none; }
+}

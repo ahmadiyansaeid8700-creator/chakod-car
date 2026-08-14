@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import StoryListingSelectorClient from "./StoryListingSelectorClient";
 
 export default function AccountStoriesPage() {
-  redirect("/account/listings?intent=story");
+  return <StoryListingSelectorClient />;
 }

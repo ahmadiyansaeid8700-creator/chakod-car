@@ -38,55 +38,59 @@ type ListingsResponse = {
   pagination?: { total?: number };
 };
 
-type ShowcaseTheme = {
-  id: "luxury" | "sales" | "performance";
-  name: string;
-  eyebrow: string;
-  kicker: string;
+type Creative = {
+  id: "spotlight" | "drop" | "momentum";
+  label: string;
+  campaign: string;
+  headline: string;
+  cta: string;
   canvasStart: string;
   canvasMid: string;
   canvasEnd: string;
   accent: string;
-  softAccent: string;
-  darkOverlay: string;
+  ink: string;
+  overlay: string;
 };
 
-const THEMES: ShowcaseTheme[] = [
+const CREATIVES: Creative[] = [
   {
-    id: "luxury",
-    name: "لوکس",
-    eyebrow: "PRIVATE SHOWCASE",
-    kicker: "انتخاب‌های خاص من",
-    canvasStart: "#070707",
-    canvasMid: "#211607",
-    canvasEnd: "#9a671d",
-    accent: "#f4d58d",
-    softAccent: "#fff0bd",
-    darkOverlay: "rgba(5,4,2,.91)",
+    id: "spotlight",
+    label: "طرح ۱",
+    campaign: "ویترین تازه",
+    headline: "سه انتخاب تازه؛ آماده‌ی دیده‌شدن",
+    cta: "ویترین من را در چاکود ببین",
+    canvasStart: "#23003f",
+    canvasMid: "#6d28d9",
+    canvasEnd: "#ff4f8b",
+    accent: "#fff26b",
+    ink: "#ffffff",
+    overlay: "rgba(26,2,42,.92)",
   },
   {
-    id: "sales",
-    name: "فروش",
-    eyebrow: "HOT DROP",
-    kicker: "ویترین فروش من",
-    canvasStart: "#25040c",
-    canvasMid: "#8c1134",
-    canvasEnd: "#fb4165",
-    accent: "#ffe0e7",
-    softAccent: "#fff1f4",
-    darkOverlay: "rgba(35,4,13,.92)",
+    id: "drop",
+    label: "طرح ۲",
+    campaign: "NEW DROP",
+    headline: "این‌ها الان روی ویترین من‌اند",
+    cta: "انتخاب‌های بیشتر در چاکود",
+    canvasStart: "#fff9f1",
+    canvasMid: "#f7edff",
+    canvasEnd: "#e8dcff",
+    accent: "#6d28d9",
+    ink: "#28123a",
+    overlay: "rgba(35,10,54,.90)",
   },
   {
-    id: "performance",
-    name: "عملکرد",
-    eyebrow: "MY PERFORMANCE",
-    kicker: "عملکرد امروز من",
-    canvasStart: "#031522",
-    canvasMid: "#075985",
-    canvasEnd: "#06b6d4",
-    accent: "#a5f3fc",
-    softAccent: "#ecfeff",
-    darkOverlay: "rgba(2,20,31,.91)",
+    id: "momentum",
+    label: "طرح ۳",
+    campaign: "روی فرم",
+    headline: "ویترین من این روزها جدی‌تر از همیشه‌ست",
+    cta: "مشاهده ویترین در چاکود",
+    canvasStart: "#10051d",
+    canvasMid: "#40106a",
+    canvasEnd: "#7c3aed",
+    accent: "#67f4d3",
+    ink: "#ffffff",
+    overlay: "rgba(13,3,24,.93)",
   },
 ];
 
@@ -162,17 +166,11 @@ function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement |
     const scale = Math.max(width / image.width, height / image.height);
     const renderedWidth = image.width * scale;
     const renderedHeight = image.height * scale;
-    ctx.drawImage(
-      image,
-      x + (width - renderedWidth) / 2,
-      y + (height - renderedHeight) / 2,
-      renderedWidth,
-      renderedHeight,
-    );
+    ctx.drawImage(image, x + (width - renderedWidth) / 2, y + (height - renderedHeight) / 2, renderedWidth, renderedHeight);
   } else {
     const placeholder = ctx.createLinearGradient(x, y, x + width, y + height);
-    placeholder.addColorStop(0, "#f5f3ff");
-    placeholder.addColorStop(1, "#ddd6fe");
+    placeholder.addColorStop(0, "#efe7ff");
+    placeholder.addColorStop(1, "#c4b5fd");
     ctx.fillStyle = placeholder;
     ctx.fillRect(x, y, width, height);
   }
@@ -186,10 +184,10 @@ export default function ShowcasePage() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [activeTotal, setActiveTotal] = useState(0);
-  const [themeIndex, setThemeIndex] = useState(0);
+  const [creativeIndex, setCreativeIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
-  const [shareLabel, setShareLabel] = useState("اشتراک‌گذاری ویترین");
+  const [shareLabel, setShareLabel] = useState("اشتراک‌گذاری این بنر");
 
   useEffect(() => {
     let ignore = false;
@@ -242,32 +240,20 @@ export default function ShowcasePage() {
     return Array.from(items.values());
   }, [activities, memberships]);
 
-  const theme = THEMES[themeIndex];
-  const heroMetric = activeTotal > 0 ? activeTotal : businesses.length;
-  const heroMetricLabel = activeTotal > 0 ? "آگهی فعال" : "هویت حرفه‌ای";
+  const creative = CREATIVES[creativeIndex];
   const firstListing = listings[0];
   const secondaryListings = listings.slice(1, 3);
+  const heroMetric = activeTotal || businesses.length || listings.length;
+  const headline = firstListing ? creative.headline : businesses.length ? "این هویت حرفه‌ای من در چاکود است" : "ویترین من آماده‌ی دیده‌شدن است";
 
-  const themeHeadline = theme.id === "luxury"
-    ? firstListing
-      ? "انتخاب‌هایی که این روزها با افتخار نمایش می‌دم"
-      : "اعتبار حرفه‌ای من، یک‌جا"
-    : theme.id === "sales"
-      ? firstListing
-        ? "تازه‌های فروش من؛ آماده‌ی دیده‌شدن"
-        : "ویترین من آماده‌ی فروشه"
-      : activeTotal > 0
-        ? "امروز ویترین من روی فرم است"
-        : "عملکرد حرفه‌ای من در چاکود";
+  const creativeClass = creative.id === "spotlight"
+    ? styles.creativeSpotlight
+    : creative.id === "drop"
+      ? styles.creativeDrop
+      : styles.creativeMomentum;
 
-  const themeClass = theme.id === "luxury"
-    ? styles.themeLuxury
-    : theme.id === "sales"
-      ? styles.themeSales
-      : styles.themePerformance;
-
-  function moveTheme(direction: number) {
-    setThemeIndex((current) => (current + direction + THEMES.length) % THEMES.length);
+  function moveCreative(direction: number) {
+    setCreativeIndex((current) => (current + direction + CREATIVES.length) % CREATIVES.length);
   }
 
   function handleTouchEnd(clientX: number) {
@@ -275,7 +261,7 @@ export default function ShowcasePage() {
     const distance = clientX - touchStartX;
     setTouchStartX(null);
     if (Math.abs(distance) < 42) return;
-    moveTheme(distance < 0 ? 1 : -1);
+    moveCreative(distance < 0 ? 1 : -1);
   }
 
   async function createShareFile() {
@@ -286,149 +272,96 @@ export default function ShowcasePage() {
     if (!ctx) return null;
 
     const background = ctx.createLinearGradient(1080, 0, 0, 1920);
-    background.addColorStop(0, theme.canvasStart);
-    background.addColorStop(0.52, theme.canvasMid);
-    background.addColorStop(1, theme.canvasEnd);
+    background.addColorStop(0, creative.canvasStart);
+    background.addColorStop(0.52, creative.canvasMid);
+    background.addColorStop(1, creative.canvasEnd);
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    const glow = ctx.createRadialGradient(920, 140, 20, 920, 140, 460);
-    glow.addColorStop(0, theme.id === "luxury" ? "rgba(244,213,141,.24)" : "rgba(255,255,255,.23)");
-    glow.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(470, 0, 610, 620);
-
-    ctx.globalAlpha = theme.id === "sales" ? 0.12 : 0.08;
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2;
-    for (let index = 0; index < 4; index += 1) {
-      ctx.beginPath();
-      ctx.arc(60, 1780, 190 + index * 54, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
     ctx.direction = "rtl";
     ctx.textAlign = "right";
-    ctx.fillStyle = theme.accent;
-    ctx.font = "900 25px sans-serif";
-    ctx.fillText(theme.eyebrow, 950, 108);
-    ctx.fillStyle = "rgba(255,255,255,.68)";
-    ctx.font = "800 24px sans-serif";
-    ctx.fillText(todayLabel(), 950, 152);
-
-    roundedRect(ctx, 735, 195, 215, 54, 27);
-    ctx.fillStyle = theme.id === "luxury" ? "rgba(244,213,141,.15)" : "rgba(255,255,255,.14)";
-    ctx.fill();
-    ctx.strokeStyle = theme.id === "luxury" ? "rgba(244,213,141,.45)" : "rgba(255,255,255,.28)";
-    ctx.stroke();
-    ctx.fillStyle = theme.accent;
-    ctx.font = "900 22px sans-serif";
-    ctx.fillText(theme.kicker, 920, 231);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 64px sans-serif";
-    ctx.fillText(themeHeadline, 950, 355, 870);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "1000 122px sans-serif";
-    ctx.fillText(formatNumber(heroMetric), 950, 500);
-    ctx.fillStyle = theme.accent;
-    ctx.font = "900 26px sans-serif";
-    ctx.fillText(heroMetricLabel, 950, 548);
 
     const images = await Promise.all(listings.map((item) => loadCanvasImage(item.cover_image?.image_url)));
 
     if (firstListing) {
-      drawCoverImage(ctx, images[0], 80, 610, 920, 650, 56);
-      roundedRect(ctx, 80, 610, 920, 650, 56);
+      drawCoverImage(ctx, images[0], 54, 310, 972, 950, 70);
+      roundedRect(ctx, 54, 310, 972, 950, 70);
       ctx.save();
       ctx.clip();
-      const overlay = ctx.createLinearGradient(0, 820, 0, 1260);
-      overlay.addColorStop(0, "rgba(0,0,0,0)");
-      overlay.addColorStop(1, theme.darkOverlay);
-      ctx.fillStyle = overlay;
-      ctx.fillRect(80, 610, 920, 650);
+      const fade = ctx.createLinearGradient(0, 560, 0, 1260);
+      fade.addColorStop(0, "rgba(0,0,0,.02)");
+      fade.addColorStop(0.56, "rgba(0,0,0,.12)");
+      fade.addColorStop(1, creative.overlay);
+      ctx.fillStyle = fade;
+      ctx.fillRect(54, 310, 972, 950);
       ctx.restore();
+    }
 
-      if (theme.id === "sales") {
-        roundedRect(ctx, 120, 650, 196, 58, 29);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#b3123d";
-        ctx.font = "1000 24px sans-serif";
-        ctx.fillText("فروش داغ", 218, 688);
-        ctx.textAlign = "right";
-      }
+    ctx.fillStyle = creative.id === "drop" ? "#6d28d9" : creative.accent;
+    ctx.font = "1000 25px sans-serif";
+    ctx.fillText(creative.campaign, 950, 105);
 
+    ctx.fillStyle = creative.ink;
+    ctx.font = "1000 72px sans-serif";
+    ctx.fillText(headline, 950, 235, 880);
+
+    if (firstListing) {
       ctx.fillStyle = "#ffffff";
-      ctx.font = "1000 44px sans-serif";
-      ctx.fillText(shortTitle(firstListing), 925, 1140, 760);
-      ctx.fillStyle = theme.accent;
+      ctx.font = "1000 48px sans-serif";
+      ctx.fillText(shortTitle(firstListing), 930, 1090, 790);
+      ctx.fillStyle = creative.accent;
       ctx.font = "1000 31px sans-serif";
-      ctx.fillText(formatPrice(firstListing.price_toman), 925, 1197, 760);
+      ctx.fillText(formatPrice(firstListing.price_toman), 930, 1148, 790);
     }
 
     if (secondaryListings.length > 0) {
-      const cardWidth = secondaryListings.length === 1 ? 920 : 444;
+      const cardWidth = secondaryListings.length === 1 ? 972 : 472;
       secondaryListings.forEach((listing, index) => {
-        const x = secondaryListings.length === 1 ? 80 : 80 + index * 476;
-        drawCoverImage(ctx, images[index + 1], x, 1295, cardWidth, 300, 42);
-        roundedRect(ctx, x, 1295, cardWidth, 300, 42);
+        const x = secondaryListings.length === 1 ? 54 : 54 + index * 500;
+        drawCoverImage(ctx, images[index + 1], x, 1300, cardWidth, 300, 38);
+        roundedRect(ctx, x, 1300, cardWidth, 300, 38);
         ctx.save();
         ctx.clip();
-        const overlay = ctx.createLinearGradient(0, 1400, 0, 1595);
-        overlay.addColorStop(0, "rgba(0,0,0,0)");
-        overlay.addColorStop(1, theme.darkOverlay);
-        ctx.fillStyle = overlay;
-        ctx.fillRect(x, 1295, cardWidth, 300);
+        const fade = ctx.createLinearGradient(0, 1410, 0, 1600);
+        fade.addColorStop(0, "rgba(0,0,0,0)");
+        fade.addColorStop(1, "rgba(20,4,31,.9)");
+        ctx.fillStyle = fade;
+        ctx.fillRect(x, 1300, cardWidth, 300);
         ctx.restore();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "1000 27px sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(shortTitle(listing), x + cardWidth - 26, 1526, cardWidth - 52);
-        ctx.fillStyle = theme.accent;
-        ctx.font = "900 21px sans-serif";
-        ctx.fillText(formatPrice(listing.price_toman), x + cardWidth - 26, 1565, cardWidth - 52);
-      });
-    } else if (!firstListing && businesses.length > 0) {
-      businesses.slice(0, 3).forEach((name, index) => {
-        const y = 680 + index * 170;
-        roundedRect(ctx, 80, y, 920, 128, 36);
-        ctx.fillStyle = "rgba(255,255,255,.12)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,.22)";
-        ctx.stroke();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "1000 30px sans-serif";
-        ctx.fillText(name, 940, y + 78, 820);
+        ctx.font = "1000 26px sans-serif";
+        ctx.fillText(shortTitle(listing), x + cardWidth - 24, 1532, cardWidth - 48);
+        ctx.fillStyle = creative.accent;
+        ctx.font = "900 20px sans-serif";
+        ctx.fillText(formatPrice(listing.price_toman), x + cardWidth - 24, 1572, cardWidth - 48);
       });
     }
 
+    roundedRect(ctx, 420, 1660, 606, 104, 52);
+    ctx.fillStyle = creative.id === "drop" ? "#6d28d9" : "rgba(255,255,255,.95)";
+    ctx.fill();
+    ctx.fillStyle = creative.id === "drop" ? "#ffffff" : "#35114d";
+    ctx.font = "1000 28px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(creative.cta, 723, 1725, 530);
+
     ctx.textAlign = "right";
-    const stats = [
-      [formatNumber(activeTotal), "آگهی فعال"],
-      [formatNumber(businesses.length), "کسب‌وکار"],
-      [formatNumber(listings.length), "انتخاب تازه"],
-    ];
-    stats.forEach(([value, label], index) => {
-      const x = 80 + index * 270;
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "1000 34px sans-serif";
-      ctx.fillText(value, x + 220, 1712);
-      ctx.fillStyle = "rgba(255,255,255,.55)";
-      ctx.font = "800 18px sans-serif";
-      ctx.fillText(label, x + 220, 1746);
-    });
+    ctx.fillStyle = creative.id === "drop" ? "#6d28d9" : creative.accent;
+    ctx.font = "1000 58px sans-serif";
+    ctx.fillText(formatNumber(heroMetric), 255, 1724);
+    ctx.fillStyle = creative.id === "drop" ? "rgba(40,18,58,.62)" : "rgba(255,255,255,.60)";
+    ctx.font = "900 18px sans-serif";
+    ctx.fillText(activeTotal ? "آگهی فعال" : "هویت حرفه‌ای", 255, 1760);
 
     ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,255,255,.62)";
+    ctx.fillStyle = creative.id === "drop" ? "rgba(57,26,77,.64)" : "rgba(255,255,255,.68)";
     ctx.font = "1000 25px sans-serif";
-    ctx.fillText("CHAKOD", 80, 1840);
+    ctx.fillText("CHAKOD", 60, 1850);
+    ctx.font = "800 18px sans-serif";
+    ctx.fillText(window.location.host, 60, 1882);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 0.96));
-    return blob ? new File([blob], `chakod-showcase-${theme.id}.png`, { type: "image/png" }) : null;
+    return blob ? new File([blob], `chakod-banner-${creative.id}.png`, { type: "image/png" }) : null;
   }
 
   async function shareShowcase() {
@@ -438,21 +371,21 @@ export default function ShowcasePage() {
     try {
       const file = await createShareFile();
       if (file && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "ویترین من در چاکود", text: themeHeadline });
-        setShareLabel("اشتراک‌گذاری ویترین");
+        await navigator.share({ files: [file], title: "ویترین من در چاکود", text: headline });
+        setShareLabel("اشتراک‌گذاری این بنر");
         return;
       }
       if (navigator.share) {
-        await navigator.share({ title: "ویترین من در چاکود", text: themeHeadline, url: window.location.href });
-        setShareLabel("اشتراک‌گذاری ویترین");
+        await navigator.share({ title: "ویترین من در چاکود", text: headline, url: window.location.href });
+        setShareLabel("اشتراک‌گذاری این بنر");
         return;
       }
       await navigator.clipboard.writeText(window.location.href);
       setShareLabel("لینک ویترین کپی شد");
-      window.setTimeout(() => setShareLabel("اشتراک‌گذاری ویترین"), 2200);
+      window.setTimeout(() => setShareLabel("اشتراک‌گذاری این بنر"), 2200);
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") {
-        setShareLabel("اشتراک‌گذاری ویترین");
+        setShareLabel("اشتراک‌گذاری این بنر");
       } else {
         setShareLabel("دوباره تلاش کن");
       }
@@ -464,106 +397,94 @@ export default function ShowcasePage() {
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.stage}>
-        {!loading && !error ? (
-          <div className={styles.themeSwitcher} aria-label="انتخاب ظاهر ویترین">
-            <button type="button" onClick={() => moveTheme(-1)} aria-label="تم قبلی">‹</button>
-            <div className={styles.themeName}>
-              <span>تم ویترین</span>
-              <strong>{theme.name}</strong>
-            </div>
-            <button type="button" onClick={() => moveTheme(1)} aria-label="تم بعدی">›</button>
-          </div>
-        ) : null}
-
         <section
-          className={`${styles.preview} ${themeClass}`}
-          aria-label={`پیش‌نمایش ویترین ${theme.name}`}
+          className={`${styles.preview} ${creativeClass}`}
+          aria-label={`بنر تبلیغاتی ${creative.label}`}
           onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
           onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
         >
           {loading ? (
-            <div className={styles.state}><span className={styles.loader} /><strong>در حال ساخت ویترین…</strong></div>
+            <div className={styles.state}><span className={styles.loader} /><strong>در حال ساخت بنر…</strong></div>
           ) : error ? (
             <div className={styles.state}><strong>{error}</strong></div>
           ) : (
             <>
-              <div className={styles.texture} aria-hidden="true" />
+              <div className={styles.art} aria-hidden="true" />
               <div className={styles.topline}>
-                <span>{theme.eyebrow}</span>
+                <span>{creative.campaign}</span>
                 <b>{todayLabel()}</b>
               </div>
 
-              <section className={styles.billboard}>
-                <span className={styles.kicker}>{theme.kicker}</span>
-                <h1>{themeHeadline}</h1>
-                <div className={styles.heroMetric}>
-                  <strong>{formatNumber(heroMetric)}</strong>
-                  <span>{heroMetricLabel}</span>
-                </div>
-              </section>
+              <header className={styles.adHeadline}>
+                <h1>{headline}</h1>
+              </header>
 
               {firstListing ? (
-                <section className={styles.heroProduct}>
-                  <div className={styles.heroProductImage}>
+                <section className={styles.heroAd}>
+                  <div className={styles.heroAdImage}>
                     {firstListing.cover_image?.image_url
                       ? <img src={firstListing.cover_image.image_url} alt={shortTitle(firstListing)} loading="eager" decoding="async" />
                       : <span>CHAKOD</span>}
                   </div>
-                  {theme.id === "sales" ? <span className={styles.saleBadge}>فروش داغ</span> : null}
-                  <div className={styles.heroProductCopy}>
-                    <small>{theme.id === "performance" ? "انتخاب برتر امروز" : "انتخاب اول ویترین"}</small>
+                  <span className={styles.ribbon}>{creative.id === "drop" ? "تازه روی ویترین" : creative.id === "momentum" ? "انتخاب برتر" : "پیشنهاد من"}</span>
+                  <div className={styles.heroAdCopy}>
                     <strong>{shortTitle(firstListing)}</strong>
                     <b>{formatPrice(firstListing.price_toman)}</b>
                   </div>
                 </section>
-              ) : null}
+              ) : (
+                <section className={styles.identityAd}>
+                  <strong>{businesses[0] || "ویترین من در چاکود"}</strong>
+                  <span>{businesses.length ? `${formatNumber(businesses.length)} هویت حرفه‌ای متصل` : "آماده‌ی دیده‌شدن"}</span>
+                </section>
+              )}
 
               {secondaryListings.length > 0 ? (
-                <div className={`${styles.secondaryGrid} ${secondaryListings.length === 1 ? styles.singleSecondary : ""}`}>
-                  {secondaryListings.map((listing, index) => (
-                    <article className={styles.secondaryCard} key={listing.id}>
-                      <div className={styles.secondaryImage}>
+                <div className={`${styles.productRail} ${secondaryListings.length === 1 ? styles.singleProduct : ""}`}>
+                  {secondaryListings.map((listing) => (
+                    <article className={styles.productMini} key={listing.id}>
+                      <div className={styles.productMiniImage}>
                         {listing.cover_image?.image_url
                           ? <img src={listing.cover_image.image_url} alt={shortTitle(listing)} loading="eager" decoding="async" />
-                          : <span>{formatNumber(index + 2)}</span>}
+                          : <span>CHAKOD</span>}
                       </div>
-                      <div className={styles.secondaryCopy}>
-                        <strong>{shortTitle(listing)}</strong>
-                        <b>{formatPrice(listing.price_toman)}</b>
-                      </div>
+                      <div><strong>{shortTitle(listing)}</strong><b>{formatPrice(listing.price_toman)}</b></div>
                     </article>
                   ))}
                 </div>
-              ) : !firstListing && businesses.length > 0 ? (
-                <div className={styles.businessStack}>
-                  {businesses.slice(0, 3).map((name) => <strong key={name}>{name}</strong>)}
-                </div>
               ) : null}
 
-              <div className={styles.performanceStrip}>
-                <div><strong>{formatNumber(activeTotal)}</strong><span>آگهی فعال</span></div>
-                <div><strong>{formatNumber(businesses.length)}</strong><span>کسب‌وکار</span></div>
-                <div><strong>{formatNumber(listings.length)}</strong><span>انتخاب تازه</span></div>
+              <footer className={styles.adFooter}>
+                <div className={styles.socialProof}>
+                  <strong>{formatNumber(heroMetric)}</strong>
+                  <span>{activeTotal ? "آگهی فعال" : "هویت حرفه‌ای"}</span>
+                </div>
+                <div className={styles.fakeCta}>{creative.cta}<span>←</span></div>
                 <em>CHAKOD</em>
-              </div>
+              </footer>
             </>
           )}
         </section>
 
         {!loading && !error ? (
           <>
-            <div className={styles.themeDots} aria-label="تم‌های ویترین">
-              {THEMES.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={index === themeIndex ? styles.activeDot : ""}
-                  onClick={() => setThemeIndex(index)}
-                  aria-label={`تم ${item.name}`}
-                  aria-current={index === themeIndex ? "true" : undefined}
-                />
-              ))}
+            <div className={styles.creativeNav} aria-label="طرح‌های بنر">
+              <button type="button" onClick={() => moveCreative(-1)} aria-label="طرح قبلی">‹</button>
+              <div className={styles.dots}>
+                {CREATIVES.map((item, index) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={index === creativeIndex ? styles.activeDot : ""}
+                    onClick={() => setCreativeIndex(index)}
+                    aria-label={item.label}
+                    aria-current={index === creativeIndex ? "true" : undefined}
+                  />
+                ))}
+              </div>
+              <button type="button" onClick={() => moveCreative(1)} aria-label="طرح بعدی">›</button>
             </div>
+
             <button type="button" className={styles.shareButton} onClick={() => void shareShowcase()} disabled={sharing}>
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
                 <circle cx="18" cy="5" r="2.4" stroke="currentColor" strokeWidth="1.8" />

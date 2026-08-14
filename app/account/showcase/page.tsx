@@ -38,6 +38,58 @@ type ListingsResponse = {
   pagination?: { total?: number };
 };
 
+type ShowcaseTheme = {
+  id: "luxury" | "sales" | "performance";
+  name: string;
+  eyebrow: string;
+  kicker: string;
+  canvasStart: string;
+  canvasMid: string;
+  canvasEnd: string;
+  accent: string;
+  softAccent: string;
+  darkOverlay: string;
+};
+
+const THEMES: ShowcaseTheme[] = [
+  {
+    id: "luxury",
+    name: "لوکس",
+    eyebrow: "PRIVATE SHOWCASE",
+    kicker: "انتخاب‌های خاص من",
+    canvasStart: "#070707",
+    canvasMid: "#211607",
+    canvasEnd: "#9a671d",
+    accent: "#f4d58d",
+    softAccent: "#fff0bd",
+    darkOverlay: "rgba(5,4,2,.91)",
+  },
+  {
+    id: "sales",
+    name: "فروش",
+    eyebrow: "HOT DROP",
+    kicker: "ویترین فروش من",
+    canvasStart: "#25040c",
+    canvasMid: "#8c1134",
+    canvasEnd: "#fb4165",
+    accent: "#ffe0e7",
+    softAccent: "#fff1f4",
+    darkOverlay: "rgba(35,4,13,.92)",
+  },
+  {
+    id: "performance",
+    name: "عملکرد",
+    eyebrow: "MY PERFORMANCE",
+    kicker: "عملکرد امروز من",
+    canvasStart: "#031522",
+    canvasMid: "#075985",
+    canvasEnd: "#06b6d4",
+    accent: "#a5f3fc",
+    softAccent: "#ecfeff",
+    darkOverlay: "rgba(2,20,31,.91)",
+  },
+];
+
 function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("chakod_session_token") || "";
@@ -119,8 +171,8 @@ function drawCoverImage(ctx: CanvasRenderingContext2D, image: HTMLImageElement |
     );
   } else {
     const placeholder = ctx.createLinearGradient(x, y, x + width, y + height);
-    placeholder.addColorStop(0, "#ede9fe");
-    placeholder.addColorStop(1, "#c4b5fd");
+    placeholder.addColorStop(0, "#f5f3ff");
+    placeholder.addColorStop(1, "#ddd6fe");
     ctx.fillStyle = placeholder;
     ctx.fillRect(x, y, width, height);
   }
@@ -134,6 +186,8 @@ export default function ShowcasePage() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [activeTotal, setActiveTotal] = useState(0);
+  const [themeIndex, setThemeIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [shareLabel, setShareLabel] = useState("اشتراک‌گذاری ویترین");
 
@@ -188,19 +242,41 @@ export default function ShowcasePage() {
     return Array.from(items.values());
   }, [activities, memberships]);
 
+  const theme = THEMES[themeIndex];
   const heroMetric = activeTotal > 0 ? activeTotal : businesses.length;
-  const heroMetricLabel = activeTotal > 0 ? "آگهی فعال در ویترین من" : "هویت حرفه‌ای متصل";
-  const headline = listings.length >= 3
-    ? "این سه انتخاب، ویترین این روزهای من‌اند"
-    : activeTotal >= 6
-      ? "ویترین من این روزها حسابی پر شده"
-      : listings.length > 0
-        ? "تازه‌های ویترین من"
-        : businesses.length > 0
-          ? "هویت حرفه‌ای من، یک‌جا"
-          : "ویترین من در چاکود";
+  const heroMetricLabel = activeTotal > 0 ? "آگهی فعال" : "هویت حرفه‌ای";
   const firstListing = listings[0];
   const secondaryListings = listings.slice(1, 3);
+
+  const themeHeadline = theme.id === "luxury"
+    ? firstListing
+      ? "انتخاب‌هایی که این روزها با افتخار نمایش می‌دم"
+      : "اعتبار حرفه‌ای من، یک‌جا"
+    : theme.id === "sales"
+      ? firstListing
+        ? "تازه‌های فروش من؛ آماده‌ی دیده‌شدن"
+        : "ویترین من آماده‌ی فروشه"
+      : activeTotal > 0
+        ? "امروز ویترین من روی فرم است"
+        : "عملکرد حرفه‌ای من در چاکود";
+
+  const themeClass = theme.id === "luxury"
+    ? styles.themeLuxury
+    : theme.id === "sales"
+      ? styles.themeSales
+      : styles.themePerformance;
+
+  function moveTheme(direction: number) {
+    setThemeIndex((current) => (current + direction + THEMES.length) % THEMES.length);
+  }
+
+  function handleTouchEnd(clientX: number) {
+    if (touchStartX === null) return;
+    const distance = clientX - touchStartX;
+    setTouchStartX(null);
+    if (Math.abs(distance) < 42) return;
+    moveTheme(distance < 0 ? 1 : -1);
+  }
 
   async function createShareFile() {
     const canvas = document.createElement("canvas");
@@ -210,130 +286,149 @@ export default function ShowcasePage() {
     if (!ctx) return null;
 
     const background = ctx.createLinearGradient(1080, 0, 0, 1920);
-    background.addColorStop(0, "#170523");
-    background.addColorStop(0.44, "#3b0f67");
-    background.addColorStop(0.78, "#6d28d9");
-    background.addColorStop(1, "#8b5cf6");
+    background.addColorStop(0, theme.canvasStart);
+    background.addColorStop(0.52, theme.canvasMid);
+    background.addColorStop(1, theme.canvasEnd);
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, 1080, 1920);
 
-    const glow = ctx.createRadialGradient(920, 160, 10, 920, 160, 420);
-    glow.addColorStop(0, "rgba(216,180,254,.34)");
-    glow.addColorStop(1, "rgba(216,180,254,0)");
+    const glow = ctx.createRadialGradient(920, 140, 20, 920, 140, 460);
+    glow.addColorStop(0, theme.id === "luxury" ? "rgba(244,213,141,.24)" : "rgba(255,255,255,.23)");
+    glow.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = glow;
-    ctx.fillRect(500, 0, 580, 580);
+    ctx.fillRect(470, 0, 610, 620);
 
-    ctx.globalAlpha = 0.08;
-    ctx.strokeStyle = "#ffffff";
+    ctx.globalAlpha = theme.id === "sales" ? 0.12 : 0.08;
+    ctx.strokeStyle = theme.accent;
     ctx.lineWidth = 2;
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < 4; index += 1) {
       ctx.beginPath();
-      ctx.arc(70, 1740, 180 + index * 46, 0, Math.PI * 2);
+      ctx.arc(60, 1780, 190 + index * 54, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
 
     ctx.direction = "rtl";
     ctx.textAlign = "right";
-    ctx.fillStyle = "rgba(255,255,255,.72)";
-    ctx.font = "800 27px sans-serif";
-    ctx.fillText(`ویترین من · ${todayLabel()}`, 950, 120);
+    ctx.fillStyle = theme.accent;
+    ctx.font = "900 25px sans-serif";
+    ctx.fillText(theme.eyebrow, 950, 108);
+    ctx.fillStyle = "rgba(255,255,255,.68)";
+    ctx.font = "800 24px sans-serif";
+    ctx.fillText(todayLabel(), 950, 152);
+
+    roundedRect(ctx, 735, 195, 215, 54, 27);
+    ctx.fillStyle = theme.id === "luxury" ? "rgba(244,213,141,.15)" : "rgba(255,255,255,.14)";
+    ctx.fill();
+    ctx.strokeStyle = theme.id === "luxury" ? "rgba(244,213,141,.45)" : "rgba(255,255,255,.28)";
+    ctx.stroke();
+    ctx.fillStyle = theme.accent;
+    ctx.font = "900 22px sans-serif";
+    ctx.fillText(theme.kicker, 920, 231);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 126px sans-serif";
-    ctx.fillText(formatNumber(heroMetric), 950, 285);
-    ctx.fillStyle = "rgba(255,255,255,.72)";
-    ctx.font = "800 29px sans-serif";
-    ctx.fillText(heroMetricLabel, 950, 340);
+    ctx.font = "900 64px sans-serif";
+    ctx.fillText(themeHeadline, 950, 355, 870);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "900 61px sans-serif";
-    ctx.fillText(headline, 950, 455, 870);
+    ctx.font = "1000 122px sans-serif";
+    ctx.fillText(formatNumber(heroMetric), 950, 500);
+    ctx.fillStyle = theme.accent;
+    ctx.font = "900 26px sans-serif";
+    ctx.fillText(heroMetricLabel, 950, 548);
 
     const images = await Promise.all(listings.map((item) => loadCanvasImage(item.cover_image?.image_url)));
 
     if (firstListing) {
-      drawCoverImage(ctx, images[0], 80, 535, 920, 650, 54);
-      const overlay = ctx.createLinearGradient(0, 800, 0, 1185);
-      overlay.addColorStop(0, "rgba(14,4,25,0)");
-      overlay.addColorStop(1, "rgba(14,4,25,.88)");
-      roundedRect(ctx, 80, 535, 920, 650, 54);
+      drawCoverImage(ctx, images[0], 80, 610, 920, 650, 56);
+      roundedRect(ctx, 80, 610, 920, 650, 56);
       ctx.save();
       ctx.clip();
+      const overlay = ctx.createLinearGradient(0, 820, 0, 1260);
+      overlay.addColorStop(0, "rgba(0,0,0,0)");
+      overlay.addColorStop(1, theme.darkOverlay);
       ctx.fillStyle = overlay;
-      ctx.fillRect(80, 535, 920, 650);
+      ctx.fillRect(80, 610, 920, 650);
       ctx.restore();
 
+      if (theme.id === "sales") {
+        roundedRect(ctx, 120, 650, 196, 58, 29);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#b3123d";
+        ctx.font = "1000 24px sans-serif";
+        ctx.fillText("فروش داغ", 218, 688);
+        ctx.textAlign = "right";
+      }
+
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 45px sans-serif";
-      ctx.fillText(shortTitle(firstListing), 925, 1072, 760);
-      ctx.fillStyle = "#ddd6fe";
-      ctx.font = "900 31px sans-serif";
-      ctx.fillText(formatPrice(firstListing.price_toman), 925, 1125, 760);
+      ctx.font = "1000 44px sans-serif";
+      ctx.fillText(shortTitle(firstListing), 925, 1140, 760);
+      ctx.fillStyle = theme.accent;
+      ctx.font = "1000 31px sans-serif";
+      ctx.fillText(formatPrice(firstListing.price_toman), 925, 1197, 760);
     }
 
     if (secondaryListings.length > 0) {
       const cardWidth = secondaryListings.length === 1 ? 920 : 444;
       secondaryListings.forEach((listing, index) => {
         const x = secondaryListings.length === 1 ? 80 : 80 + index * 476;
-        drawCoverImage(ctx, images[index + 1], x, 1220, cardWidth, 320, 42);
-        roundedRect(ctx, x, 1220, cardWidth, 320, 42);
+        drawCoverImage(ctx, images[index + 1], x, 1295, cardWidth, 300, 42);
+        roundedRect(ctx, x, 1295, cardWidth, 300, 42);
         ctx.save();
         ctx.clip();
-        const overlay = ctx.createLinearGradient(0, 1360, 0, 1540);
-        overlay.addColorStop(0, "rgba(17,5,31,0)");
-        overlay.addColorStop(1, "rgba(17,5,31,.84)");
+        const overlay = ctx.createLinearGradient(0, 1400, 0, 1595);
+        overlay.addColorStop(0, "rgba(0,0,0,0)");
+        overlay.addColorStop(1, theme.darkOverlay);
         ctx.fillStyle = overlay;
-        ctx.fillRect(x, 1220, cardWidth, 320);
+        ctx.fillRect(x, 1295, cardWidth, 300);
         ctx.restore();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 27px sans-serif";
+        ctx.font = "1000 27px sans-serif";
         ctx.textAlign = "right";
-        ctx.fillText(shortTitle(listing), x + cardWidth - 28, 1468, cardWidth - 56);
-        ctx.fillStyle = "#ddd6fe";
-        ctx.font = "800 22px sans-serif";
-        ctx.fillText(formatPrice(listing.price_toman), x + cardWidth - 28, 1510, cardWidth - 56);
+        ctx.fillText(shortTitle(listing), x + cardWidth - 26, 1526, cardWidth - 52);
+        ctx.fillStyle = theme.accent;
+        ctx.font = "900 21px sans-serif";
+        ctx.fillText(formatPrice(listing.price_toman), x + cardWidth - 26, 1565, cardWidth - 52);
       });
     } else if (!firstListing && businesses.length > 0) {
       businesses.slice(0, 3).forEach((name, index) => {
-        const y = 640 + index * 170;
-        roundedRect(ctx, 80, y, 920, 132, 38);
+        const y = 680 + index * 170;
+        roundedRect(ctx, 80, y, 920, 128, 36);
         ctx.fillStyle = "rgba(255,255,255,.12)";
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,.18)";
+        ctx.strokeStyle = "rgba(255,255,255,.22)";
         ctx.stroke();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 30px sans-serif";
-        ctx.fillText(name, 940, y + 80, 820);
+        ctx.font = "1000 30px sans-serif";
+        ctx.fillText(name, 940, y + 78, 820);
       });
     }
 
-    const statsY = 1600;
-    const miniStats = [
+    ctx.textAlign = "right";
+    const stats = [
+      [formatNumber(activeTotal), "آگهی فعال"],
       [formatNumber(businesses.length), "کسب‌وکار"],
       [formatNumber(listings.length), "انتخاب تازه"],
     ];
-    miniStats.forEach(([value, label], index) => {
-      const x = 80 + index * 250;
-      ctx.textAlign = "right";
+    stats.forEach(([value, label], index) => {
+      const x = 80 + index * 270;
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 38px sans-serif";
-      ctx.fillText(value, x + 190, statsY + 42);
-      ctx.fillStyle = "rgba(255,255,255,.58)";
-      ctx.font = "800 20px sans-serif";
-      ctx.fillText(label, x + 190, statsY + 78);
+      ctx.font = "1000 34px sans-serif";
+      ctx.fillText(value, x + 220, 1712);
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.font = "800 18px sans-serif";
+      ctx.fillText(label, x + 220, 1746);
     });
 
     ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,255,255,.66)";
-    ctx.font = "900 26px sans-serif";
-    ctx.fillText("CHAKOD", 80, 1815);
-    ctx.fillStyle = "rgba(255,255,255,.38)";
-    ctx.font = "700 19px sans-serif";
-    ctx.fillText(window.location.host, 80, 1852);
+    ctx.fillStyle = "rgba(255,255,255,.62)";
+    ctx.font = "1000 25px sans-serif";
+    ctx.fillText("CHAKOD", 80, 1840);
 
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png", 0.96));
-    return blob ? new File([blob], "chakod-showcase.png", { type: "image/png" }) : null;
+    return blob ? new File([blob], `chakod-showcase-${theme.id}.png`, { type: "image/png" }) : null;
   }
 
   async function shareShowcase() {
@@ -343,12 +438,12 @@ export default function ShowcasePage() {
     try {
       const file = await createShareFile();
       if (file && navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "ویترین من در چاکود", text: "ویترین من در چاکود" });
+        await navigator.share({ files: [file], title: "ویترین من در چاکود", text: themeHeadline });
         setShareLabel("اشتراک‌گذاری ویترین");
         return;
       }
       if (navigator.share) {
-        await navigator.share({ title: "ویترین من در چاکود", text: headline, url: window.location.href });
+        await navigator.share({ title: "ویترین من در چاکود", text: themeHeadline, url: window.location.href });
         setShareLabel("اشتراک‌گذاری ویترین");
         return;
       }
@@ -369,35 +464,54 @@ export default function ShowcasePage() {
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.stage}>
-        <section className={styles.preview} aria-label="پیش‌نمایش ویترین قابل اشتراک">
+        {!loading && !error ? (
+          <div className={styles.themeSwitcher} aria-label="انتخاب ظاهر ویترین">
+            <button type="button" onClick={() => moveTheme(-1)} aria-label="تم قبلی">‹</button>
+            <div className={styles.themeName}>
+              <span>تم ویترین</span>
+              <strong>{theme.name}</strong>
+            </div>
+            <button type="button" onClick={() => moveTheme(1)} aria-label="تم بعدی">›</button>
+          </div>
+        ) : null}
+
+        <section
+          className={`${styles.preview} ${themeClass}`}
+          aria-label={`پیش‌نمایش ویترین ${theme.name}`}
+          onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+          onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+        >
           {loading ? (
             <div className={styles.state}><span className={styles.loader} /><strong>در حال ساخت ویترین…</strong></div>
           ) : error ? (
             <div className={styles.state}><strong>{error}</strong></div>
           ) : (
             <>
+              <div className={styles.texture} aria-hidden="true" />
               <div className={styles.topline}>
-                <span>ویترین من · {todayLabel()}</span>
-                <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+                <span>{theme.eyebrow}</span>
+                <b>{todayLabel()}</b>
               </div>
 
-              <section className={styles.hero}>
-                <div className={styles.metricBlock}>
+              <section className={styles.billboard}>
+                <span className={styles.kicker}>{theme.kicker}</span>
+                <h1>{themeHeadline}</h1>
+                <div className={styles.heroMetric}>
                   <strong>{formatNumber(heroMetric)}</strong>
                   <span>{heroMetricLabel}</span>
                 </div>
-                <h1>{headline}</h1>
               </section>
 
               {firstListing ? (
-                <section className={styles.coverStory}>
-                  <div className={styles.coverImage}>
+                <section className={styles.heroProduct}>
+                  <div className={styles.heroProductImage}>
                     {firstListing.cover_image?.image_url
                       ? <img src={firstListing.cover_image.image_url} alt={shortTitle(firstListing)} loading="eager" decoding="async" />
                       : <span>CHAKOD</span>}
                   </div>
-                  <div className={styles.coverCopy}>
-                    <small>انتخاب اول ویترین</small>
+                  {theme.id === "sales" ? <span className={styles.saleBadge}>فروش داغ</span> : null}
+                  <div className={styles.heroProductCopy}>
+                    <small>{theme.id === "performance" ? "انتخاب برتر امروز" : "انتخاب اول ویترین"}</small>
                     <strong>{shortTitle(firstListing)}</strong>
                     <b>{formatPrice(firstListing.price_toman)}</b>
                   </div>
@@ -426,31 +540,40 @@ export default function ShowcasePage() {
                 </div>
               ) : null}
 
-              <div className={styles.bottomMeta}>
-                <div className={styles.miniMetric}>
-                  <strong>{formatNumber(businesses.length)}</strong>
-                  <span>کسب‌وکار</span>
-                </div>
-                <div className={styles.miniMetric}>
-                  <strong>{formatNumber(listings.length)}</strong>
-                  <span>انتخاب تازه</span>
-                </div>
-                <div className={styles.chakodMark} aria-label="چاکود">CHAKOD</div>
+              <div className={styles.performanceStrip}>
+                <div><strong>{formatNumber(activeTotal)}</strong><span>آگهی فعال</span></div>
+                <div><strong>{formatNumber(businesses.length)}</strong><span>کسب‌وکار</span></div>
+                <div><strong>{formatNumber(listings.length)}</strong><span>انتخاب تازه</span></div>
+                <em>CHAKOD</em>
               </div>
             </>
           )}
         </section>
 
         {!loading && !error ? (
-          <button type="button" className={styles.shareButton} onClick={() => void shareShowcase()} disabled={sharing}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-              <circle cx="18" cy="5" r="2.4" stroke="currentColor" strokeWidth="1.8" />
-              <circle cx="6" cy="12" r="2.4" stroke="currentColor" strokeWidth="1.8" />
-              <circle cx="18" cy="19" r="2.4" stroke="currentColor" strokeWidth="1.8" />
-              <path d="m8.2 10.9 7.5-4.4M8.2 13.1l7.5 4.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            {shareLabel}
-          </button>
+          <>
+            <div className={styles.themeDots} aria-label="تم‌های ویترین">
+              {THEMES.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={index === themeIndex ? styles.activeDot : ""}
+                  onClick={() => setThemeIndex(index)}
+                  aria-label={`تم ${item.name}`}
+                  aria-current={index === themeIndex ? "true" : undefined}
+                />
+              ))}
+            </div>
+            <button type="button" className={styles.shareButton} onClick={() => void shareShowcase()} disabled={sharing}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <circle cx="18" cy="5" r="2.4" stroke="currentColor" strokeWidth="1.8" />
+                <circle cx="6" cy="12" r="2.4" stroke="currentColor" strokeWidth="1.8" />
+                <circle cx="18" cy="19" r="2.4" stroke="currentColor" strokeWidth="1.8" />
+                <path d="m8.2 10.9 7.5-4.4M8.2 13.1l7.5 4.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              {shareLabel}
+            </button>
+          </>
         ) : null}
       </div>
     </main>

@@ -19,10 +19,6 @@ type ListingItem = {
   model?: string;
   year?: string | number | null;
   price_toman?: string | number | null;
-  mileage_km?: string | number | null;
-  city?: string;
-  neighborhood?: string;
-  province?: string;
   listing_owner_type?: "personal" | "dealer";
   seller_display_name?: string;
   dealer_id?: number | null;
@@ -83,16 +79,7 @@ type Identity = {
   activity?: AccountActivity;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "فعال",
-  pending: "در انتظار بررسی",
-  rejected: "نیازمند اصلاح",
-  sold: "فروخته‌شده",
-  inactive: "غیرفعال",
-  expired: "منقضی‌شده",
-  deleted: "بایگانی‌شده",
-  draft: "پیش‌نویس",
-};
+const PAGE_SIZE = 8;
 
 function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
@@ -138,11 +125,11 @@ function cleanDealers(items?: DealerItem[]) {
   });
 }
 
-function statusLabel(code?: string, title?: string) {
-  const normalized = String(code || "").toLowerCase();
-  if (STATUS_LABELS[normalized]) return STATUS_LABELS[normalized];
-  if (title && !/[A-Za-z]/.test(title)) return title;
-  return "وضعیت نامشخص";
+function activeListings(items?: ListingItem[]) {
+  if (!Array.isArray(items)) return [];
+  return items.filter(
+    (item) => String(item.status?.code || "").toLowerCase() === "active",
+  );
 }
 
 export default function StoryListingSelectorClient() {
@@ -158,7 +145,7 @@ export default function StoryListingSelectorClient() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
-    per_page: 12,
+    per_page: PAGE_SIZE,
     total: 0,
     total_pages: 1,
     has_next: false,
@@ -180,7 +167,7 @@ export default function StoryListingSelectorClient() {
         setActivities(Array.isArray(payload.activities) ? payload.activities : []);
         setMemberships(Array.isArray(payload.memberships) ? payload.memberships : []);
       } catch {
-        // فهرست آگهی‌ها همچنان باید در دسترس بماند.
+        // فهرست آگهی‌های فعال همچنان باید در دسترس بماند.
       }
     }
 
@@ -190,7 +177,7 @@ export default function StoryListingSelectorClient() {
 
   const identities = useMemo<Identity[]>(() => {
     const result: Identity[] = [
-      { key: "all", label: "همه", typeLabel: "همه آگهی‌ها", kind: "all", owner: "all", dealerId: 0, activityId: 0 },
+      { key: "all", label: "همه", typeLabel: "آگهی‌های فعال", kind: "all", owner: "all", dealerId: 0, activityId: 0 },
       { key: "personal", label: "شخصی", typeLabel: "حساب شخصی", kind: "personal", owner: "personal", dealerId: 0, activityId: 0 },
     ];
     const keys = new Set(result.map((item) => item.key));
@@ -283,7 +270,7 @@ export default function StoryListingSelectorClient() {
       setLoading(false);
       setError("");
       setListings([]);
-      setPagination({ page: 1, per_page: 12, total: 0, total_pages: 1, has_next: false, has_prev: false });
+      setPagination({ page: 1, per_page: PAGE_SIZE, total: 0, total_pages: 1, has_next: false, has_prev: false });
       return;
     }
 
@@ -293,8 +280,8 @@ export default function StoryListingSelectorClient() {
     try {
       const params = new URLSearchParams({
         page: String(targetPage),
-        per_page: "12",
-        status: "all",
+        per_page: String(PAGE_SIZE),
+        status: "active",
         owner: selectedIdentity.owner,
       });
       if (selectedIdentity.dealerId) params.set("dealer_id", String(selectedIdentity.dealerId));
@@ -308,15 +295,16 @@ export default function StoryListingSelectorClient() {
       const payload = (await response.json().catch(() => null)) as ListingsResponse | null;
 
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "آگهی‌ها دریافت نشدند.");
+        throw new Error(payload?.message || "آگهی‌های فعال دریافت نشدند.");
       }
 
-      setListings(Array.isArray(payload.data) ? payload.data : []);
+      const visibleListings = activeListings(payload.data);
+      setListings(visibleListings);
       setDealers(cleanDealers(payload.dealers));
       setPagination(payload.pagination || {
         page: targetPage,
-        per_page: 12,
-        total: 0,
+        per_page: PAGE_SIZE,
+        total: visibleListings.length,
         total_pages: 1,
         has_next: false,
         has_prev: false,
@@ -360,11 +348,11 @@ export default function StoryListingSelectorClient() {
 
         <section className={styles.hero}>
           <span>استوری چاکود</span>
-          <h1>{selectedIdentity.kind === "business" ? "استوری کسب‌وکار" : "کدام آگهی را استوری می‌کنی؟"}</h1>
+          <h1>{selectedIdentity.kind === "business" ? "استوری کسب‌وکار" : "یک آگهی فعال را انتخاب کن"}</h1>
           <p>
             {selectedIdentity.kind === "business"
               ? "برای کسب‌وکارهای خدماتی، استوری از پروفایل همان کسب‌وکار ساخته می‌شود."
-              : "اول هویت انتشار را انتخاب کن، بعد روی «استوری کن» بزن."}
+              : "فقط آگهی‌های فعال نمایش داده می‌شوند؛ انتخاب کن و مستقیم استوری بساز."}
           </p>
         </section>
 
@@ -374,7 +362,7 @@ export default function StoryListingSelectorClient() {
             <span>
               {selectedIdentity.kind === "business"
                 ? selectedIdentity.typeLabel
-                : `${formatNumber(pagination.total)} آگهی`}
+                : `${formatNumber(pagination.total)} آگهی فعال`}
             </span>
           </div>
           <div className={styles.identityRow}>
@@ -397,7 +385,7 @@ export default function StoryListingSelectorClient() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 onKeyDown={(event) => { if (event.key === "Enter") applySearch(); }}
-                placeholder="جستجو در آگهی‌ها"
+                placeholder="جستجو بین آگهی‌های فعال"
               />
               <button type="button" onClick={applySearch}>جستجو</button>
             </div>
@@ -421,34 +409,28 @@ export default function StoryListingSelectorClient() {
               >
                 استوری کسب‌وکار
               </Link>
-              <Link href={`/account-v2/businesses/${businessActivity.id}`} className={styles.businessManageLink}>
-                مشاهده و تکمیل پروفایل کسب‌وکار
-              </Link>
             </div>
           </section>
         ) : loading ? (
           <section className={styles.state}>
             <span className={styles.loader} />
-            <strong>در حال دریافت آگهی‌ها…</strong>
+            <strong>در حال دریافت آگهی‌های فعال…</strong>
           </section>
         ) : error ? (
           <section className={styles.state}>
-            <strong>آگهی‌ها دریافت نشدند</strong>
+            <strong>آگهی‌های فعال دریافت نشدند</strong>
             <span>{error}</span>
             <button type="button" onClick={() => void loadListings(page)}>تلاش دوباره</button>
           </section>
         ) : listings.length === 0 ? (
           <section className={styles.state}>
-            <strong>برای این حساب آگهی‌ای پیدا نشد</strong>
-            <span>یک حساب دیگر را انتخاب کن یا آگهی جدید ثبت کن.</span>
-            <Link href="/account/listings/new">ثبت آگهی</Link>
+            <strong>آگهی فعال برای این حساب وجود ندارد</strong>
+            <span>یک حساب دیگر را انتخاب کن یا آگهی‌ات را فعال کن.</span>
           </section>
         ) : (
-          <section className={styles.list} aria-label="انتخاب آگهی برای استوری">
+          <section className={styles.list} aria-label="انتخاب آگهی فعال برای استوری">
             {listings.map((listing) => {
               const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
-              const location = [listing.city, listing.neighborhood].filter(Boolean).join("، ") || listing.province || "";
-              const canStory = String(listing.status?.code || "").toLowerCase() === "active";
               const ownerLabel = listing.listing_owner_type === "dealer"
                 ? (listing.seller_display_name || dealers.find((dealer) => dealer.id === Number(listing.dealer_id))?.dealer_name || "نمایشگاه")
                 : "شخصی";
@@ -457,41 +439,26 @@ export default function StoryListingSelectorClient() {
                 <article className={styles.card} key={listing.id}>
                   <div className={styles.imageWrap}>
                     {listing.cover_image?.image_url ? (
-                      <img src={listing.cover_image.image_url} alt={listing.title || "خودرو"} />
+                      <img src={listing.cover_image.image_url} alt={listing.title || "خودرو"} loading="lazy" decoding="async" />
                     ) : (
                       <span className={styles.noImage}>بدون عکس</span>
                     )}
-                    <span className={`${styles.status} ${canStory ? styles.statusActive : styles.statusMuted}`}>
-                      {statusLabel(listing.status?.code, listing.status?.title)}
-                    </span>
                   </div>
 
                   <div className={styles.body}>
                     <div className={styles.titleRow}>
                       <strong>{listing.title || "آگهی بدون عنوان"}</strong>
-                      <small>#{listing.id}</small>
                     </div>
                     <div className={styles.price}>{formatPrice(listing.price_toman)}</div>
                     {vehicle ? <div className={styles.meta}>{vehicle}</div> : null}
-                    {(location || listing.mileage_km) ? (
-                      <div className={styles.meta}>
-                        {[location, listing.mileage_km ? `${formatNumber(listing.mileage_km)} کیلومتر` : ""].filter(Boolean).join(" · ")}
-                      </div>
-                    ) : null}
                     <span className={styles.owner}>{ownerLabel}</span>
 
-                    {canStory ? (
-                      <Link
-                        href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
-                        className={styles.storyButton}
-                      >
-                        استوری کن
-                      </Link>
-                    ) : (
-                      <div className={styles.storyDisabled}>
-                        استوری بعد از فعال‌شدن آگهی در دسترس است
-                      </div>
-                    )}
+                    <Link
+                      href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
+                      className={styles.storyButton}
+                    >
+                      استوری کن
+                    </Link>
                   </div>
                 </article>
               );

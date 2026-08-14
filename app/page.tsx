@@ -2,7 +2,7 @@ import Link from "next/link";
 import "./home.css";
 import AuthStatus from "./components/AuthStatus";
 import CreateActionMenu from "./components/CreateActionMenu";
-import HomeStories from "./components/HomeStories";
+import HomeStories from "./components/HomeStoriesUnified";
 import HomeFeaturedShowrooms from "./components/HomeFeaturedShowrooms";
 import HomeLocationSelector from "./components/HomeLocationSelector";
 import HomeMarketSearch from "./components/HomeMarketSearch";

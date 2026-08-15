@@ -121,7 +121,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <div className="masterFooterBottom">
           <span>© چاکود؛ پلتفرم رشد کسب‌وکار</span>
-          <span>لوکس، منطقه آزاد، نمایشگاه و خدمات خودرو</span>
+          <span>شرکت یکتا الکترونیک گلشن نوین — سال تأسیس ۱۳۹۵</span>
         </div>
       </footer>
 

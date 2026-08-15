@@ -483,7 +483,8 @@ async function createShareCardBlob({
   context.fillStyle = recipe.style.accent;
   context.fill();
 
-  const footerTop = 1580;
+  // Keep the lower story controls/caption area clear on Instagram, WhatsApp and similar apps.
+  const footerTop = 1460;
   context.strokeStyle = recipe.style.line;
   context.lineWidth = 2;
   context.beginPath();
@@ -503,11 +504,11 @@ async function createShareCardBlob({
     loadCanvasImage(qrDataUrl),
   ]);
 
-  const avatarX = 840;
-  const avatarY = 1650;
-  const avatarSize = 128;
+  const avatarX = 844;
+  const avatarY = 1510;
+  const avatarSize = 124;
   context.save();
-  roundedRect(context, avatarX, avatarY, avatarSize, avatarSize, 34);
+  roundedRect(context, avatarX, avatarY, avatarSize, avatarSize, 32);
   context.clip();
   context.fillStyle = "rgba(255,255,255,.14)";
   context.fillRect(avatarX, avatarY, avatarSize, avatarSize);
@@ -517,49 +518,46 @@ async function createShareCardBlob({
     context.fillStyle = recipe.style.foreground;
     context.textAlign = "center";
     context.font = "900 42px Arial, sans-serif";
-    context.fillText(initials, avatarX + avatarSize / 2, avatarY + 79);
+    context.fillText(initials, avatarX + avatarSize / 2, avatarY + 77);
   }
   context.restore();
   context.strokeStyle = recipe.style.line;
-  roundedRect(context, avatarX, avatarY, avatarSize, avatarSize, 34);
+  roundedRect(context, avatarX, avatarY, avatarSize, avatarSize, 32);
   context.stroke();
 
   context.textAlign = "right";
   context.fillStyle = recipe.style.foreground;
   context.font = "900 42px Arial, sans-serif";
   const businessName = identity.name.length > 28 ? `${identity.name.slice(0, 27)}…` : identity.name;
-  context.fillText(businessName, 810, 1703);
+  context.fillText(businessName, 812, 1558);
   context.fillStyle = recipe.style.muted;
   context.font = "800 25px Arial, sans-serif";
-  context.fillText(`${identity.label} عضو چاکود`, 810, 1752);
+  context.fillText(`${identity.label} عضو چاکود`, 812, 1607);
   context.fillStyle = recipe.style.accent;
   context.font = "800 24px Arial, sans-serif";
-  context.fillText("ویترین، خودروها و راه‌های ارتباطی در چاکود", 810, 1797);
+  context.fillText("ویترین، خودروها و راه‌های ارتباطی در چاکود", 812, 1652);
 
   if (qrImage) {
-    roundedRect(context, 65, 1630, 168, 168, 30);
+    roundedRect(context, 65, 1495, 168, 168, 30);
     context.fillStyle = "rgba(255,255,255,.96)";
     context.fill();
-    context.drawImage(qrImage, 78, 1643, 142, 142);
+    context.drawImage(qrImage, 78, 1508, 142, 142);
     context.textAlign = "center";
     context.fillStyle = recipe.style.foreground;
     context.font = "800 22px Arial, sans-serif";
-    context.fillText("مشاهده ویترین", 149, 1836);
+    context.fillText("مشاهده ویترین", 149, 1698);
   }
 
   if (chakodLogo) {
     context.save();
-    context.globalAlpha = 0.09;
-    const markWidth = 210;
+    context.globalAlpha = 0.12;
+    context.filter = "grayscale(1)";
+    const markWidth = 160;
     const markHeight = markWidth * (chakodLogo.naturalHeight / chakodLogo.naturalWidth);
-    context.drawImage(chakodLogo, 330, 1780, markWidth, markHeight);
+    context.drawImage(chakodLogo, 350, 1540, markWidth, markHeight);
+    context.filter = "none";
     context.restore();
   }
-
-  context.textAlign = "center";
-  context.fillStyle = recipe.style.muted;
-  context.font = "700 21px Arial, sans-serif";
-  context.fillText("chakod.com", 149, 1872);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {

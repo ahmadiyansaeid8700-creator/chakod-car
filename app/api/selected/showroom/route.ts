@@ -18,6 +18,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PRODUCT_CODE = "home_selected_showroom";
+const MIN_SELECTED_LISTINGS = 2;
 const MAX_SELECTED_LISTINGS = 6;
 
 type JsonObject = Record<string, unknown>;
@@ -253,10 +254,11 @@ export async function GET(request: NextRequest) {
         desktop_banner_url: content?.desktop_banner_url || "",
         mobile_banner_url: content?.mobile_banner_url || "",
         listing_ids: defaults,
-        creative_status: content?.creative_status || "pending",
+        creative_status: content?.creative_status || "draft",
         saved: Boolean(content),
       },
       listings,
+      min_selected_listings: MIN_SELECTED_LISTINGS,
       max_selected_listings: MAX_SELECTED_LISTINGS,
     });
   } catch {
@@ -284,7 +286,9 @@ export async function PUT(request: NextRequest) {
     : [];
 
   if (!dealerId) return jsonResponse({ success: false, message: "شناسه نمایشگاه معتبر نیست." }, 400);
-  if (!requestedIds.length) return jsonResponse({ success: false, message: "حداقل یک خودروی فعال برای ویترین انتخاب کنید." }, 422);
+  if (requestedIds.length < MIN_SELECTED_LISTINGS) {
+    return jsonResponse({ success: false, message: "برای انتشار نمایشگاه منتخب حداقل دو خودروی فعال انتخاب کنید." }, 422);
+  }
 
   try {
     const context = await contextForRequest(request, dealerId);
@@ -298,7 +302,7 @@ export async function PUT(request: NextRequest) {
 
     await ensureContentSchema();
     const nowIso = new Date().toISOString();
-    const creativeStatus = desktopBannerUrl || mobileBannerUrl ? "pending" : "none";
+    const creativeStatus = "published";
     await getRuntimeEnv().DB
       .prepare(`INSERT INTO selected_showroom_content (
         order_id, owner_key, dealer_id, desktop_banner_url, mobile_banner_url,
@@ -325,7 +329,7 @@ export async function PUT(request: NextRequest) {
 
     return jsonResponse({
       success: true,
-      message: "ویترین نمایشگاه منتخب ذخیره شد.",
+      message: "ویترین نمایشگاه منتخب ذخیره و در صفحه اول منتشر شد.",
       content: {
         desktop_banner_url: desktopBannerUrl,
         mobile_banner_url: mobileBannerUrl,

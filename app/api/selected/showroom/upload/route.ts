@@ -13,7 +13,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
 
 function mediaUrlFromPayload(payload: Record<string, unknown>) {
   const data = payload.data && typeof payload.data === "object"
@@ -66,7 +73,7 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "فایل تصویر ارسال نشده است." }, 422);
     }
     if (!ALLOWED_TYPES.has(file.type)) {
-      return jsonResponse({ success: false, message: "فرمت بنر باید JPG، PNG یا WebP باشد." }, 422);
+      return jsonResponse({ success: false, message: "فرمت تصویر پشتیبانی نمی‌شود؛ JPG، PNG، WebP، HEIC یا HEIF انتخاب کنید." }, 422);
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       return jsonResponse({ success: false, message: "حجم تصویر بیش از حد مجاز است." }, 413);

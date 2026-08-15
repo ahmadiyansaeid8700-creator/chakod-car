@@ -35,6 +35,7 @@ type PublicBusiness = {
   is_verified: boolean;
   href?: string;
   is_selected?: boolean;
+  selected_listing_ids?: number[];
 };
 
 type ApiResponse = {
@@ -58,6 +59,21 @@ type FeaturedPlacement = {
 type FeaturedResponse = {
   success?: boolean;
   data?: FeaturedPlacement[];
+};
+
+type SelectedListing = {
+  id: number;
+  title?: string;
+  brand?: string;
+  model?: string;
+  production_year?: number | null;
+  price_toman?: number | null;
+  cover_image?: string;
+};
+
+type SelectedListingsResponse = {
+  success?: boolean;
+  data?: SelectedListing[];
 };
 
 const types: Array<{ key: "" | BusinessType; label: string }> = [
@@ -100,6 +116,99 @@ function normalizeText(value: unknown) {
     .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
 }
 
+function normalizeListingIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => Math.round(Number(item || 0)))
+        .filter((item) => Number.isSafeInteger(item) && item > 0),
+    ),
+  ).slice(0, 3);
+}
+
+function listingTitle(listing: SelectedListing) {
+  const title = String(listing.title || "").trim();
+  if (title) return title;
+  return [listing.brand, listing.model, listing.production_year]
+    .filter((value) => value !== null && value !== undefined && String(value).trim())
+    .join(" ") || `خودرو ${listing.id}`;
+}
+
+function listingPrice(value: number | null | undefined) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return "توافقی";
+  return `${Math.round(amount).toLocaleString("fa-IR")} تومان`;
+}
+
+function SelectedShowroomCars({ ids }: { ids?: number[] }) {
+  const idsKey = normalizeListingIds(ids).join(",");
+  const requestedIds = idsKey ? idsKey.split(",").map(Number) : [];
+  const [listings, setListings] = useState<SelectedListing[]>([]);
+  const [loading, setLoading] = useState(Boolean(idsKey));
+
+  useEffect(() => {
+    if (!idsKey) {
+      setListings([]);
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    async function load() {
+      try {
+        const response = await fetch(`/api/compare-listings?ids=${encodeURIComponent(idsKey)}`, {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const result = (await response.json()) as SelectedListingsResponse;
+        if (!response.ok || !result.success || !Array.isArray(result.data)) {
+          setListings([]);
+          return;
+        }
+        const order = new Map(requestedIds.map((id, index) => [id, index]));
+        setListings(
+          result.data
+            .filter((item) => requestedIds.includes(Number(item.id)))
+            .sort((a, b) => (order.get(Number(a.id)) ?? 99) - (order.get(Number(b.id)) ?? 99))
+            .slice(0, 3),
+        );
+      } catch (reason: unknown) {
+        if (!controller.signal.aborted) setListings([]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => controller.abort();
+  }, [idsKey]);
+
+  if (!idsKey) return null;
+
+  return (
+    <div className={styles.selectedCarsWrap}>
+      <span className={styles.selectedCarsLabel}>خودروهای منتخب</span>
+      <div className={`${styles.selectedCars} ${(loading ? requestedIds.length : listings.length) === 2 ? styles.selectedCarsTwo : ""}`}>
+        {loading
+          ? requestedIds.map((id) => <span className={styles.selectedCarSkeleton} key={id} />)
+          : listings.map((listing) => (
+              <a className={styles.selectedCar} href={`/cars/${listing.id}`} key={listing.id}>
+                <span className={styles.selectedCarMedia}>
+                  {listing.cover_image ? <img src={listing.cover_image} alt={listingTitle(listing)} /> : <span />}
+                </span>
+                <strong>{listingTitle(listing)}</strong>
+                <small>{listingPrice(listing.price_toman)}</small>
+              </a>
+            ))}
+      </div>
+    </div>
+  );
+}
+
 function mergeSelectedShowrooms(
   baseItems: PublicBusiness[],
   placements: FeaturedPlacement[],
@@ -128,6 +237,7 @@ function mergeSelectedShowrooms(
     const selectedCover = String(
       placement.mobile_banner_url || placement.desktop_banner_url || "",
     ).trim();
+    const selectedListingIds = normalizeListingIds(placement.listing_ids);
 
     if (matchingIndex !== undefined) {
       const item = baseItems[matchingIndex];
@@ -136,6 +246,7 @@ function mergeSelectedShowrooms(
         ...item,
         cover_url: selectedCover || item.cover_url,
         is_selected: true,
+        selected_listing_ids: selectedListingIds,
         href: `/businesses/${encodeURIComponent(item.slug)}`,
       });
       continue;
@@ -164,6 +275,7 @@ function mergeSelectedShowrooms(
       price_range_text: "",
       is_verified: false,
       is_selected: true,
+      selected_listing_ids: selectedListingIds,
       href: `/showrooms/${dealerId}`,
     });
   }
@@ -341,6 +453,7 @@ export default function BusinessesPage({
                     <small>{business.is_selected ? "نمایشگاه منتخب" : business.business_type_title}</small>
                     <h3><a href={href}>{business.name}</a></h3>
                     <p>{[business.neighborhood, business.city, business.province].filter(Boolean).join("، ") || "نشانی در پروفایل"}</p>
+                    {business.is_selected ? <SelectedShowroomCars ids={business.selected_listing_ids} /> : null}
                     <div className={styles.tags}>{[...business.category_labels, ...business.services].slice(0, 4).map((label) => <span key={label}>{label}</span>)}{business.mobile_service && <span>خدمات در محل</span>}</div>
                     {business.price_range_text && <div className={styles.price}>{business.price_range_text}</div>}
                     <a className={styles.view} href={href}>مشاهده اطلاعات کامل</a>

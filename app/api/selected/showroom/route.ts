@@ -74,14 +74,25 @@ function parseListingIds(value: string) {
   }
 }
 
+function absoluteMediaUrl(value: unknown) {
+  const raw = cleanText(value, 1200);
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  try {
+    return new URL(raw, authApiUrl("/")).toString();
+  } catch {
+    return raw;
+  }
+}
+
 function imageFromListing(item: JsonObject) {
   const cover = item.cover_image;
-  if (typeof cover === "string") return cover.trim();
-  if (isRecord(cover)) return cleanText(cover.image_url || cover.url, 1200);
+  if (typeof cover === "string") return absoluteMediaUrl(cover);
+  if (isRecord(cover)) return absoluteMediaUrl(cover.image_url || cover.url);
 
   const images = Array.isArray(item.images) ? item.images.filter(isRecord) : [];
   const preferred = images.find((image) => Boolean(image.is_cover)) || images[0];
-  return preferred ? cleanText(preferred.image_url || preferred.url, 1200) : "";
+  return preferred ? absoluteMediaUrl(preferred.image_url || preferred.url) : "";
 }
 
 async function ensureContentSchema() {

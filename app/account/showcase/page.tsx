@@ -6,6 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import MobileBottomNav from "../../components/MobileBottomNav";
 import {
+  ACTIVE_ACCOUNT_EVENT,
+  readActiveAccount,
+  type ActiveAccountSelection,
+} from "../../lib/active-account";
+import {
   buildDailyCard,
   formatPersianCardDate,
   getIdentityInitials,
@@ -34,7 +39,36 @@ type MeResponse = {
   message?: string;
 };
 
+type AccountActivity = {
+  id: number;
+  type: string;
+  name: string;
+  external_dealer_id?: number | null;
+  logo_url?: string | null;
+};
+
+type AccountMembership = {
+  type: string;
+  name: string;
+  external_dealer_id?: number | null;
+  role?: string;
+  logo_url?: string | null;
+};
+
+type ActivitiesResponse = {
+  success?: boolean;
+  activities?: AccountActivity[];
+  memberships?: AccountMembership[];
+};
+
 type CardCssVariables = CSSProperties & Record<`--${string}`, string>;
+
+type ResolvedCardIdentity = {
+  key: string;
+  name: string;
+  label: string;
+  logo: string;
+};
 
 function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
@@ -75,23 +109,97 @@ function identityImage(user: User | null) {
     || imageFromValue(user.profile_image);
 }
 
+function accountLabel(type: string) {
+  if (type === "dealer") return "نمایشگاه خودرو";
+  if (type === "parts_store") return "فروشگاه قطعات";
+  if (type === "repair_shop") return "تعمیرگاه خودرو";
+  if (type === "car_service") return "مرکز خدمات خودرو";
+  return "کسب‌وکار";
+}
+
+function resolveCardIdentity(
+  selection: ActiveAccountSelection,
+  user: User | null,
+  activities: AccountActivity[],
+  memberships: AccountMembership[],
+): ResolvedCardIdentity {
+  const personalName = displayName(user);
+  const personalLogo = identityImage(user);
+  const userKey = String(user?.id || user?.mobile || personalName);
+
+  if (selection.kind === "activity") {
+    const current = activities.find((item) => item.id === selection.id);
+    const name = current?.name?.trim() || selection.name.trim() || personalName;
+    const type = current?.type || selection.type;
+    return {
+      key: `${userKey}|activity:${selection.id}:${type}`,
+      name,
+      label: accountLabel(type),
+      logo: current?.logo_url?.trim() || selection.logo_url?.trim() || personalLogo,
+    };
+  }
+
+  if (selection.kind === "membership") {
+    const current = memberships.find((item) => Number(item.external_dealer_id || 0) === selection.external_dealer_id);
+    const name = current?.name?.trim() || selection.name.trim() || personalName;
+    const type = current?.type || selection.type;
+    return {
+      key: `${userKey}|membership:${selection.external_dealer_id}:${type}`,
+      name,
+      label: accountLabel(type),
+      logo: current?.logo_url?.trim() || selection.logo_url?.trim() || personalLogo,
+    };
+  }
+
+  return {
+    key: `${userKey}|personal`,
+    name: personalName,
+    label: "حساب شخصی",
+    logo: personalLogo,
+  };
+}
+
+function splitQuote(value: string) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  const [lead, ...rest] = normalized.split("؛");
+  const tail = rest.join("؛").trim().replace(/[.。]+$/, "");
+  return {
+    lead: lead.trim(),
+    tail,
+  };
+}
+
 export default function DailyCardPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [activeAccount, setActiveAccount] = useState<ActiveAccountSelection>({ kind: "personal" });
+  const [activities, setActivities] = useState<AccountActivity[]>([]);
+  const [memberships, setMemberships] = useState<AccountMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const today = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    const syncActiveAccount = () => setActiveAccount(readActiveAccount());
+    syncActiveAccount();
+    window.addEventListener(ACTIVE_ACCOUNT_EVENT, syncActiveAccount);
+    window.addEventListener("storage", syncActiveAccount);
+    return () => {
+      window.removeEventListener(ACTIVE_ACCOUNT_EVENT, syncActiveAccount);
+      window.removeEventListener("storage", syncActiveAccount);
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
     const cached = readCachedUser();
     if (cached) setUser(cached);
 
-    void fetch("/api/auth/me", {
-      credentials: "include",
-      cache: "no-store",
-      headers: { Accept: "application/json", ...authHeaders() },
-    })
-      .then(async (response) => {
+    void Promise.allSettled([
+      fetch("/api/auth/me", {
+        credentials: "include",
+        cache: "no-store",
+        headers: { Accept: "application/json", ...authHeaders() },
+      }).then(async (response) => {
         const result = (await response.json().catch(() => null)) as MeResponse | null;
         if (ignore) return;
         if (response.ok && result?.success && result.user) {
@@ -101,23 +209,32 @@ export default function DailyCardPage() {
           return;
         }
         if (!cached) setError(result?.message || "برای دیدن کارت روز، وارد حساب چاکود شو.");
-      })
-      .catch(() => {
-        if (!ignore && !cached) setError("کارت روز الان دریافت نشد. دوباره تلاش کن.");
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
+      }),
+      fetch("/api/auth/account-activities", {
+        credentials: "include",
+        cache: "no-store",
+        headers: { Accept: "application/json", ...authHeaders() },
+      }).then(async (response) => {
+        const result = (await response.json().catch(() => null)) as ActivitiesResponse | null;
+        if (ignore || !response.ok || !result?.success) return;
+        setActivities(Array.isArray(result.activities) ? result.activities : []);
+        setMemberships(Array.isArray(result.memberships) ? result.memberships : []);
+      }),
+    ]).finally(() => {
+      if (!ignore) setLoading(false);
+    });
 
     return () => { ignore = true; };
   }, []);
 
-  const name = displayName(user);
-  const seedKey = String(user?.id || user?.mobile || name);
-  const recipe = useMemo(() => buildDailyCard(seedKey, today), [seedKey, today]);
+  const identity = useMemo(
+    () => resolveCardIdentity(activeAccount, user, activities, memberships),
+    [activeAccount, user, activities, memberships],
+  );
+  const recipe = useMemo(() => buildDailyCard(identity.key, today), [identity.key, today]);
+  const quote = useMemo(() => splitQuote(recipe.quote), [recipe.quote]);
   const dateLabel = useMemo(() => formatPersianCardDate(today), [today]);
-  const logo = identityImage(user);
-  const initials = getIdentityInitials(name);
+  const initials = getIdentityInitials(identity.name);
 
   const cardStyle: CardCssVariables = {
     "--card-background": recipe.style.background,
@@ -161,21 +278,21 @@ export default function DailyCardPage() {
 
         {user ? (
           <>
-            <article className={`${styles.card} ${motifClass}`} style={cardStyle} aria-label={`کارت روز ${name}`}>
+            <article className={`${styles.card} ${motifClass}`} style={cardStyle} aria-label={`کارت روز ${identity.name}`}>
               <div className={styles.ambient} aria-hidden="true" />
               <div className={styles.motif} aria-hidden="true" />
 
               <div className={styles.identityRow}>
                 <div className={styles.identity}>
                   <div className={styles.avatar}>
-                    {logo ? <img src={logo} alt="" /> : <span>{initials}</span>}
+                    {identity.logo ? <img src={identity.logo} alt="" /> : <span>{initials}</span>}
                   </div>
                   <div className={styles.identityCopy}>
-                    <small>کارت امروز من</small>
-                    <strong>{name}</strong>
+                    <small>{identity.label}</small>
+                    <strong>{identity.name}</strong>
                   </div>
                 </div>
-                <div className={styles.datePill}>
+                <div className={styles.datePill} aria-label={`${dateLabel.weekday} ${dateLabel.date}`}>
                   <strong>{dateLabel.weekday}</strong>
                   <span>{dateLabel.date}</span>
                 </div>
@@ -183,7 +300,10 @@ export default function DailyCardPage() {
 
               <div className={styles.quoteArea}>
                 <span className={styles.quoteMark} aria-hidden="true">“</span>
-                <p>{recipe.quote}</p>
+                <p aria-label={recipe.quote}>
+                  <span className={styles.quoteLead}>{quote.lead}</span>
+                  {quote.tail ? <span className={styles.quoteTail}>{quote.tail}</span> : null}
+                </p>
                 <div className={styles.quoteRule} aria-hidden="true" />
               </div>
 
@@ -198,7 +318,7 @@ export default function DailyCardPage() {
               </div>
             </article>
 
-            <p className={styles.caption}>این کارت برای امروز ثابت می‌ماند؛ فردا جمله و فضای بصری تازه‌ای می‌گیرد.</p>
+            <p className={styles.caption}>کارت بر اساس حساب یا کسب‌وکار فعال ساخته می‌شود و برای امروز ثابت می‌ماند.</p>
           </>
         ) : null}
       </div>

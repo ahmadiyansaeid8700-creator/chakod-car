@@ -67,6 +67,25 @@ type ListingsResponse = {
   data?: ListingItem[];
 };
 
+type ActiveStory = {
+  story_id: number;
+  public_story_id: number;
+  listing_id: number;
+  title: string;
+  listing_owner_type: "personal" | "dealer";
+  seller_display_name?: string;
+  dealer_id?: number | null;
+  starts_at?: string;
+  expires_at: string;
+  share_path: string;
+};
+
+type ActiveStoriesResponse = {
+  success?: boolean;
+  count?: number;
+  data?: ActiveStory[];
+};
+
 type Identity = {
   key: string;
   label: string;
@@ -114,6 +133,23 @@ function formatPrice(value: number | string | null | undefined) {
   return `${formatNumber(number)} تومان`;
 }
 
+function remainingLabel(expiresAt: string) {
+  const remainingMs = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return "در حال پایان";
+  const minutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+  if (minutes < 60) return `${formatNumber(minutes)} دقیقه دیگر`;
+  return `${formatNumber(Math.ceil(minutes / 60))} ساعت دیگر`;
+}
+
+function storyMatchesIdentity(story: ActiveStory, identity: Identity) {
+  if (identity.kind === "all") return true;
+  if (identity.kind === "personal") return story.listing_owner_type !== "dealer";
+  if (identity.kind === "dealer") {
+    return story.listing_owner_type === "dealer" && Number(story.dealer_id || 0) === identity.dealerId;
+  }
+  return false;
+}
+
 function cleanDealers(items?: DealerItem[]) {
   if (!Array.isArray(items)) return [];
   const seen = new Set<number>();
@@ -139,6 +175,7 @@ export default function StoryListingSelectorClient() {
   const [dealers, setDealers] = useState<DealerItem[]>([]);
   const [activities, setActivities] = useState<AccountActivity[]>([]);
   const [memberships, setMemberships] = useState<AccountMembership[]>([]);
+  const [activeStories, setActiveStories] = useState<ActiveStory[]>([]);
   const [identityKey, setIdentityKey] = useState("all");
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -172,6 +209,28 @@ export default function StoryListingSelectorClient() {
     }
 
     void loadAccountActivities();
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadActiveStories() {
+      try {
+        const response = await fetch("/api/stories/active", {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const payload = (await response.json().catch(() => null)) as ActiveStoriesResponse | null;
+        if (ignore || !response.ok || !payload?.success) return;
+        setActiveStories(Array.isArray(payload.data) ? payload.data : []);
+      } catch {
+        if (!ignore) setActiveStories([]);
+      }
+    }
+
+    void loadActiveStories();
     return () => { ignore = true; };
   }, []);
 
@@ -264,6 +323,25 @@ export default function StoryListingSelectorClient() {
   const selectedIdentity = useMemo<Identity>(() => {
     return identities.find((item) => item.key === identityKey) || identities[0];
   }, [identities, identityKey]);
+
+  const activeForIdentity = useMemo(
+    () => activeStories.filter((story) => storyMatchesIdentity(story, selectedIdentity)),
+    [activeStories, selectedIdentity],
+  );
+
+  const activeStoryByListing = useMemo(() => {
+    const map = new Map<number, ActiveStory>();
+    activeForIdentity.forEach((story) => map.set(Number(story.listing_id), story));
+    return map;
+  }, [activeForIdentity]);
+
+  const orderedListings = useMemo(() => {
+    return [...listings].sort((a, b) => {
+      const aActive = activeStoryByListing.has(Number(a.id)) ? 1 : 0;
+      const bActive = activeStoryByListing.has(Number(b.id)) ? 1 : 0;
+      return bActive - aActive;
+    });
+  }, [listings, activeStoryByListing]);
 
   async function loadListings(targetPage = page) {
     if (selectedIdentity.kind === "business") {
@@ -392,6 +470,79 @@ export default function StoryListingSelectorClient() {
           ) : null}
         </section>
 
+        {selectedIdentity.kind !== "business" && activeForIdentity.length > 0 ? (
+          <section
+            aria-label="استوری‌های فعال این حساب"
+            style={{
+              width: "100%",
+              marginTop: 10,
+              padding: 13,
+              border: "1px solid #b9ead8",
+              borderRadius: 20,
+              background: "linear-gradient(145deg,#f6fffb,#edfbf5)",
+              boxShadow: "0 10px 28px rgba(8,119,90,.06)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 9 }}>
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ display: "block", color: "#075d47", fontSize: 11.5, fontWeight: 950 }}>استوری‌های فعال من</strong>
+                <small style={{ display: "block", marginTop: 2, color: "#538071", fontSize: 8.5 }}>این آگهی‌ها همین الان داخل چاکود استوری هستند.</small>
+              </div>
+              <span style={{ flex: "0 0 auto", padding: "5px 8px", borderRadius: 999, color: "#08775a", background: "#dff8ee", fontSize: 8.5, fontWeight: 950 }}>
+                {formatNumber(activeForIdentity.length)} فعال
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gap: 7 }}>
+              {activeForIdentity.map((story) => (
+                <div
+                  key={story.story_id}
+                  style={{
+                    minWidth: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 9,
+                    flexWrap: "wrap",
+                    padding: "9px 10px",
+                    border: "1px solid rgba(8,119,90,.12)",
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,.88)",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: "1 1 170px" }}>
+                    <strong style={{ display: "block", overflow: "hidden", color: "#1f332d", fontSize: 10.5, fontWeight: 950, whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                      {story.title}
+                    </strong>
+                    <small style={{ display: "block", marginTop: 3, color: "#5f8277", fontSize: 8 }}>
+                      {remainingLabel(story.expires_at)} · آگهی #{formatNumber(story.listing_id)}
+                    </small>
+                  </div>
+                  <Link
+                    href={story.share_path}
+                    style={{
+                      flex: "0 0 auto",
+                      minHeight: 34,
+                      padding: "0 11px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 10,
+                      color: "#fff",
+                      background: "#08775a",
+                      textDecoration: "none",
+                      fontSize: 8.5,
+                      fontWeight: 950,
+                    }}
+                  >
+                    باز کردن و اشتراک
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {selectedIdentity.kind === "business" && businessActivity ? (
           <section className={styles.businessStoryCard} aria-label={`دبل استوری ${businessActivity.name}`}>
             <div className={styles.businessStoryIcon} aria-hidden="true">▣</div>
@@ -429,14 +580,19 @@ export default function StoryListingSelectorClient() {
           </section>
         ) : (
           <section className={styles.list} aria-label="انتخاب آگهی فعال برای دبل استوری">
-            {listings.map((listing) => {
+            {orderedListings.map((listing) => {
               const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
               const ownerLabel = listing.listing_owner_type === "dealer"
                 ? (listing.seller_display_name || dealers.find((dealer) => dealer.id === Number(listing.dealer_id))?.dealer_name || "نمایشگاه")
                 : "شخصی";
+              const activeStory = activeStoryByListing.get(Number(listing.id));
 
               return (
-                <article className={styles.card} key={listing.id}>
+                <article
+                  className={styles.card}
+                  key={listing.id}
+                  style={activeStory ? { borderColor: "#a7e7d0", boxShadow: "0 12px 30px rgba(8,119,90,.09)" } : undefined}
+                >
                   <div className={styles.imageWrap}>
                     {listing.cover_image?.image_url ? (
                       <img
@@ -449,6 +605,28 @@ export default function StoryListingSelectorClient() {
                     ) : (
                       <span className={styles.noImage}>بدون عکس</span>
                     )}
+                    {activeStory ? (
+                      <span
+                        style={{
+                          position: "absolute",
+                          zIndex: 3,
+                          top: 6,
+                          right: 6,
+                          minHeight: 22,
+                          padding: "0 7px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          borderRadius: 999,
+                          color: "#fff",
+                          background: "rgba(8,119,90,.94)",
+                          boxShadow: "0 5px 14px rgba(8,119,90,.22)",
+                          fontSize: 7.5,
+                          fontWeight: 950,
+                        }}
+                      >
+                        ● استوری فعال
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className={styles.body}>
@@ -458,13 +636,28 @@ export default function StoryListingSelectorClient() {
                     <div className={styles.price}>{formatPrice(listing.price_toman)}</div>
                     {vehicle ? <div className={styles.meta}>{vehicle}</div> : null}
                     <span className={styles.owner}>{ownerLabel}</span>
+                    {activeStory ? (
+                      <small style={{ marginTop: 5, color: "#08775a", fontSize: 8, fontWeight: 900 }}>
+                        {remainingLabel(activeStory.expires_at)} در استوری چاکود
+                      </small>
+                    ) : null}
 
-                    <Link
-                      href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
-                      className={styles.storyButton}
-                    >
-                      ادامه و ساخت دبل استوری
-                    </Link>
+                    {activeStory ? (
+                      <Link
+                        href={activeStory.share_path}
+                        className={styles.storyButton}
+                        style={{ background: "linear-gradient(135deg,#08775a,#10a477)", boxShadow: "0 9px 20px rgba(8,119,90,.16)" }}
+                      >
+                        مدیریت و اشتراک‌گذاری استوری
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
+                        className={styles.storyButton}
+                      >
+                        ادامه و ساخت دبل استوری
+                      </Link>
+                    )}
                   </div>
                 </article>
               );

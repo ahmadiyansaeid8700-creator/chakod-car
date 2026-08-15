@@ -97,7 +97,7 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body>
         <LocalPublicApiBridge />
-        {children}
+        <div className="appViewport">{children}</div>
         <ChakodAiAssistant />
       </body>
     </html>

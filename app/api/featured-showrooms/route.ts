@@ -4,11 +4,21 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../db";
 import { commerceOrders, featuredShowroomPlacements } from "../../../db/schema";
 import { jsonResponse } from "../../../lib/chakod-auth-proxy";
+import { getRuntimeEnv } from "../../../lib/runtime-env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type JsonObject = Record<string, unknown>;
+
+type ContentRow = {
+  order_id: number;
+  dealer_id: number;
+  desktop_banner_url: string;
+  mobile_banner_url: string;
+  listing_ids_json: string;
+  creative_status: string;
+};
 
 function isRecord(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -32,6 +42,47 @@ function safeId(value: unknown) {
   return Number.isSafeInteger(id) && id > 0 ? id : 0;
 }
 
+function parseIds(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return Array.from(new Set(parsed.map(safeId).filter(Boolean))).slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+function isPreviewHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  return host === "staging.chakod.com" || host === "localhost" || host === "127.0.0.1";
+}
+
+async function loadContentRows() {
+  try {
+    const d1 = getRuntimeEnv().DB;
+    await d1.prepare(`CREATE TABLE IF NOT EXISTS selected_showroom_content (
+      id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+      order_id integer NOT NULL UNIQUE,
+      owner_key text NOT NULL,
+      dealer_id integer NOT NULL,
+      desktop_banner_url text DEFAULT '' NOT NULL,
+      mobile_banner_url text DEFAULT '' NOT NULL,
+      listing_ids_json text DEFAULT '[]' NOT NULL,
+      creative_status text DEFAULT 'pending' NOT NULL,
+      created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+    )`).run();
+    const result = await d1
+      .prepare(
+        "SELECT order_id, dealer_id, desktop_banner_url, mobile_banner_url, listing_ids_json, creative_status FROM selected_showroom_content ORDER BY updated_at DESC LIMIT 200",
+      )
+      .all();
+    return (result.results || []) as unknown as ContentRow[];
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: NextRequest) {
   const province = String(request.nextUrl.searchParams.get("province") || "").trim().slice(0, 80);
   const nowIso = new Date().toISOString();
@@ -46,7 +97,7 @@ export async function GET(request: NextRequest) {
     ];
     if (province) conditions.push(eq(featuredShowroomPlacements.province, province));
 
-    const [rows, selectedOrders] = await Promise.all([
+    const [rows, selectedOrders, contentRows] = await Promise.all([
       db
         .select({
           id: featuredShowroomPlacements.id,
@@ -74,7 +125,11 @@ export async function GET(request: NextRequest) {
         )
         .orderBy(desc(commerceOrders.id))
         .limit(100),
+      loadContentRows(),
     ]);
+
+    const contentByOrderId = new Map(contentRows.map((item) => [Number(item.order_id), item]));
+    const allowPendingCreative = isPreviewHost(request.nextUrl.hostname);
 
     const selected = selectedOrders.flatMap((order) => {
       const metadata = parseMetadata(order.metadataJson);
@@ -85,9 +140,15 @@ export async function GET(request: NextRequest) {
       if (!dealerId || !startsAt || !expiresAt || startsAt > nowIso || expiresAt <= nowIso) return [];
       if (province && selectedProvince && selectedProvince !== province) return [];
 
+      const content = contentByOrderId.get(order.id);
+      const canUseCreative = Boolean(
+        content && (content.creative_status === "approved" || allowPendingCreative),
+      );
+
       return [
         {
           id: 1_000_000_000 + order.id,
+          order_id: order.id,
           dealer_id: dealerId,
           dealer_name: cleanText(metadata.target_name) || `نمایشگاه ${dealerId}`,
           province: selectedProvince,
@@ -95,16 +156,33 @@ export async function GET(request: NextRequest) {
           end_date: expiresAt.slice(0, 10),
           status: "active",
           approved_at: startsAt,
+          desktop_banner_url: canUseCreative ? cleanText(content?.desktop_banner_url, 1200) : "",
+          mobile_banner_url: canUseCreative ? cleanText(content?.mobile_banner_url, 1200) : "",
+          listing_ids: content ? parseIds(content.listing_ids_json) : [],
+          creative_status: content?.creative_status || "none",
         },
       ];
     });
 
-    const merged = new Map<number, (typeof selected)[number] | (typeof rows)[number]>();
+    const merged = new Map<number, (typeof selected)[number] | ((typeof rows)[number] & {
+      desktop_banner_url?: string;
+      mobile_banner_url?: string;
+      listing_ids?: number[];
+      creative_status?: string;
+    })>();
     selected.forEach((item) => {
       if (!merged.has(item.dealer_id)) merged.set(item.dealer_id, item);
     });
     rows.forEach((item) => {
-      if (!merged.has(item.dealer_id)) merged.set(item.dealer_id, item);
+      if (!merged.has(item.dealer_id)) {
+        merged.set(item.dealer_id, {
+          ...item,
+          desktop_banner_url: "",
+          mobile_banner_url: "",
+          listing_ids: [],
+          creative_status: "legacy",
+        });
+      }
     });
 
     return jsonResponse({ success: true, data: Array.from(merged.values()).slice(0, 24) });

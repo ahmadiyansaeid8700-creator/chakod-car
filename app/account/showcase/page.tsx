@@ -14,7 +14,7 @@ import {
   buildDailyCard,
   formatPersianCardDate,
   getIdentityInitials,
-} from "../../lib/daily-card";
+} from "../../lib/daily-card-expanded";
 import styles from "./page.module.css";
 
 type ImageValue = string | { url?: string | null; image_url?: string | null } | null;

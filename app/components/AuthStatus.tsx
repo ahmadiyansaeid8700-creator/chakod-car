@@ -3,19 +3,21 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { clearActiveAccount, saveActiveAccount } from "../lib/active-account";
+
 const API_BASE = "https://api.chakod.com";
 
 type ChakodUser = { id?: number; display_name?: string; full_name?: string | null; business_name?: string | null; mobile?: string; mobile_masked?: string; account_type?: "personal" | "dealer" | "business" };
 type IdentityCache = { primary_role?: string; role_title?: string; redirect_to?: string; roles?: string[]; permissions?: string[]; is_site_owner?: boolean };
 type MeResponse = IdentityCache & { success?: boolean; logged_in?: boolean; message?: string; user?: ChakodUser | null };
-type AccountActivity = { id: number; type: string; name: string; external_dealer_id?: number | null };
+type AccountActivity = { id: number; type: string; name: string; external_dealer_id?: number | null; logo_url?: string | null };
 type ActivitiesResponse = { success?: boolean; activities?: AccountActivity[] };
 
 function getToken() { if (typeof window === "undefined") return ""; return localStorage.getItem("chakod_session_token") || ""; }
 function authHeaders(): Record<string, string> { const token = getToken(); return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {}; }
 function readSavedUser(): ChakodUser | null { try { const saved = localStorage.getItem("chakod_user"); return saved ? JSON.parse(saved) as ChakodUser : null; } catch { return null; } }
 function readSavedIdentity(): IdentityCache { try { const saved = localStorage.getItem("chakod_identity"); return saved ? JSON.parse(saved) as IdentityCache : {}; } catch { return {}; } }
-function clearLocalAuth() { localStorage.removeItem("chakod_session_token"); localStorage.removeItem("chakod_user"); localStorage.removeItem("chakod_identity"); }
+function clearLocalAuth() { localStorage.removeItem("chakod_session_token"); localStorage.removeItem("chakod_user"); localStorage.removeItem("chakod_identity"); clearActiveAccount(); }
 function activityLabel(type: string) { if (type === "dealer") return "نمایشگاه خودرو"; if (type === "parts_store") return "فروشگاه قطعات"; if (type === "repair_shop") return "تعمیرگاه خودرو"; if (type === "car_service") return "مرکز خدمات خودرو"; return "کسب‌وکار"; }
 function activityManageHref(activity: AccountActivity) { if (activity.type === "dealer" && activity.external_dealer_id) return `/account/business?dealer_id=${activity.external_dealer_id}`; return `/account-v2/businesses/${activity.id}`; }
 
@@ -65,9 +67,9 @@ export default function AuthStatus() {
   return <div className="authStatusShell" ref={shellRef}>
     <button type="button" className="authStatus authStatusUser" onClick={() => setMenuOpen(v => !v)} aria-haspopup="menu" aria-expanded={menuOpen}><div className="authStatusText"><strong>{displayName}</strong><span>حساب کاربری</span></div><span className="authMenuChevron" aria-hidden="true">⌄</span></button>
     {menuOpen ? <div className="authMenu" role="menu">
-      <Link className="authMenuRow" role="menuitem" href="/account-v2/profile" onClick={() => setMenuOpen(false)}><span className="authMenuIcon">♙</span><span className="authMenuItemCopy"><strong>حساب شخصی</strong><small>{displayName}</small></span></Link>
+      <Link className="authMenuRow" role="menuitem" href="/account-v2/profile" onClick={() => { saveActiveAccount({ kind: "personal" }); setMenuOpen(false); }}><span className="authMenuIcon">♙</span><span className="authMenuItemCopy"><strong>حساب شخصی</strong><small>{displayName}</small></span></Link>
       {businessesLoading && activities.length === 0 ? <div className="authMenuLoading">در حال دریافت کسب‌وکارها…</div> : null}
-      {activities.map(activity => <Link className="authMenuRow" role="menuitem" key={activity.id} href={activityManageHref(activity)} onClick={() => setMenuOpen(false)}><span className="authMenuIcon">▣</span><span className="authMenuItemCopy"><strong>{activity.name}</strong><small>{activityLabel(activity.type)}</small></span></Link>)}
+      {activities.map(activity => <Link className="authMenuRow" role="menuitem" key={activity.id} href={activityManageHref(activity)} onClick={() => { saveActiveAccount({ kind: "activity", id: activity.id, type: activity.type, name: activity.name, external_dealer_id: activity.external_dealer_id, logo_url: activity.logo_url }); setMenuOpen(false); }}><span className="authMenuIcon">▣</span><span className="authMenuItemCopy"><strong>{activity.name}</strong><small>{activityLabel(activity.type)}</small></span></Link>)}
       <Link className="authMenuRow authMenuAdd" role="menuitem" href="/account-v2/businesses/new" onClick={() => setMenuOpen(false)}><span className="authMenuIcon">＋</span><span className="authMenuItemCopy"><strong>افزودن کسب‌وکار</strong></span></Link>
       <button className="authMenuRow authMenuLogout" type="button" role="menuitem" onClick={() => void logout()}><span className="authMenuIcon">↪</span><span className="authMenuItemCopy"><strong>{loggingOut ? "در حال خروج..." : "خروج از حساب"}</strong></span></button>
     </div> : null}

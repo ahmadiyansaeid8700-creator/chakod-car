@@ -36,6 +36,17 @@ type ApiResponse = {
   items?: PublicBusiness[];
 };
 
+type SelectedPlacement = {
+  placement_key: string;
+  target_name?: string;
+  business_type?: string;
+};
+
+type SelectedResponse = {
+  success?: boolean;
+  data?: SelectedPlacement[];
+};
+
 type SectionConfig = {
   type: BusinessType;
   kicker: string;
@@ -138,24 +149,46 @@ function buildBusinessQueries(location: HomeLocationSelection) {
   );
 }
 
+function selectedBusinessOrder(selected: SelectedPlacement[], type: BusinessType) {
+  const order = new Map<string, number>();
+  selected
+    .filter((item) => item.business_type === type && item.target_name)
+    .forEach((item, index) => {
+      const key = normalizeText(item.target_name);
+      if (key && !order.has(key)) order.set(key, index);
+    });
+  return order;
+}
+
 function FeaturedBusinessSection({
   config,
   items,
+  selected,
   status,
   locationLabel,
 }: {
   config: SectionConfig;
   items: PublicBusiness[];
+  selected: SelectedPlacement[];
   status: "loading" | "ready" | "error";
   locationLabel: string;
 }) {
+  const selectedOrder = selectedBusinessOrder(selected, config.type);
   const sectionItems = items
     .filter((item) => item.business_type === config.type)
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const aRank = selectedOrder.get(normalizeText(a.name));
+      const bRank = selectedOrder.get(normalizeText(b.name));
+      if (aRank !== undefined || bRank !== undefined) {
+        if (aRank === undefined) return 1;
+        if (bRank === undefined) return -1;
+        if (aRank !== bRank) return aRank - bRank;
+      }
+      return (
         Number(b.is_verified) - Number(a.is_verified) ||
-        a.name.localeCompare(b.name, "fa"),
-    )
+        a.name.localeCompare(b.name, "fa")
+      );
+    })
     .slice(0, 8);
   const hasItems = status === "ready" && sectionItems.length > 0;
 
@@ -275,6 +308,7 @@ export default function HomeFeaturedBusinesses() {
   );
   const [locationReady, setLocationReady] = useState(false);
   const [items, setItems] = useState<PublicBusiness[]>([]);
+  const [selected, setSelected] = useState<SelectedPlacement[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -290,6 +324,24 @@ export default function HomeFeaturedBusinesses() {
 
     window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
     return () => window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/selected/active", {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as SelectedResponse;
+      })
+      .then((payload) => {
+        if (payload?.success && Array.isArray(payload.data)) setSelected(payload.data);
+      })
+      .catch(() => setSelected([]));
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -340,6 +392,7 @@ export default function HomeFeaturedBusinesses() {
         <FeaturedBusinessSection
           config={config}
           items={filteredItems}
+          selected={selected}
           status={status}
           locationLabel={location.label}
           key={config.type}

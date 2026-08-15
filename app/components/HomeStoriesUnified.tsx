@@ -21,6 +21,23 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
+const DOMESTIC_YEAR_TOKENS = [
+  "ایران خودرو",
+  "ایران‌خودرو",
+  "سایپا",
+  "پارس خودرو",
+  "زامیاد",
+  "دنا",
+  "سمند",
+  "تارا",
+  "رانا",
+  "شاهین",
+  "کوییک",
+  "تیبا",
+  "ساینا",
+  "پراید",
+];
+
 type StoryItem = {
   story_id: number;
   listing_id: number;
@@ -54,15 +71,24 @@ type StoryItem = {
 
 type StoriesResponse = { success?: boolean; data?: StoryItem[] };
 type StoryGroup = { key: string; label: string; items: StoryItem[] };
+type DealerIdentityListing = {
+  dealer_id?: number | string | null;
+  dealer_logo_url?: string | null;
+};
+type DealerIdentityResponse = {
+  success?: boolean;
+  data?: DealerIdentityListing[];
+  listings?: DealerIdentityListing[];
+};
 
 function formatPrice(value: number | string | null | undefined) {
   const number = Number(value || 0);
   if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
   if (number >= 1_000_000_000) {
-    return `${(number / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد`;
+    return `${(number / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد تومان`;
   }
   if (number >= 1_000_000) {
-    return `${(number / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون`;
+    return `${(number / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون تومان`;
   }
   return `${number.toLocaleString("fa-IR")} تومان`;
 }
@@ -150,8 +176,22 @@ function listingHref(item: StoryItem) {
   const listingId = Number(item.listing_id || 0);
   const current = String(item.public_url || "").trim();
   if (!listingId) return current || "/cars";
-  if (!current || /^\/cars\/\d+(?:[/?#]|$)/i.test(current)) return `/listing/${listingId}`;
+  if (!current || /^\/listing\/\d+(?:[/?#]|$)/i.test(current)) return `/cars/${listingId}`;
+  if (/^\/cars\/\d+(?:[/?#]|$)/i.test(current)) return `/cars/${listingId}`;
   return current;
+}
+
+function isDomesticYearStory(item: StoryItem) {
+  const source = `${item.brand || ""} ${item.model || ""} ${item.title || ""}`.toLocaleLowerCase("fa");
+  return DOMESTIC_YEAR_TOKENS.some((token) => source.includes(token.toLocaleLowerCase("fa")));
+}
+
+function displayStoryYear(item: StoryItem) {
+  const raw = Number(String(item.year || "").replace(/[^\d]/g, ""));
+  if (!Number.isFinite(raw) || raw <= 0) return "";
+  if (isDomesticYearStory(item)) return raw.toLocaleString("fa-IR", { useGrouping: false });
+  const year = raw >= 1300 && raw <= 1499 ? raw + 621 : raw;
+  return String(year);
 }
 
 function remainingStoryTime(expiresAt: string | null | undefined, nowMs: number) {
@@ -185,6 +225,7 @@ export default function HomeStoriesUnified() {
   const [groupIndex, setGroupIndex] = useState<number | null>(null);
   const [itemIndex, setItemIndex] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [dealerLogo, setDealerLogo] = useState("");
   const touchStartX = useRef<number | null>(null);
 
   const groups = useMemo(() => groupStories(stories), [stories]);
@@ -193,6 +234,13 @@ export default function HomeStoriesUnified() {
   const expiryLabel = useMemo(
     () => remainingStoryTime(activeStory?.expires_at, nowMs),
     [activeStory?.expires_at, nowMs],
+  );
+  const storyYear = useMemo(() => (activeStory ? displayStoryYear(activeStory) : ""), [activeStory]);
+  const vehicleMeta = useMemo(
+    () => activeStory
+      ? [activeStory.model, storyYear ? `مدل ${storyYear}` : ""].filter(Boolean).join(" · ")
+      : "",
+    [activeStory, storyYear],
   );
 
   useEffect(() => {
@@ -253,6 +301,36 @@ export default function HomeStoriesUnified() {
     void load();
     return () => { ignore = true; };
   }, [location]);
+
+  useEffect(() => {
+    let ignore = false;
+    setDealerLogo("");
+    const dealerId = Number(activeStory?.dealer_id || 0);
+    if (!activeStory || activeStory.listing_owner_type !== "dealer" || !Number.isSafeInteger(dealerId) || dealerId <= 0) {
+      return () => { ignore = true; };
+    }
+
+    void fetch(`${API_BASE}/api/listings.php?limit=100&sort=vip`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as DealerIdentityResponse | null;
+        const items = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.listings)
+            ? payload.listings
+            : [];
+        const match = items.find((item) => Number(item.dealer_id || 0) === dealerId);
+        if (!ignore) setDealerLogo(mediaUrl(match?.dealer_logo_url || ""));
+      })
+      .catch(() => {
+        if (!ignore) setDealerLogo("");
+      });
+
+    return () => { ignore = true; };
+  }, [activeStory?.dealer_id, activeStory?.listing_owner_type, activeStory?.story_id]);
 
   const track = useCallback((item: StoryItem) => {
     if (item.story_id >= LOCAL_STORY_ID_BASE) return;
@@ -423,12 +501,16 @@ export default function HomeStoriesUnified() {
 
             <div className={styles.top}>
               <div className={styles.identity}>
-                <span>{storyImage(activeStory) ? <img src={storyImage(activeStory)} alt="" /> : "چ"}</span>
+                <span className={styles.businessLogo}>
+                  {dealerLogo ? (
+                    <img src={dealerLogo} alt="" />
+                  ) : (
+                    <b>{activeGroup.label.trim().charAt(0) || "چ"}</b>
+                  )}
+                </span>
                 <div>
                   <strong>{activeGroup.label}</strong>
-                  <small>
-                    {storyLocation(activeStory)} · {Number(itemIndex + 1).toLocaleString("fa-IR")} از {Number(activeGroup.items.length).toLocaleString("fa-IR")}
-                  </small>
+                  <small>{storyLocation(activeStory)}</small>
                 </div>
               </div>
 
@@ -462,10 +544,10 @@ export default function HomeStoriesUnified() {
 
               <div className={styles.shade} aria-hidden="true" />
               <div className={styles.details}>
-                <span>{formatPrice(activeStory.price_toman)}</span>
                 <h3>{activeStory.title}</h3>
-                <p>{[activeStory.brand, activeStory.model, activeStory.year].filter(Boolean).join(" · ")}</p>
-                <a href={listingHref(activeStory)}>مشاهده آگهی کامل</a>
+                <strong className={styles.storyPrice}>{formatPrice(activeStory.price_toman)}</strong>
+                {vehicleMeta ? <p>{vehicleMeta}</p> : null}
+                <a href={listingHref(activeStory)}>مشاهده آگهی</a>
               </div>
             </div>
 

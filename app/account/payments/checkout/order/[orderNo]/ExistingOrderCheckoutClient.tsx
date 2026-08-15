@@ -153,6 +153,11 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
   }, [orderNo]);
 
   const amount = Number(orderData?.amount_toman || 0);
+  const originalAmount = Number(orderData?.original_amount_toman || amount);
+  const discountAmount = Number(orderData?.discount_amount_toman || 0);
+  const discountPercent = originalAmount > 0
+    ? Math.min(100, Math.round((discountAmount / originalAmount) * 100))
+    : 0;
   const walletAvailable = Number(finance?.wallet?.available_balance_toman || 0);
   const walletBlocked = Number(finance?.wallet?.blocked_balance_toman || 0);
   const walletReady = finance?.wallet_payment_ready === true;
@@ -163,9 +168,16 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
     cleanMetadataText(metadata.service_title) ||
     (publicProduct === "dealership_placement" ? "جایگاه نمایشگاه منتخب" : "سفارش چاکود");
   const dealerName = cleanMetadataText(metadata.dealer_name);
+  const targetName = cleanMetadataText(metadata.target_name);
   const province = cleanMetadataText(metadata.province);
   const startDate = cleanMetadataText(metadata.start_date);
   const endDate = cleanMetadataText(metadata.end_date);
+  const isSelectedTestOrder =
+    publicProduct === "homepage_selected" &&
+    discountPercent === 100 &&
+    discountAmount > 0 &&
+    amount === 0;
+  const isSelectedTestPaid = isSelectedTestOrder && orderData?.status === "paid";
 
   async function pay() {
     if (!orderData || submitting) return;
@@ -258,7 +270,9 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.header}>
-          <Link href="/account/payments">بازگشت به مرکز مالی</Link>
+          <Link href={isSelectedTestOrder ? "/account/selected" : "/account/payments"}>
+            {isSelectedTestOrder ? "بازگشت به منتخب‌ها" : "بازگشت به مرکز مالی"}
+          </Link>
           <Link className={styles.brand} href="/">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
           </Link>
@@ -280,33 +294,44 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
         ) : orderData ? (
           <section className={styles.checkoutGrid}>
             <div className={styles.checkoutCard}>
-              <span className={styles.eyebrow}>تسویه حساب امن</span>
+              <span className={styles.eyebrow}>{isSelectedTestOrder ? "پرداخت آزمایشی منتخب" : "تسویه حساب امن"}</span>
               <h1>{title}</h1>
               <p>
-                {dealerName ? `${dealerName}${province ? `، ${province}` : ""}` : "سفارش ثبت شده در چاکود"}
+                {targetName || dealerName
+                  ? `${targetName || dealerName}${province ? `، ${province}` : ""}`
+                  : "سفارش ثبت شده در چاکود"}
                 {startDate && endDate ? ` — از ${startDate} تا ${endDate}` : ""}
               </p>
 
-              <div className={styles.paymentMethods}>
-                <button
-                  type="button"
-                  className={method === "gateway" ? styles.paymentMethodActive : ""}
-                  onClick={() => setMethod("gateway")}
-                >
-                  <b>درگاه بانکی</b>
-                  <small>{gatewayReady ? "پرداخت مستقیم بانکی" : "در انتظار تنظیم درگاه"}</small>
-                </button>
-                <button
-                  type="button"
-                  className={method === "wallet" ? styles.paymentMethodActive : ""}
-                  onClick={() => setMethod("wallet")}
-                >
-                  <b>کیف پول چاکود</b>
-                  <small>موجودی: {formatToman(walletAvailable)}</small>
-                </button>
-              </div>
+              {isSelectedTestOrder ? (
+                <div className={styles.securityNote}>
+                  <span>✓</span>
+                  <p>
+                    تخفیف تست ۱۰۰٪ روی این سفارش اعمال شده است؛ مبلغ اصلی {formatToman(originalAmount)}، تخفیف {formatToman(discountAmount)} و مبلغ نهایی صفر است.
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.paymentMethods}>
+                  <button
+                    type="button"
+                    className={method === "gateway" ? styles.paymentMethodActive : ""}
+                    onClick={() => setMethod("gateway")}
+                  >
+                    <b>درگاه بانکی</b>
+                    <small>{gatewayReady ? "پرداخت مستقیم بانکی" : "در انتظار تنظیم درگاه"}</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={method === "wallet" ? styles.paymentMethodActive : ""}
+                    onClick={() => setMethod("wallet")}
+                  >
+                    <b>کیف پول چاکود</b>
+                    <small>موجودی: {formatToman(walletAvailable)}</small>
+                  </button>
+                </div>
+              )}
 
-              {method === "wallet" && (
+              {!isSelectedTestOrder && method === "wallet" && (
                 <div className={styles.securityNote}>
                   <span>{walletEnough ? "✓" : "!"}</span>
                   <p>
@@ -324,33 +349,46 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
                 disabled={submitting || orderData.status === "paid"}
                 onClick={() => void pay()}
               >
-                {orderData.status === "paid"
-                  ? "این سفارش پرداخت شده است"
-                  : submitting
-                    ? "در حال پردازش..."
-                    : `پرداخت ${formatToman(amount)}`}
+                {isSelectedTestPaid
+                  ? "تخفیف ۱۰۰٪ اعمال شد — جایگاه فعال است"
+                  : orderData.status === "paid"
+                    ? "این سفارش پرداخت شده است"
+                    : submitting
+                      ? "در حال پردازش..."
+                      : `پرداخت ${formatToman(amount)}`}
               </button>
 
-              {method === "wallet" && !walletEnough && (
+              {isSelectedTestPaid ? (
+                <Link href="/">مشاهده نتیجه در صفحه اول</Link>
+              ) : !isSelectedTestOrder && method === "wallet" && !walletEnough ? (
                 <Link href="/account/payments/checkout?type=wallet_charge">
                   افزایش موجودی کیف پول
                 </Link>
-              )}
+              ) : null}
             </div>
 
             <aside className={styles.summaryCard}>
               <span>خلاصه سفارش</span>
               <div><small>شماره سفارش</small><strong dir="ltr">{orderData.order_no}</strong></div>
               <div><small>محصول</small><strong>{title}</strong></div>
-              {dealerName && <div><small>نمایشگاه</small><strong>{dealerName}</strong></div>}
+              {targetName && <div><small>هدف منتخب</small><strong>{targetName}</strong></div>}
+              {!targetName && dealerName && <div><small>نمایشگاه</small><strong>{dealerName}</strong></div>}
               {province && <div><small>استان</small><strong>{province}</strong></div>}
-              <div><small>وضعیت</small><strong>{orderData.status}</strong></div>
+              <div><small>وضعیت</small><strong>{isSelectedTestPaid ? "فعال با تخفیف تست" : orderData.status}</strong></div>
               <hr />
+              {discountAmount > 0 && (
+                <>
+                  <div><small>مبلغ اصلی</small><strong>{formatToman(originalAmount)}</strong></div>
+                  <div><small>تخفیف{discountPercent ? ` ${new Intl.NumberFormat("fa-IR").format(discountPercent)}٪` : ""}</small><strong>− {formatToman(discountAmount)}</strong></div>
+                </>
+              )}
               <div className={styles.total}>
                 <small>مبلغ نهایی</small>
                 <strong>{formatToman(amount)}</strong>
               </div>
-              <Link href="/account/invoices">مشاهده فاکتورها</Link>
+              <Link href={isSelectedTestOrder ? "/account/selected" : "/account/invoices"}>
+                {isSelectedTestOrder ? "مدیریت منتخب‌ها" : "مشاهده فاکتورها"}
+              </Link>
             </aside>
           </section>
         ) : null}

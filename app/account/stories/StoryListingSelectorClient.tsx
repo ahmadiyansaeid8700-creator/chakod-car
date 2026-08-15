@@ -340,25 +340,25 @@ export default function StoryListingSelectorClient() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.back}>بازگشت به صفحه اصلی</Link>
+          <Link href="/" className={styles.back}>بازگشت</Link>
           <Link href="/" className={styles.logo} aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
           </Link>
         </header>
 
         <section className={styles.hero}>
-          <span>استوری چاکود</span>
-          <h1>{selectedIdentity.kind === "business" ? "استوری کسب‌وکار" : "یک آگهی فعال را انتخاب کن"}</h1>
+          <span>دبل استوری</span>
+          <h1>{selectedIdentity.kind === "business" ? "دبل استوری کسب‌وکار" : "یک آگهی برای دبل استوری انتخاب کن"}</h1>
           <p>
             {selectedIdentity.kind === "business"
-              ? "برای کسب‌وکارهای خدماتی، استوری از پروفایل همان کسب‌وکار ساخته می‌شود."
-              : "فقط آگهی‌های فعال نمایش داده می‌شوند؛ انتخاب کن و مستقیم استوری بساز."}
+              ? "کسب‌وکارت داخل چاکود دیده می‌شود و بعد لینک عمومی همان محتوا را برای انتشار در شبکه‌های اجتماعی می‌گیری."
+              : "آگهی داخل چاکود استوری می‌شود؛ بعد لینک عمومی همان استوری را در اینستاگرام، واتساپ، تلگرام یا هر جای دیگری منتشر می‌کنی."}
           </p>
         </section>
 
         <section className={styles.identityPanel} aria-label="انتخاب هویت انتشار">
           <div className={styles.identityHeader}>
-            <strong>استوری برای کدام حساب؟</strong>
+            <strong>برای کدام حساب منتشر شود؟</strong>
             <span>
               {selectedIdentity.kind === "business"
                 ? selectedIdentity.typeLabel
@@ -393,7 +393,7 @@ export default function StoryListingSelectorClient() {
         </section>
 
         {selectedIdentity.kind === "business" && businessActivity ? (
-          <section className={styles.businessStoryCard} aria-label={`استوری ${businessActivity.name}`}>
+          <section className={styles.businessStoryCard} aria-label={`دبل استوری ${businessActivity.name}`}>
             <div className={styles.businessStoryIcon} aria-hidden="true">▣</div>
             <div className={styles.businessStoryCopy}>
               <span>{activityTypeLabel(businessActivity.type)}</span>
@@ -401,13 +401,13 @@ export default function StoryListingSelectorClient() {
               {(businessActivity.city || businessActivity.province) ? (
                 <p>{[businessActivity.city, businessActivity.province].filter(Boolean).join("، ")}</p>
               ) : (
-                <p>استوری از اطلاعات واقعی پروفایل این کسب‌وکار ساخته می‌شود.</p>
+                <p>محتوا از اطلاعات واقعی پروفایل همین کسب‌وکار ساخته می‌شود.</p>
               )}
               <Link
                 href={`/account/selected?intent=story&activity_id=${businessActivity.id}`}
                 className={styles.storyButton}
               >
-                استوری کسب‌وکار
+                ساخت دبل استوری کسب‌وکار
               </Link>
             </div>
           </section>
@@ -428,7 +428,7 @@ export default function StoryListingSelectorClient() {
             <span>یک حساب دیگر را انتخاب کن یا آگهی‌ات را فعال کن.</span>
           </section>
         ) : (
-          <section className={styles.list} aria-label="انتخاب آگهی فعال برای استوری">
+          <section className={styles.list} aria-label="انتخاب آگهی فعال برای دبل استوری">
             {listings.map((listing) => {
               const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
               const ownerLabel = listing.listing_owner_type === "dealer"
@@ -439,7 +439,13 @@ export default function StoryListingSelectorClient() {
                 <article className={styles.card} key={listing.id}>
                   <div className={styles.imageWrap}>
                     {listing.cover_image?.image_url ? (
-                      <img src={listing.cover_image.image_url} alt={listing.title || "خودرو"} loading="lazy" decoding="async" />
+                      <img
+                        src={listing.cover_image.image_url}
+                        alt={listing.title || "خودرو"}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => { event.currentTarget.style.display = "none"; }}
+                      />
                     ) : (
                       <span className={styles.noImage}>بدون عکس</span>
                     )}
@@ -457,7 +463,7 @@ export default function StoryListingSelectorClient() {
                       href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
                       className={styles.storyButton}
                     >
-                      استوری کن
+                      ادامه و ساخت دبل استوری
                     </Link>
                   </div>
                 </article>

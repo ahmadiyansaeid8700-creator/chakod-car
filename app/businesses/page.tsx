@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import MobileBottomNav from "../components/MobileBottomNav";
 import styles from "./page.module.css";
 
 type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
@@ -126,11 +127,19 @@ export default function BusinessesPage({
     return () => controller.abort();
   }, [basePath, search]);
 
+  const mobileTitle = lockType && initialType === "dealer" ? "نمایشگاه‌ها" : "کسب‌وکارها";
+
   return (
     <main className={styles.page} dir="rtl">
       <header className={styles.header}>
         <a href="/" className={styles.brand}><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></a>
         <nav><button type="button" onClick={() => window.history.back()}>بازگشت</button><a href="/">صفحه اصلی</a><a href="/account/business/new">ثبت کسب‌وکار</a><a href="/account">حساب من</a></nav>
+      </header>
+
+      <header className={styles.mobileHeader} aria-label="ناوبری صفحه">
+        <button type="button" onClick={() => window.history.back()} aria-label="برگشت به صفحه قبل">‹</button>
+        <strong>{mobileTitle}</strong>
+        <a href="/" aria-label="صفحه اصلی چاکود"><img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" /></a>
       </header>
 
       <section className={styles.hero}>
@@ -188,6 +197,8 @@ export default function BusinessesPage({
           </div>
         ) : <div className={styles.empty}><strong>نتیجه‌ای پیدا نشد</strong><span>فیلترها را تغییر دهید یا اولین کسب‌وکار این محدوده را ثبت کنید.</span><a href="/account/business/new">ثبت کسب‌وکار</a></div>}
       </section>
+
+      <MobileBottomNav />
     </main>
   );
 }

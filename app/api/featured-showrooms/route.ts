@@ -20,6 +20,17 @@ type ContentRow = {
   creative_status: string;
 };
 
+type LegacyPlacement = {
+  id: number;
+  dealer_id: number;
+  dealer_name: string;
+  province: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  approved_at: string | null;
+};
+
 function isRecord(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -52,11 +63,6 @@ function parseIds(value: string) {
   }
 }
 
-function isPreviewHost(hostname: string) {
-  const host = hostname.toLowerCase();
-  return host === "staging.chakod.com" || host === "localhost" || host === "127.0.0.1";
-}
-
 async function loadContentRows() {
   try {
     const d1 = getRuntimeEnv().DB;
@@ -83,13 +89,8 @@ async function loadContentRows() {
   }
 }
 
-export async function GET(request: NextRequest) {
-  const province = String(request.nextUrl.searchParams.get("province") || "").trim().slice(0, 80);
-  const nowIso = new Date().toISOString();
-  const today = nowIso.slice(0, 10);
-
+async function loadLegacyPlacements(today: string, province: string): Promise<LegacyPlacement[]> {
   try {
-    const db = getDb();
     const conditions = [
       inArray(featuredShowroomPlacements.status, ["approved", "scheduled", "active"]),
       lte(featuredShowroomPlacements.startDate, today),
@@ -97,23 +98,35 @@ export async function GET(request: NextRequest) {
     ];
     if (province) conditions.push(eq(featuredShowroomPlacements.province, province));
 
-    const [rows, selectedOrders, contentRows] = await Promise.all([
-      db
-        .select({
-          id: featuredShowroomPlacements.id,
-          dealer_id: featuredShowroomPlacements.dealerId,
-          dealer_name: featuredShowroomPlacements.dealerName,
-          province: featuredShowroomPlacements.province,
-          start_date: featuredShowroomPlacements.startDate,
-          end_date: featuredShowroomPlacements.endDate,
-          status: featuredShowroomPlacements.status,
-          approved_at: featuredShowroomPlacements.approvedAt,
-        })
-        .from(featuredShowroomPlacements)
-        .where(and(...conditions))
-        .orderBy(desc(featuredShowroomPlacements.approvedAt), desc(featuredShowroomPlacements.id))
-        .limit(24),
-      db
+    return await getDb()
+      .select({
+        id: featuredShowroomPlacements.id,
+        dealer_id: featuredShowroomPlacements.dealerId,
+        dealer_name: featuredShowroomPlacements.dealerName,
+        province: featuredShowroomPlacements.province,
+        start_date: featuredShowroomPlacements.startDate,
+        end_date: featuredShowroomPlacements.endDate,
+        status: featuredShowroomPlacements.status,
+        approved_at: featuredShowroomPlacements.approvedAt,
+      })
+      .from(featuredShowroomPlacements)
+      .where(and(...conditions))
+      .orderBy(desc(featuredShowroomPlacements.approvedAt), desc(featuredShowroomPlacements.id))
+      .limit(24);
+  } catch {
+    return [];
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const province = String(request.nextUrl.searchParams.get("province") || "").trim().slice(0, 80);
+  const nowIso = new Date().toISOString();
+  const today = nowIso.slice(0, 10);
+
+  try {
+    const [legacyRows, selectedOrders, contentRows] = await Promise.all([
+      loadLegacyPlacements(today, province),
+      getDb()
         .select()
         .from(commerceOrders)
         .where(
@@ -129,7 +142,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     const contentByOrderId = new Map(contentRows.map((item) => [Number(item.order_id), item]));
-    const allowPendingCreative = isPreviewHost(request.nextUrl.hostname);
+    const seenSelectedDealers = new Set<number>();
 
     const selected = selectedOrders.flatMap((order) => {
       const metadata = parseMetadata(order.metadataJson);
@@ -137,13 +150,13 @@ export async function GET(request: NextRequest) {
       const startsAt = cleanText(metadata.starts_at, 60);
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);
+
       if (!dealerId || !startsAt || !expiresAt || startsAt > nowIso || expiresAt <= nowIso) return [];
       if (province && selectedProvince && selectedProvince !== province) return [];
+      if (seenSelectedDealers.has(dealerId)) return [];
+      seenSelectedDealers.add(dealerId);
 
       const content = contentByOrderId.get(order.id);
-      const canUseCreative = Boolean(
-        content && (content.creative_status === "approved" || allowPendingCreative),
-      );
 
       return [
         {
@@ -156,24 +169,26 @@ export async function GET(request: NextRequest) {
           end_date: expiresAt.slice(0, 10),
           status: "active",
           approved_at: startsAt,
-          desktop_banner_url: canUseCreative ? cleanText(content?.desktop_banner_url, 1200) : "",
-          mobile_banner_url: canUseCreative ? cleanText(content?.mobile_banner_url, 1200) : "",
+          desktop_banner_url: cleanText(content?.desktop_banner_url, 1200),
+          mobile_banner_url: cleanText(content?.mobile_banner_url, 1200),
           listing_ids: content ? parseIds(content.listing_ids_json) : [],
-          creative_status: content?.creative_status || "none",
+          creative_status: content ? "published" : "none",
         },
       ];
     });
 
-    const merged = new Map<number, (typeof selected)[number] | ((typeof rows)[number] & {
-      desktop_banner_url?: string;
-      mobile_banner_url?: string;
-      listing_ids?: number[];
-      creative_status?: string;
+    const merged = new Map<number, (typeof selected)[number] | (LegacyPlacement & {
+      desktop_banner_url: string;
+      mobile_banner_url: string;
+      listing_ids: number[];
+      creative_status: string;
     })>();
+
     selected.forEach((item) => {
       if (!merged.has(item.dealer_id)) merged.set(item.dealer_id, item);
     });
-    rows.forEach((item) => {
+
+    legacyRows.forEach((item) => {
       if (!merged.has(item.dealer_id)) {
         merged.set(item.dealer_id, {
           ...item,

@@ -148,17 +148,4 @@ body {
     min-height: 100dvh;
     background: #fbfbfd;
   }
-
-  body {
-    -webkit-user-select: none;
-    user-select: none;
-  }
-
-  input,
-  textarea,
-  select,
-  [contenteditable="true"] {
-    -webkit-user-select: text;
-    user-select: text;
-  }
 }

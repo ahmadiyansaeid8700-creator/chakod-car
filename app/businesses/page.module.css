@@ -25,12 +25,14 @@
 .resultHeader > a { padding: 9px 14px; border-radius: 11px; color: #fff; background: #7c3aed; font-size: 10px; font-weight: 800; text-decoration: none; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .card { overflow: hidden; border: 1px solid #e5dce9; border-radius: 18px; background: #fff; }
+.cardSelected { border-color: rgba(124, 58, 237, .55); box-shadow: 0 12px 30px rgba(109, 40, 217, .10); }
 .media { position: relative; height: 155px; display: block; overflow: hidden; background: linear-gradient(135deg, #ded1e8, #f3edf7); }
 .media > img:not(.logo) { width: 100%; height: 100%; object-fit: cover; }
 .media > span { display: block; height: 100%; background: radial-gradient(circle at 20% 20%, #fff, transparent 32%), linear-gradient(135deg, #e4d8ed, #f7f3fa); }
 .logo,
 .media > b { position: absolute; right: 13px; bottom: 11px; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; border: 3px solid #fff; border-radius: 15px; color: #6d28d9; background: #fff; object-fit: cover; font-size: 22px; box-shadow: 0 8px 20px rgba(35,18,45,.16); }
 .media em { position: absolute; top: 10px; left: 10px; padding: 5px 8px; border-radius: 999px; color: #08795b; background: #ecfdf5; font-size: 8px; font-style: normal; font-weight: 800; }
+.media .selectedBadge { right: 10px; left: auto; color: #6d28d9; background: #f3e8ff; box-shadow: 0 4px 12px rgba(109, 40, 217, .10); }
 .body { display: grid; gap: 7px; padding: 14px; }
 .body > small { color: #7c3aed; font-size: 9px; font-weight: 800; }
 .body h3 { margin: 0; font-size: 16px; }

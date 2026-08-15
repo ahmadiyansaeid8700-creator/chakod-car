@@ -5,6 +5,12 @@ import { useParams } from "next/navigation";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  canShareImageFile,
+  createDoubleStoryShareFile,
+  downloadShareFile,
+} from "../../lib/double-story-share";
+
 type StoryItem = {
   story_id: number;
   listing_id: number;
@@ -59,6 +65,13 @@ function appendRef(value: string, ref: string) {
   if (!value) return "/";
   const separator = value.includes("?") ? "&" : "?";
   return `${value}${separator}ref=${encodeURIComponent(ref)}`;
+}
+
+function listingPath(value: string | undefined, listingId: number) {
+  if (!listingId) return "";
+  const current = String(value || "").trim();
+  if (!current || /^\/cars\/\d+(?:[/?#]|$)/i.test(current)) return `/listing/${listingId}`;
+  return current;
 }
 
 const pageStyle: CSSProperties = {
@@ -136,12 +149,25 @@ const primaryStyle: CSSProperties = {
   cursor: "pointer",
 };
 
+const secondaryStyle: CSSProperties = {
+  minHeight: 44,
+  border: "1px solid rgba(255,255,255,.16)",
+  borderRadius: 13,
+  color: "rgba(255,255,255,.86)",
+  background: "rgba(255,255,255,.06)",
+  font: "inherit",
+  fontSize: 10.5,
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
 export default function PublicStoryPage() {
   const params = useParams<{ id: string }>();
   const storyId = Number(String(params?.id || "").replace(/\D/g, ""));
   const [story, setStory] = useState<StoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shareFile, setShareFile] = useState<File | null>(null);
   const [shareState, setShareState] = useState<ShareState>("idle");
 
   useEffect(() => {
@@ -188,24 +214,51 @@ export default function PublicStoryPage() {
     [story],
   );
   const image = mediaUrl(story?.media_url || story?.cover_image?.image_url);
-  const listingHref = appendRef(story?.public_url || (story?.listing_id ? `/cars/${story.listing_id}` : "/cars"), "double-story");
+  const resolvedListingPath = listingPath(story?.public_url, Number(story?.listing_id || 0));
+  const listingHref = resolvedListingPath ? appendRef(resolvedListingPath, "double-story") : "";
+
+  useEffect(() => {
+    let ignore = false;
+    setShareFile(null);
+    setShareState("idle");
+    if (!story || typeof window === "undefined") return () => { ignore = true; };
+
+    void createDoubleStoryShareFile({
+      title: story.title,
+      sellerName: story.seller_display_name,
+      brand: story.brand,
+      model: story.model,
+      year: story.year,
+      priceToman: story.price_toman,
+      location,
+      imageUrl: image,
+      publicStoryUrl: window.location.href,
+    })
+      .then((file) => {
+        if (!ignore) setShareFile(file);
+      })
+      .catch(() => {
+        if (!ignore) setShareFile(null);
+      });
+
+    return () => { ignore = true; };
+  }, [image, location, story]);
 
   async function shareStory() {
     if (typeof window === "undefined") return;
-    const url = window.location.href;
     setShareState("idle");
+    if (!canShareImageFile(shareFile) || !shareFile) {
+      setShareState("error");
+      return;
+    }
+
     try {
-      if (typeof navigator.share === "function") {
-        await navigator.share({
-          title: `${story?.seller_display_name || "چاکود"} | دبل استوری`,
-          text: story?.title || "این استوری را در چاکود ببین",
-          url,
-        });
-        setShareState("shared");
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      setShareState("copied");
+      await navigator.share({
+        title: `${story?.seller_display_name || "چاکود"} | دبل استوری`,
+        text: `${story?.title || "دبل استوری چاکود"}\n${window.location.href}`,
+        files: [shareFile],
+      });
+      setShareState("shared");
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
       setShareState("error");
@@ -271,21 +324,36 @@ export default function PublicStoryPage() {
                 <h1 style={{ margin: 0, fontSize: "clamp(23px,7vw,32px)", lineHeight: 1.45, textShadow: "0 8px 30px rgba(0,0,0,.42)" }}>{story.title}</h1>
                 {vehicle ? <p style={{ margin: "7px 0 0", color: "rgba(255,255,255,.82)", fontSize: 11 }}>{vehicle}</p> : null}
                 {location ? <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,.62)", fontSize: 9 }}>{location}</p> : null}
-                <a href={listingHref} style={{ ...primaryStyle, width: "100%", marginTop: 17 }}>
-                  مشاهده جزئیات کامل در چاکود
-                </a>
+                {listingHref ? (
+                  <a href={listingHref} style={{ ...primaryStyle, width: "100%", marginTop: 17 }}>
+                    مشاهده آگهی خودرو
+                  </a>
+                ) : null}
               </div>
             </article>
 
             <section style={{ display: "grid", gap: 9, marginTop: 12, padding: 12, border: "1px solid rgba(255,255,255,.12)", borderRadius: 20, background: "rgba(255,255,255,.055)" }}>
-              <button type="button" onClick={() => void shareStory()} style={{ ...primaryStyle, width: "100%" }}>
-                اشتراک‌گذاری این استوری
+              <button
+                type="button"
+                disabled={!shareFile}
+                onClick={() => void shareStory()}
+                style={{ ...primaryStyle, width: "100%", opacity: shareFile ? 1 : 0.62 }}
+              >
+                {shareFile ? "اشتراک‌گذاری برای استوری یا پست" : "در حال آماده‌سازی تصویر…"}
               </button>
-              <button type="button" onClick={() => void copyStoryLink()} style={{ minHeight: 44, border: "1px solid rgba(255,255,255,.16)", borderRadius: 13, color: "rgba(255,255,255,.86)", background: "rgba(255,255,255,.06)", font: "inherit", fontSize: 11, fontWeight: 900, cursor: "pointer" }}>
-                {shareState === "copied" ? "لینک کپی شد" : "کپی لینک دبل استوری"}
-              </button>
-              {shareState === "shared" ? <small style={{ color: "#bbf7d0", textAlign: "center" }}>پنجره اشتراک‌گذاری باز شد.</small> : null}
-              {shareState === "error" ? <small style={{ color: "#fecaca", textAlign: "center" }}>اشتراک مستقیم انجام نشد؛ لینک را کپی کن.</small> : null}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+                <button type="button" disabled={!shareFile} onClick={() => downloadShareFile(shareFile)} style={{ ...secondaryStyle, opacity: shareFile ? 1 : 0.55 }}>
+                  ذخیره تصویر
+                </button>
+                <button type="button" onClick={() => void copyStoryLink()} style={secondaryStyle}>
+                  {shareState === "copied" ? "لینک کپی شد" : "کپی لینک دبل استوری"}
+                </button>
+              </div>
+              <small style={{ color: "rgba(255,255,255,.56)", textAlign: "center", lineHeight: 1.8 }}>
+                اشتراک اصلی یک تصویر ۹:۱۶ می‌فرستد؛ انتخاب استوری، پست، واتساپ یا تلگرام را اپ مقصد انجام می‌دهد.
+              </small>
+              {shareState === "shared" ? <small style={{ color: "#bbf7d0", textAlign: "center" }}>تصویر برای اشتراک‌گذاری ارسال شد.</small> : null}
+              {shareState === "error" ? <small style={{ color: "#fecaca", textAlign: "center" }}>اشتراک تصویری روی این دستگاه باز نشد؛ «ذخیره تصویر» را بزن و از داخل اپ مقصد منتشر کن.</small> : null}
             </section>
           </>
         )}

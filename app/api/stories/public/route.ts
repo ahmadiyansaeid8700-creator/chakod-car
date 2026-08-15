@@ -40,6 +40,15 @@ function publicOwnerKey(ownerKey: string) {
     .slice(0, 24);
 }
 
+function listingPublicUrl(value: unknown, listingId: number) {
+  if (!listingId) return "/cars";
+  const current = clean(value, 500);
+  if (!current || /^\/cars\/\d+(?:[/?#]|$)/i.test(current)) {
+    return `/listing/${listingId}`;
+  }
+  return current;
+}
+
 export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
   const province = clean(request.nextUrl.searchParams.get("province"));
@@ -126,7 +135,7 @@ export async function GET(request: NextRequest) {
             media_type: "image",
             media_url: coverImageUrl || null,
             thumbnail_url: coverImageUrl || null,
-            public_url: clean(data.public_url, 500) || `/cars/${listingId}`,
+            public_url: listingPublicUrl(data.public_url, listingId),
             share_url: `/stories/${storyId}?ref=double-story`,
             starts_at: startsAt || null,
             expires_at: expiresAt || null,

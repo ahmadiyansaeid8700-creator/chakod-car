@@ -27,8 +27,12 @@ function findManagerMessage(host: HTMLElement) {
   const candidates = Array.from(host.querySelectorAll<HTMLElement>("div"));
   return (
     candidates.find((candidate) => {
+      // The manager message itself is a leaf div. Requiring a leaf prevents us
+      // from reading an ancestor's textContent, which concatenates every label,
+      // vehicle title and button into one unreadable toast on mobile.
+      if (candidate.children.length > 0) return false;
       const text = candidate.textContent?.trim() || "";
-      if (!text) return false;
+      if (!text || text.length > 260) return false;
       const next = candidate.nextElementSibling as HTMLElement | null;
       const buttonText = next?.querySelector("button")?.textContent?.trim() || "";
       return buttonText.includes("ذخیره و انتشار ویترین");

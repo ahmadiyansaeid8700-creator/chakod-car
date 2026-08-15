@@ -14,6 +14,10 @@ import {
   createPublicReference,
   getFinanceOwnerKey,
 } from "../../../../lib/finance-core";
+import {
+  isUsableListingPhone,
+  normalizeListingPhone,
+} from "../../../../lib/listing-publication-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -107,6 +111,38 @@ function quoteStory(request: NextRequest, code: string) {
   };
 }
 
+function publicListingPhone(data: JsonObject) {
+  const raw =
+    cleanText(data.contact_phone, 80)
+    || cleanText(data.seller_phone, 80)
+    || cleanText(data.phone, 80)
+    || cleanText(data.mobile, 80);
+  return normalizeListingPhone(raw);
+}
+
+async function verifyPublicListingReady(listingId: number) {
+  const response = await fetch(
+    authApiUrl(`/api/listing-detail.php?id=${encodeURIComponent(String(listingId))}`),
+    {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(12_000),
+    },
+  );
+  const payload = (await parseJsonResponse(response)) as JsonObject | null;
+  const data = payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+    ? (payload.data as JsonObject)
+    : null;
+
+  return Boolean(
+    response.ok
+    && payload?.success === true
+    && data
+    && isUsableListingPhone(publicListingPhone(data)),
+  );
+}
+
 async function loadOwnedActiveListing(request: NextRequest, listingId: number) {
   const query = new URLSearchParams({ listing_id: String(listingId) });
   const response = await fetch(authApiUrl(`/api/listing-manage.php?${query.toString()}`), {
@@ -137,6 +173,14 @@ async function loadOwnedActiveListing(request: NextRequest, listingId: number) {
 
   if (statusCode(listing) !== "active") {
     return { error: "فقط آگهی فعال می‌تواند استوری شود.", status: 409 } as const;
+  }
+
+  const publicReady = await verifyPublicListingReady(listingId);
+  if (!publicReady) {
+    return {
+      error: "این آگهی هنوز برای نمایش عمومی کامل نیست. ابتدا اطلاعات تماس آگهی را کامل کن، سپس دبل استوری بساز.",
+      status: 409,
+    } as const;
   }
 
   return { listing } as const;
@@ -266,6 +310,7 @@ export async function POST(request: NextRequest) {
       dealer_id: listing.dealer_id,
       cover_image_url: listing.cover_image_url,
       public_url: listing.public_url,
+      public_ready: true,
       coupon_code: quote.coupon_code,
       starts_at: nowIso,
       expires_at: expiresAt,

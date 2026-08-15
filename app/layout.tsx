@@ -4,6 +4,7 @@ import ChakodAiAssistant from "./components/ChakodAiAssistant";
 import LocalPublicApiBridge from "./components/LocalPublicApiBridge";
 import "./globals.css";
 import "./mobile-runtime.css";
+import "./ios-form-runtime.css";
 
 const SITE_URL = "https://chakod.com";
 const SITE_DESCRIPTION =

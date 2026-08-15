@@ -204,7 +204,7 @@
   width: min(430px, 92vw, 52dvh);
   aspect-ratio: 9 / 16;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 27px;
   background: #151019;
   box-shadow: 0 35px 90px rgba(0, 0, 0, 0.46);
@@ -248,9 +248,9 @@
 
 .top {
   position: absolute;
-  top: 26px;
-  right: 15px;
-  left: 15px;
+  top: 27px;
+  right: 16px;
+  left: 16px;
   z-index: 6;
   display: flex;
   align-items: center;
@@ -263,27 +263,34 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
 }
 
 .identity > span {
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   flex: 0 0 auto;
   overflow: hidden;
   display: grid;
   place-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.76);
-  border-radius: 999px;
-  background: #6d28d9;
-  font-size: 13px;
-  font-weight: 900;
+  border: 2px solid rgba(255, 255, 255, 0.84);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  font-size: 15px;
+  font-weight: 950;
 }
 
-.identity img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.businessLogo img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.businessLogo b {
+  color: #6d28d9;
+  font-size: 18px;
+  font-weight: 950;
 }
 
 .identity strong,
@@ -296,14 +303,18 @@
 
 .identity strong {
   max-width: 175px;
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 950;
+  text-shadow: 0 5px 18px rgba(0, 0, 0, 0.3);
 }
 
 .identity small {
   max-width: 180px;
-  margin-top: 3px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 8px;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 8.5px;
+  font-weight: 800;
 }
 
 .topActions {
@@ -314,20 +325,20 @@
 }
 
 .expiryBadge {
-  min-height: 28px;
-  padding: 0 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 29px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(15, 10, 20, 0.42);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.96);
+  background: rgba(15, 10, 20, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   font-size: 7.5px;
-  font-weight: 900;
+  font-weight: 950;
   white-space: nowrap;
 }
 
@@ -340,10 +351,10 @@
   width: 35px;
   height: 35px;
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   color: #fff;
-  background: rgba(15, 10, 20, 0.42);
+  background: rgba(15, 10, 20, 0.48);
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
@@ -369,17 +380,18 @@
   height: 100%;
   display: grid;
   place-items: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.18);
   background: linear-gradient(145deg, #251632, #6d28d9);
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 900;
 }
 
 .shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(9, 5, 13, 0.62), transparent 28%),
-    linear-gradient(0deg, rgba(9, 5, 13, 0.9), transparent 48%);
+  background:
+    linear-gradient(180deg, rgba(9, 5, 13, 0.68), transparent 30%),
+    linear-gradient(0deg, rgba(9, 5, 13, 0.96), rgba(9, 5, 13, 0.62) 24%, transparent 55%);
   pointer-events: none;
 }
 
@@ -392,37 +404,51 @@
   color: #fff;
 }
 
-.details > span {
-  display: inline-flex;
-  padding: 7px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.11);
-  font-size: 9px;
-  font-weight: 900;
+.details h3 {
+  margin: 0;
+  max-width: 100%;
+  font-size: clamp(25px, 7vw, 34px);
+  line-height: 1.35;
+  font-weight: 950;
+  letter-spacing: -0.025em;
+  text-shadow: 0 8px 30px rgba(0, 0, 0, 0.46);
 }
 
-.details h3 {
-  margin: 11px 0 0;
-  font-size: clamp(18px, 5.5vw, 22px);
-  line-height: 1.55;
+.storyPrice {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 13px;
+  display: block;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.88), rgba(168, 85, 247, 0.76));
+  box-shadow: 0 10px 28px rgba(76, 29, 149, 0.28);
+  font-size: clamp(16px, 4.8vw, 22px);
+  line-height: 1.35;
+  font-weight: 950;
 }
 
 .details p {
-  margin: 4px 0 13px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 9px;
+  margin: 9px 1px 15px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 10px;
+  line-height: 1.55;
+  font-weight: 800;
 }
 
 .details a {
-  min-height: 45px;
+  min-height: 49px;
   display: grid;
   place-items: center;
   color: #2d163d;
-  border-radius: 14px;
-  background: #fff;
-  font-size: 10px;
-  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  font-weight: 950;
   text-decoration: none;
 }
 
@@ -508,23 +534,29 @@
   }
 
   .top {
+    top: 25px;
     right: 12px;
     left: 12px;
   }
 
+  .identity {
+    gap: 8px;
+  }
+
   .identity > span {
-    width: 34px;
-    height: 34px;
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
   }
 
   .identity strong {
-    max-width: 120px;
-    font-size: 9px;
+    max-width: 118px;
+    font-size: 11px;
   }
 
   .identity small {
-    max-width: 130px;
-    font-size: 7px;
+    max-width: 125px;
+    font-size: 7.5px;
   }
 
   .expiryBadge {
@@ -546,11 +578,16 @@
   }
 
   .details h3 {
-    font-size: clamp(17px, 5vw, 21px);
+    font-size: clamp(23px, 6.8vw, 30px);
+  }
+
+  .storyPrice {
+    font-size: clamp(15px, 4.5vw, 20px);
   }
 
   .details a {
-    min-height: 42px;
+    min-height: 46px;
+    font-size: 11px;
   }
 }
 
@@ -567,11 +604,15 @@
   }
 
   .identity strong {
-    max-width: 92px;
+    max-width: 82px;
   }
 
   .identity small {
-    max-width: 100px;
+    max-width: 90px;
+  }
+
+  .details h3 {
+    font-size: 22px;
   }
 }
 

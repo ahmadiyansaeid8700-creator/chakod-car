@@ -47,24 +47,41 @@ export async function GET(request: NextRequest) {
     .getAll("cities[]")
     .map((item) => clean(item))
     .filter(Boolean);
+  const requestedStoryId = numberValue(request.nextUrl.searchParams.get("story_id"));
+  const requestedOrderId = requestedStoryId >= LOCAL_STORY_ID_BASE
+    ? requestedStoryId - LOCAL_STORY_ID_BASE
+    : 0;
+
+  if (requestedStoryId > 0 && requestedOrderId <= 0) {
+    return Response.json(
+      { success: false, count: 0, data: [], message: "شناسه استوری معتبر نیست." },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   try {
-    const rows = await getDb()
-      .select()
-      .from(commerceOrders)
-      .where(
-        and(
-          eq(commerceOrders.orderType, "promotion"),
-          eq(commerceOrders.productCode, STORY_PRODUCT_CODE),
-          eq(commerceOrders.status, "paid"),
-        ),
-      )
-      .orderBy(desc(commerceOrders.id))
-      .limit(120);
+    const baseWhere = and(
+      eq(commerceOrders.orderType, "promotion"),
+      eq(commerceOrders.productCode, STORY_PRODUCT_CODE),
+      eq(commerceOrders.status, "paid"),
+    );
+
+    const rows = requestedOrderId > 0
+      ? await getDb()
+          .select()
+          .from(commerceOrders)
+          .where(and(baseWhere, eq(commerceOrders.id, requestedOrderId)))
+          .limit(1)
+      : await getDb()
+          .select()
+          .from(commerceOrders)
+          .where(baseWhere)
+          .orderBy(desc(commerceOrders.id))
+          .limit(120);
 
     const stories = rows
       .map((row) => ({ row, data: metadata(row.metadataJson) }))
-      .filter(({ data }) => clean(data.expires_at, 60) > now)
+      .filter(({ data }) => requestedOrderId > 0 || clean(data.expires_at, 60) > now)
       .filter(({ data }) => {
         const storyProvince = clean(data.province);
         const storyCity = clean(data.city);
@@ -72,7 +89,7 @@ export async function GET(request: NextRequest) {
         if (requestedCities.length > 0 && storyCity && !requestedCities.includes(storyCity)) return false;
         return true;
       })
-      .slice(0, 80);
+      .slice(0, requestedOrderId > 0 ? 1 : 80);
 
     return Response.json(
       {
@@ -84,6 +101,8 @@ export async function GET(request: NextRequest) {
           const dealerId = numberValue(data.dealer_id) || null;
           const ownerType = clean(data.listing_owner_type) === "dealer" ? "dealer" : "personal";
           const coverImageUrl = clean(data.cover_image_url, 1000);
+          const startsAt = clean(data.starts_at, 60);
+          const expiresAt = clean(data.expires_at, 60);
 
           return {
             story_id: storyId,
@@ -108,6 +127,10 @@ export async function GET(request: NextRequest) {
             media_url: coverImageUrl || null,
             thumbnail_url: coverImageUrl || null,
             public_url: clean(data.public_url, 500) || `/cars/${listingId}`,
+            share_url: `/stories/${storyId}?ref=double-story`,
+            starts_at: startsAt || null,
+            expires_at: expiresAt || null,
+            is_active: Boolean(expiresAt && expiresAt > now),
           };
         }),
       },

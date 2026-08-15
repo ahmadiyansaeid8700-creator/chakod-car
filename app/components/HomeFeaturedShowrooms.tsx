@@ -48,6 +48,10 @@ type FeaturedPlacement = {
   start_date?: string;
   end_date?: string;
   status?: string;
+  desktop_banner_url?: string;
+  mobile_banner_url?: string;
+  listing_ids?: number[];
+  creative_status?: string;
 };
 
 type FeaturedResponse = {
@@ -108,29 +112,6 @@ function listingPreview(listing: ApiListing): ShowroomListingPreview {
   };
 }
 
-function listingMatchesLocation(
-  listing: ApiListing,
-  location: HomeLocationSelection,
-) {
-  if (location.mode === "all") return true;
-
-  const province = normalizeText(listing.province);
-  const city = normalizeText(listing.city);
-
-  return getHomeLocationScopes(location).some((scope) => {
-    if (normalizeText(scope.province) !== province) return false;
-    if (scope.allCities) return true;
-
-    if (scope.cities.some((item) => normalizeText(item) === city)) {
-      return true;
-    }
-
-    return (scope.areas || []).some(
-      (area) => normalizeText(area.city) === city,
-    );
-  });
-}
-
 function buildListingUrls(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
 
@@ -153,6 +134,23 @@ function buildListingUrls(location: HomeLocationSelection) {
   });
 }
 
+function buildDealerListingUrls(placements: FeaturedPlacement[]) {
+  return Array.from(
+    new Set(
+      placements
+        .map((placement) => Number(placement.dealer_id || 0))
+        .filter((dealerId) => Number.isSafeInteger(dealerId) && dealerId > 0),
+    ),
+  ).map((dealerId) => {
+    const params = new URLSearchParams({
+      limit: "100",
+      sort: "vip",
+      dealer_id: String(dealerId),
+    });
+    return `${API_BASE_URL}?${params.toString()}`;
+  });
+}
+
 function buildFeaturedUrls(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
   if (location.mode === "all" || scopes.length === 0) {
@@ -164,11 +162,24 @@ function buildFeaturedUrls(location: HomeLocationSelection) {
   );
 }
 
+async function fetchListings(urls: string[], signal: AbortSignal) {
+  return Promise.all(
+    urls.map(async (url) => {
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json()) as ApiResponse;
+      return payload.success && Array.isArray(payload.data) ? payload.data : [];
+    }),
+  );
+}
+
 function buildDealers(listings: ApiListing[]): DealerPreview[] {
   const dealers = new Map<string, DealerPreview>();
-  const ordered = [...listings].sort(
-    (a, b) => listingTime(b) - listingTime(a),
-  );
+  const ordered = [...listings].sort((a, b) => listingTime(b) - listingTime(a));
 
   for (const listing of ordered) {
     const name = listing.dealer_name?.trim();
@@ -182,11 +193,7 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
         listing.is_dealer_verified ||
         listing.dealer_is_verified,
     );
-    const logoUrl =
-      listing.dealer_logo_url ||
-      listing.dealer_logo ||
-      listing.logo_url ||
-      null;
+    const logoUrl = listing.dealer_logo_url || listing.dealer_logo || listing.logo_url || null;
     const current = dealers.get(key);
 
     if (current) {
@@ -195,19 +202,12 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
       current.latestAt = Math.max(current.latestAt, listingTime(listing));
       if (!current.slug && listing.dealer_slug) current.slug = listing.dealer_slug;
       if (!current.logoUrl && logoUrl) current.logoUrl = logoUrl;
-      if (!current.coverImage && listing.cover_image) {
-        current.coverImage = listing.cover_image;
-      }
+      if (!current.coverImage && listing.cover_image) current.coverImage = listing.cover_image;
       if (
-        (current.latestListings?.length || 0) < 3 &&
-        !current.latestListings?.some(
-          (item) => String(item.id) === String(listing.id),
-        )
+        (current.latestListings?.length || 0) < 20 &&
+        !current.latestListings?.some((item) => String(item.id) === String(listing.id))
       ) {
-        current.latestListings = [
-          ...(current.latestListings || []),
-          listingPreview(listing),
-        ];
+        current.latestListings = [...(current.latestListings || []), listingPreview(listing)];
       }
       continue;
     }
@@ -222,18 +222,13 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
       logoUrl,
       coverImage: listing.cover_image || null,
       verified,
+      featured: true,
       latestAt: listingTime(listing),
       latestListings: [listingPreview(listing)],
     });
   }
 
-  return Array.from(dealers.values()).sort(
-    (a, b) =>
-      Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||
-      b.listingCount - a.listingCount ||
-      b.latestAt - a.latestAt ||
-      a.name.localeCompare(b.name, "fa"),
-  );
+  return Array.from(dealers.values());
 }
 
 function dealerIdFromKey(key: string) {
@@ -243,26 +238,41 @@ function dealerIdFromKey(key: string) {
 
 function matchesQuery(dealer: DealerPreview, query: string) {
   if (!query.trim()) return true;
-
-  const listingTitles = (dealer.latestListings || [])
-    .map((listing) => listing.title)
-    .join(" ");
-
+  const listingTitles = (dealer.latestListings || []).map((listing) => listing.title).join(" ");
   return normalizeText(
     `${dealer.name} ${dealer.city} ${dealer.province || ""} ${listingTitles}`,
   ).includes(normalizeText(query));
 }
 
+function applyPlacement(dealer: DealerPreview, placement: FeaturedPlacement) {
+  const selectedIds = Array.isArray(placement.listing_ids)
+    ? placement.listing_ids.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0).slice(0, 6)
+    : [];
+  const previews = dealer.latestListings || [];
+  const byId = new Map(previews.map((item) => [Number(item.id), item]));
+  const selectedPreviews = selectedIds.flatMap((id) => {
+    const item = byId.get(id);
+    return item ? [item] : [];
+  });
+
+  return {
+    ...dealer,
+    name: placement.dealer_name?.trim() || dealer.name,
+    province: placement.province || dealer.province,
+    featured: true,
+    coverImageDesktop: placement.desktop_banner_url || dealer.coverImage || null,
+    coverImageMobile:
+      placement.mobile_banner_url || placement.desktop_banner_url || dealer.coverImage || null,
+    latestListings: (selectedIds.length ? selectedPreviews : previews).slice(0, 3),
+  } satisfies DealerPreview;
+}
+
 export default function HomeFeaturedShowrooms({ query }: Props) {
-  const [location, setLocation] = useState<HomeLocationSelection>(
-    DEFAULT_HOME_LOCATION,
-  );
+  const [location, setLocation] = useState<HomeLocationSelection>(DEFAULT_HOME_LOCATION);
   const [locationReady, setLocationReady] = useState(false);
   const [listings, setListings] = useState<ApiListing[]>([]);
   const [placements, setPlacements] = useState<FeaturedPlacement[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     setLocation(loadHomeLocation());
@@ -285,67 +295,89 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     setListings([]);
     setPlacements([]);
 
-    const listingRequest = Promise.all(
-      buildListingUrls(location).map(async (url) => {
-        const response = await fetch(url, {
-          cache: "no-store",
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = (await response.json()) as ApiResponse;
-        return payload.success && Array.isArray(payload.data) ? payload.data : [];
-      }),
-    );
-
-    const placementRequest = Promise.all(
-      buildFeaturedUrls(location).map(async (url) => {
-        const response = await fetch(url, {
-          cache: "no-store",
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = (await response.json()) as FeaturedResponse;
-        return payload.success && Array.isArray(payload.data) ? payload.data : [];
-      }),
-    );
-
-    Promise.all([listingRequest, placementRequest])
-      .then(([listingResponses, placementResponses]) => {
-        const mergedListings = new Map<number | string, ApiListing>();
-        listingResponses.flat().forEach((item) => mergedListings.set(item.id, item));
+    async function load() {
+      try {
+        const placementResponses = await Promise.all(
+          buildFeaturedUrls(location).map(async (url) => {
+            const response = await fetch(url, {
+              cache: "no-store",
+              signal: controller.signal,
+              headers: { Accept: "application/json" },
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = (await response.json()) as FeaturedResponse;
+            return payload.success && Array.isArray(payload.data) ? payload.data : [];
+          }),
+        );
 
         const mergedPlacements = new Map<number, FeaturedPlacement>();
         placementResponses.flat().forEach((item) => {
-          if (item.dealer_id && !mergedPlacements.has(item.dealer_id)) {
-            mergedPlacements.set(item.dealer_id, item);
-          }
+          const dealerId = Number(item.dealer_id || 0);
+          if (dealerId > 0 && !mergedPlacements.has(dealerId)) mergedPlacements.set(dealerId, item);
         });
+        const nextPlacements = Array.from(mergedPlacements.values());
+
+        const urls = Array.from(
+          new Set([...buildListingUrls(location), ...buildDealerListingUrls(nextPlacements)]),
+        );
+        const listingResponses = await fetchListings(urls, controller.signal);
+        const mergedListings = new Map<number | string, ApiListing>();
+        listingResponses.flat().forEach((item) => mergedListings.set(item.id, item));
 
         setListings(Array.from(mergedListings.values()));
-        setPlacements(Array.from(mergedPlacements.values()));
+        setPlacements(nextPlacements);
         setStatus("ready");
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if ((error as Error).name !== "AbortError") {
           setListings([]);
           setPlacements([]);
           setStatus("error");
         }
-      });
+      }
+    }
 
+    void load();
     return () => controller.abort();
   }, [location, locationReady]);
 
   const dealers = useMemo(() => {
     const placementOrder = new Map<number, number>();
-    placements.forEach((item, index) => placementOrder.set(Number(item.dealer_id), index));
+    const placementMap = new Map<number, FeaturedPlacement>();
+    placements.forEach((item, index) => {
+      const dealerId = Number(item.dealer_id);
+      placementOrder.set(dealerId, index);
+      placementMap.set(dealerId, item);
+    });
 
-    return buildDealers(
-      listings.filter((listing) => listingMatchesLocation(listing, location)),
-    )
-      .filter((dealer) => placementOrder.has(dealerIdFromKey(dealer.key)))
+    const dealerMap = new Map<number, DealerPreview>();
+    buildDealers(listings).forEach((dealer) => {
+      const dealerId = dealerIdFromKey(dealer.key);
+      if (!dealerId || !placementMap.has(dealerId)) return;
+      dealerMap.set(dealerId, applyPlacement(dealer, placementMap.get(dealerId)!));
+    });
+
+    placements.forEach((placement) => {
+      const dealerId = Number(placement.dealer_id);
+      if (!dealerId || dealerMap.has(dealerId)) return;
+      dealerMap.set(dealerId, {
+        key: `id:${dealerId}`,
+        slug: null,
+        name: placement.dealer_name?.trim() || `نمایشگاه ${dealerId}`,
+        city: "",
+        province: placement.province || "",
+        listingCount: 0,
+        logoUrl: null,
+        coverImage: placement.desktop_banner_url || placement.mobile_banner_url || null,
+        coverImageDesktop: placement.desktop_banner_url || null,
+        coverImageMobile: placement.mobile_banner_url || placement.desktop_banner_url || null,
+        verified: false,
+        featured: true,
+        latestAt: 0,
+        latestListings: [],
+      });
+    });
+
+    return Array.from(dealerMap.values())
       .filter((dealer) => matchesQuery(dealer, query))
       .sort(
         (a, b) =>
@@ -353,7 +385,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
       )
       .slice(0, 8);
-  }, [listings, placements, location, query]);
+  }, [listings, placements, query]);
 
   const showFallback = status !== "ready" || dealers.length === 0;
 
@@ -380,11 +412,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           aria-live={status === "loading" ? "polite" : undefined}
         >
           {FALLBACK_CARDS.map((card, index) => (
-            <Link
-              className="featuredShowroomFallbackCard"
-              href={card.href}
-              key={card.title}
-            >
+            <Link className="featuredShowroomFallbackCard" href={card.href} key={card.title}>
               <span className="featuredShowroomFallbackVisual">
                 <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
                 <i>{String(index + 1).padStart(2, "0")}</i>
@@ -415,7 +443,6 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           font-size: 9px;
           font-weight: 900;
         }
-
         .featuredShowroomFallbackRail {
           min-width: 0;
           display: grid;
@@ -429,7 +456,6 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           scrollbar-width: thin;
           scrollbar-color: #d7cce8 transparent;
         }
-
         .featuredShowroomFallbackCard {
           min-height: 230px;
           padding: 22px;
@@ -445,15 +471,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
             linear-gradient(145deg, #ffffff, #faf7ff);
           box-shadow: 0 16px 42px rgba(42, 26, 68, 0.075);
           scroll-snap-align: start;
-          transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
         }
-
-        .featuredShowroomFallbackCard:hover {
-          transform: translateY(-3px);
-          border-color: #cdb7e8;
-          box-shadow: 0 22px 50px rgba(42, 26, 68, 0.12);
-        }
-
         .featuredShowroomFallbackVisual {
           position: relative;
           width: 92px;
@@ -462,15 +480,8 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           display: grid;
           place-items: center;
           background: linear-gradient(155deg, #f2eaff, #ffffff);
-          box-shadow: inset 0 0 0 1px rgba(109, 40, 217, 0.1);
         }
-
-        .featuredShowroomFallbackVisual img {
-          width: 52px;
-          height: 64px;
-          object-fit: contain;
-        }
-
+        .featuredShowroomFallbackVisual img { width: 52px; height: 64px; object-fit: contain; }
         .featuredShowroomFallbackVisual i {
           position: absolute;
           left: 8px;
@@ -480,25 +491,11 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           font-style: normal;
           font-weight: 900;
         }
-
         .featuredShowroomFallbackCopy,
         .featuredShowroomFallbackCopy strong,
-        .featuredShowroomFallbackCopy small {
-          display: block;
-        }
-
-        .featuredShowroomFallbackCopy strong {
-          font-size: 15px;
-          line-height: 1.7;
-        }
-
-        .featuredShowroomFallbackCopy small {
-          margin-top: 8px;
-          color: #786d82;
-          font-size: 10px;
-          line-height: 1.9;
-        }
-
+        .featuredShowroomFallbackCopy small { display: block; }
+        .featuredShowroomFallbackCopy strong { font-size: 15px; line-height: 1.7; }
+        .featuredShowroomFallbackCopy small { margin-top: 8px; color: #786d82; font-size: 10px; line-height: 1.9; }
         .featuredShowroomFallbackCopy b {
           margin-top: 18px;
           display: inline-flex;
@@ -508,19 +505,11 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           font-size: 9px;
           font-weight: 900;
         }
-
         @media (max-width: 900px) {
-          .featuredShowroomFallbackRail {
-            grid-auto-columns: min(340px, 82vw);
-          }
+          .featuredShowroomFallbackRail { grid-auto-columns: min(340px, 82vw); }
         }
-
         @media (max-width: 560px) {
-          .featuredShowroomFallbackRail {
-            grid-auto-columns: min(300px, 84vw);
-            gap: 11px;
-          }
-
+          .featuredShowroomFallbackRail { grid-auto-columns: min(300px, 84vw); gap: 11px; }
           .featuredShowroomFallbackCard {
             min-height: 128px;
             padding: 14px;
@@ -528,30 +517,11 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
             gap: 12px;
             border-radius: 19px;
           }
-
-          .featuredShowroomFallbackVisual {
-            width: 70px;
-            height: 92px;
-            border-radius: 17px;
-          }
-
-          .featuredShowroomFallbackVisual img {
-            width: 40px;
-            height: 50px;
-          }
-
-          .featuredShowroomFallbackCopy strong {
-            font-size: 13px;
-          }
-
-          .featuredShowroomFallbackCopy small {
-            font-size: 8px;
-          }
-
-          .featuredShowroomFallbackCopy b {
-            margin-top: 10px;
-            font-size: 8px;
-          }
+          .featuredShowroomFallbackVisual { width: 70px; height: 92px; border-radius: 17px; }
+          .featuredShowroomFallbackVisual img { width: 40px; height: 50px; }
+          .featuredShowroomFallbackCopy strong { font-size: 13px; }
+          .featuredShowroomFallbackCopy small { font-size: 8px; }
+          .featuredShowroomFallbackCopy b { margin-top: 10px; font-size: 8px; }
         }
       `}</style>
     </section>

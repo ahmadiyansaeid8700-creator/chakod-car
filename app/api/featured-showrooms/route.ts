@@ -151,12 +151,18 @@ export async function GET(request: NextRequest) {
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);
 
-      if (!dealerId || !startsAt || !expiresAt || startsAt > nowIso || expiresAt <= nowIso) return [];
+      // Older selected-showroom orders were created before starts_at was persisted.
+      // A paid order with a future expires_at is already active unless an explicit
+      // future starts_at exists. This keeps previously purchased placements visible
+      // without requiring the owner to buy the placement again.
+      if (!dealerId || !expiresAt || expiresAt <= nowIso) return [];
+      if (startsAt && startsAt > nowIso) return [];
       if (province && selectedProvince && selectedProvince !== province) return [];
       if (seenSelectedDealers.has(dealerId)) return [];
       seenSelectedDealers.add(dealerId);
 
       const content = contentByOrderId.get(order.id);
+      const effectiveStartsAt = startsAt || nowIso;
 
       return [
         {
@@ -165,10 +171,10 @@ export async function GET(request: NextRequest) {
           dealer_id: dealerId,
           dealer_name: cleanText(metadata.target_name) || `نمایشگاه ${dealerId}`,
           province: selectedProvince,
-          start_date: startsAt.slice(0, 10),
+          start_date: effectiveStartsAt.slice(0, 10),
           end_date: expiresAt.slice(0, 10),
           status: "active",
-          approved_at: startsAt,
+          approved_at: effectiveStartsAt,
           desktop_banner_url: cleanText(content?.desktop_banner_url, 1200),
           mobile_banner_url: cleanText(content?.mobile_banner_url, 1200),
           listing_ids: content ? parseIds(content.listing_ids_json) : [],

@@ -91,7 +91,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
       });
       const payload = await readJson(response);
       if (!response.ok || !payload.success || !payload.listing || !payload.pricing) {
-        throw new Error(payload.message || "اطلاعات استوری دریافت نشد.");
+        throw new Error(payload.message || "اطلاعات دبل استوری دریافت نشد.");
       }
 
       setListing(payload.listing);
@@ -139,7 +139,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
       });
       const payload = await readJson(response);
       if (!response.ok || !payload.success) {
-        throw new Error(payload.message || "فعال‌سازی استوری انجام نشد.");
+        throw new Error(payload.message || "فعال‌سازی دبل استوری انجام نشد.");
       }
       setExpiresAt(payload.expires_at || "");
       const nextShareUrl = payload.share_url
@@ -147,7 +147,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
       setShareUrl(nextShareUrl);
       setSuccess(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "فعال‌سازی استوری انجام نشد.");
+      setError(caught instanceof Error ? caught.message : "فعال‌سازی دبل استوری انجام نشد.");
     } finally {
       setSubmitting(false);
     }
@@ -190,7 +190,9 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
     return (
       <main className={styles.page}>
         <div className={styles.shell}>
-          <section className={styles.card}><div className={styles.state}><div><strong>در حال آماده‌سازی استوری…</strong></div></div></section>
+          <section className={styles.card}>
+            <div className={styles.state}><div><strong>در حال آماده‌سازی دبل استوری…</strong></div></div>
+          </section>
         </div>
       </main>
     );
@@ -200,7 +202,15 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
     return (
       <main className={styles.page}>
         <div className={styles.shell}>
-          <section className={styles.card}><div className={styles.state}><div><strong>استوری آماده نشد</strong><p>{error}</p><Link href="/account/stories">بازگشت به انتخاب آگهی</Link></div></div></section>
+          <section className={styles.card}>
+            <div className={styles.state}>
+              <div>
+                <strong>دبل استوری آماده نشد</strong>
+                <p>{error}</p>
+                <Link href="/account/stories">بازگشت به انتخاب آگهی</Link>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -211,48 +221,89 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
       <main className={styles.page}>
         <div className={styles.shell}>
           <header className={styles.header}>
-            <Link href="/account/stories">دبل استوری‌های من</Link>
-            <Link href="/"><img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link>
+            <Link href="/account/stories">دبل استوری‌ها</Link>
+            <Link href="/" aria-label="چاکود">
+              <img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+            </Link>
           </header>
+
           <section className={styles.card}>
-            <div className={styles.state}>
-              <div>
-                <span className={styles.successMark}>✓</span>
-                <strong>دبل استوری فعال شد</strong>
-                <p>
-                  استوری داخل چاکود تا ۲۴ ساعت نمایش داده می‌شود. حالا لینک عمومی همین استوری را در اینستاگرام، واتساپ، تلگرام یا هر اپ دیگری منتشر کن تا مخاطب دوباره وارد چاکود شود.
-                  {expiresAt ? "" : ""}
+            <div className={styles.shareHub}>
+              <div className={styles.successHero}>
+                <span className={styles.successIcon}>✓</span>
+                <span className={styles.successEyebrow}>انتشار داخل چاکود انجام شد</span>
+                <h1 className={styles.successTitle}>حالا استوری را بیرون چاکود پخش کن</h1>
+                <p className={styles.successText}>
+                  این همان بخش دوم «دبل استوری» است: لینک عمومی را در شبکه‌های اجتماعی منتشر می‌کنی و مخاطب با لمس آن دوباره وارد چاکود و آگهی تو می‌شود.
+                  {expiresAt ? " استوری داخل چاکود تا ۲۴ ساعت فعال می‌ماند." : ""}
                 </p>
-
-                {shareUrl ? (
-                  <>
-                    <button
-                      className={styles.action}
-                      style={{ padding: "0 24px" }}
-                      type="button"
-                      onClick={() => void shareDoubleStory()}
-                    >
-                      اشتراک‌گذاری دبل استوری
-                    </button>
-                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
-                      <a href={shareUrl} target="_blank" rel="noreferrer">باز کردن لینک عمومی</a>
-                      <button
-                        type="button"
-                        onClick={() => void copyDoubleStoryLink()}
-                        style={{ minHeight: 44, padding: "0 18px", border: "1px solid #ddd0f4", borderRadius: 13, color: "#6d28d9", background: "#fff", font: "inherit", fontSize: 12, fontWeight: 900, cursor: "pointer" }}
-                      >
-                        {shareState === "copied" ? "لینک کپی شد" : "کپی لینک"}
-                      </button>
-                    </div>
-                    {shareState === "shared" ? <p className={styles.message}>پنجره اشتراک‌گذاری باز شد.</p> : null}
-                    {shareState === "error" ? <p className={styles.error}>اشتراک مستقیم انجام نشد؛ لینک را کپی کن و در اپ موردنظر قرار بده.</p> : null}
-                  </>
-                ) : (
-                  <p className={styles.error}>لینک عمومی ساخته نشد؛ استوری فعال است اما برای اشتراک دوباره تلاش کن.</p>
-                )}
-
-                <Link href="/">مشاهده استوری در صفحه اصلی</Link>
               </div>
+
+              <div className={styles.sharePreview} aria-label={`پیش‌نمایش دبل استوری ${listing?.title || "چاکود"}`}>
+                <div className={styles.sharePreviewMedia}>
+                  {listing?.cover_image_url ? (
+                    <img
+                      src={listing.cover_image_url}
+                      alt=""
+                      onError={(event) => { event.currentTarget.style.display = "none"; }}
+                    />
+                  ) : (
+                    <div className={styles.sharePreviewFallback}>چ</div>
+                  )}
+                </div>
+                <div className={styles.sharePreviewCopy}>
+                  <span className={styles.sharePreviewBadge}>دبل استوری · چاکود</span>
+                  <strong>{listing?.title || "آگهی خودرو"}</strong>
+                  <span>{vehicle || listing?.seller_display_name || "مشاهده جزئیات کامل در چاکود"}</span>
+                </div>
+              </div>
+
+              <div className={styles.shareFlow} aria-label="مسیر دبل استوری">
+                <div className={styles.shareFlowStep}>
+                  <strong>داخل چاکود</strong>
+                  <small>منتشر شد</small>
+                </div>
+                <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
+                <div className={styles.shareFlowStep}>
+                  <strong>شبکه‌ها</strong>
+                  <small>اشتراک لینک</small>
+                </div>
+                <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
+                <div className={styles.shareFlowStep}>
+                  <strong>برگشت مخاطب</strong>
+                  <small>به آگهی چاکود</small>
+                </div>
+              </div>
+
+              {shareUrl ? (
+                <>
+                  <button className={styles.sharePrimary} type="button" onClick={() => void shareDoubleStory()}>
+                    <span aria-hidden="true">↗</span>
+                    اشتراک‌گذاری دبل استوری
+                  </button>
+
+                  <div className={styles.shareActions}>
+                    <a className={styles.shareSecondary} href={shareUrl} target="_blank" rel="noreferrer">
+                      باز کردن لینک عمومی
+                    </a>
+                    <button className={styles.shareSecondary} type="button" onClick={() => void copyDoubleStoryLink()}>
+                      {shareState === "copied" ? "لینک کپی شد ✓" : "کپی لینک"}
+                    </button>
+                  </div>
+
+                  <div className={styles.publicLink}>{shareUrl}</div>
+                  <p className={styles.shareHint}>
+                    این لینک مخصوص همین دبل استوری است. هر کس آن را باز کند، ابتدا استوری را در چاکود می‌بیند و از همان‌جا می‌تواند وارد جزئیات کامل آگهی شود.
+                  </p>
+
+                  {shareState === "shared" ? <p className={styles.message}>پنجره اشتراک‌گذاری باز شد.</p> : null}
+                  {shareState === "error" ? <p className={styles.error}>اشتراک مستقیم انجام نشد؛ «کپی لینک» را بزن و لینک را در اپ موردنظر قرار بده.</p> : null}
+                </>
+              ) : (
+                <p className={styles.error}>لینک عمومی ساخته نشد؛ استوری فعال شده اما لینک اشتراک آماده نیست.</p>
+              )}
+
+              <Link className={styles.homeAfterShare} href="/">مشاهده استوری در صفحه اصلی چاکود</Link>
             </div>
           </section>
         </div>
@@ -264,23 +315,33 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
-          <Link href="/account/stories">بازگشت به انتخاب آگهی</Link>
-          <Link href="/" aria-label="چاکود"><img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link>
+          <Link href="/account/stories">بازگشت</Link>
+          <Link href="/" aria-label="چاکود">
+            <img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
         </header>
 
         <section className={styles.card}>
           <div className={styles.top}>
-            <span>دبل استوری چاکود</span>
-            <h1>آماده انتشار است</h1>
-            <p>یک‌بار داخل چاکود دیده می‌شود و بعد لینک همان استوری را برای انتشار بیرون از چاکود می‌گیری.</p>
+            <span>مرحله دوم · دبل استوری</span>
+            <h1>آماده انتشار داخل چاکود</h1>
+            <p>آگهی را یک‌بار داخل چاکود منتشر کن؛ بعد از فعال‌سازی، لینک عمومی همین استوری برای انتشار در شبکه‌های اجتماعی ساخته می‌شود.</p>
           </div>
 
           <div className={styles.preview}>
             <div className={styles.bubble} aria-hidden="true">
-              <span>{listing?.cover_image_url ? <img src={listing.cover_image_url} alt="" /> : "چ"}</span>
+              <span>
+                {listing?.cover_image_url ? (
+                  <img
+                    src={listing.cover_image_url}
+                    alt=""
+                    onError={(event) => { event.currentTarget.style.display = "none"; }}
+                  />
+                ) : "چ"}
+              </span>
             </div>
             <div className={styles.previewCopy}>
-              <small>این آگهی وارد دبل استوری می‌شود</small>
+              <small>آگهی انتخاب‌شده</small>
               <strong>{listing?.title || "آگهی خودرو"}</strong>
               {vehicle ? <span>{vehicle}</span> : null}
               {listing?.seller_display_name ? <span>{listing.seller_display_name}</span> : null}
@@ -289,7 +350,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
 
           <div className={styles.payment}>
             <div className={styles.rows}>
-              <div className={styles.row}><span>تعرفه آزمایشی دبل استوری · ۲۴ ساعت</span><strong>{money(pricing?.original_amount_toman)}</strong></div>
+              <div className={styles.row}><span>دبل استوری · نمایش داخل چاکود برای ۲۴ ساعت</span><strong>{money(pricing?.original_amount_toman)}</strong></div>
               {Number(pricing?.discount_amount_toman || 0) > 0 ? (
                 <div className={`${styles.row} ${styles.discount}`}><span>تخفیف</span><strong>− {money(pricing?.discount_amount_toman)}</strong></div>
               ) : null}
@@ -299,19 +360,25 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
             <label className={styles.couponLabel}>
               کد تخفیف
               <div className={styles.couponBox}>
-                <input value={coupon} onChange={(event) => setCoupon(event.target.value.toUpperCase())} onKeyDown={(event) => { if (event.key === "Enter") void applyCoupon(); }} placeholder="مثلاً STORY100" maxLength={40} />
+                <input
+                  value={coupon}
+                  onChange={(event) => setCoupon(event.target.value.toUpperCase())}
+                  onKeyDown={(event) => { if (event.key === "Enter") void applyCoupon(); }}
+                  placeholder="مثلاً STORY100"
+                  maxLength={40}
+                />
                 <button type="button" onClick={() => void applyCoupon()} disabled={loading}>{loading ? "…" : "اعمال"}</button>
               </div>
             </label>
 
-            {testCouponAvailable ? <p className={styles.hint}>برای تست شروع، کد <code>STORY100</code> تخفیف ۱۰۰٪ دبل استوری دارد.</p> : null}
+            {testCouponAvailable ? <p className={styles.hint}>برای تست، کد <code>STORY100</code> تخفیف ۱۰۰٪ دارد.</p> : null}
             {message ? <p className={pricing?.coupon_valid ? styles.message : styles.error}>{message}</p> : null}
             {error ? <p className={styles.error}>{error}</p> : null}
 
             <button className={styles.action} type="button" disabled={submitting || !pricing?.coupon_valid || pricing.final_amount_toman !== 0} onClick={() => void activateStory()}>
-              {submitting ? "در حال فعال‌سازی…" : pricing?.coupon_valid && pricing.final_amount_toman === 0 ? "فعال‌سازی رایگان دبل استوری" : "پرداخت و انتشار دبل استوری"}
+              {submitting ? "در حال انتشار…" : pricing?.coupon_valid && pricing.final_amount_toman === 0 ? "انتشار داخل چاکود و ساخت لینک اشتراک" : "پرداخت و انتشار دبل استوری"}
             </button>
-            {!pricing?.coupon_valid ? <p className={styles.afterPay}>در نسخه تست، انتشار رایگان با کد بالا فعال است؛ اتصال پرداخت آنلاین بعداً روی همین مرحله قرار می‌گیرد.</p> : null}
+            {!pricing?.coupon_valid ? <p className={styles.afterPay}>در نسخه تست با کد بالا رایگان فعال می‌شود؛ پرداخت آنلاین بعداً روی همین مرحله قرار می‌گیرد.</p> : null}
           </div>
         </section>
       </div>

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import AppViewport from "./components/AppViewport";
 import ChakodAiAssistant from "./components/ChakodAiAssistant";
 import LocalPublicApiBridge from "./components/LocalPublicApiBridge";
 import "./globals.css";
@@ -97,7 +98,7 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body>
         <LocalPublicApiBridge />
-        <div className="appViewport">{children}</div>
+        <AppViewport>{children}</AppViewport>
         <ChakodAiAssistant />
       </body>
     </html>

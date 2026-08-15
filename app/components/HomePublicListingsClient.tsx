@@ -45,6 +45,16 @@ type ApiResponse = { success?: boolean; data?: Listing[] };
 type Tone = "luxury" | "freezone";
 type LoadStatus = "loading" | "ready" | "error";
 
+type SelectedPlacement = {
+  placement_key: string;
+  listing_id?: number | null;
+};
+
+type SelectedResponse = {
+  success?: boolean;
+  data?: SelectedPlacement[];
+};
+
 const luxuryBrands = [
   "porsche",
   "پورشه",
@@ -160,6 +170,30 @@ function isLuxury(listing: Listing) {
 
 function byNewest(a: Listing, b: Listing) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
+function selectedOrder(placements: SelectedPlacement[], key: "luxury" | "freezone") {
+  const order = new Map<string, number>();
+  placements
+    .filter((item) => item.placement_key === key && Number(item.listing_id || 0) > 0)
+    .forEach((item, index) => {
+      const id = String(item.listing_id);
+      if (!order.has(id)) order.set(id, index);
+    });
+  return order;
+}
+
+function bySelectedThenNewest(order: Map<string, number>) {
+  return (a: Listing, b: Listing) => {
+    const aRank = order.get(String(a.id));
+    const bRank = order.get(String(b.id));
+    if (aRank !== undefined || bRank !== undefined) {
+      if (aRank === undefined) return 1;
+      if (bRank === undefined) return -1;
+      if (aRank !== bRank) return aRank - bRank;
+    }
+    return byNewest(a, b);
+  };
 }
 
 function matchesQuery(listing: Listing, query: string) {
@@ -313,6 +347,7 @@ function ShowcaseSection({
 
 export default function HomePublicListingsClient({ query }: { query: string }) {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [selected, setSelected] = useState<SelectedPlacement[]>([]);
   const [location, setLocation] = useState<HomeLocationSelection>(
     DEFAULT_HOME_LOCATION,
   );
@@ -340,21 +375,29 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
     async function load() {
       setListings([]);
+      setSelected([]);
       setStatus("loading");
 
       try {
-        const payloads = await Promise.all(
-          buildListingsApiUrls(location).map(async (url) => {
-            const response = await fetch(url, {
-              cache: "no-store",
-              headers: { Accept: "application/json" },
-              signal: controller.signal,
-            });
+        const [payloads, selectedResponse] = await Promise.all([
+          Promise.all(
+            buildListingsApiUrls(location).map(async (url) => {
+              const response = await fetch(url, {
+                cache: "no-store",
+                headers: { Accept: "application/json" },
+                signal: controller.signal,
+              });
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return (await response.json()) as ApiResponse;
-          }),
-        );
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              return (await response.json()) as ApiResponse;
+            }),
+          ),
+          fetch("/api/selected/active", {
+            cache: "no-store",
+            headers: { Accept: "application/json" },
+            signal: controller.signal,
+          }).catch(() => null),
+        ]);
 
         const merged = new Map<number | string, Listing>();
 
@@ -368,11 +411,19 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           }
         }
 
+        if (selectedResponse?.ok) {
+          const selectedPayload = (await selectedResponse.json()) as SelectedResponse;
+          if (selectedPayload.success && Array.isArray(selectedPayload.data)) {
+            setSelected(selectedPayload.data);
+          }
+        }
+
         setListings(Array.from(merged.values()));
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setListings([]);
+          setSelected([]);
           setStatus("error");
         }
       }
@@ -384,14 +435,17 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
   const data = useMemo(() => {
     const sorted = [...listings].sort(byNewest);
+    const luxuryOrder = selectedOrder(selected, "luxury");
+    const freezoneOrder = selectedOrder(selected, "freezone");
+
     return {
-      luxury: sorted.filter(isLuxury).slice(0, 9),
-      freezone: sorted.filter(isFreezone).slice(0, 9),
+      luxury: sorted.filter(isLuxury).sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      freezone: sorted.filter(isFreezone).sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
       searchResults: query
         ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
         : [],
     };
-  }, [listings, query]);
+  }, [listings, query, selected]);
 
   return (
     <>

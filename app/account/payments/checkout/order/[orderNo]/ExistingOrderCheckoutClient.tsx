@@ -88,13 +88,9 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
     setLoading(true);
     setError("");
 
-    const token = localStorage.getItem("chakod_session_token") || "";
-    if (!token) {
-      const returnTo = `/account/payments/checkout/order/${encodeURIComponent(orderNo)}`;
-      window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
-      return;
-    }
-
+    // The canonical session is the HttpOnly chakod_session cookie. A legacy
+    // localStorage token may be present on some clients, but its absence must
+    // never force a signed-in PWA/browser user back to Login.
     const headers = { Accept: "application/json", ...authHeaders() };
     const [orderResult, financeResult, commerceResult] = await Promise.allSettled([
       fetch(`/api/finance/order?order_no=${encodeURIComponent(orderNo)}`, {

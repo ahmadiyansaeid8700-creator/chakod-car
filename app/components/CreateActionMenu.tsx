@@ -24,7 +24,7 @@ type Action = {
 
 const actions: Action[] = [
   { id: "story", title: "دبل استوری", description: "انتشار در چاکود + اشتراک در شبکه‌ها", href: "/account/stories" },
-  { id: "featured", title: "رزرو منتخب", description: "نمایشگاه، تعمیرگاه، یدکی یا خدمات", href: "/account/selected" },
+  { id: "featured", title: "جایگاه ویژه", description: "نمایش خودرو یا کسب‌وکار در صفحه اول", href: "/account/selected" },
   { id: "listing", title: "ثبت آگهی", description: "ثبت آگهی جدید خودرو", href: "/account/listings/new" },
 ];
 

@@ -25,18 +25,10 @@ type Activity = {
   external_dealer_id?: number | null;
 };
 
-type Membership = {
-  type: string;
-  name: string;
-  role?: string;
-  external_dealer_id?: number | null;
-};
-
 type ActivitiesResponse = {
   success?: boolean;
   message?: string;
   activities?: Activity[];
-  memberships?: Membership[];
 };
 
 type Listing = {
@@ -95,19 +87,28 @@ type Target = {
   image?: string;
 };
 
-const PLACEMENTS: Array<{
+type Placement = {
   key: PlacementKey;
   title: string;
   eyebrow: string;
   description: string;
   targetLabel: string;
   homeAnchor: string;
-}> = [
+};
+
+type EligibleItem = {
+  key: string;
+  placement: Placement;
+  target: Target;
+  activeOrder: SelectedOrder | null;
+};
+
+const PLACEMENTS: Placement[] = [
   {
     key: "showroom",
     title: "نمایشگاه منتخب",
     eyebrow: "SHOWROOM",
-    description: "نمایشگاه شما در سکشن نمایشگاه‌های منتخب صفحه اول در اولویت نمایش قرار می‌گیرد.",
+    description: "نمایشگاه فعال شما در سکشن نمایشگاه‌های منتخب صفحه اول در اولویت نمایش قرار می‌گیرد.",
     targetLabel: "نمایشگاه",
     homeAnchor: "/#showrooms",
   },
@@ -115,23 +116,23 @@ const PLACEMENTS: Array<{
     key: "luxury",
     title: "خودرو لوکس",
     eyebrow: "LUXURY",
-    description: "یک آگهی واجد شرایط در ابتدای ویترین خودروهای لوکس صفحه اول قرار می‌گیرد.",
-    targetLabel: "آگهی لوکس",
+    description: "این آگهی فعال می‌تواند در ابتدای ویترین خودروهای لوکس صفحه اول قرار بگیرد.",
+    targetLabel: "خودرو لوکس",
     homeAnchor: "/#luxury",
   },
   {
     key: "freezone",
     title: "خودرو منطقه آزاد",
     eyebrow: "FREE ZONE",
-    description: "یک آگهی واجد شرایط در ابتدای ویترین خودروهای منطقه آزاد صفحه اول قرار می‌گیرد.",
-    targetLabel: "آگهی منطقه آزاد",
+    description: "این آگهی فعال می‌تواند در ابتدای ویترین خودروهای منطقه آزاد صفحه اول قرار بگیرد.",
+    targetLabel: "خودرو منطقه آزاد",
     homeAnchor: "/#freezone",
   },
   {
     key: "parts_store",
     title: "منتخب لوازم یدکی",
     eyebrow: "PARTS",
-    description: "فروشگاه لوازم یدکی شما در سکشن مربوط صفحه اول بالاتر از نمایش عادی قرار می‌گیرد.",
+    description: "فروشگاه فعال شما می‌تواند در سکشن لوازم یدکی صفحه اول بالاتر از نمایش عادی دیده شود.",
     targetLabel: "فروشگاه لوازم یدکی",
     homeAnchor: "/#featured-parts_store",
   },
@@ -139,7 +140,7 @@ const PLACEMENTS: Array<{
     key: "repair_shop",
     title: "تعمیرگاه منتخب",
     eyebrow: "REPAIR",
-    description: "تعمیرگاه شما در سکشن تعمیر و نگهداری صفحه اول در اولویت نمایش قرار می‌گیرد.",
+    description: "تعمیرگاه فعال شما می‌تواند در سکشن تعمیر و نگهداری صفحه اول در اولویت نمایش قرار بگیرد.",
     targetLabel: "تعمیرگاه",
     homeAnchor: "/#featured-repair_shop",
   },
@@ -147,7 +148,7 @@ const PLACEMENTS: Array<{
     key: "car_service",
     title: "خدمات منتخب",
     eyebrow: "SERVICES",
-    description: "مرکز خدمات خودرویی شما در سکشن خدمات صفحه اول در اولویت نمایش قرار می‌گیرد.",
+    description: "مرکز خدمات فعال شما می‌تواند در سکشن خدمات صفحه اول در اولویت نمایش قرار بگیرد.",
     targetLabel: "مرکز خدمات",
     homeAnchor: "/#featured-car_service",
   },
@@ -184,16 +185,26 @@ function isFreezone(listing: Listing) {
       listing.city,
     ].join(" "),
   );
+
   return (
     normalizeText(listing.market_segment) === "freezone" ||
-    ["freezone", "منطقهآزاد", "کیش", "قشم", "اروند", "انزلی", "ارس", "ماکو", "چابهار"].some(
-      (term) => text.includes(normalizeText(term)),
-    )
+    [
+      "freezone",
+      "منطقهآزاد",
+      "کیش",
+      "قشم",
+      "اروند",
+      "انزلی",
+      "ارس",
+      "ماکو",
+      "چابهار",
+    ].some((term) => text.includes(normalizeText(term)))
   );
 }
 
 function isLuxury(listing: Listing) {
   if (isFreezone(listing)) return false;
+
   const text = normalizeText(
     `${listing.brand || listing.brand_name || ""} ${listing.model || listing.model_name || ""} ${listing.title || ""}`,
   );
@@ -206,6 +217,7 @@ function isLuxury(listing: Listing) {
     "cadillac", "کادیلاک", "hongqi", "هونگچی", "tank", "تانک", "fownix", "فونیکس",
     "extreme", "اکستریم", "lucano", "لوکانو",
   ];
+
   return (
     normalizeText(listing.market_segment) === "luxury" ||
     normalizeText(listing.category_code) === "luxury" ||
@@ -237,35 +249,93 @@ function formatExpiry(value: unknown) {
   if (!raw) return "";
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return new Intl.DateTimeFormat("fa-IR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
-function activeOrderForPlacement(orders: SelectedOrder[], key: PlacementKey) {
+function activeOrderForTarget(
+  orders: SelectedOrder[],
+  placementKey: PlacementKey,
+  targetId: number,
+) {
   const now = Date.now();
-  return orders.find((order) => {
-    if (order.status !== "paid") return false;
-    if (String(order.metadata?.placement_key || "") !== key) return false;
-    const expires = new Date(String(order.metadata?.expires_at || "")).getTime();
-    return Number.isFinite(expires) && expires > now;
-  });
+  return (
+    orders.find((order) => {
+      if (order.status !== "paid") return false;
+      if (String(order.metadata?.placement_key || "") !== placementKey) return false;
+      if (Number(order.metadata?.target_id || 0) !== targetId) return false;
+      const expires = new Date(String(order.metadata?.expires_at || "")).getTime();
+      return Number.isFinite(expires) && expires > now;
+    }) || null
+  );
+}
+
+function targetsForPlacement(
+  placementKey: PlacementKey,
+  activities: Activity[],
+  listings: Listing[],
+): Target[] {
+  if (placementKey === "luxury" || placementKey === "freezone") {
+    return listings
+      .filter((listing) =>
+        placementKey === "luxury" ? isLuxury(listing) : isFreezone(listing),
+      )
+      .map((listing) => ({
+        id: Number(listing.id),
+        title: listing.title || `آگهی ${listing.id}`,
+        subtitle: [
+          listing.brand || listing.brand_name,
+          listing.model || listing.model_name,
+          listing.city,
+        ]
+          .filter(Boolean)
+          .join("، "),
+        image: listingImage(listing),
+      }));
+  }
+
+  if (placementKey === "showroom") {
+    return activities
+      .filter(
+        (activity) =>
+          activity.type === "dealer" &&
+          activity.status === "active" &&
+          Number(activity.external_dealer_id || 0) > 0,
+      )
+      .map((activity) => ({
+        id: Number(activity.external_dealer_id),
+        title: activity.name || `نمایشگاه ${activity.external_dealer_id}`,
+        subtitle:
+          [activity.city, activity.province].filter(Boolean).join("، ") ||
+          "نمایشگاه فعال شما",
+      }));
+  }
+
+  return activities
+    .filter(
+      (activity) =>
+        activity.type === placementKey && activity.status === "active",
+    )
+    .map((activity) => ({
+      id: Number(activity.id),
+      title: activity.name,
+      subtitle:
+        [activity.city, activity.province].filter(Boolean).join("، ") ||
+        "فعال در حساب چاکود",
+    }));
 }
 
 export default function SelectedPlacementClient() {
-  const [placementKey, setPlacementKey] = useState<PlacementKey>("showroom");
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<SelectedOrder[]>([]);
   const [testCoupon, setTestCoupon] = useState("");
-  const [targetId, setTargetId] = useState(0);
+  const [selectedKey, setSelectedKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-
-  const placement = useMemo(
-    () => PLACEMENTS.find((item) => item.key === placementKey) || PLACEMENTS[0],
-    [placementKey],
-  );
 
   useEffect(() => {
     let ignore = false;
@@ -276,47 +346,75 @@ export default function SelectedPlacementClient() {
       const headers = { Accept: "application/json", ...authHeaders() };
 
       try {
-        const [activitiesResponse, listingsResponse, checkoutResponse] = await Promise.all([
-          fetch("/api/auth/account-activities", {
-            cache: "no-store",
-            credentials: "include",
-            headers,
-          }),
-          fetch("/api/auth/dashboard-listings?page=1&per_page=100&status=active&owner=all", {
-            cache: "no-store",
-            credentials: "include",
-            headers,
-          }),
-          fetch("/api/selected/checkout", {
-            cache: "no-store",
-            credentials: "include",
-            headers,
-          }),
-        ]);
+        const [activitiesResponse, listingsResponse, checkoutResponse] =
+          await Promise.all([
+            fetch("/api/auth/account-activities", {
+              cache: "no-store",
+              credentials: "include",
+              headers,
+            }),
+            fetch(
+              "/api/auth/dashboard-listings?page=1&per_page=100&status=active&owner=all",
+              {
+                cache: "no-store",
+                credentials: "include",
+                headers,
+              },
+            ),
+            fetch("/api/selected/checkout", {
+              cache: "no-store",
+              credentials: "include",
+              headers,
+            }),
+          ]);
 
-        if (activitiesResponse.status === 401 || listingsResponse.status === 401 || checkoutResponse.status === 401) {
-          window.location.assign(`/login?returnTo=${encodeURIComponent("/account/selected")}`);
+        if (
+          activitiesResponse.status === 401 ||
+          listingsResponse.status === 401 ||
+          checkoutResponse.status === 401
+        ) {
+          window.location.assign(
+            `/login?returnTo=${encodeURIComponent("/account/selected")}`,
+          );
           return;
         }
 
-        const activityPayload = (await activitiesResponse.json().catch(() => null)) as ActivitiesResponse | null;
-        const listingPayload = (await listingsResponse.json().catch(() => null)) as ListingsResponse | null;
-        const checkoutPayload = (await checkoutResponse.json().catch(() => null)) as CheckoutStateResponse | null;
+        const activityPayload = (await activitiesResponse
+          .json()
+          .catch(() => null)) as ActivitiesResponse | null;
+        const listingPayload = (await listingsResponse
+          .json()
+          .catch(() => null)) as ListingsResponse | null;
+        const checkoutPayload = (await checkoutResponse
+          .json()
+          .catch(() => null)) as CheckoutStateResponse | null;
 
         if (ignore) return;
+
         if (activitiesResponse.ok && activityPayload?.success) {
-          setActivities(Array.isArray(activityPayload.activities) ? activityPayload.activities : []);
-          setMemberships(Array.isArray(activityPayload.memberships) ? activityPayload.memberships : []);
+          setActivities(
+            Array.isArray(activityPayload.activities)
+              ? activityPayload.activities
+              : [],
+          );
         }
         if (listingsResponse.ok && listingPayload?.success) {
-          setListings((Array.isArray(listingPayload.data) ? listingPayload.data : []).filter(activeListing));
+          setListings(
+            (Array.isArray(listingPayload.data) ? listingPayload.data : []).filter(
+              activeListing,
+            ),
+          );
         }
         if (checkoutResponse.ok && checkoutPayload?.success) {
-          setOrders(Array.isArray(checkoutPayload.orders) ? checkoutPayload.orders : []);
+          setOrders(
+            Array.isArray(checkoutPayload.orders) ? checkoutPayload.orders : [],
+          );
           setTestCoupon(String(checkoutPayload.test_coupon || ""));
         }
       } catch {
-        if (!ignore) setError("ارتباط با اطلاعات حساب برقرار نشد. دوباره تلاش کنید.");
+        if (!ignore) {
+          setError("ارتباط با اطلاعات حساب برقرار نشد. دوباره تلاش کنید.");
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -328,81 +426,47 @@ export default function SelectedPlacementClient() {
     };
   }, []);
 
-  const targets = useMemo<Target[]>(() => {
-    if (placementKey === "luxury" || placementKey === "freezone") {
-      const filtered = listings.filter((listing) =>
-        placementKey === "luxury" ? isLuxury(listing) : isFreezone(listing),
-      );
-      return filtered.map((listing) => ({
-        id: Number(listing.id),
-        title: listing.title || `آگهی ${listing.id}`,
-        subtitle: [listing.brand || listing.brand_name, listing.model || listing.model_name, listing.city]
-          .filter(Boolean)
-          .join("، "),
-        image: listingImage(listing),
-      }));
-    }
-
-    if (placementKey === "showroom") {
-      const result = new Map<number, Target>();
-      activities
-        .filter((activity) => activity.type === "dealer" && Number(activity.external_dealer_id || 0) > 0 && activity.status !== "disabled")
-        .forEach((activity) => {
-          const id = Number(activity.external_dealer_id);
-          result.set(id, {
-            id,
-            title: activity.name || `نمایشگاه ${id}`,
-            subtitle: [activity.city, activity.province].filter(Boolean).join("، ") || "نمایشگاه قابل مدیریت",
-          });
-        });
-      memberships
-        .filter((membership) => membership.type === "dealer" && Number(membership.external_dealer_id || 0) > 0)
-        .forEach((membership) => {
-          const id = Number(membership.external_dealer_id);
-          if (!result.has(id)) {
-            result.set(id, {
-              id,
-              title: membership.name || `نمایشگاه ${id}`,
-              subtitle: membership.role ? `نقش: ${membership.role}` : "نمایشگاه قابل مدیریت",
-            });
-          }
-        });
-      return Array.from(result.values());
-    }
-
-    return activities
-      .filter((activity) => activity.type === placementKey && activity.status !== "disabled")
-      .map((activity) => ({
-        id: Number(activity.id),
-        title: activity.name,
-        subtitle: [activity.city, activity.province].filter(Boolean).join("، ") || "کسب‌وکار ثبت‌شده در چاکود",
-      }));
-  }, [activities, listings, memberships, placementKey]);
+  const eligibleItems = useMemo<EligibleItem[]>(() => {
+    return PLACEMENTS.flatMap((placement) =>
+      targetsForPlacement(placement.key, activities, listings).map((target) => ({
+        key: `${placement.key}:${target.id}`,
+        placement,
+        target,
+        activeOrder: activeOrderForTarget(
+          orders,
+          placement.key,
+          target.id,
+        ),
+      })),
+    );
+  }, [activities, listings, orders]);
 
   useEffect(() => {
-    if (!targets.some((target) => target.id === targetId)) {
-      setTargetId(targets[0]?.id || 0);
+    if (!eligibleItems.length) {
+      if (selectedKey) setSelectedKey("");
+      return;
     }
-  }, [targets, targetId]);
 
-  const selectedTarget = targets.find((target) => target.id === targetId) || null;
-  const activeOrder = activeOrderForPlacement(orders, placementKey);
+    if (!eligibleItems.some((item) => item.key === selectedKey)) {
+      setSelectedKey(eligibleItems[0].key);
+    }
+  }, [eligibleItems, selectedKey]);
 
-  function changePlacement(key: PlacementKey) {
-    setPlacementKey(key);
-    setTargetId(0);
-    setError("");
-  }
+  const selectedItem =
+    eligibleItems.find((item) => item.key === selectedKey) || null;
 
   async function activate() {
-    if (!selectedTarget || working) return;
+    if (!selectedItem || selectedItem.activeOrder || working) return;
     if (!testCoupon) {
-      setError("تخفیف تست ۱۰۰٪ فقط روی Staging/localhost فعال است؛ Production عمداً رایگان نشده است.");
+      setError(
+        "تخفیف تست ۱۰۰٪ فقط روی Staging/localhost فعال است؛ Production عمداً رایگان نشده است.",
+      );
       return;
     }
 
     setWorking(true);
     setError("");
+
     try {
       const response = await fetch("/api/selected/checkout", {
         method: "POST",
@@ -414,16 +478,20 @@ export default function SelectedPlacementClient() {
           ...authHeaders(),
         },
         body: JSON.stringify({
-          placement_key: placementKey,
-          target_id: selectedTarget.id,
+          placement_key: selectedItem.placement.key,
+          target_id: selectedItem.target.id,
           discount_code: testCoupon,
           idempotency_key: crypto.randomUUID(),
         }),
       });
-      const payload = (await response.json().catch(() => null)) as CheckoutResponse | null;
+      const payload = (await response
+        .json()
+        .catch(() => null)) as CheckoutResponse | null;
 
       if (response.status === 401) {
-        window.location.assign(`/login?returnTo=${encodeURIComponent("/account/selected")}`);
+        window.location.assign(
+          `/login?returnTo=${encodeURIComponent("/account/selected")}`,
+        );
         return;
       }
       if (!response.ok || !payload?.success || !payload.checkout_url) {
@@ -443,7 +511,9 @@ export default function SelectedPlacementClient() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/account" className={styles.back}>← حساب من</Link>
+          <Link href="/account" className={styles.back}>
+            ← حساب من
+          </Link>
           <Link href="/" className={styles.brand} aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
           </Link>
@@ -451,118 +521,170 @@ export default function SelectedPlacementClient() {
 
         <section className={styles.hero}>
           <span>CHAKOD SELECTED</span>
-          <h1>منتخب‌های صفحه اول</h1>
+          <h1>چه چیزهایی می‌تونی منتخب کنی؟</h1>
           <p>
-            دقیقاً یکی از شش سکشن موجود صفحه اول را انتخاب کنید، هدف را مشخص کنید و مسیر پرداخت را ادامه دهید.
-            در Staging فعلاً تخفیف تست ۱۰۰٪ به‌صورت کنترل‌شده فعال است.
+            چاکود فقط فعالیت‌ها و آگهی‌های فعال همین حساب را بررسی می‌کند. هر چیزی که
+            پایین می‌بینی، همین حالا واجد شرایط منتخب شدن در صفحه اول است.
           </p>
           <div className={styles.testBadge}>
-            <b>{testCoupon ? "تست ۱۰۰٪ فعال" : "Production امن"}</b>
-            <small>{testCoupon ? `کد تست ${testCoupon} فقط در محیط آزمایشی` : "هیچ تخفیف ۱۰۰٪ روی Production اعمال نمی‌شود"}</small>
+            <b>{testCoupon ? "تست ۱۰۰٪ فعال" : "پرداخت واقعی"}</b>
+            <small>
+              {testCoupon
+                ? "در محیط آزمایشی مبلغ نهایی منتخب صفر می‌شود."
+                : "تعرفه فعال در مرحله پرداخت محاسبه می‌شود."}
+            </small>
           </div>
         </section>
 
-        <section className={styles.placementGrid} aria-label="انتخاب جایگاه صفحه اول">
-          {PLACEMENTS.map((item) => {
-            const active = activeOrderForPlacement(orders, item.key);
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className={`${styles.placementCard} ${placementKey === item.key ? styles.placementCardActive : ""}`}
-                onClick={() => changePlacement(item.key)}
-              >
-                <span>{item.eyebrow}</span>
-                <strong>{item.title}</strong>
-                <small>{active ? "در حال نمایش" : "انتخاب جایگاه"}</small>
-              </button>
-            );
-          })}
-        </section>
-
-        <section className={styles.builder}>
-          <div className={styles.builderIntro}>
+        <section className={styles.eligibleSection}>
+          <div className={styles.sectionHeading}>
             <div>
-              <span>{placement.eyebrow}</span>
-              <h2>{placement.title}</h2>
-              <p>{placement.description}</p>
+              <span>برای حساب شما</span>
+              <h2>گزینه‌های آماده منتخب شدن</h2>
             </div>
-            <Link href={placement.homeAnchor}>مشاهده سکشن در صفحه اول ←</Link>
+            {!loading ? (
+              <strong>
+                {new Intl.NumberFormat("fa-IR").format(eligibleItems.length)} گزینه
+              </strong>
+            ) : null}
           </div>
-
-          {activeOrder ? (
-            <div className={styles.activeNotice}>
-              <div>
-                <span>فعال</span>
-                <strong>{String(activeOrder.metadata?.target_name || placement.title)}</strong>
-              </div>
-              <small>
-                تا {formatExpiry(activeOrder.metadata?.expires_at) || "پایان بازه فعال"}
-              </small>
-            </div>
-          ) : null}
 
           {loading ? (
-            <div className={styles.stateCard}>در حال دریافت گزینه‌های قابل انتخاب…</div>
-          ) : targets.length === 0 ? (
+            <div className={styles.stateCard}>در حال بررسی فعالیت‌های فعال حساب…</div>
+          ) : eligibleItems.length === 0 ? (
             <div className={styles.stateCard}>
-              <strong>گزینه واجد شرایطی پیدا نشد.</strong>
+              <strong>فعلاً گزینه فعالی برای منتخب شدن نداری.</strong>
               <p>
-                {placementKey === "luxury" || placementKey === "freezone"
-                  ? "ابتدا یک آگهی فعال متناسب با همین سکشن داشته باشید."
-                  : "ابتدا کسب‌وکار مربوط به این سکشن را داخل حساب ثبت و فعال کنید."}
+                وقتی آگهی لوکس/منطقه آزاد یا یکی از کسب‌وکارهای مرتبط فعال شود، فقط
+                همان مورد اینجا نمایش داده می‌شود.
               </p>
-              <Link href={placementKey === "luxury" || placementKey === "freezone" ? "/account/listings" : "/account/business"}>
-                رفتن به مدیریت {placementKey === "luxury" || placementKey === "freezone" ? "آگهی‌ها" : "کسب‌وکارها"}
-              </Link>
+              <div className={styles.emptyActions}>
+                <Link href="/account/listings">مدیریت آگهی‌ها</Link>
+                <Link href="/account/business">مدیریت کسب‌وکارها</Link>
+              </div>
             </div>
           ) : (
-            <div className={styles.targetArea}>
-              <label className={styles.targetSelect}>
-                <span>{placement.targetLabel} را انتخاب کنید</span>
-                <select value={targetId} onChange={(event) => setTargetId(Number(event.target.value))}>
-                  {targets.map((target) => (
-                    <option key={target.id} value={target.id}>{target.title}</option>
-                  ))}
-                </select>
-              </label>
-
-              {selectedTarget ? (
-                <article className={styles.targetPreview}>
-                  <div className={styles.previewMedia}>
-                    {selectedTarget.image ? <img src={selectedTarget.image} alt="" /> : <b>{selectedTarget.title.slice(0, 1)}</b>}
-                  </div>
-                  <div>
-                    <span>{placement.targetLabel}</span>
-                    <h3>{selectedTarget.title}</h3>
-                    <p>{selectedTarget.subtitle || "گزینه انتخاب‌شده"}</p>
-                  </div>
-                </article>
-              ) : null}
-
-              <aside className={styles.checkoutSummary}>
-                <div><span>جایگاه</span><strong>{placement.title}</strong></div>
-                <div><span>هدف</span><strong>{selectedTarget?.title || "—"}</strong></div>
-                <div><span>تخفیف تست</span><strong>{testCoupon ? "۱۰۰٪" : "غیرفعال"}</strong></div>
-                <div><span>مبلغ نهایی تست</span><strong>{testCoupon ? formatToman(0) : "از تعرفه واقعی"}</strong></div>
-              </aside>
-
-              {error ? <div className={styles.error}>{error}</div> : null}
-
-              <button
-                className={styles.continueButton}
-                type="button"
-                disabled={working || !selectedTarget}
-                onClick={() => void activate()}
-              >
-                {working ? "در حال ساخت سفارش…" : testCoupon ? "ادامه به پرداخت با تخفیف ۱۰۰٪" : "ادامه به پرداخت"}
-              </button>
-              <p className={styles.securityCopy}>
-                تخفیف تست در سمت سرور و فقط برای staging.chakod.com / localhost اعتبارسنجی می‌شود؛ تغییر URL یا مرورگر Production را رایگان نمی‌کند.
-              </p>
+            <div className={styles.eligibleGrid}>
+              {eligibleItems.map((item) => {
+                const selected = selectedItem?.key === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`${styles.eligibleCard} ${
+                      selected ? styles.eligibleCardSelected : ""
+                    } ${item.activeOrder ? styles.eligibleCardActive : ""}`}
+                    onClick={() => {
+                      setSelectedKey(item.key);
+                      setError("");
+                    }}
+                  >
+                    <span className={styles.eligibleMedia}>
+                      {item.target.image ? (
+                        <img src={item.target.image} alt="" />
+                      ) : (
+                        <b>{item.target.title.slice(0, 1)}</b>
+                      )}
+                    </span>
+                    <span className={styles.eligibleCopy}>
+                      <small>{item.placement.title}</small>
+                      <strong>{item.target.title}</strong>
+                      <span>{item.target.subtitle || "فعال در چاکود"}</span>
+                      <em>
+                        {item.activeOrder
+                          ? "منتخب فعال"
+                          : "می‌تونی منتخبش کنی"}
+                      </em>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
+
+        {selectedItem ? (
+          <section className={styles.builder}>
+            <div className={styles.builderIntro}>
+              <div>
+                <span>{selectedItem.placement.eyebrow}</span>
+                <h2>{selectedItem.placement.title}</h2>
+                <p>{selectedItem.placement.description}</p>
+              </div>
+              <Link href={selectedItem.placement.homeAnchor}>
+                مشاهده جایگاه در صفحه اول ←
+              </Link>
+            </div>
+
+            <div className={styles.selectionPanel}>
+              <article className={styles.targetPreview}>
+                <div className={styles.previewMedia}>
+                  {selectedItem.target.image ? (
+                    <img src={selectedItem.target.image} alt="" />
+                  ) : (
+                    <b>{selectedItem.target.title.slice(0, 1)}</b>
+                  )}
+                </div>
+                <div>
+                  <span>{selectedItem.placement.targetLabel}</span>
+                  <h3>{selectedItem.target.title}</h3>
+                  <p>{selectedItem.target.subtitle || "فعال در حساب چاکود"}</p>
+                </div>
+              </article>
+
+              {selectedItem.activeOrder ? (
+                <aside className={styles.activeNotice}>
+                  <div>
+                    <span>فعال</span>
+                    <strong>این مورد الان منتخب است</strong>
+                  </div>
+                  <small>
+                    تا {formatExpiry(selectedItem.activeOrder.metadata?.expires_at) || "پایان بازه فعال"}
+                  </small>
+                  <Link href={selectedItem.placement.homeAnchor}>
+                    مشاهده در صفحه اول
+                  </Link>
+                </aside>
+              ) : (
+                <aside className={styles.checkoutSummary}>
+                  <div>
+                    <span>جایگاه</span>
+                    <strong>{selectedItem.placement.title}</strong>
+                  </div>
+                  <div>
+                    <span>هدف</span>
+                    <strong>{selectedItem.target.title}</strong>
+                  </div>
+                  <div>
+                    <span>تخفیف تست</span>
+                    <strong>{testCoupon ? "۱۰۰٪" : "غیرفعال"}</strong>
+                  </div>
+                  <div>
+                    <span>مبلغ نهایی تست</span>
+                    <strong>{testCoupon ? formatToman(0) : "از تعرفه واقعی"}</strong>
+                  </div>
+                </aside>
+              )}
+
+              {error ? <div className={styles.error}>{error}</div> : null}
+
+              {!selectedItem.activeOrder ? (
+                <button
+                  className={styles.continueButton}
+                  type="button"
+                  disabled={working}
+                  onClick={() => void activate()}
+                >
+                  {working
+                    ? "در حال ساخت سفارش…"
+                    : testCoupon
+                      ? "منتخبش کن — تست ۱۰۰٪"
+                      : "منتخبش کن و ادامه پرداخت"}
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
       </div>
       <MobileBottomNav />
     </main>

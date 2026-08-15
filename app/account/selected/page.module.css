@@ -152,7 +152,7 @@
   background: linear-gradient(145deg, #ffffff, #fbf9fd);
   box-shadow: 0 10px 30px rgba(50, 30, 70, 0.05);
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  transition: border-color 160ms ease, outline-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .eligibleCard:hover {
@@ -161,15 +161,25 @@
   box-shadow: 0 16px 36px rgba(50, 30, 70, 0.09);
 }
 
-.eligibleCardSelected {
-  border-color: #8b5cf6;
-  background: linear-gradient(145deg, #fff, #f4eeff);
-  box-shadow: 0 16px 40px rgba(109, 40, 217, 0.14);
-}
-
 .eligibleCardActive {
   border-color: #a7d8bb;
   background: linear-gradient(145deg, #fff, #f5fcf8);
+}
+
+.eligibleCardSelected,
+.eligibleCardSelected.eligibleCardActive {
+  border-color: #6d28d9;
+  outline: 3px solid rgba(124, 58, 237, 0.34);
+  outline-offset: 2px;
+  background: linear-gradient(145deg, #fff, #f4eeff);
+  box-shadow:
+    0 0 0 2px rgba(124, 58, 237, 0.1),
+    0 18px 44px rgba(109, 40, 217, 0.2);
+}
+
+.eligibleCardSelected:hover,
+.eligibleCardSelected.eligibleCardActive:hover {
+  border-color: #5b21b6;
 }
 
 .eligibleMedia {

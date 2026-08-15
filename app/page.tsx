@@ -57,6 +57,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <b>نشان</b>
             </Link>
 
+            <Link
+              className="masterSavedLink masterDailyCardDesktop"
+              href="/account/showcase"
+              aria-label="کارت روز"
+            >
+              <span aria-hidden="true">✦</span>
+              <b>کارت روز</b>
+            </Link>
+
             <AuthStatus />
 
             <CreateActionMenu
@@ -124,6 +133,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <span>شرکت یکتا الکترونیک گلشن نوین — سال تأسیس ۱۳۹۵</span>
         </div>
       </footer>
+
+      <style>{`
+        .masterDailyCardDesktop {
+          color: #6d28d9;
+          border-color: #ddd0f4;
+          background: linear-gradient(145deg, #ffffff, #f6f1ff);
+        }
+        .masterDailyCardDesktop:hover {
+          border-color: #a78bfa;
+          background: #f7f2ff;
+        }
+        @media (max-width: 760px) {
+          .masterDailyCardDesktop { display: none !important; }
+        }
+      `}</style>
 
       <MobileBottomNav />
     </main>

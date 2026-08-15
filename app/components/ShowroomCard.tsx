@@ -24,7 +24,10 @@ export type ShowroomCardData = {
   listingCount: number;
   logoUrl?: string | null;
   coverImage?: string | null;
+  coverImageDesktop?: string | null;
+  coverImageMobile?: string | null;
   verified?: boolean;
+  featured?: boolean;
   latestListings?: ShowroomListingPreview[];
 };
 
@@ -115,43 +118,40 @@ export default function ShowroomCard({ showroom }: ShowroomCardProps) {
   const href = showroom.slug
     ? `/businesses/${encodeURIComponent(showroom.slug)}`
     : `/businesses?type=dealer&q=${encodeURIComponent(showroom.name)}`;
-  const coverUrl = getImageUrl(showroom.coverImage);
+  const desktopCoverUrl = getImageUrl(showroom.coverImageDesktop || showroom.coverImage);
+  const mobileCoverUrl = getImageUrl(
+    showroom.coverImageMobile || showroom.coverImageDesktop || showroom.coverImage,
+  );
   const logoUrl = getImageUrl(showroom.logoUrl);
   const [failedCoverUrl, setFailedCoverUrl] = useState("");
   const [failedLogoUrl, setFailedLogoUrl] = useState("");
 
-  const showCover = Boolean(coverUrl) && failedCoverUrl !== coverUrl;
+  const showCover = Boolean(desktopCoverUrl || mobileCoverUrl) && failedCoverUrl !== (desktopCoverUrl || mobileCoverUrl);
   const showLogo = Boolean(logoUrl) && failedLogoUrl !== logoUrl;
   const latestListings = (showroom.latestListings || []).slice(0, 3);
-  const thumbnailSlots = Array.from(
-    { length: 3 },
-    (_, index) => latestListings[index] || null,
-  );
+  const thumbnailSlots = Array.from({ length: 3 }, (_, index) => latestListings[index] || null);
   const location = [showroom.city, showroom.province]
     .filter(Boolean)
     .filter((item, index, values) => values.indexOf(item) === index)
     .join("، ");
-  const formattedCount = new Intl.NumberFormat("fa-IR").format(
-    showroom.listingCount,
-  );
+  const formattedCount = new Intl.NumberFormat("fa-IR").format(showroom.listingCount);
 
   return (
     <article className={styles.card}>
       <div className={styles.cover}>
-        <a
-          className={styles.coverLink}
-          href={href}
-          aria-label={`مشاهده نمایشگاه ${showroom.name}`}
-        >
+        <a className={styles.coverLink} href={href} aria-label={`مشاهده نمایشگاه ${showroom.name}`}>
           {showCover ? (
-            <img
-              className={styles.coverImage}
-              src={coverUrl}
-              alt={`ویترین خودروهای ${showroom.name}`}
-              loading="lazy"
-              decoding="async"
-              onError={() => setFailedCoverUrl(coverUrl)}
-            />
+            <picture>
+              {mobileCoverUrl ? <source media="(max-width: 780px)" srcSet={mobileCoverUrl} /> : null}
+              <img
+                className={styles.coverImage}
+                src={desktopCoverUrl || mobileCoverUrl}
+                alt={`ویترین خودروهای ${showroom.name}`}
+                loading="lazy"
+                decoding="async"
+                onError={() => setFailedCoverUrl(desktopCoverUrl || mobileCoverUrl)}
+              />
+            </picture>
           ) : (
             <span className={styles.coverPlaceholder} aria-hidden="true">
               <span />
@@ -162,28 +162,20 @@ export default function ShowroomCard({ showroom }: ShowroomCardProps) {
 
         <span
           className={`${styles.statusBadge} ${
-            showroom.verified ? styles.featuredBadge : styles.activeBadge
+            showroom.featured ? styles.featuredBadge : styles.activeBadge
           }`}
         >
-          {showroom.verified ? "منتخب" : "فعال"}
+          {showroom.featured ? "منتخب" : "فعال"}
         </span>
 
         <div className={styles.shareAction}>
-          <DealerShareActions
-            dealerName={showroom.name}
-            city={showroom.city}
-            href={href}
-          />
+          <DealerShareActions dealerName={showroom.name} city={showroom.city} href={href} />
         </div>
       </div>
 
       <div className={styles.body}>
         <div className={styles.logoWrap}>
-          <a
-            className={styles.logo}
-            href={href}
-            aria-label={`صفحه ${showroom.name}`}
-          >
+          <a className={styles.logo} href={href} aria-label={`صفحه ${showroom.name}`}>
             {showLogo ? (
               <img
                 src={logoUrl}
@@ -222,19 +214,12 @@ export default function ShowroomCard({ showroom }: ShowroomCardProps) {
           </span>
         </div>
 
-        <div
-          className={styles.latestGrid}
-          aria-label={`آخرین آگهی‌های ${showroom.name}`}
-        >
+        <div className={styles.latestGrid} aria-label={`خودروهای منتخب ${showroom.name}`}>
           {thumbnailSlots.map((listing, index) =>
             listing ? (
               <ListingThumbnail key={listing.id} listing={listing} />
             ) : (
-              <span
-                className={styles.emptyListing}
-                key={`empty-${index}`}
-                aria-hidden="true"
-              >
+              <span className={styles.emptyListing} key={`empty-${index}`} aria-hidden="true">
                 <CarIcon />
               </span>
             ),

@@ -213,6 +213,10 @@
   cursor: pointer;
 }
 
+.page section[aria-label="استوری‌های فعال این حساب"] {
+  display: none !important;
+}
+
 .businessStoryCard {
   width: 100%;
   min-width: 0;

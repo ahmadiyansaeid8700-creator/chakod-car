@@ -308,6 +308,90 @@
   font-weight: 800; line-height: 1.7; text-align: center;
 }
 
+.sharePanel {
+  width: min(100%, 380px);
+  margin: 12px auto 0;
+  padding: 12px;
+  border: 1px solid #e9ddf3;
+  border-radius: 20px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 14px 34px rgba(54,29,70,.08);
+}
+.sharePrimary {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(135deg, #6d28d9, #7c3aed 56%, #9333ea);
+  box-shadow: 0 10px 24px rgba(109,40,217,.22);
+  cursor: pointer;
+}
+.sharePrimary:disabled {
+  cursor: wait;
+  opacity: .62;
+  box-shadow: none;
+}
+.sharePrimary svg {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.sharePrimary span { min-width: 0; text-align: right; }
+.sharePrimary strong,
+.sharePrimary small { display: block; }
+.sharePrimary strong { font-size: 11px; font-weight: 1000; line-height: 1.4; }
+.sharePrimary small { margin-top: 3px; color: rgba(255,255,255,.74); font-size: 7.5px; font-weight: 750; line-height: 1.5; }
+.shareSecondaryRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.shareSecondaryRow button {
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid #eadff4;
+  border-radius: 12px;
+  color: #5b3a6d;
+  background: #fff;
+  font-size: 8.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.shareSecondaryRow button:disabled { cursor: wait; opacity: .5; }
+.showroomLink {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  border-radius: 12px;
+  color: #5f2a83;
+  background: #f7f1fb;
+  font-size: 8.5px;
+  font-weight: 950;
+  text-decoration: none;
+}
+.shareHint,
+.shareError {
+  margin: 8px 4px 0;
+  font-size: 7.5px;
+  font-weight: 750;
+  line-height: 1.75;
+  text-align: center;
+}
+.shareHint { color: #8b7d95; }
+.shareError { color: #b42318; }
+
 .state, .emptyState {
   width: min(100%, 380px); margin: 24px auto; border: 1px solid #eadff4; border-radius: 22px;
   background: #fff; box-shadow: 0 16px 38px rgba(50,26,67,.08);
@@ -336,6 +420,7 @@
   .footerAvatar { width: 45px; height: 45px; flex-basis: 45px; border-radius: 14px; }
   .businessCopy strong { font-size: 12px; }
   .brandWatermark { width: 76px; }
+  .sharePanel { width: min(88vw, 350px); }
 }
 
 @media (max-width: 390px) {
@@ -345,6 +430,7 @@
   .quoteLead { font-size: clamp(20px, 5.7vw, 25px); }
   .quoteTail { font-size: clamp(15px, 4vw, 18px); }
   .brandWatermark { width: 70px; }
+  .sharePanel { width: min(91vw, 340px); }
 }
 
 @media (min-width: 720px) {

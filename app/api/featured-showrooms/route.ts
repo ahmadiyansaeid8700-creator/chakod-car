@@ -118,13 +118,29 @@ async function loadLegacyPlacements(today: string, province: string): Promise<Le
   }
 }
 
+function isSelectedShowroomOrder(
+  order: { id: number; productCode: string },
+  metadata: JsonObject,
+  contentByOrderId: Map<number, ContentRow>,
+) {
+  if (order.productCode === "home_selected_showroom") return true;
+  if (cleanText(metadata.placement_key, 60) === "showroom") return true;
+  if (
+    cleanText(metadata.target_type, 60) === "dealer" &&
+    cleanText(metadata.public_product_code, 80) === "homepage_selected"
+  ) {
+    return true;
+  }
+  return contentByOrderId.has(order.id);
+}
+
 export async function GET(request: NextRequest) {
   const province = String(request.nextUrl.searchParams.get("province") || "").trim().slice(0, 80);
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
 
   try {
-    const [legacyRows, selectedOrders, contentRows] = await Promise.all([
+    const [legacyRows, paidPromotionOrders, contentRows] = await Promise.all([
       loadLegacyPlacements(today, province),
       getDb()
         .select()
@@ -132,37 +148,38 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(commerceOrders.orderType, "promotion"),
-            eq(commerceOrders.productCode, "home_selected_showroom"),
             eq(commerceOrders.status, "paid"),
           ),
         )
         .orderBy(desc(commerceOrders.id))
-        .limit(100),
+        .limit(200),
       loadContentRows(),
     ]);
 
     const contentByOrderId = new Map(contentRows.map((item) => [Number(item.order_id), item]));
     const seenSelectedDealers = new Set<number>();
 
-    const selected = selectedOrders.flatMap((order) => {
+    const selected = paidPromotionOrders.flatMap((order) => {
       const metadata = parseMetadata(order.metadataJson);
-      const dealerId = safeId(metadata.dealer_id || metadata.target_id);
+      if (!isSelectedShowroomOrder(order, metadata, contentByOrderId)) return [];
+
+      const content = contentByOrderId.get(order.id);
+      const dealerId = safeId(metadata.dealer_id || metadata.target_id || content?.dealer_id);
       const startsAt = cleanText(metadata.starts_at, 60);
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);
 
       // Older selected-showroom orders were created before starts_at was persisted.
       // A paid order with a future expires_at is already active unless an explicit
-      // future starts_at exists. This keeps previously purchased placements visible
-      // without requiring the owner to buy the placement again.
+      // future starts_at exists. Published content also identifies older showroom
+      // orders whose historical product code differs from the current code.
       if (!dealerId || !expiresAt || expiresAt <= nowIso) return [];
       if (startsAt && startsAt > nowIso) return [];
       if (province && selectedProvince && selectedProvince !== province) return [];
       if (seenSelectedDealers.has(dealerId)) return [];
       seenSelectedDealers.add(dealerId);
 
-      const content = contentByOrderId.get(order.id);
-      const effectiveStartsAt = startsAt || nowIso;
+      const effectiveStartsAt = startsAt || order.createdAt || nowIso;
 
       return [
         {

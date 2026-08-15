@@ -1,0 +1,9 @@
+@media (max-width: 760px) {
+  @supports (-webkit-touch-callout: none) {
+    .appViewport input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+    .appViewport textarea,
+    .appViewport select {
+      font-size: 16px !important;
+    }
+  }
+}

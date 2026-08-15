@@ -8,7 +8,6 @@ import ux from "./banner-upload.module.css";
 
 type Slot = "desktop" | "mobile";
 type Preview = { url: string; name: string } | null;
-
 type Props = { children: ReactNode };
 
 function slotForInput(input: HTMLInputElement): Slot | null {
@@ -33,10 +32,11 @@ export default function BannerUploadEnhancer({ children }: Props) {
     if (!root) return;
 
     const objectUrls = new Set<string>();
-    const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="file"]'))
-      .filter((input) => slotForInput(input));
 
     function refreshTargets() {
+      const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="file"]'))
+        .filter((input) => slotForInput(input));
+
       for (const input of inputs) {
         input.accept = "image/*,.heic,.heif";
         const label = input.closest("label") as HTMLElement | null;
@@ -62,6 +62,7 @@ export default function BannerUploadEnhancer({ children }: Props) {
       const url = URL.createObjectURL(file);
       objectUrls.add(url);
       const preview = { url, name: file.name || "تصویر انتخاب‌شده" };
+
       if (slot === "desktop") {
         setDesktopPreview((current) => {
           if (current?.url && objectUrls.has(current.url)) {

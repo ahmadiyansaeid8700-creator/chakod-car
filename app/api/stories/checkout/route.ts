@@ -23,6 +23,7 @@ const STORY_TEST_COUPON = "STORY100";
 const STORY_DURATION_HOURS = 24;
 const MAX_ACTIVE_STORIES_PER_OWNER = 10;
 const STORY_PRODUCT_CODE = "listing_story";
+const LOCAL_STORY_ID_BASE = 1_000_000_000;
 
 type JsonObject = Record<string, unknown>;
 
@@ -310,10 +311,21 @@ export async function POST(request: NextRequest) {
       storyId = created?.id || 0;
     }
 
+    if (!storyId) {
+      return jsonResponse({ success: false, message: "شناسه استوری ساخته نشد. دوباره تلاش کنید." }, 500);
+    }
+
+    const publicStoryId = LOCAL_STORY_ID_BASE + storyId;
+    const sharePath = `/stories/${publicStoryId}?ref=double-story`;
+    const shareUrl = new URL(sharePath, request.nextUrl.origin).toString();
+
     return jsonResponse({
       success: true,
       story_id: storyId,
-      message: "استوری رایگان فعال شد و تا ۲۴ ساعت نمایش داده می‌شود.",
+      public_story_id: publicStoryId,
+      share_path: sharePath,
+      share_url: shareUrl,
+      message: "دبل استوری فعال شد؛ حالا لینک عمومی آن را هرجا خواستی منتشر کن.",
       expires_at: expiresAt,
       pricing: quote,
     });

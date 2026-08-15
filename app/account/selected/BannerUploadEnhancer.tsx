@@ -30,11 +30,12 @@ export default function BannerUploadEnhancer({ children }: Props) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    const host = root;
 
     const objectUrls = new Set<string>();
 
     function refreshTargets() {
-      const inputs = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="file"]'))
+      const inputs = Array.from(host.querySelectorAll<HTMLInputElement>('input[type="file"]'))
         .filter((input) => slotForInput(input));
 
       for (const input of inputs) {
@@ -85,14 +86,14 @@ export default function BannerUploadEnhancer({ children }: Props) {
     }
 
     refreshTargets();
-    root.addEventListener("change", handleChange, true);
+    host.addEventListener("change", handleChange, true);
 
     const observer = new MutationObserver(() => refreshTargets());
-    observer.observe(root, { subtree: true, attributes: true, attributeFilter: ["disabled"], childList: true });
+    observer.observe(host, { subtree: true, attributes: true, attributeFilter: ["disabled"], childList: true });
 
     return () => {
       observer.disconnect();
-      root.removeEventListener("change", handleChange, true);
+      host.removeEventListener("change", handleChange, true);
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);

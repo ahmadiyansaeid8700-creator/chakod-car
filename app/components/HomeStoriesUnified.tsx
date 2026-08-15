@@ -242,6 +242,19 @@ export default function HomeStoriesUnified() {
       : "",
     [activeStory, storyYear],
   );
+  const canPrevious = Boolean(
+    activeGroup
+      && itemIndex !== null
+      && (itemIndex > 0 || (groupIndex !== null && groupIndex > 0)),
+  );
+  const canNext = Boolean(
+    activeGroup
+      && itemIndex !== null
+      && (
+        itemIndex < activeGroup.items.length - 1
+        || (groupIndex !== null && groupIndex < groups.length - 1)
+      ),
+  );
 
   useEffect(() => {
     setLocation(loadHomeLocation());
@@ -369,24 +382,53 @@ export default function HomeStoriesUnified() {
   }
 
   const previous = useCallback(() => {
-    if (!activeGroup || itemIndex === null || itemIndex === 0) return;
-    const nextIndex = itemIndex - 1;
+    if (!activeGroup || itemIndex === null || groupIndex === null) return;
+
+    if (itemIndex > 0) {
+      const previousIndex = itemIndex - 1;
+      setNowMs(Date.now());
+      setItemIndex(previousIndex);
+      track(activeGroup.items[previousIndex]);
+      return;
+    }
+
+    const previousGroupIndex = groupIndex - 1;
+    if (previousGroupIndex < 0) return;
+    const previousGroup = groups[previousGroupIndex];
+    const previousItemIndex = Math.max(previousGroup.items.length - 1, 0);
+    const previousStory = previousGroup.items[previousItemIndex];
+    if (!previousStory) return;
+
     setNowMs(Date.now());
-    setItemIndex(nextIndex);
-    track(activeGroup.items[nextIndex]);
-  }, [activeGroup, itemIndex, track]);
+    setGroupIndex(previousGroupIndex);
+    setItemIndex(previousItemIndex);
+    track(previousStory);
+  }, [activeGroup, groupIndex, groups, itemIndex, track]);
 
   const next = useCallback(() => {
-    if (!activeGroup || itemIndex === null) return;
-    const nextIndex = itemIndex + 1;
-    if (nextIndex >= activeGroup.items.length) {
+    if (!activeGroup || itemIndex === null || groupIndex === null) return;
+
+    const nextItemIndex = itemIndex + 1;
+    if (nextItemIndex < activeGroup.items.length) {
+      setNowMs(Date.now());
+      setItemIndex(nextItemIndex);
+      track(activeGroup.items[nextItemIndex]);
+      return;
+    }
+
+    const nextGroupIndex = groupIndex + 1;
+    const nextGroup = groups[nextGroupIndex];
+    const nextStory = nextGroup?.items[0];
+    if (!nextStory) {
       close();
       return;
     }
+
     setNowMs(Date.now());
-    setItemIndex(nextIndex);
-    track(activeGroup.items[nextIndex]);
-  }, [activeGroup, itemIndex, close, track]);
+    setGroupIndex(nextGroupIndex);
+    setItemIndex(0);
+    track(nextStory);
+  }, [activeGroup, close, groupIndex, groups, itemIndex, track]);
 
   useEffect(() => {
     if (!activeStory) return;
@@ -551,14 +593,14 @@ export default function HomeStoriesUnified() {
               </div>
             </div>
 
-            {activeGroup.items.length > 1 ? (
+            {canPrevious || canNext ? (
               <>
                 <button
                   type="button"
                   className={`${styles.nav} ${styles.prev}`}
                   onClick={previous}
-                  disabled={itemIndex === 0}
-                  aria-label="استوری قبلی همین حساب"
+                  disabled={!canPrevious}
+                  aria-label="استوری قبلی"
                 >
                   ‹
                 </button>
@@ -566,7 +608,8 @@ export default function HomeStoriesUnified() {
                   type="button"
                   className={`${styles.nav} ${styles.next}`}
                   onClick={next}
-                  aria-label="استوری بعدی همین حساب"
+                  disabled={!canNext}
+                  aria-label="استوری بعدی"
                 >
                   ›
                 </button>

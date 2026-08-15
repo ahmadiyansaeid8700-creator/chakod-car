@@ -9,7 +9,90 @@ body {
   overscroll-behavior-y: none;
 }
 
+.appViewport {
+  min-height: 100dvh;
+}
+
 @media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    padding-bottom: 0 !important;
+  }
+
+  .appViewport {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .appViewport::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  body:has(.loginPage) .appViewport {
+    overflow-y: hidden;
+    overscroll-behavior: none;
+  }
+
+  .loginPage {
+    width: 100%;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      12px
+      max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+  }
+
+  .loginPage .loginShell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .loginPage .topbar {
+    min-height: 50px;
+    margin-bottom: 0 !important;
+    padding: 0 2px 8px;
+  }
+
+  .loginPage .card {
+    align-self: center;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .loginPage .card::-webkit-scrollbar {
+    display: none;
+    width: 0;
+  }
+
   .siteHeader {
     min-height: 58px;
     padding: 5px 12px;
@@ -142,10 +225,23 @@ body {
   }
 }
 
-@media (display-mode: standalone) {
+@media (display-mode: standalone) and (max-width: 760px) {
   html,
   body {
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 100%;
     background: #fbfbfd;
+  }
+
+  .appViewport {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .loginPage {
+    height: 100% !important;
+    max-height: 100%;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
   }
 }

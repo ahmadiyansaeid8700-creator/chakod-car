@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { clearActiveAccount, saveActiveAccount } from "../lib/active-account";
+
 type SavedUser = { display_name?: string; full_name?: string | null; business_name?: string | null };
-type Activity = { id: number; type: string; name: string; external_dealer_id?: number | null };
-type Membership = { type: string; name: string; external_dealer_id?: number | null; role?: string };
+type Activity = { id: number; type: string; name: string; external_dealer_id?: number | null; logo_url?: string | null };
+type Membership = { type: string; name: string; external_dealer_id?: number | null; role?: string; logo_url?: string | null };
 type ActivitiesResponse = { success?: boolean; activities?: Activity[]; memberships?: Membership[] };
 
 function tokenHeaders(): Record<string, string> {
@@ -100,6 +102,7 @@ export default function MobileAccountSwitcher() {
     localStorage.removeItem("chakod_session_token");
     localStorage.removeItem("chakod_user");
     localStorage.removeItem("chakod_identity");
+    clearActiveAccount();
     window.dispatchEvent(new Event("chakod:auth-changed"));
     window.location.assign("/");
   }
@@ -115,16 +118,16 @@ export default function MobileAccountSwitcher() {
       <div className="mobileAccountSheet" role="menu" dir="rtl">
         <div className="mobileAccountHandle" aria-hidden="true" />
         <div className="mobileAccountTitle">انتخاب حساب</div>
-        <Link href="/account-v2/profile" className="mobileAccountRow" role="menuitem" onClick={() => setOpen(false)}>
+        <Link href="/account-v2/profile" className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "personal" }); setOpen(false); }}>
           <span className="mobileAccountRowIcon"><PersonIcon /></span>
           <span><strong>حساب شخصی</strong><small>{displayName}</small></span>
         </Link>
         {loading && activities.length === 0 && memberships.length === 0 ? <div className="mobileAccountLoading">در حال دریافت کسب‌وکارها…</div> : null}
-        {activities.map(activity => <Link key={`activity-${activity.id}`} href={manageHref(activity)} className="mobileAccountRow" role="menuitem" onClick={() => setOpen(false)}>
+        {activities.map(activity => <Link key={`activity-${activity.id}`} href={manageHref(activity)} className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "activity", id: activity.id, type: activity.type, name: activity.name, external_dealer_id: activity.external_dealer_id, logo_url: activity.logo_url }); setOpen(false); }}>
           <span className="mobileAccountRowIcon">▣</span>
           <span><strong>{activity.name}</strong><small>{accountLabel(activity.type)}</small></span>
         </Link>)}
-        {memberships.map((membership, index) => <Link key={`membership-${membership.external_dealer_id || index}`} href={manageHref(membership)} className="mobileAccountRow" role="menuitem" onClick={() => setOpen(false)}>
+        {memberships.map((membership, index) => <Link key={`membership-${membership.external_dealer_id || index}`} href={manageHref(membership)} className="mobileAccountRow" role="menuitem" onClick={() => { if (membership.external_dealer_id) saveActiveAccount({ kind: "membership", type: membership.type, name: membership.name, external_dealer_id: membership.external_dealer_id, role: membership.role, logo_url: membership.logo_url }); setOpen(false); }}>
           <span className="mobileAccountRowIcon">▣</span>
           <span><strong>{membership.name}</strong><small>{accountLabel(membership.type)} · {roleLabel(membership.role)}</small></span>
         </Link>)}

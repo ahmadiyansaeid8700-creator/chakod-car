@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  canShareImageFile,
+  createDoubleStoryShareFile,
+  downloadShareFile,
+} from "../../../lib/double-story-share";
 import styles from "./StoryCheckoutClient.module.css";
 
 type StoryListing = {
@@ -67,6 +72,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
   const [success, setSuccess] = useState(false);
   const [expiresAt, setExpiresAt] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const [shareFile, setShareFile] = useState<File | null>(null);
   const [shareState, setShareState] = useState<ShareState>("idle");
   const [testCouponAvailable, setTestCouponAvailable] = useState(false);
 
@@ -109,6 +115,31 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
     void loadQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listingId]);
+
+  useEffect(() => {
+    let ignore = false;
+    setShareFile(null);
+    if (!success || !shareUrl || !listing) return () => { ignore = true; };
+
+    void createDoubleStoryShareFile({
+      title: listing.title,
+      sellerName: listing.seller_display_name,
+      brand: listing.brand,
+      model: listing.model,
+      year: listing.year,
+      priceToman: listing.price_toman,
+      imageUrl: listing.cover_image_url,
+      publicStoryUrl: shareUrl,
+    })
+      .then((file) => {
+        if (!ignore) setShareFile(file);
+      })
+      .catch(() => {
+        if (!ignore) setShareFile(null);
+      });
+
+    return () => { ignore = true; };
+  }, [listing, shareUrl, success]);
 
   async function applyCoupon() {
     if (!coupon.trim()) {
@@ -166,20 +197,18 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
   async function shareDoubleStory() {
     if (!shareUrl) return;
     setShareState("idle");
-    const shareData = {
-      title: `دبل استوری ${listing?.title || "چاکود"}`,
-      text: "این استوری را در چاکود ببین و جزئیات کامل آگهی را باز کن:",
-      url: shareUrl,
-    };
+    if (!canShareImageFile(shareFile) || !shareFile) {
+      setShareState("error");
+      return;
+    }
 
     try {
-      if (typeof navigator.share === "function") {
-        await navigator.share(shareData);
-        setShareState("shared");
-        return;
-      }
-      await navigator.clipboard.writeText(shareUrl);
-      setShareState("copied");
+      await navigator.share({
+        title: `دبل استوری ${listing?.title || "چاکود"}`,
+        text: `${listing?.title || "دبل استوری چاکود"}\n${shareUrl}`,
+        files: [shareFile],
+      });
+      setShareState("shared");
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
       setShareState("error");
@@ -234,7 +263,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
                 <span className={styles.successEyebrow}>انتشار داخل چاکود انجام شد</span>
                 <h1 className={styles.successTitle}>حالا استوری را بیرون چاکود پخش کن</h1>
                 <p className={styles.successText}>
-                  این همان بخش دوم «دبل استوری» است: لینک عمومی را در شبکه‌های اجتماعی منتشر می‌کنی و مخاطب با لمس آن دوباره وارد چاکود و آگهی تو می‌شود.
+                  بخش دوم «دبل استوری» آماده است: تصویر ۹:۱۶ را در استوری، پست یا پیام‌رسان‌ها منتشر می‌کنی و لینک عمومی همین استوری هم مسیر برگشت مخاطب به چاکود است.
                   {expiresAt ? " استوری داخل چاکود تا ۲۴ ساعت فعال می‌ماند." : ""}
                 </p>
               </div>
@@ -254,7 +283,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
                 <div className={styles.sharePreviewCopy}>
                   <span className={styles.sharePreviewBadge}>دبل استوری · چاکود</span>
                   <strong>{listing?.title || "آگهی خودرو"}</strong>
-                  <span>{vehicle || listing?.seller_display_name || "مشاهده جزئیات کامل در چاکود"}</span>
+                  <span>{vehicle || listing?.seller_display_name || "آماده برای اشتراک"}</span>
                 </div>
               </div>
 
@@ -266,26 +295,31 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
                 <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
                 <div className={styles.shareFlowStep}>
                   <strong>شبکه‌ها</strong>
-                  <small>اشتراک لینک</small>
+                  <small>اشتراک تصویر</small>
                 </div>
                 <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
                 <div className={styles.shareFlowStep}>
                   <strong>برگشت مخاطب</strong>
-                  <small>به آگهی چاکود</small>
+                  <small>به استوری چاکود</small>
                 </div>
               </div>
 
               {shareUrl ? (
                 <>
-                  <button className={styles.sharePrimary} type="button" onClick={() => void shareDoubleStory()}>
+                  <button
+                    className={styles.sharePrimary}
+                    type="button"
+                    disabled={!shareFile}
+                    onClick={() => void shareDoubleStory()}
+                  >
                     <span aria-hidden="true">↗</span>
-                    اشتراک‌گذاری دبل استوری
+                    {shareFile ? "اشتراک‌گذاری برای استوری یا پست" : "در حال آماده‌سازی تصویر…"}
                   </button>
 
                   <div className={styles.shareActions}>
-                    <a className={styles.shareSecondary} href={shareUrl} target="_blank" rel="noreferrer">
-                      باز کردن لینک عمومی
-                    </a>
+                    <button className={styles.shareSecondary} type="button" disabled={!shareFile} onClick={() => downloadShareFile(shareFile)}>
+                      ذخیره تصویر
+                    </button>
                     <button className={styles.shareSecondary} type="button" onClick={() => void copyDoubleStoryLink()}>
                       {shareState === "copied" ? "لینک کپی شد ✓" : "کپی لینک"}
                     </button>
@@ -293,17 +327,17 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
 
                   <div className={styles.publicLink}>{shareUrl}</div>
                   <p className={styles.shareHint}>
-                    این لینک مخصوص همین دبل استوری است. هر کس آن را باز کند، ابتدا استوری را در چاکود می‌بیند و از همان‌جا می‌تواند وارد جزئیات کامل آگهی شود.
+                    Share اصلی فایل تصویری ۹:۱۶ را می‌فرستد. اپ مقصد تعیین می‌کند آن را به‌صورت Story، Post یا پیام منتشر کنی؛ لینک عمومی هم برای برگشت مخاطب به چاکود باقی می‌ماند.
                   </p>
 
-                  {shareState === "shared" ? <p className={styles.message}>پنجره اشتراک‌گذاری باز شد.</p> : null}
-                  {shareState === "error" ? <p className={styles.error}>اشتراک مستقیم انجام نشد؛ «کپی لینک» را بزن و لینک را در اپ موردنظر قرار بده.</p> : null}
+                  {shareState === "shared" ? <p className={styles.message}>تصویر برای اشتراک‌گذاری ارسال شد.</p> : null}
+                  {shareState === "error" ? <p className={styles.error}>اشتراک تصویری روی این دستگاه باز نشد؛ تصویر را ذخیره یا لینک را کپی کن.</p> : null}
                 </>
               ) : (
                 <p className={styles.error}>لینک عمومی ساخته نشد؛ استوری فعال شده اما لینک اشتراک آماده نیست.</p>
               )}
 
-              <Link className={styles.homeAfterShare} href="/">مشاهده استوری در صفحه اصلی چاکود</Link>
+              {shareUrl ? <a className={styles.homeAfterShare} href={shareUrl}>پیش‌نمایش استوری عمومی</a> : null}
             </div>
           </section>
         </div>
@@ -325,7 +359,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
           <div className={styles.top}>
             <span>مرحله دوم · دبل استوری</span>
             <h1>آماده انتشار داخل چاکود</h1>
-            <p>آگهی را یک‌بار داخل چاکود منتشر کن؛ بعد از فعال‌سازی، لینک عمومی همین استوری برای انتشار در شبکه‌های اجتماعی ساخته می‌شود.</p>
+            <p>آگهی را یک‌بار داخل چاکود منتشر کن؛ بعد از فعال‌سازی، تصویر اشتراک و لینک عمومی همین استوری آماده می‌شود.</p>
           </div>
 
           <div className={styles.preview}>
@@ -376,7 +410,7 @@ export default function StoryCheckoutClient({ listingId }: { listingId: number }
             {error ? <p className={styles.error}>{error}</p> : null}
 
             <button className={styles.action} type="button" disabled={submitting || !pricing?.coupon_valid || pricing.final_amount_toman !== 0} onClick={() => void activateStory()}>
-              {submitting ? "در حال انتشار…" : pricing?.coupon_valid && pricing.final_amount_toman === 0 ? "انتشار داخل چاکود و ساخت لینک اشتراک" : "پرداخت و انتشار دبل استوری"}
+              {submitting ? "در حال انتشار…" : pricing?.coupon_valid && pricing.final_amount_toman === 0 ? "انتشار داخل چاکود و ساخت دبل استوری" : "پرداخت و انتشار دبل استوری"}
             </button>
             {!pricing?.coupon_valid ? <p className={styles.afterPay}>در نسخه تست با کد بالا رایگان فعال می‌شود؛ پرداخت آنلاین بعداً روی همین مرحله قرار می‌گیرد.</p> : null}
           </div>

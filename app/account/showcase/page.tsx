@@ -283,14 +283,9 @@ export default function DailyCardPage() {
               <div className={styles.motif} aria-hidden="true" />
 
               <div className={styles.identityRow}>
-                <div className={styles.identity}>
-                  <div className={styles.avatar}>
-                    {identity.logo ? <img src={identity.logo} alt="" /> : <span>{initials}</span>}
-                  </div>
-                  <div className={styles.identityCopy}>
-                    <small>{identity.label}</small>
-                    <strong>{identity.name}</strong>
-                  </div>
+                <div className={styles.accountType}>
+                  <span>کارت روز کسب‌وکار</span>
+                  <strong>{identity.label}</strong>
                 </div>
                 <div className={styles.datePill} aria-label={`${dateLabel.weekday} ${dateLabel.date}`}>
                   <strong>{dateLabel.weekday}</strong>
@@ -308,11 +303,16 @@ export default function DailyCardPage() {
               </div>
 
               <div className={styles.footer}>
-                <div className={styles.dailyMeta}>
-                  <span>جمله امروز</span>
-                  <strong>هر روز یک شروع تازه</strong>
+                <div className={styles.businessSignature}>
+                  <div className={styles.footerAvatar}>
+                    {identity.logo ? <img src={identity.logo} alt="" /> : <span>{initials}</span>}
+                  </div>
+                  <div className={styles.businessCopy}>
+                    <strong>{identity.name}</strong>
+                    <small>{identity.label} عضو چاکود</small>
+                  </div>
                 </div>
-                <div className={styles.brandMark} aria-label="چاکود">
+                <div className={styles.brandWatermark} aria-label="ساخته‌شده با چاکود">
                   <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
                 </div>
               </div>

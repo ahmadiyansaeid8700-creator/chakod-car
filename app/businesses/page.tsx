@@ -283,36 +283,45 @@ export default function BusinessesPage({
         <a href="/" aria-label="صفحه اصلی چاکود"><img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" /></a>
       </header>
 
-      <section className={styles.hero}>
-        <span>{kicker}</span>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </section>
+      {dealerDirectory ? (
+        <section className={styles.dealerSearch} aria-label="جستجوی نمایشگاه‌ها">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="جستجو"
+            aria-label="جستجوی نمایشگاه"
+          />
+        </section>
+      ) : (
+        <>
+          <section className={styles.hero}>
+            <span>{kicker}</span>
+            <h1>{title}</h1>
+            <p>{description}</p>
+          </section>
 
-      <section className={styles.filters} aria-label="فیلتر کسب‌وکارها">
-        {!lockType ? (
-          <div className={styles.typeTabs}>
-            {types.map((item) => (
-              <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <div className={styles.filterGrid}>
-          <label><span>جست‌وجو</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="نام کسب‌وکار یا نوع خدمت" /></label>
-          <label><span>شهر</span><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً رشت یا تهران" /></label>
-          {!lockType ? (
-            <label><span>خدمت</span><select value={category} onChange={(event) => {
-              const nextCategory = event.target.value;
-              const selected = serviceCategories.find((item) => item.key === nextCategory);
-              setCategory(nextCategory);
-              if (selected?.type) setType(selected.type);
-            }}>{serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
-          ) : null}
-          <button type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(lockType ? initialType : ""); }}>پاک‌کردن فیلترها</button>
-        </div>
-      </section>
+          <section className={styles.filters} aria-label="فیلتر کسب‌وکارها">
+            <div className={styles.typeTabs}>
+              {types.map((item) => (
+                <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className={styles.filterGrid}>
+              <label><span>جست‌وجو</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="نام کسب‌وکار یا نوع خدمت" /></label>
+              <label><span>شهر</span><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً رشت یا تهران" /></label>
+              <label><span>خدمت</span><select value={category} onChange={(event) => {
+                const nextCategory = event.target.value;
+                const selected = serviceCategories.find((item) => item.key === nextCategory);
+                setCategory(nextCategory);
+                if (selected?.type) setType(selected.type);
+              }}>{serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
+              <button type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(""); }}>پاک‌کردن فیلترها</button>
+            </div>
+          </section>
+        </>
+      )}
 
       <section className={styles.results}>
         <div className={styles.resultHeader}><div><span>نتایج جست‌وجو</span><h2>{total.toLocaleString("fa-IR")} {resultNoun}</h2></div><a href="/account/business/new">ثبت کسب‌وکار جدید</a></div>

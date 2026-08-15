@@ -45,7 +45,7 @@ type Listing = {
   province?: string;
   city?: string;
   status?: { code?: string; title?: string } | string;
-  cover_image?: { image_url?: string } | null;
+  cover_image?: { image_url?: string } | string | null;
   images?: Array<{ image_url?: string; is_cover?: boolean }>;
 };
 
@@ -103,12 +103,49 @@ type EligibleItem = {
   activeOrder: SelectedOrder | null;
 };
 
+type ManagedShowroomListing = {
+  id: number;
+  title: string;
+  image: string;
+  price_toman: number;
+};
+
+type ShowroomContent = {
+  desktop_banner_url: string;
+  mobile_banner_url: string;
+  listing_ids: number[];
+  creative_status: string;
+  saved: boolean;
+};
+
+type ShowroomManagerResponse = {
+  success?: boolean;
+  message?: string;
+  order_no?: string;
+  expires_at?: string;
+  dealer?: {
+    id: number;
+    name: string;
+    province?: string;
+    city?: string;
+  };
+  content?: ShowroomContent;
+  listings?: ManagedShowroomListing[];
+  max_selected_listings?: number;
+};
+
+type UploadResponse = {
+  success?: boolean;
+  message?: string;
+  url?: string;
+};
+
 const PLACEMENTS: Placement[] = [
   {
     key: "showroom",
     title: "نمایشگاه منتخب",
     eyebrow: "SHOWROOM",
-    description: "نمایشگاه فعال شما در سکشن نمایشگاه‌های منتخب صفحه اول در اولویت نمایش قرار می‌گیرد.",
+    description: "ویترین منتخب نمایشگاه با بنر اختصاصی و خودروهای انتخابی شما در صفحه اول چاکود نمایش داده می‌شود.",
     targetLabel: "نمایشگاه",
     homeAnchor: "/#showrooms",
   },
@@ -185,26 +222,16 @@ function isFreezone(listing: Listing) {
       listing.city,
     ].join(" "),
   );
-
   return (
     normalizeText(listing.market_segment) === "freezone" ||
-    [
-      "freezone",
-      "منطقهآزاد",
-      "کیش",
-      "قشم",
-      "اروند",
-      "انزلی",
-      "ارس",
-      "ماکو",
-      "چابهار",
-    ].some((term) => text.includes(normalizeText(term)))
+    ["freezone", "منطقهآزاد", "کیش", "قشم", "اروند", "انزلی", "ارس", "ماکو", "چابهار"].some(
+      (term) => text.includes(normalizeText(term)),
+    )
   );
 }
 
 function isLuxury(listing: Listing) {
   if (isFreezone(listing)) return false;
-
   const text = normalizeText(
     `${listing.brand || listing.brand_name || ""} ${listing.model || listing.model_name || ""} ${listing.title || ""}`,
   );
@@ -217,7 +244,6 @@ function isLuxury(listing: Listing) {
     "cadillac", "کادیلاک", "hongqi", "هونگچی", "tank", "تانک", "fownix", "فونیکس",
     "extreme", "اکستریم", "lucano", "لوکانو",
   ];
-
   return (
     normalizeText(listing.market_segment) === "luxury" ||
     normalizeText(listing.category_code) === "luxury" ||
@@ -227,6 +253,7 @@ function isLuxury(listing: Listing) {
 }
 
 function listingImage(listing: Listing) {
+  if (typeof listing.cover_image === "string") return listing.cover_image;
   return (
     listing.cover_image?.image_url ||
     listing.images?.find((item) => item.is_cover)?.image_url ||
@@ -255,11 +282,7 @@ function formatExpiry(value: unknown) {
   }).format(date);
 }
 
-function activeOrderForTarget(
-  orders: SelectedOrder[],
-  placementKey: PlacementKey,
-  targetId: number,
-) {
+function activeOrderForTarget(orders: SelectedOrder[], placementKey: PlacementKey, targetId: number) {
   const now = Date.now();
   return (
     orders.find((order) => {
@@ -279,9 +302,7 @@ function targetsForPlacement(
 ): Target[] {
   if (placementKey === "luxury" || placementKey === "freezone") {
     return listings
-      .filter((listing) =>
-        placementKey === "luxury" ? isLuxury(listing) : isFreezone(listing),
-      )
+      .filter((listing) => (placementKey === "luxury" ? isLuxury(listing) : isFreezone(listing)))
       .map((listing) => ({
         id: Number(listing.id),
         title: listing.title || `آگهی ${listing.id}`,
@@ -314,10 +335,7 @@ function targetsForPlacement(
   }
 
   return activities
-    .filter(
-      (activity) =>
-        activity.type === placementKey && activity.status === "active",
-    )
+    .filter((activity) => activity.type === placementKey && activity.status === "active")
     .map((activity) => ({
       id: Number(activity.id),
       title: activity.name,
@@ -336,6 +354,11 @@ export default function SelectedPlacementClient() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [showroomManager, setShowroomManager] = useState<ShowroomManagerResponse | null>(null);
+  const [showroomLoading, setShowroomLoading] = useState(false);
+  const [showroomSaving, setShowroomSaving] = useState(false);
+  const [showroomUploading, setShowroomUploading] = useState<"desktop" | "mobile" | "">("");
+  const [showroomMessage, setShowroomMessage] = useState("");
 
   useEffect(() => {
     let ignore = false;
@@ -346,75 +369,50 @@ export default function SelectedPlacementClient() {
       const headers = { Accept: "application/json", ...authHeaders() };
 
       try {
-        const [activitiesResponse, listingsResponse, checkoutResponse] =
-          await Promise.all([
-            fetch("/api/auth/account-activities", {
-              cache: "no-store",
-              credentials: "include",
-              headers,
-            }),
-            fetch(
-              "/api/auth/dashboard-listings?page=1&per_page=100&status=active&owner=all",
-              {
-                cache: "no-store",
-                credentials: "include",
-                headers,
-              },
-            ),
-            fetch("/api/selected/checkout", {
-              cache: "no-store",
-              credentials: "include",
-              headers,
-            }),
-          ]);
+        const [activitiesResponse, listingsResponse, checkoutResponse] = await Promise.all([
+          fetch("/api/auth/account-activities", {
+            cache: "no-store",
+            credentials: "include",
+            headers,
+          }),
+          fetch("/api/auth/dashboard-listings?page=1&per_page=100&status=active&owner=all", {
+            cache: "no-store",
+            credentials: "include",
+            headers,
+          }),
+          fetch("/api/selected/checkout", {
+            cache: "no-store",
+            credentials: "include",
+            headers,
+          }),
+        ]);
 
         if (
           activitiesResponse.status === 401 ||
           listingsResponse.status === 401 ||
           checkoutResponse.status === 401
         ) {
-          window.location.assign(
-            `/login?returnTo=${encodeURIComponent("/account/selected")}`,
-          );
+          window.location.assign(`/login?returnTo=${encodeURIComponent("/account/selected")}`);
           return;
         }
 
-        const activityPayload = (await activitiesResponse
-          .json()
-          .catch(() => null)) as ActivitiesResponse | null;
-        const listingPayload = (await listingsResponse
-          .json()
-          .catch(() => null)) as ListingsResponse | null;
-        const checkoutPayload = (await checkoutResponse
-          .json()
-          .catch(() => null)) as CheckoutStateResponse | null;
+        const activityPayload = (await activitiesResponse.json().catch(() => null)) as ActivitiesResponse | null;
+        const listingPayload = (await listingsResponse.json().catch(() => null)) as ListingsResponse | null;
+        const checkoutPayload = (await checkoutResponse.json().catch(() => null)) as CheckoutStateResponse | null;
 
         if (ignore) return;
-
         if (activitiesResponse.ok && activityPayload?.success) {
-          setActivities(
-            Array.isArray(activityPayload.activities)
-              ? activityPayload.activities
-              : [],
-          );
+          setActivities(Array.isArray(activityPayload.activities) ? activityPayload.activities : []);
         }
         if (listingsResponse.ok && listingPayload?.success) {
-          setListings(
-            (Array.isArray(listingPayload.data) ? listingPayload.data : []).filter(
-              activeListing,
-            ),
-          );
+          setListings((Array.isArray(listingPayload.data) ? listingPayload.data : []).filter(activeListing));
         }
         if (checkoutResponse.ok && checkoutPayload?.success) {
-          setOrders(
-            Array.isArray(checkoutPayload.orders) ? checkoutPayload.orders : [],
-          );
+          setOrders(Array.isArray(checkoutPayload.orders) ? checkoutPayload.orders : []);
           setTestCoupon(String(checkoutPayload.test_coupon || ""));
         }
       } catch {
-        if (!ignore) {
-          setError("ارتباط با اطلاعات حساب برقرار نشد. دوباره تلاش کنید.");
-        }
+        if (!ignore) setError("ارتباط با اطلاعات حساب برقرار نشد. دوباره تلاش کنید.");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -432,11 +430,7 @@ export default function SelectedPlacementClient() {
         key: `${placement.key}:${target.id}`,
         placement,
         target,
-        activeOrder: activeOrderForTarget(
-          orders,
-          placement.key,
-          target.id,
-        ),
+        activeOrder: activeOrderForTarget(orders, placement.key, target.id),
       })),
     );
   }, [activities, listings, orders]);
@@ -446,27 +440,65 @@ export default function SelectedPlacementClient() {
       if (selectedKey) setSelectedKey("");
       return;
     }
-
     if (!eligibleItems.some((item) => item.key === selectedKey)) {
       setSelectedKey(eligibleItems[0].key);
     }
   }, [eligibleItems, selectedKey]);
 
-  const selectedItem =
-    eligibleItems.find((item) => item.key === selectedKey) || null;
+  const selectedItem = eligibleItems.find((item) => item.key === selectedKey) || null;
+
+  useEffect(() => {
+    if (
+      !selectedItem ||
+      selectedItem.placement.key !== "showroom" ||
+      !selectedItem.activeOrder
+    ) {
+      setShowroomManager(null);
+      setShowroomMessage("");
+      return;
+    }
+
+    let ignore = false;
+    const dealerId = selectedItem.target.id;
+    setShowroomLoading(true);
+    setShowroomMessage("");
+
+    fetch(`/api/selected/showroom?dealer_id=${encodeURIComponent(String(dealerId))}`, {
+      cache: "no-store",
+      credentials: "include",
+      headers: { Accept: "application/json", ...authHeaders() },
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as ShowroomManagerResponse | null;
+        if (ignore) return;
+        if (!response.ok || !payload?.success) {
+          setShowroomManager(null);
+          setShowroomMessage(payload?.message || "مدیریت ویترین نمایشگاه دریافت نشد.");
+          return;
+        }
+        setShowroomManager(payload);
+      })
+      .catch(() => {
+        if (!ignore) setShowroomMessage("ارتباط با مدیریت ویترین برقرار نشد.");
+      })
+      .finally(() => {
+        if (!ignore) setShowroomLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedItem]);
 
   async function activate() {
     if (!selectedItem || selectedItem.activeOrder || working) return;
     if (!testCoupon) {
-      setError(
-        "تخفیف تست ۱۰۰٪ فقط روی Staging/localhost فعال است؛ Production عمداً رایگان نشده است.",
-      );
+      setError("تخفیف تست ۱۰۰٪ فقط روی Staging/localhost فعال است؛ Production عمداً رایگان نشده است.");
       return;
     }
 
     setWorking(true);
     setError("");
-
     try {
       const response = await fetch("/api/selected/checkout", {
         method: "POST",
@@ -484,21 +516,16 @@ export default function SelectedPlacementClient() {
           idempotency_key: crypto.randomUUID(),
         }),
       });
-      const payload = (await response
-        .json()
-        .catch(() => null)) as CheckoutResponse | null;
+      const payload = (await response.json().catch(() => null)) as CheckoutResponse | null;
 
       if (response.status === 401) {
-        window.location.assign(
-          `/login?returnTo=${encodeURIComponent("/account/selected")}`,
-        );
+        window.location.assign(`/login?returnTo=${encodeURIComponent("/account/selected")}`);
         return;
       }
       if (!response.ok || !payload?.success || !payload.checkout_url) {
         setError(payload?.message || "فعال‌سازی جایگاه منتخب انجام نشد.");
         return;
       }
-
       window.location.assign(payload.checkout_url);
     } catch {
       setError("ارتباط با مسیر پرداخت برقرار نشد.");
@@ -507,13 +534,133 @@ export default function SelectedPlacementClient() {
     }
   }
 
+  async function uploadShowroomBanner(slot: "desktop" | "mobile", file?: File) {
+    if (!file || showroomUploading || !showroomManager?.content) return;
+    if (!file.type.startsWith("image/")) {
+      setShowroomMessage("فایل انتخاب‌شده تصویر نیست.");
+      return;
+    }
+
+    setShowroomUploading(slot);
+    setShowroomMessage("");
+    try {
+      const body = new FormData();
+      body.set("slot", slot);
+      body.set("file", file);
+      const response = await fetch("/api/selected/showroom/upload", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "include",
+        headers: authHeaders(),
+        body,
+      });
+      const payload = (await response.json().catch(() => null)) as UploadResponse | null;
+      if (!response.ok || !payload?.success || !payload.url) {
+        setShowroomMessage(payload?.message || "بارگذاری بنر انجام نشد.");
+        return;
+      }
+
+      setShowroomManager((current) => {
+        if (!current?.content) return current;
+        return {
+          ...current,
+          content: {
+            ...current.content,
+            [slot === "desktop" ? "desktop_banner_url" : "mobile_banner_url"]: payload.url || "",
+          },
+        };
+      });
+      setShowroomMessage("بنر بارگذاری شد؛ برای ثبت نهایی، ویترین را ذخیره کن.");
+    } catch {
+      setShowroomMessage("ارتباط با سرویس بارگذاری بنر برقرار نشد.");
+    } finally {
+      setShowroomUploading("");
+    }
+  }
+
+  function toggleShowroomListing(listingId: number) {
+    setShowroomManager((current) => {
+      if (!current?.content) return current;
+      const selected = current.content.listing_ids;
+      const max = current.max_selected_listings || 6;
+      const next = selected.includes(listingId)
+        ? selected.filter((id) => id !== listingId)
+        : selected.length < max
+          ? [...selected, listingId]
+          : selected;
+      return {
+        ...current,
+        content: { ...current.content, listing_ids: next },
+      };
+    });
+  }
+
+  function moveShowroomListing(listingId: number, direction: -1 | 1) {
+    setShowroomManager((current) => {
+      if (!current?.content) return current;
+      const next = [...current.content.listing_ids];
+      const index = next.indexOf(listingId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target], next[index]];
+      return {
+        ...current,
+        content: { ...current.content, listing_ids: next },
+      };
+    });
+  }
+
+  async function saveShowroomContent() {
+    if (!selectedItem || !showroomManager?.content || showroomSaving) return;
+    setShowroomSaving(true);
+    setShowroomMessage("");
+    try {
+      const response = await fetch("/api/selected/showroom", {
+        method: "PUT",
+        cache: "no-store",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          dealer_id: selectedItem.target.id,
+          desktop_banner_url: showroomManager.content.desktop_banner_url,
+          mobile_banner_url: showroomManager.content.mobile_banner_url,
+          listing_ids: showroomManager.content.listing_ids,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as ShowroomManagerResponse | null;
+      if (!response.ok || !payload?.success) {
+        setShowroomMessage(payload?.message || "ذخیره ویترین انجام نشد.");
+        return;
+      }
+      if (payload.content) {
+        setShowroomManager((current) => (current ? { ...current, content: payload.content } : current));
+      }
+      setShowroomMessage(payload.message || "ویترین منتخب ذخیره شد.");
+    } catch {
+      setShowroomMessage("ارتباط با سرویس ذخیره ویترین برقرار نشد.");
+    } finally {
+      setShowroomSaving(false);
+    }
+  }
+
+  const selectedShowroomListings = useMemo(() => {
+    if (!showroomManager?.content || !Array.isArray(showroomManager.listings)) return [];
+    const byId = new Map(showroomManager.listings.map((listing) => [listing.id, listing]));
+    return showroomManager.content.listing_ids.flatMap((id) => {
+      const listing = byId.get(id);
+      return listing ? [listing] : [];
+    });
+  }, [showroomManager]);
+
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/account" className={styles.back}>
-            ← حساب من
-          </Link>
+          <Link href="/account" className={styles.back}>← حساب من</Link>
           <Link href="/" className={styles.brand} aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
           </Link>
@@ -523,8 +670,7 @@ export default function SelectedPlacementClient() {
           <span>CHAKOD SELECTED</span>
           <h1>چه چیزهایی می‌تونی منتخب کنی؟</h1>
           <p>
-            چاکود فقط فعالیت‌ها و آگهی‌های فعال همین حساب را بررسی می‌کند. هر چیزی که
-            پایین می‌بینی، همین حالا واجد شرایط منتخب شدن در صفحه اول است.
+            فقط فعالیت‌ها و آگهی‌های فعال همین حساب نمایش داده می‌شوند. موردی را انتخاب کن تا جایگاهش را فعال یا مدیریت کنی.
           </p>
           <div className={styles.testBadge}>
             <b>{testCoupon ? "تست ۱۰۰٪ فعال" : "پرداخت واقعی"}</b>
@@ -542,11 +688,7 @@ export default function SelectedPlacementClient() {
               <span>برای حساب شما</span>
               <h2>گزینه‌های آماده منتخب شدن</h2>
             </div>
-            {!loading ? (
-              <strong>
-                {new Intl.NumberFormat("fa-IR").format(eligibleItems.length)} گزینه
-              </strong>
-            ) : null}
+            {!loading ? <strong>{new Intl.NumberFormat("fa-IR").format(eligibleItems.length)} گزینه</strong> : null}
           </div>
 
           {loading ? (
@@ -554,10 +696,7 @@ export default function SelectedPlacementClient() {
           ) : eligibleItems.length === 0 ? (
             <div className={styles.stateCard}>
               <strong>فعلاً گزینه فعالی برای منتخب شدن نداری.</strong>
-              <p>
-                وقتی آگهی لوکس/منطقه آزاد یا یکی از کسب‌وکارهای مرتبط فعال شود، فقط
-                همان مورد اینجا نمایش داده می‌شود.
-              </p>
+              <p>وقتی آگهی یا کسب‌وکار مرتبط فعال شود، فقط همان مورد اینجا نمایش داده می‌شود.</p>
               <div className={styles.emptyActions}>
                 <Link href="/account/listings">مدیریت آگهی‌ها</Link>
                 <Link href="/account/business">مدیریت کسب‌وکارها</Link>
@@ -571,30 +710,22 @@ export default function SelectedPlacementClient() {
                   <button
                     key={item.key}
                     type="button"
-                    className={`${styles.eligibleCard} ${
-                      selected ? styles.eligibleCardSelected : ""
-                    } ${item.activeOrder ? styles.eligibleCardActive : ""}`}
+                    className={`${styles.eligibleCard} ${selected ? styles.eligibleCardSelected : ""} ${
+                      item.activeOrder ? styles.eligibleCardActive : ""
+                    }`}
                     onClick={() => {
                       setSelectedKey(item.key);
                       setError("");
                     }}
                   >
                     <span className={styles.eligibleMedia}>
-                      {item.target.image ? (
-                        <img src={item.target.image} alt="" />
-                      ) : (
-                        <b>{item.target.title.slice(0, 1)}</b>
-                      )}
+                      {item.target.image ? <img src={item.target.image} alt="" /> : <b>{item.target.title.slice(0, 1)}</b>}
                     </span>
                     <span className={styles.eligibleCopy}>
                       <small>{item.placement.title}</small>
                       <strong>{item.target.title}</strong>
                       <span>{item.target.subtitle || "فعال در چاکود"}</span>
-                      <em>
-                        {item.activeOrder
-                          ? "منتخب فعال"
-                          : "می‌تونی منتخبش کنی"}
-                      </em>
+                      <em>{item.activeOrder ? "منتخب فعال" : "می‌تونی منتخبش کنی"}</em>
                     </span>
                   </button>
                 );
@@ -611,19 +742,13 @@ export default function SelectedPlacementClient() {
                 <h2>{selectedItem.placement.title}</h2>
                 <p>{selectedItem.placement.description}</p>
               </div>
-              <Link href={selectedItem.placement.homeAnchor}>
-                مشاهده جایگاه در صفحه اول ←
-              </Link>
+              <Link href={selectedItem.placement.homeAnchor}>مشاهده جایگاه در صفحه اول ←</Link>
             </div>
 
             <div className={styles.selectionPanel}>
               <article className={styles.targetPreview}>
                 <div className={styles.previewMedia}>
-                  {selectedItem.target.image ? (
-                    <img src={selectedItem.target.image} alt="" />
-                  ) : (
-                    <b>{selectedItem.target.title.slice(0, 1)}</b>
-                  )}
+                  {selectedItem.target.image ? <img src={selectedItem.target.image} alt="" /> : <b>{selectedItem.target.title.slice(0, 1)}</b>}
                 </div>
                 <div>
                   <span>{selectedItem.placement.targetLabel}</span>
@@ -634,47 +759,23 @@ export default function SelectedPlacementClient() {
 
               {selectedItem.activeOrder ? (
                 <aside className={styles.activeNotice}>
-                  <div>
-                    <span>فعال</span>
-                    <strong>این مورد الان منتخب است</strong>
-                  </div>
-                  <small>
-                    تا {formatExpiry(selectedItem.activeOrder.metadata?.expires_at) || "پایان بازه فعال"}
-                  </small>
-                  <Link href={selectedItem.placement.homeAnchor}>
-                    مشاهده در صفحه اول
-                  </Link>
+                  <div><span>فعال</span><strong>این مورد الان منتخب است</strong></div>
+                  <small>تا {formatExpiry(selectedItem.activeOrder.metadata?.expires_at) || "پایان بازه فعال"}</small>
+                  <Link href={selectedItem.placement.homeAnchor}>مشاهده در صفحه اول</Link>
                 </aside>
               ) : (
                 <aside className={styles.checkoutSummary}>
-                  <div>
-                    <span>جایگاه</span>
-                    <strong>{selectedItem.placement.title}</strong>
-                  </div>
-                  <div>
-                    <span>هدف</span>
-                    <strong>{selectedItem.target.title}</strong>
-                  </div>
-                  <div>
-                    <span>تخفیف تست</span>
-                    <strong>{testCoupon ? "۱۰۰٪" : "غیرفعال"}</strong>
-                  </div>
-                  <div>
-                    <span>مبلغ نهایی تست</span>
-                    <strong>{testCoupon ? formatToman(0) : "از تعرفه واقعی"}</strong>
-                  </div>
+                  <div><span>جایگاه</span><strong>{selectedItem.placement.title}</strong></div>
+                  <div><span>هدف</span><strong>{selectedItem.target.title}</strong></div>
+                  <div><span>تخفیف تست</span><strong>{testCoupon ? "۱۰۰٪" : "غیرفعال"}</strong></div>
+                  <div><span>مبلغ نهایی تست</span><strong>{testCoupon ? formatToman(0) : "از تعرفه واقعی"}</strong></div>
                 </aside>
               )}
 
               {error ? <div className={styles.error}>{error}</div> : null}
 
               {!selectedItem.activeOrder ? (
-                <button
-                  className={styles.continueButton}
-                  type="button"
-                  disabled={working}
-                  onClick={() => void activate()}
-                >
+                <button className={styles.continueButton} type="button" disabled={working} onClick={() => void activate()}>
                   {working
                     ? "در حال ساخت سفارش…"
                     : testCoupon
@@ -683,6 +784,143 @@ export default function SelectedPlacementClient() {
                 </button>
               ) : null}
             </div>
+
+            {selectedItem.activeOrder && selectedItem.placement.key === "showroom" ? (
+              <section className={styles.showroomManager}>
+                <div className={styles.managerHeading}>
+                  <div>
+                    <span>مدیریت ویترین منتخب</span>
+                    <h3>بنرها و خودروهای {selectedItem.target.title}</h3>
+                    <p>تا ۶ خودرو را انتخاب و مرتب کن؛ فقط ۳ خودروی اول در کارت صفحه اول نمایش داده می‌شوند.</p>
+                  </div>
+                  <strong>{showroomManager?.content?.listing_ids.length || 0} / {showroomManager?.max_selected_listings || 6}</strong>
+                </div>
+
+                {showroomLoading ? (
+                  <div className={styles.stateCard}>در حال دریافت تنظیمات ویترین…</div>
+                ) : showroomManager?.content ? (
+                  <>
+                    <div className={styles.bannerGrid}>
+                      <label className={styles.bannerUploader}>
+                        <span>بنر دسکتاپ</span>
+                        <b>پیشنهادی ۱۴۴۰ × ۴۸۰</b>
+                        {showroomManager.content.desktop_banner_url ? (
+                          <img src={showroomManager.content.desktop_banner_url} alt="بنر دسکتاپ نمایشگاه منتخب" />
+                        ) : (
+                          <i>＋ افزودن بنر دسکتاپ</i>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={Boolean(showroomUploading)}
+                          onChange={(event) => void uploadShowroomBanner("desktop", event.target.files?.[0])}
+                        />
+                        <small>{showroomUploading === "desktop" ? "در حال بارگذاری…" : "JPG / PNG / WebP"}</small>
+                      </label>
+
+                      <label className={styles.bannerUploader}>
+                        <span>بنر موبایل</span>
+                        <b>پیشنهادی ۱۰۸۰ × ۱۳۵۰</b>
+                        {showroomManager.content.mobile_banner_url ? (
+                          <img src={showroomManager.content.mobile_banner_url} alt="بنر موبایل نمایشگاه منتخب" />
+                        ) : (
+                          <i>＋ افزودن بنر موبایل</i>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={Boolean(showroomUploading)}
+                          onChange={(event) => void uploadShowroomBanner("mobile", event.target.files?.[0])}
+                        />
+                        <small>{showroomUploading === "mobile" ? "در حال بارگذاری…" : "JPG / PNG / WebP"}</small>
+                      </label>
+                    </div>
+
+                    <div className={styles.selectedVehicles}>
+                      <div className={styles.subHeading}>
+                        <div>
+                          <span>ترتیب نمایش</span>
+                          <h4>۶ خودروی ویترین</h4>
+                        </div>
+                        <small>سه مورد اول روی صفحه اول دیده می‌شوند.</small>
+                      </div>
+
+                      {selectedShowroomListings.length ? (
+                        <div className={styles.selectedVehicleList}>
+                          {selectedShowroomListings.map((listing, index) => (
+                            <article className={styles.selectedVehicleRow} key={listing.id}>
+                              <span className={styles.orderNumber}>{new Intl.NumberFormat("fa-IR").format(index + 1)}</span>
+                              <span className={styles.vehicleThumb}>
+                                {listing.image ? <img src={listing.image} alt="" /> : <b>خودرو</b>}
+                              </span>
+                              <div>
+                                <strong>{listing.title}</strong>
+                                <small>{listing.price_toman ? formatToman(listing.price_toman) : "قیمت در آگهی"}</small>
+                              </div>
+                              <div className={styles.vehicleActions}>
+                                <button type="button" disabled={index === 0} onClick={() => moveShowroomListing(listing.id, -1)}>↑</button>
+                                <button type="button" disabled={index === selectedShowroomListings.length - 1} onClick={() => moveShowroomListing(listing.id, 1)}>↓</button>
+                                <button type="button" onClick={() => toggleShowroomListing(listing.id)}>حذف</button>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className={styles.stateCard}>حداقل یک خودرو را از فهرست پایین انتخاب کن.</div>
+                      )}
+                    </div>
+
+                    <div className={styles.vehiclePicker}>
+                      <div className={styles.subHeading}>
+                        <div>
+                          <span>آگهی‌های فعال نمایشگاه</span>
+                          <h4>خودرو برای ویترین انتخاب کن</h4>
+                        </div>
+                      </div>
+                      <div className={styles.vehicleGrid}>
+                        {(showroomManager.listings || []).map((listing) => {
+                          const selected = showroomManager.content?.listing_ids.includes(listing.id) || false;
+                          const atLimit = (showroomManager.content?.listing_ids.length || 0) >= (showroomManager.max_selected_listings || 6);
+                          return (
+                            <button
+                              key={listing.id}
+                              type="button"
+                              className={`${styles.vehicleCard} ${selected ? styles.vehicleCardSelected : ""}`}
+                              disabled={!selected && atLimit}
+                              onClick={() => toggleShowroomListing(listing.id)}
+                            >
+                              <span>{listing.image ? <img src={listing.image} alt="" /> : <b>خودرو</b>}</span>
+                              <strong>{listing.title}</strong>
+                              <small>{selected ? "انتخاب شده" : atLimit ? "ظرفیت ۶ خودرو تکمیل است" : "افزودن به ویترین"}</small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {showroomMessage ? <div className={styles.managerMessage}>{showroomMessage}</div> : null}
+
+                    <div className={styles.managerFooter}>
+                      <div>
+                        <strong>انتشار صفحه اول</strong>
+                        <small>
+                          بدون بنر هم از تصویر خودرو به‌عنوان پوشش موقت استفاده می‌شود. در Staging بنر جدید فوراً قابل تست است.
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={showroomSaving || !showroomManager.content.listing_ids.length}
+                        onClick={() => void saveShowroomContent()}
+                      >
+                        {showroomSaving ? "در حال ذخیره…" : "ذخیره و انتشار ویترین"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.stateCard}>{showroomMessage || "تنظیمات ویترین در دسترس نیست."}</div>
+                )}
+              </section>
+            ) : null}
           </section>
         ) : null}
       </div>

@@ -9,6 +9,7 @@
 .hero span { font-size: 12px; font-weight: 800; opacity: .85; }
 .hero h1 { max-width: 740px; margin: 8px 0; font-size: clamp(28px, 4vw, 48px); line-height: 1.35; }
 .hero p { max-width: 690px; margin: 0; line-height: 2; opacity: .85; }
+.hero:has(+ .filters:not(:has(.typeTabs))) { display: none; }
 .filters,
 .results { width: min(1180px, calc(100% - 32px)); margin: 18px auto; padding: 20px; border: 1px solid #e7dfeb; border-radius: 22px; background: #fff; }
 .typeTabs { display: flex; gap: 7px; flex-wrap: wrap; }
@@ -157,8 +158,38 @@
   }
 
   .filters:not(:has(.typeTabs)) .filterGrid label:first-child {
+    position: relative;
     display: block;
     margin: 0;
+  }
+
+  .filters:not(:has(.typeTabs)) .filterGrid label:first-child::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 17px;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #7c3aed;
+    border-radius: 50%;
+    transform: translateY(-60%);
+    pointer-events: none;
+  }
+
+  .filters:not(:has(.typeTabs)) .filterGrid label:first-child::after {
+    content: "";
+    position: absolute;
+    top: calc(50% + 5px);
+    right: 29px;
+    z-index: 1;
+    width: 7px;
+    height: 2px;
+    border-radius: 999px;
+    background: #7c3aed;
+    transform: rotate(45deg);
+    transform-origin: right center;
+    pointer-events: none;
   }
 
   .filters:not(:has(.typeTabs)) .filterGrid label:first-child > span,
@@ -170,7 +201,7 @@
   .filters:not(:has(.typeTabs)) .filterGrid label:first-child input {
     width: 100%;
     min-height: 46px;
-    padding: 0 16px;
+    padding: 0 46px 0 16px;
     border: 1px solid rgba(217, 204, 231, .96);
     border-radius: 14px;
     outline: none;

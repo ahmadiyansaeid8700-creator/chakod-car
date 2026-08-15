@@ -15,6 +15,31 @@ export const dynamic = "force-dynamic";
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+function mediaUrlFromPayload(payload: Record<string, unknown>) {
+  const data = payload.data && typeof payload.data === "object"
+    ? payload.data as Record<string, unknown>
+    : null;
+  const candidates = [
+    payload.url,
+    payload.media_url,
+    payload.file_url,
+    payload.path,
+    data?.url,
+    data?.media_url,
+    data?.file_url,
+    data?.path,
+  ];
+  const raw = candidates.find((value) => typeof value === "string" && value.trim()) as string | undefined;
+  if (!raw) return "";
+  const value = raw.trim();
+  if (/^https?:\/\//i.test(value)) return value;
+  try {
+    return new URL(value.startsWith("/") ? value : `/${value}`, authApiUrl("/")).toString();
+  } catch {
+    return value;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const rejected = rejectCrossSiteMutation(request);
   if (rejected) return rejected;
@@ -64,7 +89,19 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, message: "پاسخ سرویس بارگذاری بنر معتبر نیست." }, 502);
     }
 
-    return jsonResponse(payload, upstream.status);
+    const url = mediaUrlFromPayload(payload);
+    if (!upstream.ok || payload.success === false) {
+      return jsonResponse({
+        ...payload,
+        success: false,
+        message: typeof payload.message === "string" ? payload.message : "بارگذاری بنر انجام نشد.",
+      }, upstream.status || 502);
+    }
+    if (!url) {
+      return jsonResponse({ success: false, message: "تصویر بارگذاری شد اما آدرس فایل دریافت نشد." }, 502);
+    }
+
+    return jsonResponse({ ...payload, success: true, url }, upstream.status);
   } catch {
     return jsonResponse({ success: false, message: "بارگذاری بنر انجام نشد." }, 502);
   }

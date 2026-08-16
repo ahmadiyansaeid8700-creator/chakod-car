@@ -222,9 +222,15 @@ export async function GET(request: NextRequest) {
       }
 
       const exactContent = contentByOrderId.get(order.id);
-      const dealerId = activityId
-        ? safeId(activity?.externalDealerId)
-        : safeId(metadata.dealer_id || metadata.target_id || exactContent?.dealer_id);
+      const storedDealerId = safeId(metadata.dealer_id || metadata.target_id || exactContent?.dealer_id);
+      const currentActivityDealerId = activityId ? safeId(activity?.externalDealerId) : 0;
+
+      // A selected-showroom subscription is tied to the dealer that was selected at checkout.
+      // If account reconciliation later proves that activity belongs to another dealer, the old
+      // placement is stale and must disappear instead of being silently transferred.
+      if (activityId && storedDealerId && storedDealerId !== currentActivityDealerId) return [];
+
+      const dealerId = activityId ? currentActivityDealerId : storedDealerId;
       const content =
         exactContent && safeId(exactContent.dealer_id) === dealerId
           ? exactContent

@@ -58,6 +58,7 @@ type SelectedShowroom = {
   desktopBanner: string;
   mobileBanner: string;
   listingIds: number[];
+  profileHref: string;
 };
 
 const API_MEDIA_ORIGIN = "https://api.chakod.com";
@@ -266,8 +267,13 @@ export default function DealerDirectoryClient() {
           ? featuredPayload.data
           : [];
 
+        const byId = new Map<number, PublicBusiness>();
         const byName = new Map<string, PublicBusiness>();
         base.forEach((business) => {
+          const businessId = Math.round(Number(business.id || 0));
+          if (Number.isSafeInteger(businessId) && businessId > 0 && !byId.has(businessId)) {
+            byId.set(businessId, business);
+          }
           const key = normalizeText(business.name);
           if (key && !byName.has(key)) byName.set(key, business);
         });
@@ -283,7 +289,7 @@ export default function DealerDirectoryClient() {
           seenDealers.add(dealerId);
 
           const name = String(placement.dealer_name || "").trim() || `نمایشگاه ${dealerId}`;
-          const matched = byName.get(normalizeText(name));
+          const matched = byId.get(dealerId) || byName.get(normalizeText(name));
           const province = String(placement.province || matched?.province || "").trim();
           const city = String(matched?.city || "").trim();
           const searchable = normalizeText(`${name} ${province} ${city}`);
@@ -300,6 +306,9 @@ export default function DealerDirectoryClient() {
             desktopBanner: String(placement.desktop_banner_url || ""),
             mobileBanner: String(placement.mobile_banner_url || ""),
             listingIds: safeIds(placement.listing_ids),
+            profileHref: matched?.slug
+              ? `/businesses/${encodeURIComponent(matched.slug)}`
+              : `/showrooms/${dealerId}`,
           });
         });
 
@@ -356,7 +365,7 @@ export default function DealerDirectoryClient() {
           <div className={styles.selectedGrid}>
             {selected.map((showroom) => (
               <article className={styles.selectedCard} key={showroom.dealerId}>
-                <a className={styles.banner} href={`/showrooms/${showroom.dealerId}`}>
+                <a className={styles.banner} href={showroom.profileHref}>
                   <ShowroomBanner showroom={showroom} />
                   <span>منتخب چاکود</span>
                 </a>
@@ -373,7 +382,7 @@ export default function DealerDirectoryClient() {
 
                 <VehicleStrip ids={showroom.listingIds} />
 
-                <a className={styles.primaryAction} href={`/showrooms/${showroom.dealerId}`}>مشاهده نمایشگاه</a>
+                <a className={styles.primaryAction} href={showroom.profileHref}>مشاهده نمایشگاه</a>
               </article>
             ))}
           </div>

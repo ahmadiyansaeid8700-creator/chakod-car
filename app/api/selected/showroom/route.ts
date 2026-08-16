@@ -20,6 +20,7 @@ export const dynamic = "force-dynamic";
 const PRODUCT_CODE = "home_selected_showroom";
 const MIN_SELECTED_LISTINGS = 2;
 const MAX_SELECTED_LISTINGS = 6;
+const SITE_MEDIA_ORIGIN = "https://chakod.com";
 
 type JsonObject = Record<string, unknown>;
 
@@ -75,25 +76,46 @@ function parseListingIds(value: string) {
   }
 }
 
-function absoluteMediaUrl(value: unknown) {
+function publicMediaUrl(value: unknown) {
   const raw = cleanText(value, 1200);
   if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;
+
+  const normalizedRaw = raw.startsWith("//") ? `https:${raw}` : raw;
+  if (/^https?:\/\//i.test(normalizedRaw)) {
+    try {
+      const url = new URL(normalizedRaw);
+      const hostname = url.hostname.toLowerCase();
+      if (url.protocol === "http:" && (hostname === "chakod.com" || hostname === "api.chakod.com")) {
+        url.protocol = "https:";
+      }
+      if (hostname === "api.chakod.com" && url.pathname.startsWith("/uploads/")) {
+        url.hostname = "chakod.com";
+        url.protocol = "https:";
+      }
+      return url.toString();
+    } catch {
+      return normalizedRaw;
+    }
+  }
+
+  const path = normalizedRaw.startsWith("/") ? normalizedRaw : `/${normalizedRaw}`;
   try {
-    return new URL(raw, authApiUrl("/")).toString();
+    return path.startsWith("/uploads/")
+      ? new URL(path, SITE_MEDIA_ORIGIN).toString()
+      : new URL(path, authApiUrl("/")).toString();
   } catch {
-    return raw;
+    return normalizedRaw;
   }
 }
 
 function imageFromListing(item: JsonObject) {
   const cover = item.cover_image;
-  if (typeof cover === "string") return absoluteMediaUrl(cover);
-  if (isRecord(cover)) return absoluteMediaUrl(cover.image_url || cover.url);
+  if (typeof cover === "string") return publicMediaUrl(cover);
+  if (isRecord(cover)) return publicMediaUrl(cover.image_url || cover.url);
 
   const images = Array.isArray(item.images) ? item.images.filter(isRecord) : [];
   const preferred = images.find((image) => Boolean(image.is_cover)) || images[0];
-  return preferred ? absoluteMediaUrl(preferred.image_url || preferred.url) : "";
+  return preferred ? publicMediaUrl(preferred.image_url || preferred.url) : "";
 }
 
 async function ensureContentSchema() {
@@ -197,11 +219,20 @@ async function loadDealerListings(request: NextRequest, dealerId: number): Promi
   });
 }
 
-async function loadContent(orderId: number) {
+async function loadContent(orderId: number, ownerKey: string, dealerId: number) {
   await ensureContentSchema();
-  return (await getRuntimeEnv().DB
+  const d1 = getRuntimeEnv().DB;
+  const exact = (await d1
     .prepare("SELECT * FROM selected_showroom_content WHERE order_id = ? LIMIT 1")
     .bind(orderId)
+    .first()) as ContentRow | null;
+  if (exact) return exact;
+
+  return (await d1
+    .prepare(
+      "SELECT * FROM selected_showroom_content WHERE owner_key = ? AND dealer_id = ? ORDER BY updated_at DESC, id DESC LIMIT 1",
+    )
+    .bind(ownerKey, dealerId)
     .first()) as ContentRow | null;
 }
 
@@ -230,7 +261,7 @@ export async function GET(request: NextRequest) {
     if ("error" in context) return context.error;
 
     const [content, listings] = await Promise.all([
-      loadContent(context.order.id),
+      loadContent(context.order.id, context.ownerKey, dealerId),
       loadDealerListings(request, dealerId),
     ]);
 
@@ -251,8 +282,8 @@ export async function GET(request: NextRequest) {
         city: context.dealer.city,
       },
       content: {
-        desktop_banner_url: content?.desktop_banner_url || "",
-        mobile_banner_url: content?.mobile_banner_url || "",
+        desktop_banner_url: publicMediaUrl(content?.desktop_banner_url),
+        mobile_banner_url: publicMediaUrl(content?.mobile_banner_url),
         listing_ids: defaults,
         creative_status: content?.creative_status || "draft",
         saved: Boolean(content),
@@ -279,8 +310,8 @@ export async function PUT(request: NextRequest) {
   }
 
   const dealerId = safeId(input.dealer_id);
-  const desktopBannerUrl = cleanText(input.desktop_banner_url, 1200);
-  const mobileBannerUrl = cleanText(input.mobile_banner_url, 1200);
+  const requestedDesktopBanner = publicMediaUrl(input.desktop_banner_url);
+  const requestedMobileBanner = publicMediaUrl(input.mobile_banner_url);
   const requestedIds = Array.isArray(input.listing_ids)
     ? Array.from(new Set(input.listing_ids.map(safeId).filter(Boolean))).slice(0, MAX_SELECTED_LISTINGS)
     : [];
@@ -294,11 +325,18 @@ export async function PUT(request: NextRequest) {
     const context = await contextForRequest(request, dealerId);
     if ("error" in context) return context.error;
 
-    const listings = await loadDealerListings(request, dealerId);
+    const [listings, existingContent] = await Promise.all([
+      loadDealerListings(request, dealerId),
+      loadContent(context.order.id, context.ownerKey, dealerId),
+    ]);
     const validIds = new Set(listings.map((listing) => listing.id));
     if (requestedIds.some((id) => !validIds.has(id))) {
       return jsonResponse({ success: false, message: "یکی از خودروهای انتخاب‌شده دیگر فعال یا متعلق به این نمایشگاه نیست." }, 409);
     }
+
+    const desktopBannerUrl = requestedDesktopBanner || publicMediaUrl(existingContent?.desktop_banner_url);
+    const mobileBannerUrl = requestedMobileBanner || publicMediaUrl(existingContent?.mobile_banner_url);
+    const writeOrderId = existingContent?.order_id || context.order.id;
 
     await ensureContentSchema();
     const nowIso = new Date().toISOString();
@@ -309,13 +347,15 @@ export async function PUT(request: NextRequest) {
         listing_ids_json, creative_status, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(order_id) DO UPDATE SET
+        owner_key = excluded.owner_key,
+        dealer_id = excluded.dealer_id,
         desktop_banner_url = excluded.desktop_banner_url,
         mobile_banner_url = excluded.mobile_banner_url,
         listing_ids_json = excluded.listing_ids_json,
         creative_status = excluded.creative_status,
         updated_at = excluded.updated_at`)
       .bind(
-        context.order.id,
+        writeOrderId,
         context.ownerKey,
         dealerId,
         desktopBannerUrl,

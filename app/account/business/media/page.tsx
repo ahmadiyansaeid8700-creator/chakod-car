@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import styles from "./page.module.css";
@@ -46,6 +46,7 @@ async function readJson<T>(response: Response): Promise<T | null> {
 export default function BusinessMediaPage() {
   const searchParams = useSearchParams();
   const requestedDealerId = Math.max(0, Math.round(Number(searchParams.get("dealer_id") || 0)));
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -83,6 +84,11 @@ export default function BusinessMediaPage() {
     })();
     return () => controller.abort();
   }, [requestedDealerId]);
+
+  function openLogoPicker() {
+    if (working) return;
+    fileInputRef.current?.click();
+  }
 
   async function uploadLogo(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -160,17 +166,31 @@ export default function BusinessMediaPage() {
             <div className={styles.loading}>در حال دریافت لوگوی مجموعه…</div>
           ) : profile ? (
             <>
-              <div className={styles.logoPreview}>
+              <button
+                type="button"
+                className={styles.logoPreview}
+                onClick={openLogoPicker}
+                disabled={working}
+                aria-label={profile.logo_url ? "تغییر لوگوی نمایشگاه" : "بارگذاری لوگوی نمایشگاه"}
+              >
                 {profile.logo_url ? <img src={String(profile.logo_url)} alt="لوگوی مجموعه" /> : <span>لوگو</span>}
-              </div>
+                <span className={styles.logoAction} aria-hidden="true">{working ? "…" : "+"}</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                className={styles.fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={working}
+                onChange={(event) => void uploadLogo(event)}
+              />
               <div className={styles.copy}>
                 <h2>{String(profile.name || "نمایشگاه")}</h2>
                 <p>فرمت پیشنهادی PNG یا WebP با پس‌زمینه شفاف و تصویر مربعی است.</p>
               </div>
-              <label className={styles.uploadButton}>
-                {working ? "در حال بارگذاری و ذخیره…" : profile.logo_url ? "تغییر لوگو" : "بارگذاری لوگو"}
-                <input type="file" accept="image/png,image/jpeg,image/webp" disabled={working} onChange={(event) => void uploadLogo(event)} />
-              </label>
+              <p className={styles.uploadHint}>
+                {working ? "در حال بارگذاری و ذخیره لوگو…" : profile.logo_url ? "برای تغییر تصویر، روی خود لوگو بزنید." : "برای انتخاب تصویر، روی کادر لوگو بزنید."}
+              </p>
             </>
           ) : null}
         </section>

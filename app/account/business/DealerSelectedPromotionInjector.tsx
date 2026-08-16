@@ -41,6 +41,17 @@ export default function DealerSelectedPromotionInjector() {
       const hero = main.querySelector<HTMLElement>("header");
       if (hero) hero.dataset.dealerHero = "true";
 
+      main.querySelectorAll<HTMLElement>('[data-dealer-desktop-create-action="true"]').forEach((node) => {
+        delete node.dataset.dealerDesktopCreateAction;
+      });
+
+      if (activeTab === "overview") {
+        const createLink = Array.from(main.querySelectorAll<HTMLAnchorElement>('a[href^="/account/listings/new?dealer_id="]'))
+          .find((link) => link.textContent?.includes("ثبت آگهی جدید"));
+        const createSection = createLink?.closest("section") as HTMLElement | null;
+        if (createSection) createSection.dataset.dealerDesktopCreateAction = "true";
+      }
+
       main.querySelectorAll<HTMLElement>('[data-dealer-listing-card="true"]').forEach((node) => {
         delete node.dataset.dealerListingCard;
       });
@@ -210,6 +221,12 @@ export default function DealerSelectedPromotionInjector() {
 
         main[data-dealer-command-center="true"] a[data-dealer-listing-card="true"] > svg {
           display: none !important;
+        }
+
+        @media (max-width: 620px) {
+          main[data-dealer-command-center="true"] [data-dealer-desktop-create-action="true"] {
+            display: none !important;
+          }
         }
 
         @media (max-width: 560px) {

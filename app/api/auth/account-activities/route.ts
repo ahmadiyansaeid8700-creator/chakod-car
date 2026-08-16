@@ -60,6 +60,18 @@ function normalizePhone(value: unknown) {
   return phone.slice(0, 16);
 }
 
+function normalizeName(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fa")
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/[ؤ]/g, "و")
+    .replace(/[إأ]/g, "ا")
+    .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
+}
+
 function isActivityType(value: string): value is ActivityType {
   return (ACTIVITY_TYPES as readonly string[]).includes(value);
 }
@@ -133,7 +145,7 @@ function normalizeDealer(item: Record<string, unknown>): DealerItem | null {
     city: clean(item.city, 80),
     neighborhood: clean(item.neighborhood, 100),
     address: clean(item.address, 500),
-    role: clean(item.role, 60),
+    role: clean(item.role, 60).toLowerCase(),
     active,
   };
 }
@@ -157,30 +169,100 @@ async function fetchDealers(request: NextRequest): Promise<DealerItem[]> {
   }
 }
 
+function resolveOwnedDealer(dealers: DealerItem[], user: AccountUser) {
+  const activeDealers = dealers.filter((dealer) => dealer.active);
+  const explicitOwners = activeDealers.filter((dealer) => dealer.role === "owner");
+  if (explicitOwners.length === 1) return explicitOwners[0];
+
+  const businessName = normalizeName(user.businessName);
+  if (businessName) {
+    const nameMatches = activeDealers.filter(
+      (dealer) => normalizeName(dealer.name) === businessName,
+    );
+    if (nameMatches.length === 1) return nameMatches[0];
+  }
+
+  if (user.mobile) {
+    const phoneMatches = activeDealers.filter(
+      (dealer) => dealer.phone && dealer.phone === user.mobile,
+    );
+    if (phoneMatches.length === 1) return phoneMatches[0];
+  }
+
+  if (activeDealers.length === 1) return activeDealers[0];
+  return null;
+}
+
 async function syncLegacyActivities(request: NextRequest, user: AccountUser) {
   const db = getDb();
   const dealers = await fetchDealers(request);
-  const ownedDealers = dealers.filter((item) => item.role === "owner");
-  const fallbackOwned = ownedDealers.length === 0 && user.accountType === "dealer" ? dealers.slice(0, 1) : [];
-  const dealerToImport = [...ownedDealers, ...fallbackOwned][0];
+  const dealerToImport = user.accountType === "dealer" ? resolveOwnedDealer(dealers, user) : null;
+
+  const [existingDealerActivity] = await db
+    .select()
+    .from(accountActivities)
+    .where(
+      and(
+        eq(accountActivities.ownerUserId, user.id),
+        eq(accountActivities.activityType, "dealer"),
+      ),
+    )
+    .limit(1);
 
   if (dealerToImport) {
+    const dealerValues = {
+      name: dealerToImport.name,
+      phone: dealerToImport.phone,
+      province: dealerToImport.province,
+      city: dealerToImport.city,
+      neighborhood: dealerToImport.neighborhood,
+      address: dealerToImport.address,
+      externalDealerId: dealerToImport.id,
+      status: dealerToImport.active ? "active" : "disabled",
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    };
+
+    if (!existingDealerActivity) {
+      await db
+        .insert(accountActivities)
+        .values({
+          ownerUserId: user.id,
+          activityType: "dealer",
+          ...dealerValues,
+          source: "legacy_dealer",
+        })
+        .onConflictDoNothing();
+    } else if (
+      existingDealerActivity.source === "legacy_dealer" &&
+      Number(existingDealerActivity.externalDealerId || 0) !== dealerToImport.id
+    ) {
+      const [dealerConflict] = await db
+        .select({ id: accountActivities.id, ownerUserId: accountActivities.ownerUserId })
+        .from(accountActivities)
+        .where(eq(accountActivities.externalDealerId, dealerToImport.id))
+        .limit(1);
+
+      if (!dealerConflict || dealerConflict.id === existingDealerActivity.id) {
+        await db
+          .update(accountActivities)
+          .set(dealerValues)
+          .where(eq(accountActivities.id, existingDealerActivity.id));
+      }
+    }
+  } else if (
+    existingDealerActivity?.source === "legacy_dealer" &&
+    dealers.some((dealer) => dealer.active)
+  ) {
+    // وقتی مالکیت از داده فعلی قابل اثبات نیست، رکوردی که قبلاً با حدس «اولین نمایشگاه» ساخته شده
+    // دیگر نباید برای خرید یا انتشار جایگاه منتخب معتبر بماند.
     await db
-      .insert(accountActivities)
-      .values({
-        ownerUserId: user.id,
-        activityType: "dealer",
-        name: dealerToImport.name,
-        phone: dealerToImport.phone,
-        province: dealerToImport.province,
-        city: dealerToImport.city,
-        neighborhood: dealerToImport.neighborhood,
-        address: dealerToImport.address,
-        externalDealerId: dealerToImport.id,
-        source: "legacy_dealer",
-        status: dealerToImport.active ? "active" : "disabled",
+      .update(accountActivities)
+      .set({
+        externalDealerId: null,
+        status: "disabled",
+        updatedAt: sql`CURRENT_TIMESTAMP`,
       })
-      .onConflictDoNothing();
+      .where(eq(accountActivities.id, existingDealerActivity.id));
   }
 
   if (

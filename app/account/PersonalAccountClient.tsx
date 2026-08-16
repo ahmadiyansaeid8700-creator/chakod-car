@@ -42,6 +42,9 @@ type MeResponse = {
 type ListingsResponse = {
   success?: boolean;
   summary?: Partial<Summary>;
+  pagination?: {
+    total?: number;
+  };
   data?: Listing[];
 };
 
@@ -145,8 +148,9 @@ export default function PersonalAccountClient() {
         setUser(me.user);
 
         if (listingsResponse.ok && listings?.success) {
+          const personalTotal = Number(listings.pagination?.total ?? listings.summary?.total ?? 0);
           setSummary({
-            total: Number(listings.summary?.total || 0),
+            total: Number.isFinite(personalTotal) ? personalTotal : 0,
             active: Number(listings.summary?.active || 0),
             pending: Number(listings.summary?.pending || 0),
             rejected: Number(listings.summary?.rejected || 0),

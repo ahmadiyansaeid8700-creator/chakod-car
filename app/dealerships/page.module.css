@@ -78,16 +78,14 @@
 }
 
 .selectedGrid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  justify-items: center;
   gap: 18px;
-  margin-bottom: 22px;
+  margin-bottom: 28px;
 }
 
 .selectedCard {
-  flex: 1 1 520px;
-  max-width: 720px;
+  width: min(900px, 100%);
   overflow: hidden;
   border: 1px solid rgba(124,58,237,.34);
   border-radius: 24px;
@@ -161,7 +159,7 @@
 
 .vehicleStrip {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   padding: 4px 16px 14px;
 }
 
@@ -169,7 +167,7 @@
 .vehicleSkeleton {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 190px;
+  max-width: 230px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   display: block;
@@ -275,7 +273,7 @@
 }
 
 @media (max-width: 1024px) {
-  .page { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+  .page { padding-bottom: calc(148px + env(safe-area-inset-bottom, 0px)); }
   .desktopHeader { display: none; }
   .mobileHeader {
     position: sticky;
@@ -323,7 +321,8 @@
 
   .content { width: calc(100% - 20px); margin-top: 10px; }
   .resultMeta { margin-right: 4px; }
-  .selectedCard { max-width: none; border-radius: 20px; }
+  .selectedGrid { margin-bottom: 36px; }
+  .selectedCard { width: 100%; border-radius: 20px; }
   .banner { aspect-ratio: 16 / 7; }
   .showroomIdentity { padding: 13px 13px 9px; }
   .showroomLogo { width: 50px; height: 50px; flex-basis: 50px; border-radius: 14px; }
@@ -331,7 +330,7 @@
   .vehicleStrip { gap: 7px; padding: 3px 13px 12px; }
   .vehicleThumb,
   .vehicleSkeleton { max-width: none; border-radius: 11px; }
-  .primaryAction { min-height: 44px; margin: 0 13px 14px; }
+  .primaryAction { min-height: 44px; margin: 0 13px 20px; }
 }
 
 @media (max-width: 650px) {

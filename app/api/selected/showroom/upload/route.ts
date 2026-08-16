@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
+const SITE_MEDIA_ORIGIN = "https://chakod.com";
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/jpg",
@@ -21,6 +22,38 @@ const ALLOWED_TYPES = new Set([
   "image/heic",
   "image/heif",
 ]);
+
+function publicMediaUrl(value: unknown) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return "";
+
+  const normalizedRaw = raw.startsWith("//") ? `https:${raw}` : raw;
+  if (/^https?:\/\//i.test(normalizedRaw)) {
+    try {
+      const url = new URL(normalizedRaw);
+      const hostname = url.hostname.toLowerCase();
+      if (url.protocol === "http:" && (hostname === "chakod.com" || hostname === "api.chakod.com")) {
+        url.protocol = "https:";
+      }
+      if (hostname === "api.chakod.com" && url.pathname.startsWith("/uploads/")) {
+        url.hostname = "chakod.com";
+        url.protocol = "https:";
+      }
+      return url.toString();
+    } catch {
+      return normalizedRaw;
+    }
+  }
+
+  const path = normalizedRaw.startsWith("/") ? normalizedRaw : `/${normalizedRaw}`;
+  try {
+    return path.startsWith("/uploads/")
+      ? new URL(path, SITE_MEDIA_ORIGIN).toString()
+      : new URL(path, authApiUrl("/")).toString();
+  } catch {
+    return normalizedRaw;
+  }
+}
 
 function mediaUrlFromPayload(payload: Record<string, unknown>) {
   const data = payload.data && typeof payload.data === "object"
@@ -37,14 +70,7 @@ function mediaUrlFromPayload(payload: Record<string, unknown>) {
     data?.path,
   ];
   const raw = candidates.find((value) => typeof value === "string" && value.trim()) as string | undefined;
-  if (!raw) return "";
-  const value = raw.trim();
-  if (/^https?:\/\//i.test(value)) return value;
-  try {
-    return new URL(value.startsWith("/") ? value : `/${value}`, authApiUrl("/")).toString();
-  } catch {
-    return value;
-  }
+  return publicMediaUrl(raw);
 }
 
 export async function POST(request: NextRequest) {

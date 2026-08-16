@@ -1,3 +1,4 @@
+import DealerScopedBackFix from "./DealerScopedBackFix";
 import ListingManagerClient from "./ListingManagerClient";
 
 export default async function AccountListingManagerPage({
@@ -6,5 +7,10 @@ export default async function AccountListingManagerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ListingManagerClient listingId={id} />;
+  return (
+    <>
+      <DealerScopedBackFix listingId={id} />
+      <ListingManagerClient listingId={id} />
+    </>
+  );
 }

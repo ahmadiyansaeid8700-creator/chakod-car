@@ -31,6 +31,9 @@ type LegacyPlacement = {
   approved_at: string | null;
 };
 
+const API_MEDIA_ORIGIN = "https://api.chakod.com";
+const SITE_MEDIA_ORIGIN = "https://chakod.com";
+
 function isRecord(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -51,6 +54,36 @@ function cleanText(value: unknown, maxLength = 180) {
 function safeId(value: unknown) {
   const id = Math.round(Number(value || 0));
   return Number.isSafeInteger(id) && id > 0 ? id : 0;
+}
+
+function publicMediaUrl(value: unknown) {
+  const raw = cleanText(value, 1200);
+  if (!raw) return "";
+
+  const normalizedRaw = raw.startsWith("//") ? `https:${raw}` : raw;
+  if (/^https?:\/\//i.test(normalizedRaw)) {
+    try {
+      const url = new URL(normalizedRaw);
+      const hostname = url.hostname.toLowerCase();
+      if (url.protocol === "http:" && (hostname === "chakod.com" || hostname === "api.chakod.com")) {
+        url.protocol = "https:";
+      }
+      if (hostname === "api.chakod.com" && url.pathname.startsWith("/uploads/")) {
+        url.hostname = "chakod.com";
+        url.protocol = "https:";
+      }
+      return url.toString();
+    } catch {
+      return normalizedRaw;
+    }
+  }
+
+  const path = normalizedRaw.startsWith("/") ? normalizedRaw : `/${normalizedRaw}`;
+  try {
+    return new URL(path, path.startsWith("/uploads/") ? SITE_MEDIA_ORIGIN : API_MEDIA_ORIGIN).toString();
+  } catch {
+    return normalizedRaw;
+  }
 }
 
 function parseIds(value: string) {
@@ -169,10 +202,6 @@ export async function GET(request: NextRequest) {
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);
 
-      // Older selected-showroom orders were created before starts_at was persisted.
-      // A paid order with a future expires_at is already active unless an explicit
-      // future starts_at exists. Published content also identifies older showroom
-      // orders whose historical product code differs from the current code.
       if (!dealerId || !expiresAt || expiresAt <= nowIso) return [];
       if (startsAt && startsAt > nowIso) return [];
       if (province && selectedProvince && selectedProvince !== province) return [];
@@ -192,8 +221,8 @@ export async function GET(request: NextRequest) {
           end_date: expiresAt.slice(0, 10),
           status: "active",
           approved_at: effectiveStartsAt,
-          desktop_banner_url: cleanText(content?.desktop_banner_url, 1200),
-          mobile_banner_url: cleanText(content?.mobile_banner_url, 1200),
+          desktop_banner_url: publicMediaUrl(content?.desktop_banner_url),
+          mobile_banner_url: publicMediaUrl(content?.mobile_banner_url),
           listing_ids: content ? parseIds(content.listing_ids_json) : [],
           creative_status: content ? "published" : "none",
         },

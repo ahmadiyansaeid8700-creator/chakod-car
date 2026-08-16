@@ -61,6 +61,7 @@ type SelectedShowroom = {
 };
 
 const API_MEDIA_ORIGIN = "https://api.chakod.com";
+const SITE_MEDIA_ORIGIN = "https://chakod.com";
 
 function normalizeText(value: unknown) {
   return String(value || "")
@@ -77,13 +78,30 @@ function normalizeText(value: unknown) {
 function mediaUrl(value: unknown) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  if (raw.startsWith("//")) return `https:${raw}`;
-  if (/^http:\/\/api\.chakod\.com\//i.test(raw)) return raw.replace(/^http:/i, "https:");
-  if (/^https?:\/\//i.test(raw)) return raw;
+
+  const normalizedRaw = raw.startsWith("//") ? `https:${raw}` : raw;
+  if (/^https?:\/\//i.test(normalizedRaw)) {
+    try {
+      const url = new URL(normalizedRaw);
+      const hostname = url.hostname.toLowerCase();
+      if (url.protocol === "http:" && (hostname === "chakod.com" || hostname === "api.chakod.com")) {
+        url.protocol = "https:";
+      }
+      if (hostname === "api.chakod.com" && url.pathname.startsWith("/uploads/")) {
+        url.hostname = "chakod.com";
+        url.protocol = "https:";
+      }
+      return url.toString();
+    } catch {
+      return normalizedRaw;
+    }
+  }
+
+  const path = normalizedRaw.startsWith("/") ? normalizedRaw : `/${normalizedRaw}`;
   try {
-    return new URL(raw.startsWith("/") ? raw : `/${raw}`, API_MEDIA_ORIGIN).toString();
+    return new URL(path, path.startsWith("/uploads/") ? SITE_MEDIA_ORIGIN : API_MEDIA_ORIGIN).toString();
   } catch {
-    return raw;
+    return normalizedRaw;
   }
 }
 
@@ -106,8 +124,10 @@ function ShowroomBanner({ showroom }: { showroom: SelectedShowroom }) {
 
   useEffect(() => setFailed(false), [desktop, mobile]);
 
-  if (failed && fallback) {
-    return <img src={fallback} alt="" loading="eager" />;
+  if (failed) {
+    return fallback
+      ? <img src={fallback} alt="" loading="eager" />
+      : <span className={styles.bannerFallback} />;
   }
   if (!desktop && !mobile) return <span className={styles.bannerFallback} />;
 

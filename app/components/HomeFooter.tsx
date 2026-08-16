@@ -35,7 +35,11 @@ export default function HomeFooter() {
         </div>
       </div>
 
-      <div className="homeFooterBottom"><span>© تمامی حقوق برای چاکود محفوظ است.</span><span>پلتفرم رشد کسب‌وکار و بازار خودرو</span></div>
+      <div className="homeFooterBottom">
+        <span>© تمامی حقوق برای چاکود محفوظ است.</span>
+        <span>تاریخ ثبت شرکت: ۱۳۹۴</span>
+        <span>پلتفرم رشد کسب‌وکار و بازار خودرو</span>
+      </div>
 
       <style jsx>{`
         .homeFooter { position:relative; margin-top:30px; overflow:hidden; color:#fff; background:linear-gradient(145deg,#13091f 0%,#201033 52%,#281148 100%); border-top:1px solid rgba(255,255,255,.08); }
@@ -67,7 +71,7 @@ export default function HomeFooter() {
           .homeFooterColumns{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
           .homeFooterColumns h3{font-size:10px;}
           .homeFooterColumns a{margin-bottom:8px; font-size:8px;}
-          .homeFooterBottom{min-height:130px; padding-bottom:72px; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px;}
+          .homeFooterBottom{min-height:142px; padding-bottom:72px; flex-direction:column; align-items:flex-start; justify-content:center; gap:5px;}
         }
       `}</style>
     </footer>

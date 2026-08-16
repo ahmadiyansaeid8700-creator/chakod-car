@@ -129,8 +129,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
 
         <div className="masterFooterBottom">
-          <span>© چاکود؛ پلتفرم رشد کسب‌وکار</span>
-          <span>شرکت یکتا الکترونیک گلشن نوین — سال تأسیس ۱۳۹۵</span>
+          <span>
+            © چاکود — کلیه حقوق مادی و معنوی، طراحی و محتوای این وب‌سایت متعلق به شرکت یکتا الکترونیک گلشن نوین است.
+          </span>
+          <span>هرگونه کپی‌برداری، بازنشر یا استفاده غیرمجاز، پیگرد قانونی دارد.</span>
         </div>
       </footer>
 

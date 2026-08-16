@@ -72,11 +72,10 @@ export type ListingData = {
   updated_at?: string | null;
   ai_quality_score?: number | string | null;
   ai_confidence?: number | string | null;
-  cover_image?: string | null;
+  cover_image?: string | ListingImage | null;
   images?: ListingImage[] | null;
   [key: string]: unknown;
 };
-
 
 export type ListingListResponse = {
   success: boolean;
@@ -120,10 +119,18 @@ export function collectListingImages(response: ListingApiResponse) {
     ...(Array.isArray(listing?.images) ? listing.images : []),
   ];
 
-  if (listing?.cover_image) {
+  const cover = listing?.cover_image;
+  if (typeof cover === "string" && cover.trim()) {
     candidates.unshift({
-      id: `cover-${listing.id}`,
-      image_url: listing.cover_image,
+      id: `cover-${listing?.id}`,
+      image_url: cover,
+      is_cover: true,
+      sort_order: -1,
+    });
+  } else if (cover && typeof cover === "object") {
+    candidates.unshift({
+      ...cover,
+      id: cover.id ?? cover.image_id ?? `cover-${listing?.id}`,
       is_cover: true,
       sort_order: -1,
     });
@@ -185,7 +192,6 @@ export async function fetchListingDetail(
 
   return json;
 }
-
 
 export async function fetchListingSummary(
   listingId: number,

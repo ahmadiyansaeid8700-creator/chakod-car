@@ -21,6 +21,7 @@ type Listing = {
   model?: string | null;
   price_toman?: number | string | null;
   status?: string | { code?: string; title?: string } | null;
+  cover_image?: { image_id?: number; image_url?: string | null } | null;
 };
 
 type Summary = {
@@ -94,6 +95,11 @@ function listingTitle(listing: Listing) {
       [listing.brand, listing.model].filter(Boolean).join(" ") ||
       `آگهی ${listing.id}`,
   );
+}
+
+function listingImage(listing: Listing) {
+  const url = String(listing.cover_image?.image_url || "").trim();
+  return url || "";
 }
 
 export default function PersonalAccountClient() {
@@ -170,6 +176,7 @@ export default function PersonalAccountClient() {
   );
   const mobile = user?.mobile_masked || user?.mobile || "";
   const attention = summary.pending + summary.rejected + summary.inactive;
+  const avatarLetter = displayName.trim().charAt(0) || "ش";
 
   return (
     <main className={styles.page} dir="rtl">
@@ -181,47 +188,42 @@ export default function PersonalAccountClient() {
           </Link>
         </header>
 
-        <section className={styles.hero}>
-          <div>
+        <section className={styles.hero} aria-label="حساب شخصی فعال">
+          <div className={styles.profileCopy}>
             <span className={styles.eyebrow}>حساب شخصی</span>
-            <h1>{loading ? "در حال آماده‌سازی حساب…" : displayName}</h1>
-            <p>آگهی‌های شخصی، اطلاعات حساب و پرداخت‌های خودت را از همین‌جا مدیریت کن.</p>
+            <h1>{loading ? "در حال آماده‌سازی…" : displayName}</h1>
+            {mobile ? <small>{mobile}</small> : null}
           </div>
-          <div className={styles.identity}>
-            <span className={styles.avatar}>ش</span>
-            <div>
-              <strong>حساب شخصی فعال</strong>
-              {mobile ? <small>{mobile}</small> : null}
-            </div>
-          </div>
+          <span className={styles.avatar} aria-hidden="true">{avatarLetter}</span>
         </section>
 
         {error ? <div className={styles.error}>{error}</div> : null}
 
         <section className={styles.stats} aria-label="وضعیت آگهی‌های شخصی">
-          <div><span>کل آگهی‌ها</span><strong>{loading ? "…" : formatNumber(summary.total)}</strong></div>
-          <div><span>فعال</span><strong>{loading ? "…" : formatNumber(summary.active)}</strong></div>
-          <div><span>نیازمند توجه</span><strong>{loading ? "…" : formatNumber(attention)}</strong></div>
+          <div><strong>{loading ? "…" : formatNumber(summary.total)}</strong><span>کل آگهی‌ها</span></div>
+          <div><strong>{loading ? "…" : formatNumber(summary.active)}</strong><span>فعال</span></div>
+          <div><strong>{loading ? "…" : formatNumber(attention)}</strong><span>نیازمند توجه</span></div>
         </section>
 
-        <section className={styles.actions} aria-label="مدیریت حساب شخصی">
-          <Link href="/account/listings/new" className={styles.primaryAction}>
-            <span>＋</span><div><strong>ثبت آگهی شخصی</strong><small>خودروی جدید را با حساب شخصی ثبت کن</small></div>
-          </Link>
+        <section className={styles.actions} aria-label="تنظیمات حساب شخصی">
           <Link href="/account-v2/profile" className={styles.action}>
-            <span>✎</span><div><strong>اطلاعات حساب</strong><small>نام و اطلاعات پایه حساب را ویرایش کن</small></div>
+            <span className={styles.actionIcon}>✎</span>
+            <div><strong>ویرایش اطلاعات</strong><small>نام و اطلاعات پایه حساب</small></div>
+            <b aria-hidden="true">‹</b>
           </Link>
           <Link href="/account/payments" className={styles.action}>
-            <span>▤</span><div><strong>پرداخت‌ها</strong><small>سوابق و وضعیت پرداخت‌ها را ببین</small></div>
-          </Link>
-          <Link href="/account/promotions" className={styles.action}>
-            <span>✦</span><div><strong>تبلیغات آگهی</strong><small>گزینه‌های ارتقای آگهی شخصی</small></div>
+            <span className={styles.actionIcon}>▤</span>
+            <div><strong>پرداخت‌ها</strong><small>سوابق و وضعیت پرداخت‌ها</small></div>
+            <b aria-hidden="true">‹</b>
           </Link>
         </section>
 
         <section className={styles.listingsSection}>
           <div className={styles.sectionHead}>
-            <div><span>مدیریت آگهی‌ها</span><h2>آگهی‌های شخصی اخیر</h2></div>
+            <div>
+              <h2>آگهی‌های من</h2>
+              <span>آخرین آگهی‌های ثبت‌شده با حساب شخصی</span>
+            </div>
           </div>
 
           {loading ? (
@@ -229,21 +231,31 @@ export default function PersonalAccountClient() {
           ) : recent.length === 0 ? (
             <div className={styles.empty}>
               <strong>هنوز آگهی شخصی نداری</strong>
-              <span>برای شروع یک آگهی با هویت شخصی ثبت کن.</span>
-              <Link href="/account/listings/new">ثبت آگهی</Link>
+              <span>برای شروع از دکمه «ثبت آگهی» در منوی پایین استفاده کن.</span>
             </div>
           ) : (
             <div className={styles.listings}>
-              {recent.map((listing) => (
-                <Link key={listing.id} href={`/account/listings/${listing.id}`} className={styles.listingCard}>
-                  <div>
-                    <strong>{listingTitle(listing)}</strong>
-                    <span>{statusLabel(listing.status)}</span>
-                  </div>
-                  <small>{formatPrice(listing.price_toman)}</small>
-                  <b>‹</b>
-                </Link>
-              ))}
+              {recent.map((listing) => {
+                const image = listingImage(listing);
+                const code = statusCode(listing.status);
+                return (
+                  <Link key={listing.id} href={`/account/listings/${listing.id}`} className={styles.listingCard}>
+                    <div className={styles.listingMedia}>
+                      {image ? (
+                        <img src={image} alt={listingTitle(listing)} loading="lazy" />
+                      ) : (
+                        <span className={styles.imagePlaceholder} aria-hidden="true">خودرو</span>
+                      )}
+                      <span className={styles.statusBadge} data-status={code}>{statusLabel(listing.status)}</span>
+                    </div>
+                    <div className={styles.listingBody}>
+                      <strong>{listingTitle(listing)}</strong>
+                      <small>{formatPrice(listing.price_toman)}</small>
+                      <span>مدیریت آگهی <b aria-hidden="true">‹</b></span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </section>

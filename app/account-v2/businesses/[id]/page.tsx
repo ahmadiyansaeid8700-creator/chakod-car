@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import MobileBottomNav from "../../../components/MobileBottomNav";
+import BusinessResumeEditor from "./BusinessResumeEditor";
 import styles from "./page.module.css";
 
 type Activity = {
@@ -185,12 +186,15 @@ export default function BusinessActivityPage() {
               <div className={styles.promoteCopy}>
                 <span>جایگاه ویژه</span>
                 <h2>تبلیغ {activity.name}</h2>
-                <p>این مجموعه را در بخش منتخب صفحه اول چاکود بالاتر از نمایش عادی به کاربران نشان بده.</p>
+                <p>رزومه و ویترین این مجموعه را در بخش منتخب صفحه اول چاکود بالاتر از نمایش عادی به کاربران نشان بده.</p>
               </div>
               <Link href="/account/selected" className={styles.promoteButton}>تبلیغ این مجموعه</Link>
             </section>
 
             <section className={styles.quickActions}>
+              <a href="#business-resume" className={styles.quickAction}>
+                <span>▦</span><div><strong>رزومه و آلبوم</strong><small>معرفی، تخصص‌ها و نمونه‌کارها</small></div>
+              </a>
               <a href="#business-info" className={styles.quickAction}>
                 <span>✎</span><div><strong>ویرایش اطلاعات</strong><small>نام، تماس و آدرس مجموعه</small></div>
               </a>
@@ -198,6 +202,8 @@ export default function BusinessActivityPage() {
                 <span>▣</span><div><strong>کارت روز</strong><small>محتوای روزانه برای اشتراک‌گذاری</small></div>
               </Link>
             </section>
+
+            <BusinessResumeEditor activityId={activity.id} activityName={activity.name} />
 
             <section className={styles.card} id="business-info">
               <div className={styles.sectionTitle}>

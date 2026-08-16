@@ -5,6 +5,7 @@ import {
   fetchListingDetail,
   fetchListingSummary,
   mergeListingResponses,
+  normalizeAssetUrl,
   type ListingData,
 } from "../../listing/[id]/listing-data";
 import { jsonResponse } from "../../../lib/chakod-auth-proxy";
@@ -25,6 +26,52 @@ function firstText(listing: ListingData, keys: Array<keyof ListingData>) {
 function finiteNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function imageValue(value: unknown): string {
+  if (typeof value === "string" && value.trim()) {
+    return normalizeAssetUrl(value.trim());
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const resolved = imageValue(item);
+      if (resolved) return resolved;
+    }
+    return "";
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["image_url", "url", "src", "path", "file_url", "media_url"]) {
+      const resolved = imageValue(record[key]);
+      if (resolved) return resolved;
+    }
+  }
+
+  return "";
+}
+
+function fallbackListingImage(listing: ListingData) {
+  for (const key of [
+    "cover_image",
+    "cover_image_url",
+    "image_url",
+    "thumbnail_url",
+    "thumbnail",
+    "main_image",
+    "primary_image",
+    "image",
+    "photo_url",
+    "photo",
+    "picture_url",
+    "picture",
+    "images",
+  ]) {
+    const resolved = imageValue(listing[key]);
+    if (resolved) return resolved;
+  }
+  return "";
 }
 
 function compareDto(listing: ListingData, images: ReturnType<typeof collectListingImages>) {
@@ -55,7 +102,7 @@ function compareDto(listing: ListingData, images: ReturnType<typeof collectListi
     seller_type: firstText(listing, ["seller_type", "listing_owner_type"]),
     dealer_name: firstText(listing, ["dealer_name"]),
     views_count: finiteNumber(listing.views_count) || 0,
-    cover_image: images[0]?.image_url || "",
+    cover_image: images[0]?.image_url || fallbackListingImage(listing),
   };
 }
 

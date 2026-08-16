@@ -85,17 +85,17 @@
 }
 
 .selectedCard {
-  width: min(900px, 100%);
+  width: min(720px, 100%);
   overflow: hidden;
   border: 1px solid rgba(124,58,237,.34);
-  border-radius: 24px;
+  border-radius: 20px;
   background: #fff;
-  box-shadow: 0 18px 42px rgba(83, 44, 110, .10);
+  box-shadow: 0 14px 34px rgba(83, 44, 110, .09);
 }
 
 .banner {
   position: relative;
-  aspect-ratio: 3 / 1;
+  aspect-ratio: 16 / 5;
   display: block;
   overflow: hidden;
   background: linear-gradient(135deg, #e9ddf4, #f8f4fb);
@@ -128,51 +128,51 @@
 .showroomIdentity {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 15px 16px 10px;
+  gap: 11px;
+  padding: 12px 14px 8px;
 }
 
 .showroomLogo {
-  width: 56px;
-  height: 56px;
-  flex: 0 0 56px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #eadff0;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #6d28d9;
   background: #faf7fc;
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 900;
 }
 .showroomLogo img { width: 100%; height: 100%; object-fit: cover; }
 
 .showroomIdentity h2 {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   color: #2d1937;
-  font-size: 21px;
+  font-size: 18px;
   line-height: 1.35;
 }
 .showroomIdentity p { margin: 0; color: #837188; font-size: 11px; }
 
 .vehicleStrip {
   display: flex;
-  gap: 10px;
-  padding: 4px 16px 14px;
+  gap: 8px;
+  padding: 3px 14px 12px;
 }
 
 .vehicleThumb,
 .vehicleSkeleton {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 230px;
+  max-width: 180px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   display: block;
   border: 1px solid #eadff0;
-  border-radius: 13px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #eee5f4, #faf7fc);
 }
 .vehicleThumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
@@ -184,12 +184,12 @@
 @keyframes shimmer { to { background-position-x: -200%; } }
 
 .primaryAction {
-  min-height: 46px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 16px 16px;
-  border-radius: 13px;
+  margin: 0 14px 14px;
+  border-radius: 12px;
   color: #fff;
   background: linear-gradient(135deg, #4c1d95, #7c3aed);
   font-size: 12px;

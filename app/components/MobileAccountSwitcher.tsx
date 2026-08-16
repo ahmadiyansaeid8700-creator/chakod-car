@@ -118,7 +118,7 @@ export default function MobileAccountSwitcher() {
       <div className="mobileAccountSheet" role="menu" dir="rtl">
         <div className="mobileAccountHandle" aria-hidden="true" />
         <div className="mobileAccountTitle">انتخاب حساب</div>
-        <Link href="/account-v2/profile" className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "personal" }); setOpen(false); }}>
+        <Link href="/account" className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "personal" }); setOpen(false); }}>
           <span className="mobileAccountRowIcon"><PersonIcon /></span>
           <span><strong>حساب شخصی</strong><small>{displayName}</small></span>
         </Link>

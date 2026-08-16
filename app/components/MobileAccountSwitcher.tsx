@@ -60,6 +60,17 @@ export default function MobileAccountSwitcher() {
     void (async () => {
       setLoading(true);
       try {
+        // Import an explicitly typed legacy professional business before reading the switcher list.
+        // The server accepts only authenticated non-dealer profile types, so no business is inferred by name.
+        await fetch("/api/auth/sync-legacy-professional-activity", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+          headers: { Accept: "application/json", "Content-Type": "application/json", ...tokenHeaders() },
+          body: JSON.stringify({}),
+        }).catch(() => undefined);
+
         const response = await fetch("/api/auth/account-activities", {
           method: "GET",
           credentials: "include",

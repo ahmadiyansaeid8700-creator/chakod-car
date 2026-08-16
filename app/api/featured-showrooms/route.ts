@@ -190,14 +190,20 @@ export async function GET(request: NextRequest) {
     ]);
 
     const contentByOrderId = new Map(contentRows.map((item) => [Number(item.order_id), item]));
+    const contentByDealerId = new Map<number, ContentRow>();
+    for (const item of contentRows) {
+      const dealerId = safeId(item.dealer_id);
+      if (dealerId && !contentByDealerId.has(dealerId)) contentByDealerId.set(dealerId, item);
+    }
     const seenSelectedDealers = new Set<number>();
 
     const selected = paidPromotionOrders.flatMap((order) => {
       const metadata = parseMetadata(order.metadataJson);
       if (!isSelectedShowroomOrder(order, metadata, contentByOrderId)) return [];
 
-      const content = contentByOrderId.get(order.id);
-      const dealerId = safeId(metadata.dealer_id || metadata.target_id || content?.dealer_id);
+      const exactContent = contentByOrderId.get(order.id);
+      const dealerId = safeId(metadata.dealer_id || metadata.target_id || exactContent?.dealer_id);
+      const content = exactContent || contentByDealerId.get(dealerId);
       const startsAt = cleanText(metadata.starts_at, 60);
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);

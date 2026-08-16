@@ -2,7 +2,7 @@ import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../db";
-import { commerceOrders, featuredShowroomPlacements } from "../../../db/schema";
+import { accountActivities, commerceOrders, featuredShowroomPlacements } from "../../../db/schema";
 import { jsonResponse } from "../../../lib/chakod-auth-proxy";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
   const today = nowIso.slice(0, 10);
 
   try {
-    const [legacyRows, paidPromotionOrders, contentRows] = await Promise.all([
+    const [legacyRows, paidPromotionOrders, contentRows, dealerActivities] = await Promise.all([
       loadLegacyPlacements(today, province),
       getDb()
         .select()
@@ -187,6 +187,16 @@ export async function GET(request: NextRequest) {
         .orderBy(desc(commerceOrders.id))
         .limit(200),
       loadContentRows(),
+      getDb()
+        .select({
+          id: accountActivities.id,
+          name: accountActivities.name,
+          externalDealerId: accountActivities.externalDealerId,
+          status: accountActivities.status,
+        })
+        .from(accountActivities)
+        .where(eq(accountActivities.activityType, "dealer"))
+        .limit(500),
     ]);
 
     const contentByOrderId = new Map(contentRows.map((item) => [Number(item.order_id), item]));
@@ -195,15 +205,30 @@ export async function GET(request: NextRequest) {
       const dealerId = safeId(item.dealer_id);
       if (dealerId && !contentByDealerId.has(dealerId)) contentByDealerId.set(dealerId, item);
     }
+    const activityById = new Map(dealerActivities.map((item) => [Number(item.id), item]));
     const seenSelectedDealers = new Set<number>();
 
     const selected = paidPromotionOrders.flatMap((order) => {
       const metadata = parseMetadata(order.metadataJson);
       if (!isSelectedShowroomOrder(order, metadata, contentByOrderId)) return [];
 
+      const activityId = safeId(metadata.activity_id);
+      const activity = activityId ? activityById.get(activityId) : null;
+      if (
+        activityId &&
+        (!activity || activity.status !== "active" || !safeId(activity.externalDealerId))
+      ) {
+        return [];
+      }
+
       const exactContent = contentByOrderId.get(order.id);
-      const dealerId = safeId(metadata.dealer_id || metadata.target_id || exactContent?.dealer_id);
-      const content = exactContent || contentByDealerId.get(dealerId);
+      const dealerId = activityId
+        ? safeId(activity?.externalDealerId)
+        : safeId(metadata.dealer_id || metadata.target_id || exactContent?.dealer_id);
+      const content =
+        exactContent && safeId(exactContent.dealer_id) === dealerId
+          ? exactContent
+          : contentByDealerId.get(dealerId);
       const startsAt = cleanText(metadata.starts_at, 60);
       const expiresAt = cleanText(metadata.expires_at, 60);
       const selectedProvince = cleanText(metadata.province, 80);
@@ -221,7 +246,7 @@ export async function GET(request: NextRequest) {
           id: 1_000_000_000 + order.id,
           order_id: order.id,
           dealer_id: dealerId,
-          dealer_name: cleanText(metadata.target_name) || `نمایشگاه ${dealerId}`,
+          dealer_name: cleanText(activity?.name) || cleanText(metadata.target_name) || `نمایشگاه ${dealerId}`,
           province: selectedProvince,
           start_date: effectiveStartsAt.slice(0, 10),
           end_date: expiresAt.slice(0, 10),

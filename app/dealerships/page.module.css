@@ -79,13 +79,14 @@
 
 .selectedGrid {
   display: grid;
-  justify-items: center;
+  grid-template-columns: repeat(auto-fill, 520px);
+  justify-content: start;
   gap: 18px;
   margin-bottom: 28px;
 }
 
 .selectedCard {
-  width: min(720px, 100%);
+  width: 100%;
   overflow: hidden;
   border: 1px solid rgba(124,58,237,.34);
   border-radius: 20px;
@@ -321,7 +322,11 @@
 
   .content { width: calc(100% - 20px); margin-top: 10px; }
   .resultMeta { margin-right: 4px; }
-  .selectedGrid { margin-bottom: 36px; }
+  .selectedGrid {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+    margin-bottom: 36px;
+  }
   .selectedCard { width: 100%; border-radius: 20px; }
   .banner { aspect-ratio: 16 / 7; }
   .showroomIdentity { padding: 13px 13px 9px; }

@@ -135,7 +135,7 @@ export default function BusinessActivityPage() {
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
-        <header className={styles.topbar}><Link href="/account">بازگشت به حساب</Link><Link href="/" className={styles.logo}><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link></header>
+        <header className={styles.topbar}><Link href="/">صفحه اصلی</Link><Link href="/" className={styles.logo}><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link></header>
         {loading ? <section className={styles.state}>در حال دریافت کسب‌وکار…</section> : null}
         {error ? <div className={styles.error}>{error}</div> : null}
         {notice ? <div className={styles.notice}>{notice}</div> : null}

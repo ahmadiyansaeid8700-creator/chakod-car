@@ -94,20 +94,32 @@ export default function DealerSelectedPromotionInjector() {
     };
   }, [activeTab, dealerId]);
 
-  const href = dealerId
+  const selectedHref = dealerId
     ? `/account/selected?placement=showroom&dealer_id=${dealerId}`
     : "/account/selected";
 
   const promotion = mount
     ? createPortal(
-        <section className={styles.promoteCard} aria-label="جایگاه ویژه نمایشگاه">
-          <div className={styles.promoteIcon} aria-hidden="true">✦</div>
-          <div className={styles.promoteCopy}>
-            <span>جایگاه ویژه</span>
-            <h2>تبلیغ این نمایشگاه</h2>
-            <p>نمایشگاه را با ویترین منتخب و خودروهای انتخابی در صفحه اول چاکود برجسته کن.</p>
-          </div>
-          <Link href={href} className={styles.promoteButton}>جایگاه ویژه نمایشگاه</Link>
+        <section className={styles.promotionGrid} aria-label="ابزارهای تبلیغ نمایشگاه">
+          <Link href={selectedHref} className={`${styles.promoTile} ${styles.selectedTile}`}>
+            <span className={styles.tileIcon} aria-hidden="true">✦</span>
+            <div className={styles.tileCopy}>
+              <span>تبلیغ در صفحه اول</span>
+              <h2>جایگاه ویژه</h2>
+              <p>نمایشگاه و خودروهای منتخب را در صفحه اول چاکود برجسته کن.</p>
+            </div>
+            <span className={styles.tileAction}>ورود به جایگاه ویژه</span>
+          </Link>
+
+          <Link href="/account/stories" className={`${styles.promoTile} ${styles.storyTile}`}>
+            <span className={styles.tileIcon} aria-hidden="true">◫</span>
+            <div className={styles.tileCopy}>
+              <span>انتشار و اشتراک‌گذاری</span>
+              <h2>دبل استوری</h2>
+              <p>از خودروهای فعال استوری بساز و مخاطب بیرون چاکود را به آگهی برگردان.</p>
+            </div>
+            <span className={styles.tileAction}>ساخت دبل استوری</span>
+          </Link>
         </section>,
         mount,
       )

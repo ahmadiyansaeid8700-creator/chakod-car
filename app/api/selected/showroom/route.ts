@@ -158,7 +158,7 @@ async function ownedDealer(userId: number, dealerId: number) {
   return activity && activity.status === "active" ? activity : null;
 }
 
-async function activeOrder(ownerKey: string, dealerId: number) {
+async function activeOrder(ownerKey: string, dealerId: number, activityId: number) {
   const rows = await getDb()
     .select()
     .from(commerceOrders)
@@ -177,7 +177,13 @@ async function activeOrder(ownerKey: string, dealerId: number) {
   return (
     rows.find((order) => {
       const metadata = parseMetadata(order.metadataJson);
-      if (safeId(metadata.dealer_id || metadata.target_id) !== dealerId) return false;
+      const metadataActivityId = safeId(metadata.activity_id);
+      const metadataDealerId = safeId(metadata.dealer_id || metadata.target_id);
+      if (metadataActivityId) {
+        if (metadataActivityId !== activityId) return false;
+      } else if (metadataDealerId !== dealerId) {
+        return false;
+      }
       const expiresAt = new Date(cleanText(metadata.expires_at, 80)).getTime();
       return Number.isFinite(expiresAt) && expiresAt > now;
     }) || null
@@ -226,7 +232,7 @@ async function loadContent(orderId: number, ownerKey: string, dealerId: number) 
     .prepare("SELECT * FROM selected_showroom_content WHERE order_id = ? LIMIT 1")
     .bind(orderId)
     .first()) as ContentRow | null;
-  if (exact) return exact;
+  if (exact && safeId(exact.dealer_id) === dealerId) return exact;
 
   return (await d1
     .prepare(
@@ -246,7 +252,7 @@ async function contextForRequest(request: NextRequest, dealerId: number) {
   const dealer = await ownedDealer(userId, dealerId);
   if (!dealer) return { error: jsonResponse({ success: false, message: "این نمایشگاه متعلق به حساب شما نیست یا فعال نیست." }, 403) };
 
-  const order = await activeOrder(ownerKey, dealerId);
+  const order = await activeOrder(ownerKey, dealerId, dealer.id);
   if (!order) return { error: jsonResponse({ success: false, message: "جایگاه منتخب فعال برای این نمایشگاه پیدا نشد." }, 404) };
 
   return { ownerKey, dealer, order };

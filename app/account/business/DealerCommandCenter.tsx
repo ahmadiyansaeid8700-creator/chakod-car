@@ -455,7 +455,9 @@ export default function DealerCommandCenter() {
   const mainInfoReady = Boolean(data.dealer.name && data.dealer.province && data.dealer.city);
   const verificationProgress = data.dealer.is_verified ? 100 : mainInfoReady ? 60 : 30;
   const location = [data.dealer.province, data.dealer.city].filter(Boolean).join("، ") || "محدوده ثبت نشده";
-  const tabHref = (tab: TabKey) => `/account/business?dealer_id=${currentDealerId}&tab=${tab}`;
+  const tabHref = (tab: TabKey) => tab === "listings"
+    ? `/account/listings?dealer_id=${currentDealerId}`
+    : `/account/business?dealer_id=${currentDealerId}&tab=${tab}`;
   const verificationHref = `/account-v2/verification?dealer_id=${currentDealerId}&return_to=${encodeURIComponent(tabHref("team"))}`;
   const gateCopy = verificationCopy(teamVerificationStatus);
 

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import PersonalAccountClient from "./PersonalAccountClient";
 
 export default function AccountPage() {
-  redirect("/account-v2");
+  return <PersonalAccountClient />;
 }

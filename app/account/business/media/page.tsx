@@ -18,11 +18,10 @@ type ProfileResponse = {
   profile?: ProfessionalProfile;
 };
 
-type LogoResponse = {
+type UploadResponse = {
   success?: boolean;
   message?: string;
   url?: string;
-  profile?: ProfessionalProfile;
 };
 
 function getToken() {
@@ -43,11 +42,27 @@ async function readJson<T>(response: Response): Promise<T | null> {
   }
 }
 
+function normalizeMediaUrl(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("blob:") || raw.startsWith("data:")) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    return raw
+      .replace(/^http:\/\/api\.chakod\.com\//i, "https://api.chakod.com/")
+      .replace(/^https:\/\/api\.chakod\.com\/uploads\//i, "https://chakod.com/uploads/");
+  }
+  if (raw.startsWith("/uploads/")) return `https://chakod.com${raw}`;
+  if (raw.startsWith("uploads/")) return `https://chakod.com/${raw}`;
+  if (raw.startsWith("/")) return `https://api.chakod.com${raw}`;
+  return raw;
+}
+
 export default function BusinessMediaPage() {
   const searchParams = useSearchParams();
   const requestedDealerId = Math.max(0, Math.round(Number(searchParams.get("dealer_id") || 0)));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -85,6 +100,12 @@ export default function BusinessMediaPage() {
     return () => controller.abort();
   }, [requestedDealerId]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   function openLogoPicker() {
     if (working) return;
     fileInputRef.current?.click();
@@ -111,37 +132,72 @@ export default function BusinessMediaPage() {
       return;
     }
 
+    const localPreview = URL.createObjectURL(file);
+    setPreviewUrl(localPreview);
     setWorking(true);
     setError("");
     setNotice("");
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45_000);
+
     try {
       const form = new FormData();
-      form.set("dealer_id", String(requestedDealerId));
+      form.set("kind", "logo");
       form.set("file", file);
 
-      const response = await fetch("/api/auth/business-logo", {
+      const uploadResponse = await fetch("/api/auth/professional-profile/upload", {
         method: "POST",
         credentials: "include",
+        cache: "no-store",
         headers: authHeaders(),
         body: form,
+        signal: controller.signal,
       });
-      const result = await readJson<LogoResponse>(response);
-      if (!response.ok || !result?.success || !result.url) {
-        throw new Error(result?.message || "بارگذاری و ذخیره لوگو انجام نشد.");
+      const uploadResult = await readJson<UploadResponse>(uploadResponse);
+      if (!uploadResponse.ok || !uploadResult?.success || !uploadResult.url) {
+        throw new Error(uploadResult?.message || "بارگذاری لوگو انجام نشد.");
       }
 
-      setProfile(result.profile || { ...profile, dealer_id: requestedDealerId, logo_url: result.url });
-      setNotice(result.message || "لوگوی مجموعه با موفقیت ذخیره شد.");
+      const remoteLogoUrl = String(uploadResult.url).trim();
+      const saveResponse = await fetch("/api/auth/professional-profile", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ ...profile, dealer_id: requestedDealerId, logo_url: remoteLogoUrl }),
+        signal: controller.signal,
+      });
+      const saveResult = await readJson<ProfileResponse>(saveResponse);
+      if (!saveResponse.ok || !saveResult?.success || !saveResult.profile) {
+        throw new Error(saveResult?.message || "لوگو بارگذاری شد اما ذخیره پروفایل انجام نشد.");
+      }
+
+      setProfile(saveResult.profile);
+      setPreviewUrl("");
+      setNotice("لوگوی نمایشگاه با موفقیت بارگذاری و ذخیره شد.");
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "بارگذاری لوگو انجام نشد.";
+      setPreviewUrl("");
+      const isAbort = caught instanceof DOMException && caught.name === "AbortError";
+      const message = isAbort
+        ? "بارگذاری لوگو بیش از حد طول کشید. دوباره تلاش کنید."
+        : caught instanceof Error
+          ? caught.message
+          : "بارگذاری لوگو انجام نشد.";
       setError(message === "Failed to fetch" ? "ارسال لوگو به سرور انجام نشد. دوباره تلاش کنید." : message);
     } finally {
+      window.clearTimeout(timeout);
       setWorking(false);
     }
   }
 
   const dealerId = requestedDealerId || Number(profile?.dealer_id || 0);
   const backHref = dealerId ? `/account/business?dealer_id=${dealerId}&tab=team` : "/account-v2";
+  const displayLogo = previewUrl || normalizeMediaUrl(profile?.logo_url);
 
   return (
     <main className={styles.page} dir="rtl">
@@ -171,9 +227,9 @@ export default function BusinessMediaPage() {
                 className={styles.logoPreview}
                 onClick={openLogoPicker}
                 disabled={working}
-                aria-label={profile.logo_url ? "تغییر لوگوی نمایشگاه" : "بارگذاری لوگوی نمایشگاه"}
+                aria-label={displayLogo ? "تغییر لوگوی نمایشگاه" : "بارگذاری لوگوی نمایشگاه"}
               >
-                {profile.logo_url ? <img src={String(profile.logo_url)} alt="لوگوی مجموعه" /> : <span>لوگو</span>}
+                {displayLogo ? <img src={displayLogo} alt="لوگوی مجموعه" /> : <span>لوگو</span>}
                 <span className={styles.logoAction} aria-hidden="true">{working ? "…" : "+"}</span>
               </button>
               <input
@@ -189,7 +245,7 @@ export default function BusinessMediaPage() {
                 <p>فرمت پیشنهادی PNG یا WebP با پس‌زمینه شفاف و تصویر مربعی است.</p>
               </div>
               <p className={styles.uploadHint}>
-                {working ? "در حال بارگذاری و ذخیره لوگو…" : profile.logo_url ? "برای تغییر تصویر، روی خود لوگو بزنید." : "برای انتخاب تصویر، روی کادر لوگو بزنید."}
+                {working ? "در حال بارگذاری و ذخیره لوگو…" : displayLogo ? "برای تغییر تصویر، روی خود لوگو بزنید." : "برای انتخاب تصویر، روی کادر لوگو بزنید."}
               </p>
             </>
           ) : null}

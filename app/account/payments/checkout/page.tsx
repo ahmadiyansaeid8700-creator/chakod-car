@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import BusinessPlacementOrderClient from "./BusinessPlacementOrderClient";
 import CheckoutClient from "./CheckoutClient";
 import StoryCheckoutClient from "./StoryCheckoutClient";
+import WalletChargeReturnFix from "./WalletChargeReturnFix";
 
 export default async function AccountPaymentCheckoutPage({
   searchParams,
@@ -33,5 +34,10 @@ export default async function AccountPaymentCheckoutPage({
     return <BusinessPlacementOrderClient dealerId={dealerId} />;
   }
 
-  return <CheckoutClient />;
+  return (
+    <>
+      <WalletChargeReturnFix />
+      <CheckoutClient />
+    </>
+  );
 }

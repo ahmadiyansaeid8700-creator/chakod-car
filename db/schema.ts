@@ -220,3 +220,34 @@ export const accountActivities = sqliteTable(
     ),
   }),
 );
+
+export const instagramStoryQueue = sqliteTable(
+  "instagram_story_queue",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    storyOrderId: integer("story_order_id").notNull(),
+    ownerKey: text("owner_key").notNull(),
+    listingId: integer("listing_id").notNull(),
+    priceToman: integer("price_toman").notNull(),
+    minPriceToman: integer("min_price_toman").notNull().default(3_000_000_000),
+    title: text("title").notNull().default(""),
+    imageUrl: text("image_url").notNull().default(""),
+    publicUrl: text("public_url").notNull().default(""),
+    sourceExpiresAt: text("source_expires_at").notNull(),
+    slotDate: text("slot_date").notNull().default(""),
+    slotNumber: integer("slot_number").notNull().default(0),
+    status: text("status").notNull().default("queued"),
+    priority: integer("priority").notNull().default(100),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error").notNull().default(""),
+    metaContainerId: text("meta_container_id").notNull().default(""),
+    metaMediaId: text("meta_media_id").notNull().default(""),
+    publishedDate: text("published_date").notNull().default(""),
+    publishedAt: text("published_at"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    storyOrderUnique: uniqueIndex("instagram_story_queue_story_order_unique").on(table.storyOrderId),
+  }),
+);

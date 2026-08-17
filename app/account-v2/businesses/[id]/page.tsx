@@ -41,18 +41,6 @@ function activityIcon(type: string) {
   if (type === "car_service") return "خدمت";
   return "کسب";
 }
-function statusLabel(status: string) {
-  if (status === "active") return "فعال";
-  if (status === "disabled") return "غیرفعال";
-  if (status === "draft") return "پیش‌نویس";
-  return "ثبت‌شده";
-}
-function verificationLabel(status: string) {
-  if (status === "verified") return "تأیید شده";
-  if (status === "pending") return "در انتظار تأیید";
-  if (status === "rejected") return "نیازمند اصلاح";
-  return "تأیید نشده";
-}
 function accessLabel(role?: string) {
   if (role === "owner") return "مالک";
   if (role === "manager") return "مدیر";
@@ -199,23 +187,29 @@ export default function BusinessActivityPage() {
               />
 
               {activity.can_manage ? (
-                <section className={`${styles.promoteCard} ${orderStyles.promoteTile}`}>
-                  <div className={styles.promoteIcon} aria-hidden="true">✦</div>
-                  <div className={styles.promoteCopy}>
-                    <span>جایگاه ویژه</span>
-                    <h2>تبلیغ {activity.name}</h2>
-                    <p>رزومه و ویترین این مجموعه را در بخش منتخب صفحه اول چاکود بالاتر از نمایش عادی به کاربران نشان بده.</p>
-                  </div>
-                  <Link href="/account/selected" className={`${styles.promoteButton} ${orderStyles.promoteAction}`}>تبلیغ این مجموعه</Link>
-                </section>
+                <>
+                  <section className={`${styles.promoteCard} ${orderStyles.promoteTile}`}>
+                    <div className={styles.promoteIcon} aria-hidden="true">✦</div>
+                    <div className={styles.promoteCopy}>
+                      <span>جایگاه ویژه</span>
+                      <h2>جایگاه ویژه</h2>
+                      <p>این مجموعه را در بخش‌های منتخب و پربازدید چاکود برجسته‌تر نمایش بده.</p>
+                    </div>
+                    <Link href="/account/selected" className={`${styles.promoteButton} ${orderStyles.promoteAction}`}>ورود به جایگاه ویژه</Link>
+                  </section>
+
+                  <section className={`${styles.promoteCard} ${orderStyles.promoteTile} ${orderStyles.storyTile}`}>
+                    <div className={styles.promoteIcon} aria-hidden="true">▣</div>
+                    <div className={styles.promoteCopy}>
+                      <span>انتشار و اشتراک‌گذاری</span>
+                      <h2>دبل استوری</h2>
+                      <p>برای معرفی سریع‌تر مجموعه و خدمات، استوری‌های چاکود را از همین حساب مدیریت کن.</p>
+                    </div>
+                    <Link href="/account/stories" className={`${styles.promoteButton} ${orderStyles.promoteAction}`}>ساخت دبل استوری</Link>
+                  </section>
+                </>
               ) : null}
             </div>
-
-            <section className={styles.statusGrid} aria-label="وضعیت مجموعه">
-              <div><strong>{statusLabel(activity.status)}</strong><span>وضعیت فعالیت</span></div>
-              <div><strong>{verificationLabel(activity.verification_status)}</strong><span>وضعیت تأیید</span></div>
-              <div><strong>{activity.phone || "ثبت نشده"}</strong><span>شماره تماس</span></div>
-            </section>
 
             <section className={`${styles.quickActions} ${orderStyles.quickActionsOrdered}`}>
               {activity.is_owner ? (

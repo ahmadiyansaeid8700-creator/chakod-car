@@ -4,6 +4,15 @@ export type ChakodRuntimeEnv = {
   ASSETS: Fetcher;
   DB: D1Database;
   CHAKOD_ADMIN_EMAILS?: string;
+  INSTAGRAM_PUBLISH_ENABLED?: string;
+  INSTAGRAM_GRAPH_API_VERSION?: string;
+  INSTAGRAM_BUSINESS_ACCOUNT_ID?: string;
+  INSTAGRAM_ACCESS_TOKEN?: string;
+  INSTAGRAM_PUBLISHER_SECRET?: string;
+  INSTAGRAM_STORY_MIN_PRICE_TOMAN?: string;
+  INSTAGRAM_STORY_DAILY_CAPACITY?: string;
+  INSTAGRAM_STORY_MIN_INTERVAL_MINUTES?: string;
+  INSTAGRAM_STORY_MAX_ATTEMPTS?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

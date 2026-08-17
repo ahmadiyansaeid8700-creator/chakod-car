@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { formatDualYear } from "../../lib/date-display";
 import SaveListingButton from "./SaveListingButton";
 import type { ListingCardData } from "./ListingCard";
 import styles from "./HomeVehicleCard.module.css";
@@ -65,11 +66,6 @@ function formatPrice(price?: number | null) {
   }
 
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
-}
-
-function formatYear(year?: number | null) {
-  if (!year) return "نامشخص";
-  return new Intl.NumberFormat("fa-IR", { useGrouping: false }).format(year);
 }
 
 function formatMileage(mileage?: number | null) {
@@ -182,16 +178,16 @@ export default function HomeVehicleCard({ listing, tone, badge }: Props) {
             <b>{location || "موقعیت نامشخص"}</b>
           </span>
           <i aria-hidden="true" />
-          <span>
+          <span title={seller}>
             <CarIcon />
-            <b>{listing.dealer_name ? "نمایشگاهی" : "شخصی"}</b>
+            <b>{listing.dealer_name?.trim() || (listing.dealer_name ? "نمایشگاهی" : "شخصی")}</b>
           </span>
         </div>
 
         <div className={styles.specGrid} aria-label="مشخصات اصلی خودرو">
           <span>
             <small>سال</small>
-            <b>{formatYear(listing.production_year)}</b>
+            <b>{formatDualYear(listing.production_year)}</b>
           </span>
           <span>
             <small>کارکرد</small>

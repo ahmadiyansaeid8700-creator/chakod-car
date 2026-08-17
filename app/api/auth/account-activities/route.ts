@@ -1,8 +1,12 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
 import { accountActivities } from "../../../../db/schema";
+import {
+  listAccountActivityMemberships,
+  type AccountActivityTeamIdentity,
+} from "../../../../lib/account-activity-team";
 import {
   authApiUrl,
   jsonResponse,
@@ -24,6 +28,7 @@ type AccountUser = {
   mobile: string;
   accountType: string;
   businessName: string;
+  displayName: string;
 };
 
 type DealerItem = {
@@ -129,6 +134,7 @@ async function readAccountUser(): Promise<AccountUser | null> {
     mobile: normalizePhone(raw.user.mobile),
     accountType: clean(raw.user.account_type, 40),
     businessName: clean(raw.user.business_name, 160),
+    displayName: clean(raw.user.display_name ?? raw.user.full_name ?? raw.user.name, 120),
   };
 }
 
@@ -253,8 +259,6 @@ async function syncLegacyActivities(request: NextRequest, user: AccountUser) {
     existingDealerActivity?.source === "legacy_dealer" &&
     dealers.some((dealer) => dealer.active)
   ) {
-    // وقتی مالکیت از داده فعلی قابل اثبات نیست، رکوردی که قبلاً با حدس «اولین نمایشگاه» ساخته شده
-    // دیگر نباید برای خرید یا انتشار جایگاه منتخب معتبر بماند.
     await db
       .update(accountActivities)
       .set({
@@ -334,11 +338,46 @@ export async function GET(request: NextRequest) {
         can_publish_vehicle: true,
       }));
 
+    const teamIdentity: AccountActivityTeamIdentity = {
+      id: user.id,
+      mobile: user.mobile,
+      displayName: user.displayName,
+    };
+    const activityMembershipRows = user.mobile
+      ? await listAccountActivityMemberships(teamIdentity)
+      : [];
+    const ownedActivityIds = new Set(rows.map((row) => row.id));
+    const activityMemberIds = Array.from(new Set(
+      activityMembershipRows
+        .filter((membership) => !ownedActivityIds.has(membership.activity_id))
+        .map((membership) => membership.activity_id),
+    ));
+    const memberActivities = activityMemberIds.length
+      ? await getDb()
+          .select()
+          .from(accountActivities)
+          .where(inArray(accountActivities.id, activityMemberIds))
+      : [];
+    const memberActivityMap = new Map(memberActivities.map((activity) => [activity.id, activity]));
+    const activityMemberships = activityMembershipRows.flatMap((membership) => {
+      const activity = memberActivityMap.get(membership.activity_id);
+      if (!activity || activity.activityType === "dealer" || activity.status === "disabled") return [];
+      return [{
+        activity_id: activity.id,
+        type: activity.activityType,
+        name: activity.name,
+        role: membership.role,
+        status: membership.status,
+        logo_url: null,
+      }];
+    });
+
     const existingTypes = new Set(rows.map((row) => row.activityType));
     return jsonResponse({
       success: true,
       activities: rows.map(publicActivity),
       memberships,
+      activity_memberships: activityMemberships,
       available_types: ACTIVITY_TYPES.filter((type) => !existingTypes.has(type)),
     });
   } catch {

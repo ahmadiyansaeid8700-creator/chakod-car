@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDualYear } from "../../lib/date-display";
 import SaveListingButton from "./SaveListingButton";
 import ListingCardImage from "./ListingCardImage";
 import ListingCardActions from "./ListingCardActions";
@@ -86,11 +87,6 @@ function formatMileage(mileage?: number | null) {
   return `${new Intl.NumberFormat("fa-IR").format(Number(mileage))} کیلومتر`;
 }
 
-function formatYear(year?: number | null) {
-  if (!year) return "نامشخص";
-  return new Intl.NumberFormat("fa-IR", { useGrouping: false }).format(year);
-}
-
 function formatSpec(value?: string | null) {
   const normalized = value?.trim().toLowerCase() || "";
   return SPEC_LABELS[normalized] || value?.trim() || "نامشخص";
@@ -110,7 +106,8 @@ function getSellerLabel(listing: ListingCardData) {
 }
 
 function getSellerType(listing: ListingCardData) {
-  if (listing.dealer_name) return "نمایشگاه خودرو";
+  if (listing.dealer_name?.trim()) return listing.dealer_name.trim();
+  if (listing.seller_type === "dealer") return "نمایشگاه خودرو";
   if (listing.seller_type === "freezone_operator") return "فعال منطقه آزاد";
   return "فروشنده شخصی";
 }
@@ -168,7 +165,7 @@ export default function ListingCard({
     .slice(0, 1) || "چ";
 
   const specs = [
-    { label: "سال", value: formatYear(listing.production_year) },
+    { label: "سال", value: formatDualYear(listing.production_year) },
     { label: "کارکرد", value: formatMileage(listing.mileage_km) },
     {
       label: "گیربکس",
@@ -220,7 +217,7 @@ export default function ListingCard({
             <b>{location || listing.province || "موقعیت نامشخص"}</b>
           </span>
           <i className={styles.metaDivider} aria-hidden="true" />
-          <span className={styles.metaItem}>
+          <span className={styles.metaItem} title={sellerType}>
             <SellerIcon />
             <b>{sellerType}</b>
           </span>

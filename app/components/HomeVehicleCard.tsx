@@ -131,6 +131,8 @@ export default function HomeVehicleCard({ listing, tone, badge }: Props) {
   const brandInitial = String(listing.brand || listing.model || "چ")
     .trim()
     .slice(0, 1);
+  const sellerTypeLabel = listing.dealer_name?.trim()
+    || (["dealer", "showroom"].includes(listing.seller_type || "") ? "نمایشگاهی" : "شخصی");
 
   return (
     <article className={`${styles.card} ${styles[tone]}`}>
@@ -180,7 +182,7 @@ export default function HomeVehicleCard({ listing, tone, badge }: Props) {
           <i aria-hidden="true" />
           <span title={seller}>
             <CarIcon />
-            <b>{listing.dealer_name?.trim() || (listing.dealer_name ? "نمایشگاهی" : "شخصی")}</b>
+            <b>{sellerTypeLabel}</b>
           </span>
         </div>
 
@@ -208,7 +210,7 @@ export default function HomeVehicleCard({ listing, tone, badge }: Props) {
             <small>
               {verified
                 ? "نمایشگاه تأیید شده"
-                : listing.dealer_name
+                : listing.dealer_name || ["dealer", "showroom"].includes(listing.seller_type || "")
                   ? "فروشنده نمایشگاهی"
                   : "فروشنده شخصی"}
             </small>

@@ -1,10 +1,9 @@
 .overviewDeck {
-  width: min(560px, 100%);
+  width: 100%;
   margin-top: 12px;
-  margin-left: auto;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
   align-items: stretch;
 }
 
@@ -16,6 +15,11 @@
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
+}
+
+.overviewDeck .storyTile {
+  background: linear-gradient(145deg, #2f1769, #492083 58%, #5d2aa8);
+  box-shadow: 0 18px 42px rgba(55, 27, 105, 0.18);
 }
 
 .promoteAction {
@@ -31,23 +35,47 @@
   .overviewDeck {
     width: 100%;
     margin-top: 10px;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
-  .promoteTile {
-    aspect-ratio: auto;
-    min-height: 124px;
-    padding: 13px;
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
+  .overviewDeck .promoteTile {
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+  }
+
+  .overviewDeck .promoteTile > div:first-child {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 17px;
+  }
+
+  .overviewDeck .promoteTile h2 {
+    margin-top: 2px;
+    font-size: 14px;
+  }
+
+  .overviewDeck .promoteTile p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .promoteAction {
-    grid-column: 1 / -1;
-    margin-top: 0;
+    width: 100%;
+    min-height: 34px;
+    margin-top: auto;
+    padding-inline: 7px;
+    font-size: 8px;
   }
 
   .quickActionsOrdered {
@@ -56,5 +84,19 @@
 
   .quickActionsOrdered > a:first-child {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 370px) {
+  .overviewDeck {
+    gap: 7px;
+  }
+
+  .overviewDeck .promoteTile {
+    padding: 9px;
+  }
+
+  .overviewDeck .promoteTile p {
+    -webkit-line-clamp: 2;
   }
 }

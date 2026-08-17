@@ -8,7 +8,14 @@ import { clearActiveAccount, saveActiveAccount } from "../lib/active-account";
 type SavedUser = { display_name?: string; full_name?: string | null; business_name?: string | null };
 type Activity = { id: number; type: string; name: string; external_dealer_id?: number | null; logo_url?: string | null };
 type Membership = { type: string; name: string; external_dealer_id?: number | null; role?: string; logo_url?: string | null };
-type ActivitiesResponse = { success?: boolean; activities?: Activity[]; memberships?: Membership[] };
+type ActivityMembership = { activity_id: number; type: string; name: string; role?: string; status?: string; logo_url?: string | null };
+type ActivitiesResponse = {
+  success?: boolean;
+  activities?: Activity[];
+  memberships?: Membership[];
+  activity_memberships?: ActivityMembership[];
+};
+type MutationResponse = { success?: boolean; message?: string };
 
 function tokenHeaders(): Record<string, string> {
   const token = typeof window === "undefined" ? "" : localStorage.getItem("chakod_session_token") || "";
@@ -33,6 +40,7 @@ function roleLabel(role?: string) {
   if (role === "sales") return "فروش";
   if (role === "content") return "محتوا";
   if (role === "finance") return "مالی";
+  if (role === "viewer") return "ناظر";
   return "عضو مجموعه";
 }
 function manageHref(item: { type: string; id?: number; external_dealer_id?: number | null }) {
@@ -49,6 +57,8 @@ export default function MobileAccountSwitcher() {
   const [loaded, setLoaded] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [activityMemberships, setActivityMemberships] = useState<ActivityMembership[]>([]);
+  const [acceptingActivityId, setAcceptingActivityId] = useState<number | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const shellRef = useRef<HTMLDivElement | null>(null);
   const user = typeof window === "undefined" ? null : readUser();
@@ -60,8 +70,6 @@ export default function MobileAccountSwitcher() {
     void (async () => {
       setLoading(true);
       try {
-        // Import an explicitly typed legacy professional business before reading the switcher list.
-        // The server accepts only authenticated non-dealer profile types, so no business is inferred by name.
         await fetch("/api/auth/sync-legacy-professional-activity", {
           method: "POST",
           credentials: "include",
@@ -82,6 +90,7 @@ export default function MobileAccountSwitcher() {
         if (response.ok && json.success) {
           setActivities(Array.isArray(json.activities) ? json.activities : []);
           setMemberships(Array.isArray(json.memberships) ? json.memberships : []);
+          setActivityMemberships(Array.isArray(json.activity_memberships) ? json.activity_memberships : []);
         }
       } catch {
         // Keep the personal account and fixed actions available even if the list cannot load.
@@ -98,6 +107,41 @@ export default function MobileAccountSwitcher() {
     window.addEventListener("chakod:auth-changed", close);
     return () => window.removeEventListener("chakod:auth-changed", close);
   }, []);
+
+  async function acceptActivityMembership(membership: ActivityMembership) {
+    if (acceptingActivityId || membership.status !== "invited") return;
+    setAcceptingActivityId(membership.activity_id);
+    try {
+      const response = await fetch("/api/auth/account-activity-team", {
+        method: "POST",
+        credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...tokenHeaders() },
+        body: JSON.stringify({ action: "accept_invite", activity_id: membership.activity_id }),
+      });
+      const payload = await response.json() as MutationResponse;
+      if (!response.ok || !payload.success) {
+        window.alert(payload.message || "پذیرش دعوت انجام نشد.");
+        return;
+      }
+      saveActiveAccount({
+        kind: "activity",
+        id: membership.activity_id,
+        type: membership.type,
+        name: membership.name,
+        role: membership.role,
+        logo_url: membership.logo_url,
+      });
+      setActivityMemberships((current) => current.map((item) =>
+        item.activity_id === membership.activity_id ? { ...item, status: "active" } : item,
+      ));
+      setOpen(false);
+      window.location.assign(`/account-v2/businesses/${membership.activity_id}`);
+    } catch {
+      window.alert("ارتباط با سرویس تیم برقرار نشد.");
+    } finally {
+      setAcceptingActivityId(null);
+    }
+  }
 
   async function logout() {
     if (loggingOut) return;
@@ -133,11 +177,27 @@ export default function MobileAccountSwitcher() {
           <span className="mobileAccountRowIcon"><PersonIcon /></span>
           <span><strong>حساب شخصی</strong><small>{displayName}</small></span>
         </Link>
-        {loading && activities.length === 0 && memberships.length === 0 ? <div className="mobileAccountLoading">در حال دریافت کسب‌وکارها…</div> : null}
-        {activities.map(activity => <Link key={`activity-${activity.id}`} href={manageHref(activity)} className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "activity", id: activity.id, type: activity.type, name: activity.name, external_dealer_id: activity.external_dealer_id, logo_url: activity.logo_url }); setOpen(false); }}>
+        {loading && activities.length === 0 && memberships.length === 0 && activityMemberships.length === 0 ? <div className="mobileAccountLoading">در حال دریافت کسب‌وکارها…</div> : null}
+        {activities.map(activity => <Link key={`activity-${activity.id}`} href={manageHref(activity)} className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "activity", id: activity.id, type: activity.type, name: activity.name, role: "owner", external_dealer_id: activity.external_dealer_id, logo_url: activity.logo_url }); setOpen(false); }}>
           <span className="mobileAccountRowIcon">▣</span>
-          <span><strong>{activity.name}</strong><small>{accountLabel(activity.type)}</small></span>
+          <span><strong>{activity.name}</strong><small>{accountLabel(activity.type)} · مالک</small></span>
         </Link>)}
+        {activityMemberships.map((membership) => membership.status === "active" ? (
+          <Link key={`activity-member-${membership.activity_id}`} href={`/account-v2/businesses/${membership.activity_id}`} className="mobileAccountRow" role="menuitem" onClick={() => { saveActiveAccount({ kind: "activity", id: membership.activity_id, type: membership.type, name: membership.name, role: membership.role, logo_url: membership.logo_url }); setOpen(false); }}>
+            <span className="mobileAccountRowIcon">▣</span>
+            <span><strong>{membership.name}</strong><small>{accountLabel(membership.type)} · {roleLabel(membership.role)}</small></span>
+          </Link>
+        ) : membership.status === "invited" ? (
+          <button key={`activity-invite-${membership.activity_id}`} type="button" className="mobileAccountRow mobileAccountInvite" role="menuitem" disabled={Boolean(acceptingActivityId)} onClick={() => void acceptActivityMembership(membership)}>
+            <span className="mobileAccountRowIcon">＋</span>
+            <span><strong>{membership.name}</strong><small>{acceptingActivityId === membership.activity_id ? "در حال پذیرش دعوت…" : `دعوت ${roleLabel(membership.role)} · برای پذیرش لمس کنید`}</small></span>
+          </button>
+        ) : (
+          <div key={`activity-disabled-${membership.activity_id}`} className="mobileAccountRow mobileAccountDisabled" aria-disabled="true">
+            <span className="mobileAccountRowIcon">▣</span>
+            <span><strong>{membership.name}</strong><small>{roleLabel(membership.role)} · دسترسی غیرفعال</small></span>
+          </div>
+        ))}
         {memberships.map((membership, index) => <Link key={`membership-${membership.external_dealer_id || index}`} href={manageHref(membership)} className="mobileAccountRow" role="menuitem" onClick={() => { if (membership.external_dealer_id) saveActiveAccount({ kind: "membership", type: membership.type, name: membership.name, external_dealer_id: membership.external_dealer_id, role: membership.role, logo_url: membership.logo_url }); setOpen(false); }}>
           <span className="mobileAccountRowIcon">▣</span>
           <span><strong>{membership.name}</strong><small>{accountLabel(membership.type)} · {roleLabel(membership.role)}</small></span>
@@ -151,6 +211,6 @@ export default function MobileAccountSwitcher() {
       </div>
     </> : null}
 
-    <style>{`.mobileAccountSwitcher{position:static;width:100%;height:100%}.mobileAccountTrigger{width:100%;height:56px;min-width:0;padding:4px 2px;border:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:inherit;background:transparent;font-family:inherit;cursor:pointer}.mobileAccountTrigger svg{width:24px;height:24px}.mobileAccountTrigger span{font-size:10px;font-weight:900;line-height:1.3}.mobileAccountBackdrop{position:fixed;inset:0;z-index:2147483645;border:0;background:rgba(29,16,43,.18);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}.mobileAccountSheet{position:fixed;right:10px;bottom:calc(96px + env(safe-area-inset-bottom,0px));left:10px;z-index:2147483646;width:auto;max-width:520px;max-height:min(64vh,560px);margin-inline:auto;overflow-y:auto;padding:10px;border:1px solid #e8def5;border-radius:22px;color:#211633;background:rgba(255,255,255,.985);box-shadow:0 24px 70px rgba(38,20,58,.28);animation:mobileAccountSheetIn 180ms ease-out both}.mobileAccountHandle{width:42px;height:4px;margin:1px auto 8px;border-radius:999px;background:#ddd2e8}.mobileAccountTitle{padding:2px 8px 8px;font-size:12px;font-weight:950;color:#2f1c42}.mobileAccountRow{width:100%;min-height:52px;padding:7px 9px;border:0;border-radius:13px;display:flex;align-items:center;gap:10px;color:#493a55;background:transparent;font-family:inherit;text-align:right;text-decoration:none;cursor:pointer}.mobileAccountRow:active{background:#f7f2fd}.mobileAccountRowIcon{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#6d28d9;background:#f2ebff;font-size:15px}.mobileAccountRowIcon svg{width:20px;height:20px}.mobileAccountRow>span:last-child{min-width:0;display:block;flex:1}.mobileAccountRow strong,.mobileAccountRow small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobileAccountRow strong{font-size:12px;font-weight:900}.mobileAccountRow small{margin-top:2px;color:#8b7d95;font-size:9.5px}.mobileAccountLoading{padding:9px 12px;color:#8b7d95;font-size:10px}.mobileAccountAdd{margin-top:5px;border-top:1px solid #eee7f6;border-radius:0;color:#6422b8}.mobileAccountLogout{margin-top:2px;border-top:1px solid #f1e9f7;border-radius:0 0 13px 13px;color:#b42318}.mobileAccountLogout:disabled{opacity:.6}@keyframes mobileAccountSheetIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    <style>{`.mobileAccountSwitcher{position:static;width:100%;height:100%}.mobileAccountTrigger{width:100%;height:56px;min-width:0;padding:4px 2px;border:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:inherit;background:transparent;font-family:inherit;cursor:pointer}.mobileAccountTrigger svg{width:24px;height:24px}.mobileAccountTrigger span{font-size:10px;font-weight:900;line-height:1.3}.mobileAccountBackdrop{position:fixed;inset:0;z-index:2147483645;border:0;background:rgba(29,16,43,.18);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}.mobileAccountSheet{position:fixed;right:10px;bottom:calc(96px + env(safe-area-inset-bottom,0px));left:10px;z-index:2147483646;width:auto;max-width:520px;max-height:min(64vh,560px);margin-inline:auto;overflow-y:auto;padding:10px;border:1px solid #e8def5;border-radius:22px;color:#211633;background:rgba(255,255,255,.985);box-shadow:0 24px 70px rgba(38,20,58,.28);animation:mobileAccountSheetIn 180ms ease-out both}.mobileAccountHandle{width:42px;height:4px;margin:1px auto 8px;border-radius:999px;background:#ddd2e8}.mobileAccountTitle{padding:2px 8px 8px;font-size:12px;font-weight:950;color:#2f1c42}.mobileAccountRow{width:100%;min-height:52px;padding:7px 9px;border:0;border-radius:13px;display:flex;align-items:center;gap:10px;color:#493a55;background:transparent;font-family:inherit;text-align:right;text-decoration:none;cursor:pointer}.mobileAccountRow:active{background:#f7f2fd}.mobileAccountRowIcon{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#6d28d9;background:#f2ebff;font-size:15px}.mobileAccountRowIcon svg{width:20px;height:20px}.mobileAccountRow>span:last-child{min-width:0;display:block;flex:1}.mobileAccountRow strong,.mobileAccountRow small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobileAccountRow strong{font-size:12px;font-weight:900}.mobileAccountRow small{margin-top:2px;color:#8b7d95;font-size:9.5px}.mobileAccountLoading{padding:9px 12px;color:#8b7d95;font-size:10px}.mobileAccountInvite{color:#5b21b6;background:#faf7ff}.mobileAccountInvite:disabled{opacity:.65}.mobileAccountDisabled{cursor:default;opacity:.62}.mobileAccountAdd{margin-top:5px;border-top:1px solid #eee7f6;border-radius:0;color:#6422b8}.mobileAccountLogout{margin-top:2px;border-top:1px solid #f1e9f7;border-radius:0 0 13px 13px;color:#b42318}.mobileAccountLogout:disabled{opacity:.6}@keyframes mobileAccountSheetIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}`}</style>
   </div>;
 }

@@ -21,6 +21,8 @@ const migrations = [
   "drizzle/0002_content_articles.sql",
   "drizzle/0003_business_verifications.sql",
   "drizzle/0004_account_activities.sql",
+  "drizzle/0005_selected_showroom_content.sql",
+  "drizzle/0006_account_activity_members.sql",
 ];
 
 const expectedTables = [
@@ -37,6 +39,8 @@ const expectedTables = [
   "content_articles",
   "business_verification_requests",
   "account_activities",
+  "selected_showroom_content",
+  "account_activity_members",
 ];
 
 function run(args) {

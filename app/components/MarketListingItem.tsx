@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDualYear } from "../../lib/date-display";
 import ListingCard from "./ListingCard";
 import ListingCardImage from "./ListingCardImage";
 import type { CatalogListing } from "../ads/[segment]/catalog-types";
@@ -41,11 +42,6 @@ function formatPrice(price?: number | null) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
 
-function formatYear(year?: number | null) {
-  if (!year) return "سال نامشخص";
-  return `مدل ${new Intl.NumberFormat("fa-IR", { useGrouping: false }).format(year)}`;
-}
-
 function formatMileage(mileage?: number | null) {
   if (mileage === null || mileage === undefined) return "کارکرد نامشخص";
   if (Number(mileage) === 0) return "صفر کیلومتر";
@@ -53,7 +49,7 @@ function formatMileage(mileage?: number | null) {
 }
 
 function sellerLabel(listing: CatalogListing) {
-  if (listing.dealer_name?.trim()) return listing.dealer_name.trim();
+  if (listing.dealer_name?.trim()) return `نمایشگاه: ${listing.dealer_name.trim()}`;
   if (listing.seller_type === "dealer") return "نمایشگاه خودرو";
   if (listing.seller_type === "freezone_operator") return "فعال منطقه آزاد";
   return "فروشنده شخصی";
@@ -96,7 +92,7 @@ export default function MarketListingItem({ listing, tone, badge }: Props) {
             <h3 className={styles.title}>{title}</h3>
             {vehicleName ? <span className={styles.vehicleName}>{vehicleName}</span> : null}
             <span className={styles.facts}>
-              {formatYear(listing.production_year)} · {formatMileage(listing.mileage_km)}
+              مدل {formatDualYear(listing.production_year)} · {formatMileage(listing.mileage_km)}
             </span>
             <span className={styles.location}>{location}</span>
             <strong className={styles.price}>{formatPrice(listing.price_toman)}</strong>

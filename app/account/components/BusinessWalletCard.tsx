@@ -198,7 +198,7 @@ export default function BusinessWalletCard({
       </div>
 
       <div className={styles.actions}>
-        <Link className={styles.primary} href="/account/wallet">مدیریت کیف پول</Link>
+        <Link className={styles.primary} href="/account/wallet?transfer=1">کیف پول و انتقال</Link>
         <Link className={styles.secondary} href="/account/payments/checkout?type=wallet_charge">افزایش موجودی</Link>
       </div>
     </section>

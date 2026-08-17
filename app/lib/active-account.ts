@@ -5,6 +5,7 @@ export type ActiveAccountSelection =
       id: number;
       type: string;
       name: string;
+      role?: string;
       external_dealer_id?: number | null;
       logo_url?: string | null;
     }
@@ -63,6 +64,7 @@ export function readActiveAccount(): ActiveAccountSelection {
           id,
           type,
           name,
+          role: typeof parsed.role === "string" ? parsed.role : undefined,
           external_dealer_id: Number(parsed.external_dealer_id || 0) || null,
           logo_url: typeof parsed.logo_url === "string" ? parsed.logo_url : null,
         };

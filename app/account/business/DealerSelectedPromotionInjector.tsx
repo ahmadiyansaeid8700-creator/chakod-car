@@ -5,13 +5,71 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 
+import BusinessWalletCard from "../components/BusinessWalletCard";
 import styles from "./dealer-selected-promotion.module.css";
+
+type DealerResponse = {
+  success?: boolean;
+  role?: string;
+  dealer?: {
+    id: number;
+    name: string;
+  };
+};
+
+function authHeaders(): Record<string, string> {
+  const token = typeof window === "undefined" ? "" : localStorage.getItem("chakod_session_token") || "";
+  return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
+}
+
+async function readJson<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  try {
+    return text ? (JSON.parse(text) as T) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function DealerSelectedPromotionInjector() {
   const searchParams = useSearchParams();
   const dealerId = Math.max(0, Math.round(Number(searchParams.get("dealer_id") || 0)));
   const activeTab = searchParams.get("tab") || "overview";
   const [mount, setMount] = useState<HTMLElement | null>(null);
+  const [dealer, setDealer] = useState<{ id: number; name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== "overview") {
+      setDealer(null);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const query = dealerId ? `?dealer_id=${dealerId}` : "";
+        const response = await fetch(`/api/auth/dealer-command-center${query}`, {
+          cache: "no-store",
+          credentials: "include",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const payload = await readJson<DealerResponse>(response);
+        if (!cancelled && response.ok && payload?.success && payload.dealer?.id) {
+          setDealer({
+            id: payload.dealer.id,
+            name: payload.dealer.name || "نمایشگاه",
+            role: payload.role || "viewer",
+          });
+        }
+      } catch {
+        if (!cancelled) setDealer(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, dealerId]);
 
   useEffect(() => {
     let currentMount: HTMLElement | null = null;
@@ -94,13 +152,24 @@ export default function DealerSelectedPromotionInjector() {
     };
   }, [activeTab, dealerId]);
 
-  const selectedHref = dealerId
-    ? `/account/selected?placement=showroom&dealer_id=${dealerId}`
+  const effectiveDealerId = dealer?.id || dealerId;
+  const selectedHref = effectiveDealerId
+    ? `/account/selected?placement=showroom&dealer_id=${effectiveDealerId}`
     : "/account/selected";
 
   const promotion = mount
     ? createPortal(
         <section className={styles.promotionGrid} aria-label="ابزارهای تبلیغ نمایشگاه">
+          {dealer ? (
+            <BusinessWalletCard
+              accountName={dealer.name}
+              accountType="dealer"
+              externalDealerId={dealer.id}
+              role={dealer.role}
+              compact
+            />
+          ) : null}
+
           <Link href={selectedHref} className={`${styles.promoTile} ${styles.selectedTile}`}>
             <span className={styles.tileIcon} aria-hidden="true">✦</span>
             <div className={styles.tileCopy}>

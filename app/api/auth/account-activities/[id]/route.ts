@@ -3,8 +3,11 @@ import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../../db";
 import { accountActivities } from "../../../../../db/schema";
+import {
+  getAccountActivityMembership,
+  readAccountActivityTeamIdentity,
+} from "../../../../../lib/account-activity-team";
 import { jsonResponse, rejectCrossSiteMutation } from "../../../../../lib/chakod-auth-proxy";
-import { readServerIdentity } from "../../../../../lib/server-route-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,13 +29,10 @@ function normalizePhone(value: unknown) {
   if (phone.startsWith("98") && phone.length === 12) phone = `0${phone.slice(2)}`;
   return phone.slice(0, 16);
 }
-async function readUserId() {
-  const raw: unknown = await readServerIdentity("/api/me.php");
-  if (!isRecord(raw) || raw.success !== true || !isRecord(raw.user)) return 0;
-  const id = Math.round(Number(raw.user.id || 0));
-  return Number.isSafeInteger(id) && id > 0 ? id : 0;
-}
-function publicActivity(row: typeof accountActivities.$inferSelect) {
+function publicActivity(
+  row: typeof accountActivities.$inferSelect,
+  access: { role: string; isOwner: boolean; canManage: boolean },
+) {
   return {
     id: row.id,
     type: row.activityType,
@@ -45,6 +45,33 @@ function publicActivity(row: typeof accountActivities.$inferSelect) {
     external_dealer_id: row.externalDealerId,
     status: row.status,
     verification_status: row.verificationStatus,
+    access_role: access.role,
+    is_owner: access.isOwner,
+    can_manage: access.canManage,
+  };
+}
+
+async function resolveAccess(id: number) {
+  const identity = await readAccountActivityTeamIdentity();
+  if (!identity) return null;
+  const [row] = await getDb().select().from(accountActivities).where(eq(accountActivities.id, id)).limit(1);
+  if (!row) return { identity, row: null, role: "", isOwner: false, canManage: false };
+
+  if (row.ownerUserId === identity.id) {
+    return { identity, row, role: "owner", isOwner: true, canManage: true };
+  }
+  if (row.activityType === "dealer") {
+    return { identity, row, role: "", isOwner: false, canManage: false };
+  }
+
+  const membership = await getAccountActivityMembership(id, identity);
+  const active = membership?.status === "active";
+  return {
+    identity,
+    row,
+    role: active ? membership?.role || "viewer" : membership?.status === "invited" ? "invited" : "",
+    isOwner: false,
+    canManage: active && membership?.role === "manager",
   };
 }
 
@@ -52,17 +79,29 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const userId = await readUserId();
-  if (!userId) return jsonResponse({ success: false, message: "برای مشاهده کسب‌وکار وارد حساب شوید." }, 401);
   const { id: rawId } = await context.params;
   const id = Math.round(Number(rawId || 0));
   if (!Number.isSafeInteger(id) || id <= 0) return jsonResponse({ success: false, message: "شناسه کسب‌وکار معتبر نیست." }, 400);
 
   try {
-    const [row] = await getDb().select().from(accountActivities)
-      .where(and(eq(accountActivities.id, id), eq(accountActivities.ownerUserId, userId))).limit(1);
-    if (!row) return jsonResponse({ success: false, message: "کسب‌وکار پیدا نشد." }, 404);
-    return jsonResponse({ success: true, activity: publicActivity(row) });
+    const access = await resolveAccess(id);
+    if (!access) return jsonResponse({ success: false, message: "برای مشاهده کسب‌وکار وارد حساب شوید." }, 401);
+    if (!access.row) return jsonResponse({ success: false, message: "کسب‌وکار پیدا نشد." }, 404);
+    if (!access.role || access.role === "invited") {
+      return jsonResponse({
+        success: false,
+        message: access.role === "invited" ? "ابتدا دعوت عضویت در این مجموعه را قبول کنید." : "به این کسب‌وکار دسترسی ندارید.",
+        invitation_pending: access.role === "invited",
+      }, 403);
+    }
+    return jsonResponse({
+      success: true,
+      activity: publicActivity(access.row, {
+        role: access.role,
+        isOwner: access.isOwner,
+        canManage: access.canManage,
+      }),
+    });
   } catch {
     return jsonResponse({ success: false, message: "اطلاعات کسب‌وکار در دسترس نیست." }, 503);
   }
@@ -75,11 +114,14 @@ export async function PATCH(
   const rejected = rejectCrossSiteMutation(request);
   if (rejected) return rejected;
 
-  const userId = await readUserId();
-  if (!userId) return jsonResponse({ success: false, message: "برای ویرایش کسب‌وکار وارد حساب شوید." }, 401);
   const { id: rawId } = await context.params;
   const id = Math.round(Number(rawId || 0));
   if (!Number.isSafeInteger(id) || id <= 0) return jsonResponse({ success: false, message: "شناسه کسب‌وکار معتبر نیست." }, 400);
+
+  const access = await resolveAccess(id);
+  if (!access) return jsonResponse({ success: false, message: "برای ویرایش کسب‌وکار وارد حساب شوید." }, 401);
+  if (!access.row) return jsonResponse({ success: false, message: "کسب‌وکار پیدا نشد." }, 404);
+  if (!access.canManage) return jsonResponse({ success: false, message: "اجازه ویرایش اطلاعات این مجموعه را ندارید." }, 403);
 
   let input: Record<string, unknown>;
   try {
@@ -98,15 +140,11 @@ export async function PATCH(
   if (name.length < 2 || !province || !city) {
     return jsonResponse({ success: false, message: "نام، استان و شهر را کامل کنید." }, 422);
   }
+  if (access.row.activityType === "dealer") {
+    return jsonResponse({ success: false, message: "اطلاعات نمایشگاه از مرکز فرمان نمایشگاه ویرایش می‌شود." }, 409);
+  }
 
   try {
-    const [existing] = await getDb().select().from(accountActivities)
-      .where(and(eq(accountActivities.id, id), eq(accountActivities.ownerUserId, userId))).limit(1);
-    if (!existing) return jsonResponse({ success: false, message: "کسب‌وکار پیدا نشد." }, 404);
-    if (existing.activityType === "dealer") {
-      return jsonResponse({ success: false, message: "اطلاعات نمایشگاه از مرکز فرمان نمایشگاه ویرایش می‌شود." }, 409);
-    }
-
     await getDb().update(accountActivities).set({
       name,
       phone,
@@ -115,10 +153,14 @@ export async function PATCH(
       neighborhood,
       address,
       updatedAt: sql`CURRENT_TIMESTAMP`,
-    }).where(and(eq(accountActivities.id, id), eq(accountActivities.ownerUserId, userId)));
+    }).where(eq(accountActivities.id, id));
 
     const [row] = await getDb().select().from(accountActivities).where(eq(accountActivities.id, id)).limit(1);
-    return jsonResponse({ success: true, message: "اطلاعات کسب‌وکار ذخیره شد.", activity: row ? publicActivity(row) : null });
+    return jsonResponse({
+      success: true,
+      message: "اطلاعات کسب‌وکار ذخیره شد.",
+      activity: row ? publicActivity(row, { role: access.role, isOwner: access.isOwner, canManage: access.canManage }) : null,
+    });
   } catch {
     return jsonResponse({ success: false, message: "ذخیره اطلاعات کسب‌وکار انجام نشد." }, 503);
   }

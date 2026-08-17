@@ -215,9 +215,9 @@ export default function PersonalAccountClient() {
             <div><strong>ویرایش اطلاعات</strong><small>نام و اطلاعات پایه حساب</small></div>
             <b aria-hidden="true">‹</b>
           </Link>
-          <Link href="/account/payments" className={styles.action}>
+          <Link href="/account/wallet" className={styles.action}>
             <span className={styles.actionIcon}>▤</span>
-            <div><strong>پرداخت‌ها</strong><small>سوابق و وضعیت پرداخت‌ها</small></div>
+            <div><strong>کیف پول</strong><small>موجودی، شارژ و تراکنش‌ها</small></div>
             <b aria-hidden="true">‹</b>
           </Link>
         </section>

@@ -38,6 +38,7 @@ type Props = {
   role?: string;
   activityId?: number;
   externalDealerId?: number;
+  compact?: boolean;
 };
 
 function authHeaders(): Record<string, string> {
@@ -77,6 +78,7 @@ export default function BusinessWalletCard({
   role,
   activityId,
   externalDealerId,
+  compact = false,
 }: Props) {
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,7 +174,7 @@ export default function BusinessWalletCard({
   }, [accountName, accountType, activityId, externalDealerId, role]);
 
   return (
-    <section className={styles.card} aria-label="کیف پول این حساب">
+    <section className={`${styles.card} ${compact ? styles.compact : ""}`} aria-label="کیف پول این حساب">
       <div className={styles.copy}>
         <span className={styles.eyebrow}>کیف پول این حساب</span>
         <div className={styles.titleRow}>

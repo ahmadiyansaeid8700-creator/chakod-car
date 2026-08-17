@@ -27,8 +27,104 @@
   margin-top: auto;
 }
 
-.quickActionsOrdered {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+.factGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.factGrid article {
+  min-width: 0;
+}
+
+.factGrid article > div {
+  min-width: 0;
+}
+
+.factGrid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.managementCard {
+  margin-bottom: 18px;
+}
+
+.managementIcon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #0a7458;
+  background: linear-gradient(145deg, #ecfaf4, #e3f5ed);
+  box-shadow: inset 0 0 0 1px rgba(11, 115, 87, 0.08);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.managementLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.managementLinks a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(111, 40, 217, 0.12);
+  border-radius: 13px;
+  color: #5d347b;
+  background: #fbf8ff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tabPanel {
+  margin-top: 11px;
+  padding-bottom: 18px;
+}
+
+.profileTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.profileTabs a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(111, 40, 217, 0.15);
+  border-radius: 14px;
+  color: #654b77;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(66, 31, 99, 0.05);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profileTabs .profileTabActive {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #6421bd, #8a36ed);
+  box-shadow: 0 10px 24px rgba(111, 40, 217, 0.2);
+}
+
+@media (max-width: 760px) {
+  .factGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {
@@ -78,12 +174,31 @@
     font-size: 8px;
   }
 
-  .quickActionsOrdered {
+  .factGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .quickActionsOrdered > a:first-child {
-    grid-column: auto;
+  .factGrid article {
+    min-height: 82px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .factGrid strong {
+    font-size: 12px;
+  }
+
+  .managementLinks {
+    grid-template-columns: 1fr;
+  }
+
+  .managementLinks a {
+    min-height: 44px;
+  }
+
+  .profileTabs a {
+    min-height: 44px;
+    font-size: 10px;
   }
 }
 

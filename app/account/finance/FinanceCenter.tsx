@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { formatDualDate } from "../../../lib/date-display";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./FinanceCenter.module.css";
 
@@ -120,11 +121,7 @@ function formatToman(value: number) {
 }
 
 function formatDate(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return value ? formatDualDate(value, true) : "";
 }
 
 function authHeaders(): Record<string, string> {

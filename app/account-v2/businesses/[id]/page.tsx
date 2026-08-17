@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import BusinessWalletCard from "../../../account/components/BusinessWalletCard";
 import MobileBottomNav from "../../../components/MobileBottomNav";
 import BusinessResumeEditor from "./BusinessResumeEditor";
 import BusinessTeamPanel from "./BusinessTeamPanel";
+import orderStyles from "./BusinessOrder.module.css";
 import styles from "./page.module.css";
 
 type Activity = {
@@ -187,25 +189,35 @@ export default function BusinessActivityPage() {
               </div>
             </section>
 
+            <div className={orderStyles.overviewDeck} aria-label="دسترسی‌های اصلی مجموعه">
+              <BusinessWalletCard
+                accountName={activity.name}
+                accountType={activity.type}
+                activityId={activity.id}
+                role={activity.access_role}
+                compact
+              />
+
+              {activity.can_manage ? (
+                <section className={`${styles.promoteCard} ${orderStyles.promoteTile}`}>
+                  <div className={styles.promoteIcon} aria-hidden="true">✦</div>
+                  <div className={styles.promoteCopy}>
+                    <span>جایگاه ویژه</span>
+                    <h2>تبلیغ {activity.name}</h2>
+                    <p>رزومه و ویترین این مجموعه را در بخش منتخب صفحه اول چاکود بالاتر از نمایش عادی به کاربران نشان بده.</p>
+                  </div>
+                  <Link href="/account/selected" className={`${styles.promoteButton} ${orderStyles.promoteAction}`}>تبلیغ این مجموعه</Link>
+                </section>
+              ) : null}
+            </div>
+
             <section className={styles.statusGrid} aria-label="وضعیت مجموعه">
               <div><strong>{statusLabel(activity.status)}</strong><span>وضعیت فعالیت</span></div>
               <div><strong>{verificationLabel(activity.verification_status)}</strong><span>وضعیت تأیید</span></div>
               <div><strong>{activity.phone || "ثبت نشده"}</strong><span>شماره تماس</span></div>
             </section>
 
-            {activity.can_manage ? (
-              <section className={styles.promoteCard}>
-                <div className={styles.promoteIcon} aria-hidden="true">✦</div>
-                <div className={styles.promoteCopy}>
-                  <span>جایگاه ویژه</span>
-                  <h2>تبلیغ {activity.name}</h2>
-                  <p>رزومه و ویترین این مجموعه را در بخش منتخب صفحه اول چاکود بالاتر از نمایش عادی به کاربران نشان بده.</p>
-                </div>
-                <Link href="/account/selected" className={styles.promoteButton}>تبلیغ این مجموعه</Link>
-              </section>
-            ) : null}
-
-            <section className={styles.quickActions}>
+            <section className={`${styles.quickActions} ${orderStyles.quickActionsOrdered}`}>
               {activity.is_owner ? (
                 <a href="#business-resume" className={styles.quickAction}>
                   <span>▦</span><div><strong>رزومه و آلبوم</strong><small>معرفی، تخصص‌ها و نمونه‌کارها</small></div>

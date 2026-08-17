@@ -113,8 +113,11 @@
 }
 
 .compact {
+  width: 100%;
+  min-width: 0;
   aspect-ratio: 1 / 1;
   min-height: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -126,6 +129,11 @@
   background: linear-gradient(145deg, #321469, #552392 58%, #7440c0);
   box-shadow: 0 18px 42px rgba(61, 31, 111, 0.16);
   color: #fff;
+  overflow: hidden;
+}
+
+.compact .copy {
+  min-height: 0;
 }
 
 .compact .eyebrow {
@@ -152,18 +160,21 @@
 }
 
 .compact .balance {
-  margin-top: 11px;
+  margin-top: 10px;
   color: #fff;
   font-size: 21px;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .compact .meta {
-  display: grid;
-  gap: 4px;
+  display: block;
   margin-top: 7px;
   color: #d9cfee;
   font-size: 9px;
+}
+
+.compact .meta span:first-child {
+  display: none;
 }
 
 .compact .meta b {
@@ -172,8 +183,9 @@
 
 .compact .actions {
   grid-template-columns: 1fr;
-  gap: 7px;
+  gap: 0;
   min-width: 0;
+  margin-top: auto;
 }
 
 .compact .primary,
@@ -191,9 +203,7 @@
 }
 
 .compact .secondary {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.11);
-  color: #fff;
+  display: none;
 }
 
 .compact .state {
@@ -278,10 +288,6 @@
     min-height: 34px;
     padding: 0 10px;
     font-size: 8.5px;
-  }
-
-  .compact .secondary {
-    display: none;
   }
 
   .compact .state {

@@ -19,9 +19,27 @@ export type ActiveAccountSelection =
 
 export const ACTIVE_ACCOUNT_STORAGE_KEY = "chakod_active_account";
 export const ACTIVE_ACCOUNT_EVENT = "chakod:active-account-changed";
+export const ACTIVE_ACCOUNT_FINANCE_SCOPE_COOKIE = "chakod_finance_account_scope";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+export function financeScopeForAccount(selection: ActiveAccountSelection) {
+  if (selection.kind === "activity") return `activity:${selection.id}`;
+  if (selection.kind === "membership") return `membership:${selection.external_dealer_id}`;
+  return "personal";
+}
+
+export function activeAccountLabel(selection: ActiveAccountSelection) {
+  if (selection.kind === "personal") return "حساب شخصی";
+  return selection.name?.trim() || "حساب کسب‌وکار";
+}
+
+export function syncActiveAccountFinanceScope(selection: ActiveAccountSelection) {
+  if (typeof document === "undefined") return;
+  const scope = encodeURIComponent(financeScopeForAccount(selection));
+  document.cookie = `${ACTIVE_ACCOUNT_FINANCE_SCOPE_COOKIE}=${scope}; Path=/; Max-Age=31536000; SameSite=Lax`;
 }
 
 export function readActiveAccount(): ActiveAccountSelection {
@@ -76,11 +94,13 @@ export function readActiveAccount(): ActiveAccountSelection {
 export function saveActiveAccount(selection: ActiveAccountSelection) {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACTIVE_ACCOUNT_STORAGE_KEY, JSON.stringify(selection));
+  syncActiveAccountFinanceScope(selection);
   window.dispatchEvent(new CustomEvent<ActiveAccountSelection>(ACTIVE_ACCOUNT_EVENT, { detail: selection }));
 }
 
 export function clearActiveAccount() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACTIVE_ACCOUNT_STORAGE_KEY);
+  syncActiveAccountFinanceScope({ kind: "personal" });
   window.dispatchEvent(new CustomEvent<ActiveAccountSelection>(ACTIVE_ACCOUNT_EVENT, { detail: { kind: "personal" } }));
 }

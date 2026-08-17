@@ -1,5 +1,5 @@
-import FinanceCenter from "../finance/FinanceCenter";
+import WalletClient from "./WalletClient";
 
 export default function AccountWalletPage() {
-  return <FinanceCenter mode="wallet" />;
+  return <WalletClient />;
 }

@@ -15,6 +15,11 @@ import {
   getFinanceOwnerKey,
 } from "../../../../lib/finance-core";
 import {
+  getInstagramStoryCapacitySnapshot,
+  instagramStoryEligibility,
+  syncInstagramStoryCandidate,
+} from "../../../../lib/instagram-story-publishing";
+import {
   isUsableListingPhone,
   normalizeListingPhone,
 } from "../../../../lib/listing-publication-policy";
@@ -211,6 +216,21 @@ function previewPayload(listing: ManagedListing) {
   };
 }
 
+async function instagramPreview(listing: ReturnType<typeof previewPayload>) {
+  const eligibility = instagramStoryEligibility(listing.price_toman, listing.cover_image_url);
+  try {
+    return {
+      ...eligibility,
+      capacity: await getInstagramStoryCapacitySnapshot(),
+    };
+  } catch {
+    return {
+      ...eligibility,
+      capacity: null,
+    };
+  }
+}
+
 export async function GET(request: NextRequest) {
   const ownerKey = await getFinanceOwnerKey(request);
   if (!ownerKey) return jsonResponse({ success: false, message: "برای ساخت استوری وارد حساب شوید." }, 401);
@@ -222,11 +242,13 @@ export async function GET(request: NextRequest) {
     const owned = await loadOwnedActiveListing(request, listingId);
     if ("error" in owned) return jsonResponse({ success: false, message: owned.error }, owned.status);
 
+    const listing = previewPayload(owned.listing);
     const quote = quoteStory(request, request.nextUrl.searchParams.get("discount_code") || "");
     return jsonResponse({
       success: true,
-      listing: previewPayload(owned.listing),
+      listing,
       pricing: quote,
+      instagram: await instagramPreview(listing),
       duration_hours: STORY_DURATION_HOURS,
       test_coupon_available: isTestCouponHost(request.nextUrl.hostname),
     });
@@ -363,6 +385,26 @@ export async function POST(request: NextRequest) {
     const publicStoryId = LOCAL_STORY_ID_BASE + storyId;
     const sharePath = `/stories/${publicStoryId}?ref=double-story`;
     const shareUrl = new URL(sharePath, request.nextUrl.origin).toString();
+    const eligibility = instagramStoryEligibility(listing.price_toman, listing.cover_image_url);
+
+    let instagram: Record<string, unknown> = {
+      ...eligibility,
+      queue_status: eligibility.eligible ? "queue_unavailable" : "ineligible",
+    };
+    try {
+      instagram = await syncInstagramStoryCandidate({
+        storyOrderId: storyId,
+        ownerKey,
+        listingId: listing.id,
+        priceToman: listing.price_toman,
+        title: listing.title,
+        imageUrl: listing.cover_image_url,
+        publicUrl: shareUrl,
+        sourceExpiresAt: expiresAt,
+      });
+    } catch {
+      // Instagram is an optional distribution channel. A queue outage must not undo a paid Chakod story.
+    }
 
     return jsonResponse({
       success: true,
@@ -373,6 +415,7 @@ export async function POST(request: NextRequest) {
       message: "دبل استوری فعال شد؛ حالا لینک عمومی آن را هرجا خواستی منتشر کن.",
       expires_at: expiresAt,
       pricing: quote,
+      instagram,
     });
   } catch {
     return jsonResponse({ success: false, message: "فعال‌سازی استوری انجام نشد. دوباره تلاش کنید." }, 500);

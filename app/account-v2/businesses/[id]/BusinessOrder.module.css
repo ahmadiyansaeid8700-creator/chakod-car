@@ -1,0 +1,60 @@
+.overviewDeck {
+  width: min(560px, 100%);
+  margin-top: 12px;
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.promoteTile {
+  aspect-ratio: 1 / 1;
+  margin-top: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.promoteAction {
+  width: 100%;
+  margin-top: auto;
+}
+
+.quickActionsOrdered {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+@media (max-width: 620px) {
+  .overviewDeck {
+    width: 100%;
+    margin-top: 10px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .promoteTile {
+    aspect-ratio: auto;
+    min-height: 124px;
+    padding: 13px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .promoteAction {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .quickActionsOrdered {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quickActionsOrdered > a:first-child {
+    grid-column: auto;
+  }
+}

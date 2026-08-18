@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
+import AccountVehicleCard from "./components/AccountVehicleCard";
 import styles from "./personal-account.module.css";
 
 type User = {
@@ -19,7 +20,17 @@ type Listing = {
   title?: string | null;
   brand?: string | null;
   model?: string | null;
+  year?: string | number | null;
+  production_year?: string | number | null;
   price_toman?: number | string | null;
+  mileage_km?: number | string | null;
+  color?: string | null;
+  transmission?: string | null;
+  fuel_type?: string | null;
+  city?: string | null;
+  neighborhood?: string | null;
+  submitted_by_display_name?: string | null;
+  submitted_by_role?: string | null;
   status?: string | { code?: string; title?: string } | null;
   cover_image?: { image_id?: number; image_url?: string | null } | null;
 };
@@ -62,18 +73,6 @@ function formatNumber(value: number | string | null | undefined) {
   return Number.isFinite(number) ? new Intl.NumberFormat("fa-IR").format(number) : "۰";
 }
 
-function formatPrice(value: number | string | null | undefined) {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
-  if (number >= 1_000_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(number / 1_000_000_000)} میلیارد تومان`;
-  }
-  if (number >= 1_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(number / 1_000_000)} میلیون تومان`;
-  }
-  return `${formatNumber(number)} تومان`;
-}
-
 function statusCode(status: Listing["status"]) {
   return typeof status === "string"
     ? status.trim().toLowerCase()
@@ -90,19 +89,6 @@ function statusLabel(status: Listing["status"]) {
   if (code === "expired") return "منقضی‌شده";
   if (typeof status === "object" && status?.title) return status.title;
   return "وضعیت نامشخص";
-}
-
-function listingTitle(listing: Listing) {
-  return String(
-    listing.title ||
-      [listing.brand, listing.model].filter(Boolean).join(" ") ||
-      `آگهی ${listing.id}`,
-  );
-}
-
-function listingImage(listing: Listing) {
-  const url = String(listing.cover_image?.image_url || "").trim();
-  return url || "";
 }
 
 export default function PersonalAccountClient() {
@@ -186,10 +172,10 @@ export default function PersonalAccountClient() {
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.back}>صفحه اصلی</Link>
-          <Link href="/" className={styles.logo} aria-label="چاکود">
+          <a href="/" className={styles.back}>صفحه اصلی</a>
+          <a href="/" className={styles.logo} aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
-          </Link>
+          </a>
         </header>
 
         <section className={styles.hero} aria-label="حساب شخصی فعال">
@@ -239,27 +225,36 @@ export default function PersonalAccountClient() {
             </div>
           ) : (
             <div className={styles.listings}>
-              {recent.map((listing) => {
-                const image = listingImage(listing);
-                const code = statusCode(listing.status);
-                return (
-                  <Link key={listing.id} href={`/account/listings/${listing.id}`} className={styles.listingCard}>
-                    <div className={styles.listingMedia}>
-                      {image ? (
-                        <img src={image} alt={listingTitle(listing)} loading="lazy" />
-                      ) : (
-                        <span className={styles.imagePlaceholder} aria-hidden="true">خودرو</span>
-                      )}
-                      <span className={styles.statusBadge} data-status={code}>{statusLabel(listing.status)}</span>
-                    </div>
-                    <div className={styles.listingBody}>
-                      <strong>{listingTitle(listing)}</strong>
-                      <small>{formatPrice(listing.price_toman)}</small>
-                      <span>مدیریت آگهی <b aria-hidden="true">‹</b></span>
-                    </div>
-                  </Link>
-                );
-              })}
+              {recent.map((listing) => (
+                <AccountVehicleCard
+                  key={listing.id}
+                  primaryHref={`/account/listings/${listing.id}`}
+                  data={{
+                    id: listing.id,
+                    title: listing.title,
+                    brand: listing.brand,
+                    model: listing.model,
+                    year: listing.production_year || listing.year,
+                    priceToman: listing.price_toman,
+                    mileageKm: listing.mileage_km,
+                    color: listing.color,
+                    transmission: listing.transmission,
+                    fuelType: listing.fuel_type,
+                    city: listing.city,
+                    neighborhood: listing.neighborhood,
+                    coverImageUrl: listing.cover_image?.image_url,
+                    statusCode: statusCode(listing.status),
+                    statusLabel: statusLabel(listing.status),
+                    submittedByDisplayName: listing.submitted_by_display_name,
+                    submittedByRole: listing.submitted_by_role,
+                    publisherFallback: displayName,
+                  }}
+                  actions={[
+                    { href: `/account/listings/${listing.id}`, label: "مدیریت", tone: "primary" },
+                    { href: `/cars/${listing.id}`, label: "نمایش", tone: "secondary" },
+                  ]}
+                />
+              ))}
             </div>
           )}
         </section>

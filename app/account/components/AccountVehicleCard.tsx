@@ -83,7 +83,6 @@ export default function AccountVehicleCard({
         city: data.city,
         neighborhood: data.neighborhood,
         transmission: data.transmission,
-        body_status: data.color,
         cover_image: data.coverImageUrl,
         seller_type: "personal",
       }}

@@ -45,6 +45,15 @@ type MutationResponse = {
   is_cover?: boolean;
 };
 
+type PendingUpload = {
+  localId: string;
+  fileName: string;
+  previewUrl: string;
+  status: "queued" | "uploading" | "uploaded" | "error";
+  progress: number;
+  error?: string;
+};
+
 const API_BASE = "https://api.chakod.com";
 const MAX_IMAGE_COUNT = 6;
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
@@ -176,8 +185,16 @@ function uploadImage(
     xhr.onload = () => {
       try {
         const payload = JSON.parse(xhr.responseText || "{}") as MutationResponse;
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(new Error(payload.message || `آپلود با خطای ${xhr.status} متوقف شد.`));
+          return;
+        }
         resolve(payload);
-      } catch {
+      } catch (error) {
+        if (error instanceof Error) {
+          reject(error);
+          return;
+        }
         reject(new Error("پاسخ سرور برای آپلود عکس معتبر نبود."));
       }
     };
@@ -196,9 +213,14 @@ function isTimeoutError(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
+function makeLocalId(index: number) {
+  return `${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function ListingImagesClient({ listingId }: { listingId: string }) {
   const [listing, setListing] = useState<ListingInfo | null>(null);
   const [images, setImages] = useState<NormalizedImage[]>([]);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -208,8 +230,9 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
 
   const validId = /^\d+$/.test(listingId) && Number(listingId) > 0;
   const imageCount = images.length;
-  const canUpload = imageCount < MAX_IMAGE_COUNT;
-  const freeSlots = Math.max(0, MAX_IMAGE_COUNT - imageCount);
+  const displayCount = Math.min(MAX_IMAGE_COUNT, imageCount + pendingUploads.length);
+  const canUpload = displayCount < MAX_IMAGE_COUNT;
+  const freeSlots = Math.max(0, MAX_IMAGE_COUNT - displayCount);
 
   async function loadImages(showLoader = true) {
     if (!validId) {
@@ -260,6 +283,12 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     void loadImages();
   }, [listingId]);
 
+  function patchPending(localId: string, patch: Partial<PendingUpload>) {
+    setPendingUploads((current) =>
+      current.map((item) => (item.localId === localId ? { ...item, ...patch } : item)),
+    );
+  }
+
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files || []);
     event.target.value = "";
@@ -281,16 +310,32 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       return;
     }
 
+    const previews: PendingUpload[] = files.map((file, index) => ({
+      localId: makeLocalId(index),
+      fileName: file.name,
+      previewUrl: URL.createObjectURL(file),
+      status: "queued",
+      progress: 0,
+    }));
+
+    // Optimistic UI: the selected photos occupy their slots immediately.
+    setPendingUploads(previews);
     setWorking(true);
     setUploadProgress(0);
     setError("");
     setNotice("");
-    let uploaded = 0;
 
-    try {
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
+    let uploaded = 0;
+    const failedMessages: string[] = [];
+
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const pending = previews[index];
+      patchPending(pending.localId, { status: "uploading", progress: 0, error: undefined });
+
+      try {
         const payload = await uploadImage(listingId, file, (fileProgress) => {
+          patchPending(pending.localId, { status: "uploading", progress: fileProgress });
           const overall = Math.round(((index + fileProgress / 100) / files.length) * 100);
           setUploadProgress(overall);
         });
@@ -298,27 +343,39 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
         if (!payload?.success) {
           throw new Error(payload?.message || `آپلود ${file.name} انجام نشد.`);
         }
-        uploaded += 1;
-      }
 
-      setUploadProgress(100);
-      const refreshed = await loadImages(false);
-      if (!refreshed) {
-        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس آپلود شد؛ برای تازه‌سازی گالری دوباره وارد صفحه شوید.`);
-      } else if (selected.length > files.length) {
-        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس اضافه شد؛ ظرفیت این آگهی ۶ عکس است.`);
-      } else {
-        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس با موفقیت اضافه شد.`);
+        uploaded += 1;
+        patchPending(pending.localId, { status: "uploaded", progress: 100 });
+      } catch (uploadError) {
+        const message = uploadError instanceof Error ? uploadError.message : `آپلود ${file.name} انجام نشد.`;
+        failedMessages.push(message);
+        patchPending(pending.localId, { status: "error", progress: 0, error: message });
       }
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "آپلود عکس‌ها انجام نشد.");
-      if (uploaded > 0) {
-        await loadImages(false);
-      }
-    } finally {
-      setWorking(false);
-      setUploadProgress(0);
     }
+
+    if (uploaded > 0) {
+      setUploadProgress(100);
+      await loadImages(false);
+    }
+
+    if (failedMessages.length) {
+      setError(
+        failedMessages.length === 1
+          ? failedMessages[0]
+          : `${failedMessages.length.toLocaleString("fa-IR")} عکس آپلود نشد. دوباره تلاش کنید.`,
+      );
+    } else if (selected.length > files.length) {
+      setNotice(`${uploaded.toLocaleString("fa-IR")} عکس اضافه شد؛ ظرفیت این آگهی ۶ عکس است.`);
+    } else {
+      setNotice(`${uploaded.toLocaleString("fa-IR")} عکس با موفقیت اضافه شد.`);
+    }
+
+    setWorking(false);
+    setUploadProgress(0);
+    setPendingUploads([]);
+    window.setTimeout(() => {
+      previews.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    }, 0);
   }
 
   async function setCover(image: NormalizedImage) {
@@ -440,15 +497,15 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                 <h1>{listing.title || `آگهی شماره ${listing.id}`}</h1>
                 <p>تا ۶ عکس واضح از زوایای مختلف خودرو انتخاب کنید. عکس اصلی روی کارت آگهی دیده می‌شود.</p>
               </div>
-              <div className={styles.capacity} aria-label={`${imageCount} عکس از ۶`}>
-                <strong>{imageCount.toLocaleString("fa-IR")}</strong>
+              <div className={styles.capacity} aria-label={`${displayCount} عکس از ۶`}>
+                <strong>{displayCount.toLocaleString("fa-IR")}</strong>
                 <span>از ۶ عکس</span>
               </div>
             </section>
 
             <div className={styles.progress} aria-hidden="true">
               {Array.from({ length: MAX_IMAGE_COUNT }, (_, index) => (
-                <i key={index} className={index < imageCount ? styles.progressFilled : ""} />
+                <i key={index} className={index < displayCount ? styles.progressFilled : ""} />
               ))}
             </div>
 
@@ -459,7 +516,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
               <header className={styles.boardHeader}>
                 <div>
                   <span>گالری خودرو</span>
-                  <h2>{cover ? "عکس اصلی را مشخص کنید" : "اولین عکس را اضافه کنید"}</h2>
+                  <h2>{cover ? "عکس اصلی را مشخص کنید" : pendingUploads.length ? "عکس در حال بارگذاری است" : "اولین عکس را اضافه کنید"}</h2>
                 </div>
                 {canUpload ? (
                   <label className={`${styles.addButton} ${working ? styles.disabled : ""}`}>
@@ -517,6 +574,78 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                   </article>
                 ))}
 
+                {pendingUploads.map((item, index) => {
+                  const ready = item.status === "uploaded";
+                  const failed = item.status === "error";
+                  const slotNumber = imageCount + index + 1;
+                  return (
+                    <article
+                      key={item.localId}
+                      className={styles.photoSlot}
+                      aria-busy={!ready && !failed}
+                      style={failed ? { borderColor: "#f2a7b5" } : undefined}
+                    >
+                      <div className={styles.photoFrame}>
+                        <img
+                          src={item.previewUrl}
+                          alt={`پیش‌نمایش ${item.fileName}`}
+                          style={{
+                            filter: ready ? "none" : "blur(11px)",
+                            opacity: ready ? 1 : 0.68,
+                            transform: ready ? "scale(1)" : "scale(1.06)",
+                            transition: "filter .28s ease, opacity .28s ease, transform .28s ease",
+                          }}
+                        />
+                        <span className={styles.slotNumber}>{slotNumber.toLocaleString("fa-IR")}</span>
+                        {!ready && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              zIndex: 2,
+                              display: "grid",
+                              placeItems: "center",
+                              padding: 12,
+                              background: failed ? "rgba(80,15,31,.28)" : "rgba(31,16,43,.18)",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                minHeight: 34,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                border: "1px solid rgba(255,255,255,.38)",
+                                borderRadius: 12,
+                                background: failed ? "rgba(160,30,58,.9)" : "rgba(68,27,105,.8)",
+                                padding: "0 12px",
+                                color: "#fff",
+                                fontSize: 10,
+                                fontWeight: 950,
+                                backdropFilter: "blur(8px)",
+                              }}
+                            >
+                              {failed
+                                ? "آپلود نشد"
+                                : item.status === "queued"
+                                  ? "در صف آپلود…"
+                                  : `${item.progress.toLocaleString("fa-IR")}٪`}
+                            </span>
+                          </div>
+                        )}
+                        {ready && <span className={styles.coverBadge}>آپلود شد ✓</span>}
+                      </div>
+                      <div className={styles.photoActions}>
+                        <button type="button" disabled>
+                          {failed ? "آپلود ناموفق" : ready ? "آماده" : "در حال بارگذاری…"}
+                        </button>
+                        <button type="button" className={styles.deleteButton} disabled>حذف</button>
+                      </div>
+                    </article>
+                  );
+                })}
+
                 {Array.from({ length: freeSlots }, (_, index) => (
                   <label key={`empty-${index}`} className={`${styles.emptySlot} ${working ? styles.disabled : ""}`}>
                     <input
@@ -527,8 +656,8 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                       onChange={(event) => void uploadFiles(event)}
                     />
                     <span className={styles.plus}>＋</span>
-                    <strong>{working ? "در حال آپلود…" : "افزودن عکس"}</strong>
-                    <small>جایگاه {(imageCount + index + 1).toLocaleString("fa-IR")}</small>
+                    <strong>افزودن عکس</strong>
+                    <small>جایگاه {(displayCount + index + 1).toLocaleString("fa-IR")}</small>
                   </label>
                 ))}
               </div>

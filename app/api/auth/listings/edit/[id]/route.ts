@@ -7,6 +7,10 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../../../lib/chakod-auth-proxy";
+import {
+  isUsableListingPhone,
+  normalizeListingPhone,
+} from "../../../../../../lib/listing-publication-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -132,6 +136,7 @@ export async function PATCH(
   const transmission = cleanText(input.transmission, 60);
   const fuelType = cleanText(input.fuel_type, 60);
   const productionYear = cleanText(input.production_year, 8);
+  const contactPhone = normalizeListingPhone(cleanText(input.contact_phone, 32));
   const mileageKm = Math.round(Number(input.mileage_km || 0));
   const priceToman = Math.round(Number(input.price_toman || 0));
 
@@ -145,6 +150,10 @@ export async function PATCH(
 
   if (!/^\d{4}$/.test(productionYear)) {
     return jsonResponse({ success: false, message: "سال تولید معتبر نیست." }, 400);
+  }
+
+  if (!isUsableListingPhone(contactPhone)) {
+    return jsonResponse({ success: false, message: "شماره تماس آگهی معتبر نیست." }, 400);
   }
 
   if (!Number.isSafeInteger(mileageKm) || mileageKm < 0 || mileageKm > 10_000_000) {
@@ -182,6 +191,7 @@ export async function PATCH(
         production_year: productionYear,
         mileage_km: mileageKm,
         price_toman: priceToman,
+        contact_phone: contactPhone,
       }),
       signal: AbortSignal.timeout(20_000),
     });

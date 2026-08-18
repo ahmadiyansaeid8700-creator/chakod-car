@@ -44,7 +44,7 @@ type MutationResponse = {
   is_cover?: boolean;
 };
 
-const MAX_IMAGE_COUNT = 10;
+const MAX_IMAGE_COUNT = 6;
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -139,7 +139,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       });
       const payload = await readJson<ImagesResponse>(response);
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         window.location.assign(
           `/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}/images`)}`,
         );
@@ -176,7 +176,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     );
 
     if (!available) {
-      setError("برای هر آگهی حداکثر ۱۰ تصویر قابل ثبت است.");
+      setError("برای هر آگهی حداکثر ۶ تصویر قابل ثبت است.");
       return;
     }
 
@@ -324,7 +324,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
               <div>
                 <span>مدیریت رسانه آگهی</span>
                 <h1>{listing.title || `آگهی شماره ${listing.id}`}</h1>
-                <p>تصاویر واضح و واقعی اعتماد خریدار را بیشتر می‌کنند. اولین تصویر اصلی در کارت و صفحه آگهی نمایش داده می‌شود.</p>
+                <p>حداکثر ۶ تصویر واقعی و واضح اضافه کنید. تصویر اصلی روی کارت و صفحه آگهی نمایش داده می‌شود.</p>
               </div>
               <div className={styles.heroStats}>
                 <strong>{new Intl.NumberFormat("fa-IR").format(imageCount)}</strong>

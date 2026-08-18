@@ -214,14 +214,16 @@ export default function ListingCard({
 
         <strong className={styles.price} data-part="price">{formatCompactPrice(listing.price_toman)}</strong>
 
-        <div className={styles.seller} data-part="seller">
-          <span className={styles.avatar} data-part="seller-avatar">{sellerLabel.slice(0, 1)}</span>
-          <span className={styles.sellerText}>
-            <strong data-part="seller-name">{sellerLabel}</strong>
-            <small data-part="seller-detail">{sellerDetail}</small>
-          </span>
-          {dealerVerified ? <span className={styles.verified} data-part="verified" title="تأییدشده">✓</span> : null}
-        </div>
+        {!customActions ? (
+          <div className={styles.seller} data-part="seller">
+            <span className={styles.avatar} data-part="seller-avatar">{sellerLabel.slice(0, 1)}</span>
+            <span className={styles.sellerText}>
+              <strong data-part="seller-name">{sellerLabel}</strong>
+              <small data-part="seller-detail">{sellerDetail}</small>
+            </span>
+            {dealerVerified ? <span className={styles.verified} data-part="verified" title="تأییدشده">✓</span> : null}
+          </div>
+        ) : null}
 
         {customActions ? (
           <div className={unified.customActions} data-part="custom-actions">{customActions}</div>

@@ -1,24 +1,36 @@
 import { notFound, permanentRedirect } from "next/navigation";
 
 import ListingDetailExperience from "./ListingDetailExperience";
-import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
+import {
+  fetchListingDetail,
+  fetchListingSummary,
+  type ListingApiResponse,
+} from "./listing-data";
 import { carDetailPath } from "../../../lib/car-routes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-async function getInitialListing(listingId: number): Promise<ListingApiResponse | null> {
+async function withTimeout(
+  loader: (signal: AbortSignal) => Promise<ListingApiResponse>,
+): Promise<ListingApiResponse | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2600);
 
   try {
-    return await fetchListingDetail(listingId, controller.signal);
+    return await loader(controller.signal);
   } catch {
     return null;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function getInitialListing(listingId: number): Promise<ListingApiResponse | null> {
+  const detail = await withTimeout((signal) => fetchListingDetail(listingId, signal));
+  if (detail?.data) return detail;
+  return withTimeout((signal) => fetchListingSummary(listingId, signal));
 }
 
 export default async function ListingDetailPage({

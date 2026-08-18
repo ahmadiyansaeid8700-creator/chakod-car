@@ -9,6 +9,7 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import { ensureListingAttributionTable } from "../../../../lib/listing-attribution-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,6 +80,7 @@ async function saveAttribution(
   const now = new Date().toISOString();
 
   try {
+    await ensureListingAttributionTable();
     await getDb()
       .insert(listingAttributions)
       .values({

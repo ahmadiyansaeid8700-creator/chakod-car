@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { formatDualYear } from "../../lib/date-display";
 import SaveListingButton from "./SaveListingButton";
 import ListingCardImage from "./ListingCardImage";
 import ListingCardActions from "./ListingCardActions";
 import styles from "./ListingCard.module.css";
+import unified from "./UnifiedVehicleCard.module.css";
 
 const API_BASE = "https://api.chakod.com";
 const SITE_BASE = "https://chakod.com";
@@ -37,6 +39,12 @@ type ListingCardProps = {
   badge?: string;
   variant?: "rail" | "grid";
   showActions?: boolean;
+  showSave?: boolean;
+  href?: string;
+  identityName?: string;
+  identityDetail?: string;
+  identityVerified?: boolean;
+  customActions?: ReactNode;
 };
 
 const SPEC_LABELS: Record<string, string> = {
@@ -63,21 +71,13 @@ function getImageUrl(path?: string | null) {
 
 function formatCompactPrice(price?: number | null) {
   const value = Number(price || 0);
-
   if (!value) return "قیمت توافقی";
-
   if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toLocaleString("fa-IR", {
-      maximumFractionDigits: 1,
-    })} میلیارد تومان`;
+    return `${(value / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} میلیارد تومان`;
   }
-
   if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toLocaleString("fa-IR", {
-      maximumFractionDigits: 0,
-    })} میلیون تومان`;
+    return `${(value / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} میلیون تومان`;
   }
-
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
 }
 
@@ -94,14 +94,12 @@ function formatSpec(value?: string | null) {
 
 function getSellerLabel(listing: ListingCardData) {
   if (listing.dealer_name?.trim()) return listing.dealer_name.trim();
-
   const labels: Record<string, string> = {
     personal: "فروشنده شخصی",
     dealer: "فروشنده نمایشگاهی",
     showroom: "فروشنده نمایشگاهی",
     freezone_operator: "فعال منطقه آزاد",
   };
-
   return labels[listing.seller_type || ""] || "فروشنده چاکود";
 }
 
@@ -144,74 +142,56 @@ export default function ListingCard({
   badge,
   variant = "grid",
   showActions = false,
+  showSave = true,
+  href: hrefOverride,
+  identityName,
+  identityDetail,
+  identityVerified,
+  customActions,
 }: ListingCardProps) {
-  const href = `/cars/${listing.id}`;
+  const href = hrefOverride || `/cars/${listing.id}`;
   const imageUrl = getImageUrl(listing.cover_image);
-  const sellerLabel = getSellerLabel(listing);
+  const sellerLabel = identityName?.trim() || getSellerLabel(listing);
   const sellerType = getSellerType(listing);
-  const dealerVerified = Boolean(
-    listing.dealer_verified || listing.is_dealer_verified,
-  );
-  const location = [listing.city, listing.neighborhood]
-    .filter(Boolean)
-    .join("، ");
+  const dealerVerified = identityVerified ?? Boolean(listing.dealer_verified || listing.is_dealer_verified);
+  const sellerDetail = identityDetail?.trim() || (dealerVerified
+    ? "نمایشگاه تأییدشده چاکود"
+    : listing.dealer_name
+      ? "فروشنده نمایشگاهی"
+      : "فروشنده شخصی");
+  const location = [listing.city, listing.neighborhood].filter(Boolean).join("، ");
   const displayBadge = badge || listing.category_name || "آگهی خودرو";
   const displayTitle = listing.title?.trim() || "آگهی خودرو";
-  const vehicleName = [listing.brand, listing.model, listing.trim_name]
-    .filter(Boolean)
-    .join(" ") || "خودرو";
-  const brandInitial = (listing.brand || listing.model || displayTitle)
-    .trim()
-    .slice(0, 1) || "چ";
-
+  const vehicleName = [listing.brand, listing.model, listing.trim_name].filter(Boolean).join(" ") || "خودرو";
+  const brandInitial = (listing.brand || listing.model || displayTitle).trim().slice(0, 1) || "چ";
   const specs = [
     { label: "سال", value: formatDualYear(listing.production_year) },
     { label: "کارکرد", value: formatMileage(listing.mileage_km) },
-    {
-      label: "گیربکس",
-      value: formatSpec(listing.transmission || listing.body_status),
-    },
+    { label: "گیربکس", value: formatSpec(listing.transmission || listing.body_status) },
   ];
 
   return (
-    <article
-      className={`${styles.card} ${styles[tone]} ${styles[variant]} ${
-        showActions ? styles.withActions : ""
-      }`}
-    >
-      <div className={styles.media}>
-        <Link
-          href={href}
-          prefetch={false}
-          aria-label={`مشاهده آگهی ${displayTitle}`}
-        >
+    <article className={`${styles.card} ${styles[tone]} ${styles[variant]} ${showActions ? styles.withActions : ""} ${unified.card}`}>
+      <div className={styles.media} data-part="media">
+        <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${displayTitle}`}>
           <ListingCardImage src={imageUrl} alt={displayTitle} />
         </Link>
-
-        <span className={styles.badge}>{displayBadge}</span>
-
-        <SaveListingButton
-          listingId={listing.id}
-          compact
-          className={styles.saveButton}
-        />
+        <span className={styles.badge} data-part="badge">{displayBadge}</span>
+        {showSave ? (
+          <SaveListingButton listingId={listing.id} compact className={styles.saveButton} />
+        ) : null}
       </div>
 
-      <div className={styles.body}>
-        <div className={styles.identityRow}>
-          <span className={styles.brandMark} aria-hidden="true">
-            {brandInitial}
-          </span>
-
-          <div className={styles.heading}>
-            <Link href={href} prefetch={false} className={styles.titleLink}>
-              {displayTitle}
-            </Link>
-            <span className={styles.vehicleName}>{vehicleName}</span>
+      <div className={styles.body} data-part="body">
+        <div className={styles.identityRow} data-part="identity">
+          <span className={styles.brandMark} data-part="brand-mark" aria-hidden="true">{brandInitial}</span>
+          <div className={styles.heading} data-part="heading">
+            <Link href={href} prefetch={false} className={styles.titleLink}>{displayTitle}</Link>
+            <span className={styles.vehicleName} data-part="vehicle-name">{vehicleName}</span>
           </div>
         </div>
 
-        <div className={styles.meta} aria-label="اطلاعات آگهی">
+        <div className={styles.meta} data-part="meta" aria-label="اطلاعات آگهی">
           <span className={styles.metaItem}>
             <LocationIcon />
             <b>{location || listing.province || "موقعیت نامشخص"}</b>
@@ -223,7 +203,7 @@ export default function ListingCard({
           </span>
         </div>
 
-        <div className={styles.specs} aria-label="مشخصات اصلی خودرو">
+        <div className={styles.specs} data-part="specs" aria-label="مشخصات اصلی خودرو">
           {specs.map((spec) => (
             <span key={`${listing.id}-${spec.label}`}>
               <small>{spec.label}</small>
@@ -232,40 +212,30 @@ export default function ListingCard({
           ))}
         </div>
 
-        <strong className={styles.price}>
-          {formatCompactPrice(listing.price_toman)}
-        </strong>
+        <strong className={styles.price} data-part="price">{formatCompactPrice(listing.price_toman)}</strong>
 
-        <div className={styles.seller}>
-          <span className={styles.avatar}>{sellerLabel.slice(0, 1)}</span>
+        <div className={styles.seller} data-part="seller">
+          <span className={styles.avatar} data-part="seller-avatar">{sellerLabel.slice(0, 1)}</span>
           <span className={styles.sellerText}>
-            <strong>{sellerLabel}</strong>
-            <small>
-              {dealerVerified
-                ? "نمایشگاه تأییدشده چاکود"
-                : listing.dealer_name
-                  ? "فروشنده نمایشگاهی"
-                  : "فروشنده شخصی"}
-            </small>
+            <strong data-part="seller-name">{sellerLabel}</strong>
+            <small data-part="seller-detail">{sellerDetail}</small>
           </span>
-          {dealerVerified ? (
-            <span className={styles.verified} title="نمایشگاه تأییدشده">
-              ✓
-            </span>
-          ) : null}
+          {dealerVerified ? <span className={styles.verified} data-part="verified" title="تأییدشده">✓</span> : null}
         </div>
 
-        {!showActions ? (
-          <Link href={href} prefetch={false} className={styles.primaryAction}>
-            <span>مشاهده آگهی</span>
-            <ArrowIcon />
-          </Link>
+        {customActions ? (
+          <div className={unified.customActions} data-part="custom-actions">{customActions}</div>
+        ) : !showActions ? (
+          <div className={unified.publicActions} data-part="public-actions">
+            <Link href={href} prefetch={false} className={styles.primaryAction}>
+              <span>مشاهده آگهی</span>
+              <ArrowIcon />
+            </Link>
+          </div>
         ) : (
-          <ListingCardActions
-            listingId={listing.id}
-            title={displayTitle}
-            href={href}
-          />
+          <div className={unified.publicActions} data-part="public-actions">
+            <ListingCardActions listingId={listing.id} title={displayTitle} href={href} />
+          </div>
         )}
       </div>
     </article>

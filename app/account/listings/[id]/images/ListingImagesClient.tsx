@@ -54,11 +54,10 @@ type PendingUpload = {
   error?: string;
 };
 
-const API_BASE = "https://api.chakod.com";
 const MAX_IMAGE_COUNT = 6;
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 25_000;
-const UPLOAD_TIMEOUT_MS = 90_000;
+const UPLOAD_TIMEOUT_MS = 135_000;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 function getToken() {
@@ -158,19 +157,16 @@ function uploadImage(
   onProgress: (progress: number) => void,
 ) {
   return new Promise<MutationResponse>((resolve, reject) => {
-    const token = getToken();
-    const directUpload = Boolean(token);
     const xhr = new XMLHttpRequest();
 
-    xhr.open(
-      "POST",
-      directUpload
-        ? `${API_BASE}/api/upload-listing-image.php`
-        : "/api/auth/listings/images/upload",
-    );
+    // Always use the same-origin authenticated proxy. Direct browser uploads from
+    // staging.chakod.com to api.chakod.com are vulnerable to cross-origin/CORS
+    // failures even when a legacy localStorage token exists.
+    xhr.open("POST", "/api/auth/listings/images/upload");
     xhr.timeout = UPLOAD_TIMEOUT_MS;
-    xhr.withCredentials = !directUpload;
+    xhr.withCredentials = true;
 
+    const token = getToken();
     if (token) {
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.setRequestHeader("X-Session-Token", token);
@@ -183,20 +179,30 @@ function uploadImage(
     };
 
     xhr.onload = () => {
+      let payload: MutationResponse | null = null;
       try {
-        const payload = JSON.parse(xhr.responseText || "{}") as MutationResponse;
-        if (xhr.status < 200 || xhr.status >= 300) {
-          reject(new Error(payload.message || `آپلود با خطای ${xhr.status} متوقف شد.`));
-          return;
-        }
-        resolve(payload);
-      } catch (error) {
-        if (error instanceof Error) {
-          reject(error);
-          return;
-        }
+        payload = JSON.parse(xhr.responseText || "{}") as MutationResponse;
+      } catch {
         reject(new Error("پاسخ سرور برای آپلود عکس معتبر نبود."));
+        return;
       }
+
+      if (xhr.status === 401) {
+        reject(new Error("نشست ورود منقضی شده است؛ صفحه را تازه کنید و دوباره تلاش کنید."));
+        return;
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(payload?.message || `آپلود با خطای ${xhr.status} متوقف شد.`));
+        return;
+      }
+
+      if (!payload?.success) {
+        reject(new Error(payload?.message || "سرور آپلود عکس را تأیید نکرد."));
+        return;
+      }
+
+      resolve(payload);
     };
     xhr.onerror = () => reject(new Error("ارتباط با سرور هنگام آپلود عکس قطع شد."));
     xhr.onabort = () => reject(new Error("آپلود عکس متوقف شد."));
@@ -204,7 +210,7 @@ function uploadImage(
 
     const body = new FormData();
     body.append("listing_id", listingId);
-    body.append("image", file);
+    body.append("image", file, file.name);
     xhr.send(body);
   });
 }
@@ -318,7 +324,6 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       progress: 0,
     }));
 
-    // Optimistic UI: the selected photos occupy their slots immediately.
     setPendingUploads(previews);
     setWorking(true);
     setUploadProgress(0);
@@ -340,10 +345,6 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
           setUploadProgress(overall);
         });
 
-        if (!payload?.success) {
-          throw new Error(payload?.message || `آپلود ${file.name} انجام نشد.`);
-        }
-
         uploaded += 1;
         patchPending(pending.localId, { status: "uploaded", progress: 100 });
       } catch (uploadError) {
@@ -359,10 +360,11 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     }
 
     if (failedMessages.length) {
+      const uniqueMessages = Array.from(new Set(failedMessages));
       setError(
-        failedMessages.length === 1
-          ? failedMessages[0]
-          : `${failedMessages.length.toLocaleString("fa-IR")} عکس آپلود نشد. دوباره تلاش کنید.`,
+        uniqueMessages.length === 1
+          ? uniqueMessages[0]
+          : `${failedMessages.length.toLocaleString("fa-IR")} عکس آپلود نشد. ${uniqueMessages[0]}`,
       );
     } else if (selected.length > files.length) {
       setNotice(`${uploaded.toLocaleString("fa-IR")} عکس اضافه شد؛ ظرفیت این آگهی ۶ عکس است.`);
@@ -372,10 +374,13 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
 
     setWorking(false);
     setUploadProgress(0);
-    setPendingUploads([]);
-    window.setTimeout(() => {
-      previews.forEach((item) => URL.revokeObjectURL(item.previewUrl));
-    }, 0);
+
+    if (!failedMessages.length) {
+      setPendingUploads([]);
+      window.setTimeout(() => {
+        previews.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      }, 0);
+    }
   }
 
   async function setCover(image: NormalizedImage) {

@@ -9,6 +9,7 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import { ensureListingAttributionTable } from "../../../../lib/listing-attribution-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,12 +116,14 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "دسترسی ثبت‌کننده آگهی قابل تأیید نیست." }, 403);
   }
 
-  const ownerType = text(listing.listing_owner_type) === "dealer" ? "dealer" : "personal";
-  const dealerId = ownerType === "dealer" ? positiveId(listing.dealer_id || input.dealer_id) : 0;
+  const inferredDealerId = positiveId(listing.dealer_id || input.dealer_id);
+  const ownerType = text(listing.listing_owner_type) === "dealer" || inferredDealerId ? "dealer" : "personal";
+  const dealerId = ownerType === "dealer" ? inferredDealerId : 0;
   const role = ownerType === "dealer" ? await readDealerRole(request, dealerId) : "owner";
   const now = new Date().toISOString();
 
   try {
+    await ensureListingAttributionTable();
     await getDb()
       .insert(listingAttributions)
       .values({

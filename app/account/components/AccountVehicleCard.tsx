@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import ListingCard from "../../components/ListingCard";
 import styles from "./AccountVehicleCard.module.css";
 
 export type AccountVehicleCardAction = {
@@ -36,30 +37,14 @@ const ROLE_LABELS: Record<string, string> = {
   manager: "مدیر",
   branch_manager: "مدیر شعبه",
   sales: "کارشناس فروش",
-  content: "محتوا",
+  content: "مدیر محتوا",
   finance: "مالی",
   viewer: "ناظر",
 };
 
-function numberFa(value: number | string | null | undefined) {
-  const number = Number(value || 0);
-  return Number.isFinite(number) ? new Intl.NumberFormat("fa-IR").format(number) : "۰";
-}
-
-function priceFa(value: number | string | null | undefined) {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
-  if (number >= 1_000_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(number / 1_000_000_000)} میلیارد تومان`;
-  }
-  if (number >= 1_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(number / 1_000_000)} میلیون تومان`;
-  }
-  return `${numberFa(number)} تومان`;
-}
-
-function normalizedStatus(code?: string | null) {
-  return String(code || "").trim().toLowerCase() || "unknown";
+function numeric(value: number | string | null | undefined) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function vehicleTitle(data: AccountVehicleCardData) {
@@ -76,56 +61,33 @@ export default function AccountVehicleCard({
   actions?: AccountVehicleCardAction[];
 }) {
   const title = vehicleTitle(data);
-  const status = normalizedStatus(data.statusCode);
-  const compactSpecs = [
-    data.year ? `مدل ${data.year}` : "",
-    Number(data.mileageKm || 0) > 0 ? `${numberFa(data.mileageKm)} km` : "",
-    data.color || "",
-  ].filter(Boolean);
-  const detailSpecs = [data.transmission, data.fuelType].filter(Boolean);
-  const location = [data.city, data.neighborhood].filter(Boolean).join("، ");
   const publisher = String(data.submittedByDisplayName || data.publisherFallback || "ثبت‌کننده نامشخص").trim();
   const role = ROLE_LABELS[String(data.submittedByRole || "").trim().toLowerCase()] || "";
-  const hasMetrics = Number(data.viewsCount || 0) > 0 || Number(data.favoriteCount || 0) > 0;
+  const statusLabel = String(data.statusLabel || "وضعیت نامشخص").trim();
 
   return (
-    <article className={styles.card} data-status={status}>
-      <Link href={primaryHref} className={styles.mediaLink} aria-label={title}>
-        {data.coverImageUrl ? (
-          <img src={data.coverImageUrl} alt={title} loading="lazy" />
-        ) : (
-          <span className={styles.noImage}>خودرو</span>
-        )}
-        <span className={styles.status}>{data.statusLabel || "وضعیت نامشخص"}</span>
-      </Link>
-
-      <div className={styles.body}>
-        <div className={styles.titleRow}>
-          <strong title={title}>{title}</strong>
-          <small>#{data.id}</small>
-        </div>
-        <div className={styles.price}>{priceFa(data.priceToman)}</div>
-        <div className={styles.specs}>{compactSpecs.length ? compactSpecs.join(" · ") : "مشخصات خودرو ثبت نشده"}</div>
-        <div className={styles.detailSpecs}>
-          {detailSpecs.length ? detailSpecs.join(" · ") : ""}
-          {detailSpecs.length && location ? " · " : ""}
-          {location}
-        </div>
-        <div className={styles.publisher} title={`ثبت‌کننده: ${publisher}`}>
-          <span aria-hidden="true">●</span>
-          <b>ثبت‌کننده:</b>
-          <strong>{publisher}</strong>
-          {role ? <em>{role}</em> : null}
-        </div>
-        {hasMetrics ? (
-          <div className={styles.metrics}>
-            <span>{numberFa(data.viewsCount)} بازدید</span>
-            <span>{numberFa(data.favoriteCount)} نشان</span>
-          </div>
-        ) : null}
-      </div>
-
-      {actions.length ? (
+    <ListingCard
+      href={primaryHref}
+      showSave={false}
+      badge={statusLabel}
+      identityName={publisher}
+      identityDetail={role ? `ثبت‌کننده · ${role}` : "ثبت‌کننده آگهی"}
+      listing={{
+        id: data.id,
+        title,
+        brand: data.brand,
+        model: data.model,
+        production_year: numeric(data.year),
+        mileage_km: numeric(data.mileageKm),
+        price_toman: numeric(data.priceToman),
+        city: data.city,
+        neighborhood: data.neighborhood,
+        transmission: data.transmission,
+        body_status: data.color,
+        cover_image: data.coverImageUrl,
+        seller_type: "personal",
+      }}
+      customActions={actions.length ? (
         <div className={styles.actions}>
           {actions.map((action) => (
             <Link
@@ -138,6 +100,6 @@ export default function AccountVehicleCard({
           ))}
         </div>
       ) : null}
-    </article>
+    />
   );
 }

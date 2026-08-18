@@ -3,12 +3,15 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { contentArticles } from "../db/schema";
 import { articles as fallbackArticles, type Article } from "../app/articles/article-data";
+import { seoArticles } from "../app/articles/seo";
 import { parseStoredArticleSections } from "./article-content-format";
 
 export type PublishedArticle = Article & {
   seoTitle?: string;
   seoDescription?: string;
 };
+
+const launchArticles: Article[] = [...seoArticles, ...fallbackArticles];
 
 function rowToArticle(row: typeof contentArticles.$inferSelect): PublishedArticle {
   return {
@@ -31,7 +34,7 @@ export async function getPublishedArticles(): Promise<PublishedArticle[]> {
       .from(contentArticles)
       .orderBy(desc(contentArticles.publishedAt), desc(contentArticles.id));
 
-    if (!rows.length) return fallbackArticles;
+    if (!rows.length) return launchArticles;
 
     const managedSlugs = new Set(rows.map((row) => row.slug));
     const publishedManaged = rows
@@ -40,10 +43,10 @@ export async function getPublishedArticles(): Promise<PublishedArticle[]> {
 
     return [
       ...publishedManaged,
-      ...fallbackArticles.filter((article) => !managedSlugs.has(article.slug)),
+      ...launchArticles.filter((article) => !managedSlugs.has(article.slug)),
     ];
   } catch {
-    return fallbackArticles;
+    return launchArticles;
   }
 }
 
@@ -62,5 +65,5 @@ export async function getPublishedArticle(slug: string): Promise<PublishedArticl
     // Before the content migration is applied, launch fallback articles remain available.
   }
 
-  return fallbackArticles.find((article) => article.slug === slug) || null;
+  return launchArticles.find((article) => article.slug === slug) || null;
 }

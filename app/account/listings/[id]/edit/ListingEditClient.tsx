@@ -57,7 +57,26 @@ type GeoResponse = {
   has_neighborhoods?: boolean;
 };
 
+type PreviewImage = {
+  id?: number | string;
+  image_id?: number | string;
+  image_url?: string | null;
+  url?: string | null;
+  is_cover?: boolean | number;
+};
+
+type ImagesPreviewResponse = {
+  success?: boolean;
+  listing?: {
+    cover_image?: string | { image_url?: string | null } | null;
+    image_count?: number | string | null;
+    images?: PreviewImage[];
+  };
+  images?: PreviewImage[];
+};
+
 const API_BASE = "https://api.chakod.com";
+const MAX_IMAGE_COUNT = 6;
 
 const colors = [
   "سفید", "مشکی", "نقره‌ای", "نوک‌مدادی", "خاکستری", "آبی", "سرمه‌ای",
@@ -135,6 +154,42 @@ function statusCodeOf(status: ListingData["status"]) {
     : String(status?.code || "").trim().toLowerCase();
 }
 
+function normalizeImageUrl(value?: string | null) {
+  if (!value) return "";
+  const url = value.trim();
+  if (!url) return "";
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return path.startsWith("/uploads/")
+    ? `https://chakod.com${path}`
+    : `https://api.chakod.com${path}`;
+}
+
+function imagePreview(payload: ImagesPreviewResponse | null) {
+  const responseImages = Array.isArray(payload?.images) ? payload!.images! : [];
+  const listingImages = Array.isArray(payload?.listing?.images) ? payload!.listing!.images! : [];
+  const raw = [...responseImages, ...listingImages];
+  const unique = new Set<string>();
+  for (const image of raw) {
+    const id = Number(image.image_id ?? image.id ?? 0);
+    const url = normalizeImageUrl(image.image_url || image.url || "");
+    unique.add(id > 0 ? `id:${id}` : url ? `url:${url}` : "");
+  }
+  unique.delete("");
+
+  const cover = payload?.listing?.cover_image;
+  const listingCover = normalizeImageUrl(
+    typeof cover === "string" ? cover : cover?.image_url || "",
+  );
+  const markedCover = raw.find((image) => Boolean(image.is_cover));
+  const markedCoverUrl = normalizeImageUrl(markedCover?.image_url || markedCover?.url || "");
+  const firstUrl = normalizeImageUrl(raw[0]?.image_url || raw[0]?.url || "");
+  const reportedCount = Math.round(Number(payload?.listing?.image_count || 0));
+  const count = Math.max(unique.size, Number.isFinite(reportedCount) ? reportedCount : 0, listingCover ? 1 : 0);
+
+  return { url: listingCover || markedCoverUrl || firstUrl, count };
+}
+
 export default function ListingEditClient({ listingId }: { listingId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -142,6 +197,8 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [listing, setListing] = useState<ListingData | null>(null);
+  const [coverImage, setCoverImage] = useState("");
+  const [imageCount, setImageCount] = useState(0);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -162,6 +219,24 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
   const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
   const [hasNeighborhoods, setHasNeighborhoods] = useState(false);
 
+  async function loadImagePreview() {
+    try {
+      const response = await fetch(`/api/auth/listings/images/${listingId}`, {
+        cache: "no-store",
+        credentials: "include",
+        headers: { Accept: "application/json", ...authHeaders() },
+      });
+      if (!response.ok) return;
+      const payload = await readJson<ImagesPreviewResponse>(response);
+      if (!payload?.success) return;
+      const preview = imagePreview(payload);
+      setCoverImage(preview.url);
+      setImageCount(preview.count);
+    } catch {
+      // Image preview is optional; editing must stay usable if media service is unavailable.
+    }
+  }
+
   async function loadListing() {
     if (!/^\d+$/.test(listingId)) {
       setError("شناسه آگهی معتبر نیست.");
@@ -180,7 +255,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
       });
       const payload = await readJson<EditResponse>(response);
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         window.location.assign(
           `/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}/edit`)}`,
         );
@@ -233,6 +308,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
 
   useEffect(() => {
     void loadListing();
+    void loadImagePreview();
     void fetchGeo().then((result) => setProvinces(result.data)).catch(() => setProvinces([]));
   }, [listingId]);
 
@@ -347,6 +423,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
 
       setNotice(payload.message || "تغییرات آگهی با موفقیت ذخیره شد.");
       await loadListing();
+      void loadImagePreview();
     } catch {
       setError("ارتباط با سرویس ذخیره ویرایش برقرار نشد.");
     } finally {
@@ -390,13 +467,35 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
         {!loading && listing && (
           <>
             <section className={styles.hero}>
-              <div>
+              <Link
+                className={styles.heroImageLink}
+                href={`/account/listings/${listingId}/images`}
+                aria-label="مدیریت تصاویر آگهی"
+              >
+                {coverImage ? (
+                  <img src={coverImage} alt={`تصویر ${title || "آگهی"}`} />
+                ) : (
+                  <span className={styles.heroImageEmpty}>
+                    <b>＋</b>
+                    <strong>افزودن عکس</strong>
+                    <small>حداکثر ۶ تصویر</small>
+                  </span>
+                )}
+                <span className={styles.heroImageHint}>{coverImage ? "تغییر تصاویر" : "مدیریت تصاویر"}</span>
+                {imageCount > 0 ? (
+                  <span className={styles.heroImageCount}>
+                    {new Intl.NumberFormat("fa-IR").format(Math.min(imageCount, MAX_IMAGE_COUNT))}/{new Intl.NumberFormat("fa-IR").format(MAX_IMAGE_COUNT)}
+                  </span>
+                ) : null}
+              </Link>
+
+              <div className={styles.heroCopy}>
                 <span>ویرایش آگهی شماره {new Intl.NumberFormat("fa-IR").format(listing.id)}</span>
                 <h1>{title || "آگهی بدون عنوان"}</h1>
                 <p>{brand}، {model} · وضعیت: {statusTitle}</p>
               </div>
+
               <div className={styles.heroActions}>
-                <Link href={`/account/listings/${listingId}/images`}>مدیریت تصاویر</Link>
                 {currentStatusCode === "active" ? <Link href={`/cars/${listingId}`}>نمایش عمومی</Link> : null}
               </div>
             </section>

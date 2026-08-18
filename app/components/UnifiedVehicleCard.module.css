@@ -7,61 +7,80 @@
   min-width: 0;
 }
 
+.managedCard {
+  overflow: hidden !important;
+  border-radius: 20px !important;
+}
+
+.managedCard [data-part="media"] {
+  aspect-ratio: 1.68 / 1 !important;
+  border-radius: 19px 19px 0 0 !important;
+}
+
 .managedCard [data-part="body"] {
-  padding: 0 16px 14px !important;
+  padding: 10px 14px 12px !important;
 }
 
 .managedCard [data-part="identity"] {
-  min-height: 62px !important;
-  margin-top: -31px !important;
-  grid-template-columns: 62px minmax(0, 1fr) !important;
-  gap: 14px !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  align-items: start !important;
 }
 
 .managedCard [data-part="brand-mark"] {
-  width: 62px !important;
-  height: 62px !important;
-  border-width: 4px !important;
-  font-size: 21px !important;
+  display: none !important;
 }
 
 .managedCard [data-part="heading"] {
   min-width: 0;
-  padding-inline-start: 8px !important;
-  padding-bottom: 3px !important;
+  padding: 0 !important;
 }
 
 .managedCard [data-part="heading"] a {
   font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+.managedCard [data-part="vehicle-name"] {
+  margin-top: 2px !important;
 }
 
 .managedCard [data-part="meta"] {
-  min-height: 42px !important;
-  margin-top: 12px !important;
+  min-height: 38px !important;
+  margin-top: 8px !important;
 }
 
 .managedCard [data-part="specs"] {
-  margin-top: 11px !important;
-  gap: 7px !important;
+  margin-top: 8px !important;
+  gap: 6px !important;
 }
 
 .managedCard [data-part="specs"] > span {
-  min-height: 54px !important;
-  padding: 7px 4px !important;
+  min-height: 48px !important;
+  padding: 6px 4px !important;
 }
 
 .managedCard [data-part="price"] {
-  margin-top: 10px !important;
-  font-size: 16px !important;
+  margin-top: 8px !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
 }
 
 .managedCard [data-part="seller"] {
-  margin-top: 9px !important;
-  padding-top: 9px !important;
+  margin-top: 7px !important;
+  padding-top: 7px !important;
+}
+
+.managedCard [data-part="seller-avatar"] {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
 }
 
 .managedCard .customActions {
-  margin-top: 8px;
+  margin-top: 7px;
 }
 
 @media (max-width: 640px) {
@@ -107,26 +126,22 @@
   .card [data-part="body"] {
     min-height: 0;
     overflow: hidden;
-    padding: 0 6px 5px !important;
+    padding: 4px 6px 5px !important;
   }
 
   .card [data-part="identity"] {
-    min-height: 29px !important;
-    margin-top: -14px !important;
-    grid-template-columns: 29px minmax(0, 1fr) !important;
-    gap: 5px !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
   }
 
   .card [data-part="brand-mark"] {
-    width: 29px !important;
-    height: 29px !important;
-    border-width: 2px !important;
-    font-size: 10px !important;
+    display: none !important;
   }
 
   .card [data-part="heading"] {
-    padding-inline-start: 3px !important;
-    padding-bottom: 1px !important;
+    padding: 0 !important;
   }
 
   .card [data-part="heading"] a {

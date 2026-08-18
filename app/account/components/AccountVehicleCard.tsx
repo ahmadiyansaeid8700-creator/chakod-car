@@ -65,6 +65,13 @@ export default function AccountVehicleCard({
   const publisher = String(data.submittedByDisplayName || data.publisherFallback || "ثبت‌کننده نامشخص").trim();
   const role = ROLE_LABELS[String(data.submittedByRole || "").trim().toLowerCase()] || "";
   const statusLabel = String(data.statusLabel || "وضعیت نامشخص").trim();
+  const statusCode = String(data.statusCode || "").trim().toLowerCase();
+  const editHref = `${primaryHref.replace(/\/$/, "")}/edit`;
+  const visibleActions = actions
+    .filter((action) => action.label !== "نمایش" || statusCode === "active")
+    .map((action) => action.label === "مدیریت"
+      ? { ...action, href: editHref, label: "ویرایش" }
+      : action);
 
   return (
     <ListingCard
@@ -87,9 +94,9 @@ export default function AccountVehicleCard({
         cover_image: data.coverImageUrl,
         seller_type: "personal",
       }}
-      customActions={actions.length ? (
+      customActions={visibleActions.length ? (
         <div className={styles.actions}>
-          {actions.map((action) => (
+          {visibleActions.map((action) => (
             <Link
               key={`${action.href}:${action.label}`}
               href={action.href}

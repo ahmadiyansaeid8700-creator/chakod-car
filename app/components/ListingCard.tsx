@@ -171,7 +171,7 @@ export default function ListingCard({
   ];
 
   return (
-    <article className={`${styles.card} ${styles[tone]} ${styles[variant]} ${showActions ? styles.withActions : ""} ${unified.card}`}>
+    <article className={`${styles.card} ${styles[tone]} ${styles[variant]} ${showActions ? styles.withActions : ""} ${unified.card} ${customActions ? unified.managedCard : ""}`}>
       <div className={styles.media} data-part="media">
         <Link href={href} prefetch={false} aria-label={`مشاهده آگهی ${displayTitle}`}>
           <ListingCardImage src={imageUrl} alt={displayTitle} />

@@ -18,7 +18,7 @@ function requestMethod(input: RequestInfo | URL, init?: RequestInit) {
   return input instanceof Request ? input.method.toUpperCase() : "GET";
 }
 
-function parseSubmitBody(input: RequestInfo | URL, init?: RequestInit) {
+function parseSubmitBody(init?: RequestInit) {
   if (typeof init?.body !== "string") return null;
   try {
     const value: unknown = JSON.parse(init.body);
@@ -30,9 +30,37 @@ function parseSubmitBody(input: RequestInfo | URL, init?: RequestInit) {
   }
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 export default function ListingAttributionBridge() {
   useEffect(() => {
     const nativeFetch = window.fetch.bind(window);
+
+    async function persistAttribution(listingId: number, dealerId: number | null) {
+      const delays = [0, 450, 1400];
+      for (const delay of delays) {
+        if (delay) await wait(delay);
+        try {
+          const result = await nativeFetch("/api/auth/listing-attribution", {
+            method: "POST",
+            credentials: "include",
+            cache: "no-store",
+            keepalive: true,
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              ...sessionHeaders(),
+            },
+            body: JSON.stringify({ listing_id: listingId, dealer_id: dealerId }),
+          });
+          if (result.ok) return;
+        } catch {
+          // تلاش بعدی انجام می‌شود.
+        }
+      }
+    }
 
     const bridgedFetch: typeof window.fetch = async (input, init) => {
       const response = await nativeFetch(input, init);
@@ -49,22 +77,9 @@ export default function ListingAttributionBridge() {
         const listingId = Math.round(Number(payload?.listing_id || 0));
         if (!payload?.success || !Number.isSafeInteger(listingId) || listingId <= 0) return response;
 
-        const submitted = parseSubmitBody(input, init);
-        void nativeFetch("/api/auth/listing-attribution", {
-          method: "POST",
-          credentials: "include",
-          cache: "no-store",
-          keepalive: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            ...sessionHeaders(),
-          },
-          body: JSON.stringify({
-            listing_id: listingId,
-            dealer_id: Number(submitted?.dealer_id || 0) || null,
-          }),
-        }).catch(() => undefined);
+        const submitted = parseSubmitBody(init);
+        const dealerId = Math.round(Number(submitted?.dealer_id || 0)) || null;
+        void persistAttribution(listingId, dealerId);
       } catch {
         // انتساب ثبت‌کننده نباید جریان اصلی ثبت آگهی را متوقف کند.
       }

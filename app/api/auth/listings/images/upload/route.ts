@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
 const MAX_IMAGE_COUNT = 6;
+const UPLOAD_TIMEOUT_MS = 60_000;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -38,6 +39,10 @@ function managedImageCount(payload: JsonRecord) {
   const unique = new Set(images.map((item, index) => imageKey(item, index)));
   const reported = Math.round(Number(listing.image_count || payload.image_count || 0));
   return Math.max(unique.size, Number.isSafeInteger(reported) && reported > 0 ? reported : 0);
+}
+
+function isTimeoutError(error: unknown) {
+  return error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError");
 }
 
 export async function POST(request: NextRequest) {
@@ -121,7 +126,7 @@ export async function POST(request: NextRequest) {
       cache: "no-store",
       headers,
       body,
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
     });
     const payload = await parseJsonResponse(upstream);
 
@@ -130,7 +135,15 @@ export async function POST(request: NextRequest) {
     }
 
     return jsonResponse(payload, upstream.status);
-  } catch {
-    return jsonResponse({ success: false, message: "ارتباط با سرویس آپلود برقرار نشد." }, 502);
+  } catch (error) {
+    return jsonResponse(
+      {
+        success: false,
+        message: isTimeoutError(error)
+          ? "زمان آپلود تصویر بیش از حد طولانی شد. دوباره تلاش کنید."
+          : "ارتباط با سرویس آپلود برقرار نشد.",
+      },
+      502,
+    );
   }
 }

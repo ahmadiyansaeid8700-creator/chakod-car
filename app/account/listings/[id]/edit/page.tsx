@@ -1,4 +1,5 @@
 import ListingEditClient from "./ListingEditClient";
+import InlineListingImagesManager from "./InlineListingImagesManager";
 
 export default async function AccountListingEditPage({
   params,
@@ -6,5 +7,10 @@ export default async function AccountListingEditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ListingEditClient listingId={id} />;
+  return (
+    <>
+      <ListingEditClient listingId={id} />
+      <InlineListingImagesManager listingId={id} />
+    </>
+  );
 }

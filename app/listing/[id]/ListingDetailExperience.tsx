@@ -14,6 +14,7 @@ import ShareListingButton from "./ShareListingButton";
 import {
   collectListingImages,
   fetchListingDetail,
+  fetchListingSummary,
   normalizeAssetUrl,
   type ListingApiResponse,
   type ListingData,
@@ -46,6 +47,30 @@ function priceLabel(listing: ListingData) {
   const price = Number(listing.price_toman || 0);
   if (price > 0) return `${new Intl.NumberFormat("fa-IR").format(price)} تومان`;
   return listing.price_is_negotiable ? "قیمت توافقی" : "قیمت درج نشده";
+}
+
+function listingPhone(listing: ListingData) {
+  const candidates = [
+    listing.contact_phone,
+    listing.seller_phone,
+    listing.phone,
+    listing.mobile,
+    listing.contact_mobile,
+    listing.seller_mobile,
+    listing.owner_phone,
+    listing.owner_mobile,
+    listing.dealer_phone,
+    listing.dealer_mobile,
+    listing.business_phone,
+    listing.showroom_phone,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeListingPhone(String(candidate || ""));
+    if (isUsableListingPhone(normalized)) return normalized;
+  }
+
+  return normalizeListingPhone(String(candidates.find(Boolean) || ""));
 }
 
 function dateLabel(value?: string | null) {
@@ -142,6 +167,7 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
     const controller = new AbortController();
     setLoading(true);
     void fetchListingDetail(listingId, controller.signal)
+      .catch(() => fetchListingSummary(listingId, controller.signal))
       .then(setResponse)
       .catch(() => setResponse(null))
       .finally(() => setLoading(false));
@@ -192,21 +218,8 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
     listing.dealer_is_verified || listing.dealer_verified || listing.is_dealer_verified,
   );
 
-  const phone = normalizeListingPhone(
-    listing.contact_phone || listing.seller_phone || listing.phone || listing.mobile || "",
-  );
-
-  if (!isUsableListingPhone(phone)) {
-    return (
-      <main className={styles.state}>
-        <div>
-          <strong>این آگهی در دسترس نیست</strong>
-          <span>آگهی کامل نشده است.</span>
-          <Link href="/cars">بازگشت به بازار خودرو</Link>
-        </div>
-      </main>
-    );
-  }
+  const phone = listingPhone(listing);
+  const hasPhone = isUsableListingPhone(phone);
 
   const latitude = Number(listing.latitude);
   const longitude = Number(listing.longitude);
@@ -286,7 +299,11 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
             ) : null}
 
             <div className={styles.desktopActions}>
-              <a className={styles.callButton} href={`tel:${phone}`}>تماس با فروشنده</a>
+              {hasPhone ? (
+                <a className={styles.callButton} href={`tel:${phone}`}>تماس با فروشنده</a>
+              ) : (
+                <a className={styles.callButton} href="#seller">اطلاعات تماس</a>
+              )}
               <SaveListingButton listingId={listing.id} className={styles.desktopSave} />
               <ShareListingButton title={title} url={shareUrl} />
             </div>
@@ -340,6 +357,12 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
                 </div>
               </div>
 
+              {hasPhone ? (
+                <a href={`tel:${phone}`} className={styles.showroomLink}>تماس با فروشنده</a>
+              ) : (
+                <p>شماره تماس این آگهی هنوز ثبت نشده است.</p>
+              )}
+
               {isDealer && listing.dealer_id ? (
                 <Link href={`/showrooms/${listing.dealer_id}`} className={styles.showroomLink}>
                   مشاهده نمایشگاه
@@ -359,7 +382,11 @@ export default function ListingDetailExperience({ listingId, initialResponse }: 
       <div className={styles.mobileActions}>
         <SaveListingButton listingId={listing.id} compact className={styles.mobileIconButton} />
         <ShareListingButton title={title} url={shareUrl} compact />
-        <a className={styles.mobileCall} href={`tel:${phone}`}>تماس با فروشنده</a>
+        {hasPhone ? (
+          <a className={styles.mobileCall} href={`tel:${phone}`}>تماس با فروشنده</a>
+        ) : (
+          <a className={styles.mobileCall} href="#seller">اطلاعات تماس</a>
+        )}
       </div>
     </main>
   );

@@ -29,13 +29,8 @@ export async function GET(
   }
 
   try {
-    const ownershipQuery = new URLSearchParams({
-      listing_id: id,
-      per_page: "1",
-      page: "1",
-    });
-    const ownershipResponse = await fetch(
-      authApiUrl(`/api/dashboard-listings.php?${ownershipQuery.toString()}`),
+    const manageResponse = await fetch(
+      authApiUrl(`/api/listing-manage.php?listing_id=${encodeURIComponent(id)}`),
       {
         method: "GET",
         cache: "no-store",
@@ -43,32 +38,32 @@ export async function GET(
         signal: AbortSignal.timeout(20_000),
       },
     );
-    const ownershipPayload = await parseJsonResponse(ownershipResponse);
+    const managePayload = await parseJsonResponse(manageResponse);
 
-    if (!ownershipResponse.ok || ownershipPayload?.success !== true) {
+    if (!manageResponse.ok || managePayload?.success !== true) {
       return jsonResponse(
         {
           success: false,
           message:
-            typeof ownershipPayload?.message === "string"
-              ? ownershipPayload.message
-              : "مالکیت آگهی قابل بررسی نیست.",
+            typeof managePayload?.message === "string"
+              ? managePayload.message
+              : "دسترسی مدیریت این آگهی قابل بررسی نیست.",
         },
-        ownershipResponse.status >= 400 ? ownershipResponse.status : 502,
+        manageResponse.status >= 400 ? manageResponse.status : 502,
       );
     }
 
-    const direct = ownershipPayload.listing;
-    const collection = Array.isArray(ownershipPayload.data) ? ownershipPayload.data : [];
-    const ownershipListing = [direct, ...collection]
-      .filter(isRecord)
-      .find((item) => Number(item.id) === Number(id));
-
-    if (!ownershipListing) {
+    const access = isRecord(managePayload.access) ? managePayload.access : {};
+    if (access.can_manage === false) {
       return jsonResponse(
-        { success: false, message: "این آگهی در فهرست آگهی‌های قابل مدیریت شما نیست." },
+        { success: false, message: "اجازه مدیریت تصاویر این آگهی را ندارید." },
         403,
       );
+    }
+
+    const managedListing = isRecord(managePayload.listing) ? managePayload.listing : {};
+    if (Number(managedListing.id || id) !== Number(id)) {
+      return jsonResponse({ success: false, message: "آگهی قابل مدیریت پیدا نشد." }, 404);
     }
 
     const detailResponse = await fetch(
@@ -82,14 +77,19 @@ export async function GET(
     );
     const detailPayload = await parseJsonResponse(detailResponse);
     const detailListing = isRecord(detailPayload?.data) ? detailPayload.data : {};
+    const manageImages = Array.isArray(managePayload.images) ? managePayload.images : [];
     const responseImages = Array.isArray(detailPayload?.images) ? detailPayload.images : [];
     const listingImages = Array.isArray(detailListing.images) ? detailListing.images : [];
-    const images = responseImages.length ? responseImages : listingImages;
+    const images = manageImages.length
+      ? manageImages
+      : responseImages.length
+        ? responseImages
+        : listingImages;
 
     return jsonResponse({
       success: true,
       listing: {
-        ...ownershipListing,
+        ...managedListing,
         ...detailListing,
         id: Number(id),
       },

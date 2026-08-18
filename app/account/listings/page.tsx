@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import MobileBottomNav from "../../components/MobileBottomNav";
+import AccountVehicleCard from "../components/AccountVehicleCard";
 import styles from "./page.module.css";
 
 type DealerItem = {
@@ -19,14 +20,20 @@ type ListingItem = {
   brand?: string;
   model?: string;
   year?: string | number | null;
+  production_year?: string | number | null;
   price_toman?: string | number | null;
   mileage_km?: string | number | null;
+  color?: string | null;
+  transmission?: string | null;
+  fuel_type?: string | null;
   province?: string;
   city?: string;
   neighborhood?: string;
   listing_owner_type?: "personal" | "dealer";
   seller_display_name?: string;
   dealer_id?: number | null;
+  submitted_by_display_name?: string | null;
+  submitted_by_role?: string | null;
   status?: { code?: string; title?: string };
   cover_image?: { image_id: number; image_url: string } | null;
   image_count?: number;
@@ -102,26 +109,6 @@ function formatNumber(value: number | string | null | undefined) {
   return Number.isFinite(number) ? new Intl.NumberFormat("fa-IR").format(number) : "۰";
 }
 
-function formatPrice(value: number | string | null | undefined) {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
-  if (number >= 1_000_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(number / 1_000_000_000)} میلیارد تومان`;
-  }
-  if (number >= 1_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(number / 1_000_000)} میلیون تومان`;
-  }
-  return `${formatNumber(number)} تومان`;
-}
-
-function statusClass(code?: string) {
-  if (code === "active") return styles.statusActive;
-  if (code === "pending") return styles.statusPending;
-  if (code === "rejected") return styles.statusRejected;
-  if (code === "sold") return styles.statusSold;
-  return styles.statusMuted;
-}
-
 function statusLabel(code?: string, title?: string) {
   const normalized = String(code || "").toLowerCase();
   if (STATUS_LABELS[normalized]) return STATUS_LABELS[normalized];
@@ -187,9 +174,7 @@ export default function AccountListingsPage() {
     if (known) return known;
     if (identityKey.startsWith("dealer:")) {
       const dealerId = Math.max(0, Math.round(Number(identityKey.slice("dealer:".length) || 0)));
-      if (dealerId) {
-        return { key: identityKey, label: `نمایشگاه ${dealerId}`, owner: "dealer", dealerId };
-      }
+      if (dealerId) return { key: identityKey, label: `نمایشگاه ${dealerId}`, owner: "dealer", dealerId };
     }
     return identities[0];
   }, [identities, identityKey]);
@@ -383,53 +368,51 @@ export default function AccountListingsPage() {
         ) : (
           <section className={styles.list}>
             {listings.map((listing) => {
-              const location = [listing.city, listing.neighborhood].filter(Boolean).join("، ") || listing.province || "موقعیت ثبت نشده";
-              const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
               const ownerLabel = listing.listing_owner_type === "dealer"
                 ? (listing.seller_display_name || dealers.find((dealer) => dealer.id === Number(listing.dealer_id))?.dealer_name || "نمایشگاه")
-                : "شخصی";
-              const canStory = String(listing.status?.code || "").toLowerCase() === "active";
+                : "حساب شخصی";
+              const code = String(listing.status?.code || "").toLowerCase();
+              const canStory = code === "active";
+              const actions = storyMode
+                ? canStory
+                  ? [
+                      { href: `/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`, label: "استوری کن", tone: "story" as const },
+                      { href: `/account/listings/${listing.id}`, label: "مدیریت", tone: "secondary" as const },
+                    ]
+                  : [
+                      { href: `/account/listings/${listing.id}`, label: "برای استوری فعال نیست", tone: "secondary" as const },
+                    ]
+                : [
+                    { href: `/account/listings/${listing.id}`, label: "مدیریت", tone: "primary" as const },
+                    { href: `/cars/${listing.id}`, label: "نمایش", tone: "secondary" as const },
+                  ];
 
               return (
-                <article className={styles.card} key={listing.id}>
-                  <div className={styles.imageWrap}>
-                    {listing.cover_image?.image_url ? <img src={listing.cover_image.image_url} alt={listing.title || "خودرو"} /> : <span className={styles.noImage}>بدون عکس</span>}
-                    <span className={`${styles.status} ${statusClass(listing.status?.code)}`}>{statusLabel(listing.status?.code, listing.status?.title)}</span>
-                  </div>
-
-                  <div className={styles.body}>
-                    <div className={styles.titleRow}>
-                      <strong>{listing.title || "آگهی بدون عنوان"}</strong>
-                      <small>#{listing.id}</small>
-                    </div>
-                    <div className={styles.price}>{formatPrice(listing.price_toman)}</div>
-                    <div className={styles.meta}>{vehicle || "مشخصات خودرو ثبت نشده"}</div>
-                    <div className={styles.meta}>{location}{listing.mileage_km ? ` · ${formatNumber(listing.mileage_km)} کیلومتر` : ""}</div>
-                    <span className={styles.owner}>{ownerLabel}</span>
-                    <div className={styles.actions}>
-                      {storyMode ? (
-                        <>
-                          {canStory ? (
-                            <Link
-                              href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
-                              className={styles.manage}
-                            >
-                              استوری کن
-                            </Link>
-                          ) : (
-                            <span className={styles.storyUnavailable}>برای استوری باید فعال باشد</span>
-                          )}
-                          <Link href={`/account/listings/${listing.id}`} className={styles.view}>مدیریت</Link>
-                        </>
-                      ) : (
-                        <>
-                          <Link href={`/account/listings/${listing.id}`} className={styles.manage}>مدیریت</Link>
-                          <Link href={`/cars/${listing.id}`} className={styles.view}>نمایش</Link>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </article>
+                <AccountVehicleCard
+                  key={listing.id}
+                  primaryHref={`/account/listings/${listing.id}`}
+                  data={{
+                    id: listing.id,
+                    title: listing.title,
+                    brand: listing.brand,
+                    model: listing.model,
+                    year: listing.production_year || listing.year,
+                    priceToman: listing.price_toman,
+                    mileageKm: listing.mileage_km,
+                    color: listing.color,
+                    transmission: listing.transmission,
+                    fuelType: listing.fuel_type,
+                    city: listing.city || listing.province,
+                    neighborhood: listing.neighborhood,
+                    coverImageUrl: listing.cover_image?.image_url,
+                    statusCode: code,
+                    statusLabel: statusLabel(listing.status?.code, listing.status?.title),
+                    submittedByDisplayName: listing.submitted_by_display_name,
+                    submittedByRole: listing.submitted_by_role,
+                    publisherFallback: ownerLabel,
+                  }}
+                  actions={actions}
+                />
               );
             })}
           </section>

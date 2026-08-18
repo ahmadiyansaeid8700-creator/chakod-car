@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import MobileBottomNav from "../../../../components/MobileBottomNav";
+import {
+  isUsableListingPhone,
+  normalizeListingPhone,
+} from "../../../../../lib/listing-publication-policy";
 import styles from "./page.module.css";
 
 type ListingData = {
@@ -30,6 +34,14 @@ type ListingData = {
   gearbox?: string | null;
   fuel_type?: string | null;
   category_code?: string | null;
+  contact_phone?: string | null;
+  seller_phone?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  owner_phone?: string | null;
+  owner_mobile?: string | null;
+  dealer_phone?: string | null;
+  dealer_mobile?: string | null;
   status?: { code?: string; title?: string } | string | null;
 };
 
@@ -86,6 +98,10 @@ function cleanNumber(value: string) {
   return toEnglishDigits(value).replace(/[^0-9]/g, "");
 }
 
+function cleanPhoneInput(value: string) {
+  return toEnglishDigits(value).replace(/[^0-9+]/g, "").slice(0, 16);
+}
+
 function formatNumber(value: string) {
   const clean = cleanNumber(value);
   return clean ? clean.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
@@ -93,6 +109,30 @@ function formatNumber(value: string) {
 
 function uniqueOptions(values: string[], current: string) {
   return Array.from(new Set([current, ...values].filter(Boolean)));
+}
+
+function listingPhone(item: ListingData) {
+  const candidates = [
+    item.contact_phone,
+    item.seller_phone,
+    item.phone,
+    item.mobile,
+    item.owner_phone,
+    item.owner_mobile,
+    item.dealer_phone,
+    item.dealer_mobile,
+  ];
+  for (const value of candidates) {
+    const normalized = normalizeListingPhone(value || "");
+    if (isUsableListingPhone(normalized)) return normalized;
+  }
+  return normalizeListingPhone(candidates.find(Boolean) || "");
+}
+
+function statusCodeOf(status: ListingData["status"]) {
+  return typeof status === "string"
+    ? status.trim().toLowerCase()
+    : String(status?.code || "").trim().toLowerCase();
 }
 
 export default function ListingEditClient({ listingId }: { listingId: string }) {
@@ -108,6 +148,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
   const [productionYear, setProductionYear] = useState("");
   const [mileageKm, setMileageKm] = useState("");
   const [priceToman, setPriceToman] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [province, setProvince] = useState("");
   const [city, setCity] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
@@ -158,6 +199,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
       setProductionYear(String(item.production_year || item.year || ""));
       setMileageKm(String(item.mileage_km || ""));
       setPriceToman(String(item.price_toman || ""));
+      setContactPhone(listingPhone(item));
       setProvince(String(item.province || item.province_name || ""));
       setCity(String(item.city || item.city_name || ""));
       setNeighborhood(String(item.neighborhood || ""));
@@ -262,6 +304,12 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
       return;
     }
 
+    const normalizedContactPhone = normalizeListingPhone(contactPhone);
+    if (!isUsableListingPhone(normalizedContactPhone)) {
+      setError("شماره تماس آگهی را کامل و معتبر وارد کنید.");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -280,6 +328,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
           production_year: productionYear,
           mileage_km: Number(cleanNumber(mileageKm) || 0),
           price_toman: Number(cleanNumber(priceToman) || 0),
+          contact_phone: normalizedContactPhone,
           province,
           city,
           neighborhood: hasNeighborhoods ? neighborhood : "",
@@ -307,6 +356,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
 
   const brand = listing?.brand_name || listing?.brand || "ثبت نشده";
   const model = listing?.model_name || listing?.model || "ثبت نشده";
+  const currentStatusCode = statusCodeOf(listing?.status);
   const statusTitle = typeof listing?.status === "object"
     ? listing.status?.title || listing.status?.code
     : listing?.status || "نامشخص";
@@ -347,7 +397,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
               </div>
               <div className={styles.heroActions}>
                 <Link href={`/account/listings/${listingId}/images`}>مدیریت تصاویر</Link>
-                <Link href={`/cars/${listingId}`}>نمایش عمومی</Link>
+                {currentStatusCode === "active" ? <Link href={`/cars/${listingId}`}>نمایش عمومی</Link> : null}
               </div>
             </section>
 
@@ -357,7 +407,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
             <section className={styles.formLayout}>
               <div className={styles.formMain}>
                 <section className={styles.formCard}>
-                  <header><span>اطلاعات اصلی</span><h2>عنوان، سال و مبلغ</h2></header>
+                  <header><span>اطلاعات اصلی</span><h2>عنوان، سال، مبلغ و تماس</h2></header>
                   <label className={styles.fullField}>
                     <span>عنوان آگهی</span>
                     <input value={title} maxLength={180} onChange={(event) => setTitle(event.target.value)} />
@@ -385,6 +435,17 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
                       </div>
                     </label>
                   </div>
+                  <label className={styles.fullField}>
+                    <span>شماره تماس آگهی</span>
+                    <input
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={contactPhone}
+                      onChange={(event) => setContactPhone(cleanPhoneInput(event.target.value))}
+                      placeholder="مثلاً 09123456789"
+                    />
+                    <small>این شماره روی دکمه «تماس با فروشنده» در صفحه عمومی آگهی استفاده می‌شود.</small>
+                  </label>
                 </section>
 
                 <section className={styles.formCard}>
@@ -423,6 +484,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
                   <div><dt>سال</dt><dd>{productionYear || "—"}</dd></div>
                   <div><dt>کارکرد</dt><dd>{formatNumber(mileageKm) || "۰"} کیلومتر</dd></div>
                   <div><dt>قیمت</dt><dd>{formatNumber(priceToman) || "توافقی"}</dd></div>
+                  <div><dt>تماس</dt><dd>{contactPhone || "—"}</dd></div>
                   <div><dt>موقعیت</dt><dd>{[province, city, neighborhood].filter(Boolean).join("، ") || "—"}</dd></div>
                 </dl>
                 <button type="button" disabled={saving} onClick={() => void saveListing()}>

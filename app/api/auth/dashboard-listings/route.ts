@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 const ALLOWED_QUERY_KEYS = ["page", "per_page", "status", "owner", "dealer_id", "q"] as const;
 
 type JsonRecord = Record<string, unknown>;
+type MemberIdentity = { displayName: string; role: string };
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -45,7 +46,53 @@ function upstreamSubmitterRole(item: JsonRecord) {
   return text(item.submitted_by_role) || text(item.creator_role) || text(item.member_role);
 }
 
-async function enrichAttributions(payload: unknown) {
+function upstreamSubmitterUserId(item: JsonRecord) {
+  return positiveId(
+    item.submitted_by_user_id ||
+    item.created_by_user_id ||
+    item.creator_user_id ||
+    item.author_user_id ||
+    item.member_user_id,
+  );
+}
+
+async function resolveDealerMembers(request: NextRequest, dealerIds: number[]) {
+  const result = new Map<string, MemberIdentity>();
+  const uniqueDealerIds = Array.from(new Set(dealerIds.filter(Boolean)));
+
+  await Promise.all(uniqueDealerIds.map(async (dealerId) => {
+    try {
+      const response = await fetch(
+        authApiUrl(`/api/dealer-command-center.php?dealer_id=${encodeURIComponent(String(dealerId))}`),
+        {
+          method: "GET",
+          cache: "no-store",
+          headers: requestIdentityHeaders(request),
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+      const payload = await parseJsonResponse(response);
+      if (!response.ok || !isRecord(payload) || !Array.isArray(payload.members)) return;
+
+      for (const member of payload.members) {
+        if (!isRecord(member)) continue;
+        const userId = positiveId(member.auth_user_id || member.user_id);
+        const displayName = text(member.display_name) || text(member.full_name);
+        if (!userId || !displayName) continue;
+        result.set(`${dealerId}:${userId}`, {
+          displayName,
+          role: text(member.role),
+        });
+      }
+    } catch {
+      // عدم دسترسی به تیم نباید لیست آگهی‌ها را خراب کند.
+    }
+  }));
+
+  return result;
+}
+
+async function enrichAttributions(request: NextRequest, payload: unknown) {
   if (!isRecord(payload) || !Array.isArray(payload.data)) return payload;
 
   const records = payload.data.filter(isRecord);
@@ -76,15 +123,30 @@ async function enrichAttributions(payload: unknown) {
     }
   }
 
+  const dealerIdsNeedingMemberLookup = records
+    .filter((item) => {
+      const listingId = positiveId(item.id);
+      if (listingId && local.has(listingId)) return false;
+      if (upstreamSubmitterName(item)) return false;
+      return positiveId(item.dealer_id) > 0 && upstreamSubmitterUserId(item) > 0;
+    })
+    .map((item) => positiveId(item.dealer_id));
+
+  const memberNames = dealerIdsNeedingMemberLookup.length
+    ? await resolveDealerMembers(request, dealerIdsNeedingMemberLookup)
+    : new Map<string, MemberIdentity>();
+
   return {
     ...payload,
     data: payload.data.map((item) => {
       if (!isRecord(item)) return item;
       const listingId = positiveId(item.id);
       const attribution = listingId ? local.get(listingId) : undefined;
-      const displayName = attribution?.displayName || upstreamSubmitterName(item);
-      const role = attribution?.role || upstreamSubmitterRole(item);
-      const userId = attribution?.userId || positiveId(item.submitted_by_user_id || item.created_by_user_id || item.creator_user_id);
+      const userId = attribution?.userId || upstreamSubmitterUserId(item);
+      const dealerId = positiveId(item.dealer_id);
+      const member = dealerId && userId ? memberNames.get(`${dealerId}:${userId}`) : undefined;
+      const displayName = attribution?.displayName || upstreamSubmitterName(item) || member?.displayName || "";
+      const role = attribution?.role || upstreamSubmitterRole(item) || member?.role || "";
 
       return {
         ...item,
@@ -118,7 +180,7 @@ export async function GET(request: NextRequest) {
     if (!payload) {
       return jsonResponse({ success: false, message: "پاسخ سرویس آگهی‌ها معتبر نیست." }, 502);
     }
-    return jsonResponse(await enrichAttributions(payload), response.status);
+    return jsonResponse(await enrichAttributions(request, payload), response.status);
   } catch {
     return jsonResponse({ success: false, message: "ارتباط با سرویس آگهی‌ها برقرار نشد." }, 502);
   }

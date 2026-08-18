@@ -27,6 +27,16 @@
     border-radius: 13px 13px 0 0 !important;
   }
 
+  .card [data-part="media"] button {
+    top: 5px !important;
+    left: 5px !important;
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    min-height: 27px !important;
+    padding: 0 !important;
+  }
+
   .card [data-part="badge"] {
     top: 5px !important;
     right: 5px !important;

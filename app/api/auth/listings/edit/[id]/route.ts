@@ -23,15 +23,20 @@ function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
+function booleanFlag(value: unknown) {
+  if (value === false || value === 0 || value === "0" || value === "false") return false;
+  if (value === true || value === 1 || value === "1" || value === "true") return true;
+  return null;
+}
+
 async function readOwnedListing(request: NextRequest, id: string) {
   const headers = requestIdentityHeaders(request);
   if (!headers.Authorization) {
     return { ok: false as const, status: 401, message: "برای ویرایش آگهی وارد شوید." };
   }
 
-  const query = new URLSearchParams({ listing_id: id, per_page: "1", page: "1" });
-  const ownershipResponse = await fetch(
-    authApiUrl(`/api/dashboard-listings.php?${query.toString()}`),
+  const manageResponse = await fetch(
+    authApiUrl(`/api/listing-manage.php?listing_id=${encodeURIComponent(id)}`),
     {
       method: "GET",
       cache: "no-store",
@@ -39,26 +44,35 @@ async function readOwnedListing(request: NextRequest, id: string) {
       signal: AbortSignal.timeout(20_000),
     },
   );
-  const ownershipPayload = await parseJsonResponse(ownershipResponse);
+  const managePayload = await parseJsonResponse(manageResponse);
 
-  if (!ownershipResponse.ok || ownershipPayload?.success !== true) {
+  if (!manageResponse.ok || managePayload?.success !== true) {
     return {
       ok: false as const,
-      status: ownershipResponse.status >= 400 ? ownershipResponse.status : 502,
+      status: manageResponse.status >= 400 ? manageResponse.status : 502,
       message:
-        typeof ownershipPayload?.message === "string"
-          ? ownershipPayload.message
-          : "مالکیت آگهی قابل بررسی نیست.",
+        typeof managePayload?.message === "string"
+          ? managePayload.message
+          : "دسترسی مدیریت آگهی قابل بررسی نیست.",
     };
   }
 
-  const direct = ownershipPayload.listing;
-  const collection = Array.isArray(ownershipPayload.data) ? ownershipPayload.data : [];
-  const ownershipListing = [direct, ...collection]
-    .filter(isRecord)
-    .find((item) => Number(item.id) === Number(id));
+  const access = isRecord(managePayload.access) ? managePayload.access : null;
+  if (access && booleanFlag(access.can_manage) === false) {
+    return {
+      ok: false as const,
+      status: 403,
+      message: "اجازه ویرایش این آگهی را ندارید.",
+    };
+  }
 
-  if (!ownershipListing) {
+  const managedListing = isRecord(managePayload.listing)
+    ? managePayload.listing
+    : isRecord(managePayload.data)
+      ? managePayload.data
+      : null;
+
+  if (!managedListing || Number(managedListing.id) !== Number(id)) {
     return {
       ok: false as const,
       status: 403,
@@ -66,22 +80,27 @@ async function readOwnedListing(request: NextRequest, id: string) {
     };
   }
 
-  const detailResponse = await fetch(
-    authApiUrl(`/api/listing-detail.php?id=${encodeURIComponent(id)}`),
-    {
-      method: "GET",
-      cache: "no-store",
-      headers,
-      signal: AbortSignal.timeout(20_000),
-    },
-  );
-  const detailPayload = await parseJsonResponse(detailResponse);
-  const detailListing = isRecord(detailPayload?.data) ? detailPayload.data : {};
+  let detailListing: Record<string, unknown> = {};
+  try {
+    const detailResponse = await fetch(
+      authApiUrl(`/api/listing-detail.php?id=${encodeURIComponent(id)}`),
+      {
+        method: "GET",
+        cache: "no-store",
+        headers,
+        signal: AbortSignal.timeout(20_000),
+      },
+    );
+    const detailPayload = await parseJsonResponse(detailResponse);
+    if (isRecord(detailPayload?.data)) detailListing = detailPayload.data;
+  } catch {
+    // The authenticated management payload is sufficient for editing pending/private listings.
+  }
 
   return {
     ok: true as const,
     headers,
-    listing: { ...ownershipListing, ...detailListing, id: Number(id) },
+    listing: { ...managedListing, ...detailListing, id: Number(id) },
   };
 }
 

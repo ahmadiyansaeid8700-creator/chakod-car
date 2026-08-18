@@ -7,6 +7,63 @@
   min-width: 0;
 }
 
+.managedCard [data-part="body"] {
+  padding: 0 16px 14px !important;
+}
+
+.managedCard [data-part="identity"] {
+  min-height: 62px !important;
+  margin-top: -31px !important;
+  grid-template-columns: 62px minmax(0, 1fr) !important;
+  gap: 14px !important;
+}
+
+.managedCard [data-part="brand-mark"] {
+  width: 62px !important;
+  height: 62px !important;
+  border-width: 4px !important;
+  font-size: 21px !important;
+}
+
+.managedCard [data-part="heading"] {
+  min-width: 0;
+  padding-inline-start: 8px !important;
+  padding-bottom: 3px !important;
+}
+
+.managedCard [data-part="heading"] a {
+  font-size: 14px !important;
+}
+
+.managedCard [data-part="meta"] {
+  min-height: 42px !important;
+  margin-top: 12px !important;
+}
+
+.managedCard [data-part="specs"] {
+  margin-top: 11px !important;
+  gap: 7px !important;
+}
+
+.managedCard [data-part="specs"] > span {
+  min-height: 54px !important;
+  padding: 7px 4px !important;
+}
+
+.managedCard [data-part="price"] {
+  margin-top: 10px !important;
+  font-size: 16px !important;
+}
+
+.managedCard [data-part="seller"] {
+  margin-top: 9px !important;
+  padding-top: 9px !important;
+}
+
+.managedCard .customActions {
+  margin-top: 8px;
+}
+
 @media (max-width: 640px) {
   .card {
     aspect-ratio: 1 / 1;
@@ -68,6 +125,7 @@
   }
 
   .card [data-part="heading"] {
+    padding-inline-start: 3px !important;
     padding-bottom: 1px !important;
   }
 

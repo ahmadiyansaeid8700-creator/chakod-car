@@ -40,20 +40,41 @@ type NormalizedImage = {
 type MutationResponse = {
   success?: boolean;
   message?: string;
-  image_id?: number;
+  image_id?: number | string;
   image_url?: string;
   is_cover?: boolean;
 };
 
+const API_BASE = "https://api.chakod.com";
 const MAX_IMAGE_COUNT = 6;
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
+const REQUEST_TIMEOUT_MS = 25_000;
+const UPLOAD_TIMEOUT_MS = 90_000;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+function getToken() {
+  return localStorage.getItem("chakod_session_token") || "";
+}
+
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem("chakod_session_token") || "";
+  const token = getToken();
   return token
     ? { Authorization: `Bearer ${token}`, "X-Session-Token": token }
     : {};
+}
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = REQUEST_TIMEOUT_MS,
+) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
 }
 
 async function readJson<T>(response: Response): Promise<T | null> {
@@ -122,11 +143,65 @@ function normalizeImages(payload: ImagesResponse | null): NormalizedImage[] {
   });
 }
 
+function uploadImage(
+  listingId: string,
+  file: File,
+  onProgress: (progress: number) => void,
+) {
+  return new Promise<MutationResponse>((resolve, reject) => {
+    const token = getToken();
+    const directUpload = Boolean(token);
+    const xhr = new XMLHttpRequest();
+
+    xhr.open(
+      "POST",
+      directUpload
+        ? `${API_BASE}/api/upload-listing-image.php`
+        : "/api/auth/listings/images/upload",
+    );
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
+    xhr.withCredentials = !directUpload;
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("X-Session-Token", token);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100))));
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const payload = JSON.parse(xhr.responseText || "{}") as MutationResponse;
+        resolve(payload);
+      } catch {
+        reject(new Error("پاسخ سرور برای آپلود عکس معتبر نبود."));
+      }
+    };
+    xhr.onerror = () => reject(new Error("ارتباط با سرور هنگام آپلود عکس قطع شد."));
+    xhr.onabort = () => reject(new Error("آپلود عکس متوقف شد."));
+    xhr.ontimeout = () => reject(new Error("آپلود بیش از حد طول کشید؛ دوباره تلاش کنید."));
+
+    const body = new FormData();
+    body.append("listing_id", listingId);
+    body.append("image", file);
+    xhr.send(body);
+  });
+}
+
+function isTimeoutError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 export default function ListingImagesClient({ listingId }: { listingId: string }) {
   const [listing, setListing] = useState<ListingInfo | null>(null);
   const [images, setImages] = useState<NormalizedImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [activeImageId, setActiveImageId] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -136,18 +211,18 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
   const canUpload = imageCount < MAX_IMAGE_COUNT;
   const freeSlots = Math.max(0, MAX_IMAGE_COUNT - imageCount);
 
-  async function loadImages() {
+  async function loadImages(showLoader = true) {
     if (!validId) {
       setError("شناسه آگهی معتبر نیست.");
-      setLoading(false);
-      return;
+      if (showLoader) setLoading(false);
+      return false;
     }
 
-    setLoading(true);
+    if (showLoader) setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/auth/listings/images/${listingId}`, {
+      const response = await fetchWithTimeout(`/api/auth/listings/images/${listingId}`, {
         cache: "no-store",
         credentials: "include",
         headers: { Accept: "application/json", ...authHeaders() },
@@ -158,20 +233,26 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
         window.location.assign(
           `/login?returnTo=${encodeURIComponent(`/account/listings/${listingId}/images`)}`,
         );
-        return;
+        return false;
       }
 
       if (!response.ok || !payload?.success || !payload.listing) {
         setError(payload?.message || "عکس‌های آگهی دریافت نشد.");
-        return;
+        return false;
       }
 
       setListing(payload.listing);
       setImages(normalizeImages(payload));
-    } catch {
-      setError("ارتباط با سرویس عکس‌های آگهی برقرار نشد.");
+      return true;
+    } catch (loadError) {
+      setError(
+        isTimeoutError(loadError)
+          ? "دریافت عکس‌ها بیش از حد طول کشید. دوباره تلاش کنید."
+          : "ارتباط با سرویس عکس‌های آگهی برقرار نشد.",
+      );
+      return false;
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }
 
@@ -201,40 +282,42 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     }
 
     setWorking(true);
+    setUploadProgress(0);
     setError("");
     setNotice("");
     let uploaded = 0;
 
     try {
-      for (const file of files) {
-        const body = new FormData();
-        body.set("listing_id", listingId);
-        body.set("image", file);
-
-        const response = await fetch("/api/auth/listings/images/upload", {
-          method: "POST",
-          credentials: "include",
-          headers: authHeaders(),
-          body,
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const payload = await uploadImage(listingId, file, (fileProgress) => {
+          const overall = Math.round(((index + fileProgress / 100) / files.length) * 100);
+          setUploadProgress(overall);
         });
-        const payload = await readJson<MutationResponse>(response);
 
-        if (!response.ok || !payload?.success) {
+        if (!payload?.success) {
           throw new Error(payload?.message || `آپلود ${file.name} انجام نشد.`);
         }
         uploaded += 1;
       }
 
-      if (selected.length > files.length) {
+      setUploadProgress(100);
+      const refreshed = await loadImages(false);
+      if (!refreshed) {
+        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس آپلود شد؛ برای تازه‌سازی گالری دوباره وارد صفحه شوید.`);
+      } else if (selected.length > files.length) {
         setNotice(`${uploaded.toLocaleString("fa-IR")} عکس اضافه شد؛ ظرفیت این آگهی ۶ عکس است.`);
       } else {
         setNotice(`${uploaded.toLocaleString("fa-IR")} عکس با موفقیت اضافه شد.`);
       }
-      await loadImages();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "آپلود عکس‌ها انجام نشد.");
+      if (uploaded > 0) {
+        await loadImages(false);
+      }
     } finally {
       setWorking(false);
+      setUploadProgress(0);
     }
   }
 
@@ -246,7 +329,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     setNotice("");
 
     try {
-      const response = await fetch("/api/auth/listings/images/cover", {
+      const response = await fetchWithTimeout("/api/auth/listings/images/cover", {
         method: "POST",
         cache: "no-store",
         credentials: "include",
@@ -265,7 +348,13 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       setImages((current) => current.map((item) => ({ ...item, isCover: item.id === image.id })));
       setNotice("عکس اصلی آگهی تغییر کرد.");
     } catch (coverError) {
-      setError(coverError instanceof Error ? coverError.message : "تغییر عکس اصلی انجام نشد.");
+      setError(
+        isTimeoutError(coverError)
+          ? "تغییر عکس اصلی بیش از حد طول کشید. دوباره تلاش کنید."
+          : coverError instanceof Error
+            ? coverError.message
+            : "تغییر عکس اصلی انجام نشد.",
+      );
     } finally {
       setActiveImageId(0);
       setWorking(false);
@@ -282,7 +371,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     setNotice("");
 
     try {
-      const response = await fetch("/api/auth/listings/images/delete", {
+      const response = await fetchWithTimeout("/api/auth/listings/images/delete", {
         method: "POST",
         cache: "no-store",
         credentials: "include",
@@ -299,9 +388,15 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       }
 
       setNotice("عکس حذف شد.");
-      await loadImages();
+      await loadImages(false);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "حذف عکس انجام نشد.");
+      setError(
+        isTimeoutError(deleteError)
+          ? "حذف عکس بیش از حد طول کشید. دوباره تلاش کنید."
+          : deleteError instanceof Error
+            ? deleteError.message
+            : "حذف عکس انجام نشد.",
+      );
     } finally {
       setActiveImageId(0);
       setWorking(false);
@@ -375,7 +470,11 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                       disabled={working}
                       onChange={(event) => void uploadFiles(event)}
                     />
-                    {working ? "در حال انجام…" : "+ افزودن عکس"}
+                    {working
+                      ? uploadProgress > 0
+                        ? `آپلود ${uploadProgress.toLocaleString("fa-IR")}٪`
+                        : "در حال اتصال…"
+                      : "+ افزودن عکس"}
                   </label>
                 ) : (
                   <span className={styles.fullBadge}>۶/۶ تکمیل</span>
@@ -428,7 +527,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                       onChange={(event) => void uploadFiles(event)}
                     />
                     <span className={styles.plus}>＋</span>
-                    <strong>افزودن عکس</strong>
+                    <strong>{working ? "در حال آپلود…" : "افزودن عکس"}</strong>
                     <small>جایگاه {(imageCount + index + 1).toLocaleString("fa-IR")}</small>
                   </label>
                 ))}

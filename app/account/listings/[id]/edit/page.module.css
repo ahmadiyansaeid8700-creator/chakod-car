@@ -92,16 +92,114 @@
 .hero {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
+  gap: 22px;
   border-radius: 28px;
   background: linear-gradient(135deg, #32104f, #6d28d9 62%, #8b5cf6);
-  padding: 32px 36px;
+  padding: 22px 26px;
   color: #fff;
   box-shadow: 0 24px 55px rgba(73, 34, 120, 0.22);
 }
 
-.hero > div:first-child > span {
+.heroImageLink {
+  position: relative;
+  width: 184px;
+  height: 132px;
+  flex: 0 0 184px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 19px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.17), transparent 30%),
+    rgba(255, 255, 255, 0.08);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(28, 7, 49, 0.18);
+}
+
+.heroImageLink img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.heroImageLink:hover img {
+  transform: scale(1.025);
+}
+
+.heroImageEmpty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3px;
+  text-align: center;
+}
+
+.heroImageEmpty b {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.heroImageEmpty strong {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.heroImageEmpty small {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 8px;
+}
+
+.heroImageHint {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  background: rgba(37, 10, 63, 0.72);
+  backdrop-filter: blur(8px);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.heroImageCount {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  min-width: 35px;
+  min-height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #5d2295;
+  font-size: 8px;
+  font-weight: 950;
+}
+
+.heroCopy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.heroCopy > span {
   color: #ddd0ff;
   font-size: 11px;
   font-weight: 900;
@@ -109,7 +207,10 @@
 
 .hero h1 {
   margin: 7px 0 8px;
-  font-size: clamp(28px, 4vw, 44px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(27px, 3.4vw, 42px);
 }
 
 .hero p {
@@ -366,18 +467,78 @@
   }
 
   .hero {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 25px 21px;
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 15px;
     border-radius: 22px;
   }
 
+  .heroImageLink {
+    width: 108px;
+    height: 108px;
+    border-radius: 16px;
+  }
+
+  .heroImageEmpty b {
+    width: 31px;
+    height: 31px;
+    border-radius: 10px;
+    font-size: 19px;
+  }
+
+  .heroImageEmpty strong {
+    font-size: 9px;
+  }
+
+  .heroImageEmpty small {
+    font-size: 6.8px;
+  }
+
+  .heroImageHint {
+    right: 5px;
+    bottom: 5px;
+    min-height: 21px;
+    padding: 0 6px;
+    font-size: 6.6px;
+  }
+
+  .heroImageCount {
+    top: 5px;
+    left: 5px;
+    min-width: 29px;
+    min-height: 21px;
+    padding: 0 5px;
+    font-size: 6.7px;
+  }
+
+  .heroCopy > span {
+    font-size: 8px;
+  }
+
+  .hero h1 {
+    margin: 4px 0 5px;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+
+  .hero p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+
   .heroActions {
+    grid-column: 1 / -1;
     width: 100%;
   }
 
   .heroActions a {
+    min-height: 37px;
     flex: 1;
+    font-size: 9px;
   }
 
   .formCard,

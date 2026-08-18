@@ -20,12 +20,13 @@ type ListingInfo = {
   title?: string;
   cover_image?: string | { image_url?: string } | null;
   image_count?: number;
+  images?: RawImage[];
 };
 
 type ImagesResponse = {
   success?: boolean;
   message?: string;
-  listing?: ListingInfo & { images?: RawImage[] };
+  listing?: ListingInfo;
   images?: RawImage[];
 };
 
@@ -80,32 +81,45 @@ function normalizeImages(payload: ImagesResponse | null): NormalizedImage[] {
     ...(Array.isArray(payload?.images) ? payload!.images! : []),
     ...(Array.isArray(payload?.listing?.images) ? payload!.listing!.images! : []),
   ];
+
   const cover = payload?.listing?.cover_image;
-  const coverUrl = typeof cover === "string" ? cover : cover?.image_url || "";
-  if (coverUrl) {
-    raw.unshift({ image_url: coverUrl, is_cover: true, sort_order: -1 });
+  const coverUrl = normalizeUrl(typeof cover === "string" ? cover : cover?.image_url || "");
+  const byUrl = new Map<string, NormalizedImage>();
+
+  raw.forEach((item, index) => {
+    const url = normalizeUrl(item.image_url || item.url || "");
+    if (!url) return;
+
+    const id = Number(item.image_id ?? item.id ?? 0);
+    const next: NormalizedImage = {
+      id: Number.isFinite(id) ? id : 0,
+      url,
+      isCover: Boolean(item.is_cover) || Boolean(coverUrl && url === coverUrl),
+      sortOrder: Number(item.sort_order ?? index),
+    };
+
+    const current = byUrl.get(url);
+    if (!current) {
+      byUrl.set(url, next);
+      return;
+    }
+
+    byUrl.set(url, {
+      id: current.id > 0 ? current.id : next.id,
+      url,
+      isCover: current.isCover || next.isCover,
+      sortOrder: Math.min(current.sortOrder, next.sortOrder),
+    });
+  });
+
+  if (coverUrl && !byUrl.has(coverUrl)) {
+    byUrl.set(coverUrl, { id: 0, url: coverUrl, isCover: true, sortOrder: -1 });
   }
 
-  const seen = new Set<string>();
-  return raw
-    .map((item, index) => {
-      const url = normalizeUrl(item.image_url || item.url || "");
-      return {
-        id: Number(item.image_id ?? item.id ?? 0),
-        url,
-        isCover: Boolean(item.is_cover),
-        sortOrder: Number(item.sort_order ?? index),
-      };
-    })
-    .filter((item) => {
-      if (!item.url || seen.has(item.url)) return false;
-      seen.add(item.url);
-      return true;
-    })
-    .sort((a, b) => {
-      if (a.isCover !== b.isCover) return a.isCover ? -1 : 1;
-      return a.sortOrder - b.sortOrder;
-    });
+  return Array.from(byUrl.values()).sort((a, b) => {
+    if (a.isCover !== b.isCover) return a.isCover ? -1 : 1;
+    return a.sortOrder - b.sortOrder;
+  });
 }
 
 export default function ListingImagesClient({ listingId }: { listingId: string }) {
@@ -120,6 +134,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
   const validId = /^\d+$/.test(listingId) && Number(listingId) > 0;
   const imageCount = images.length;
   const canUpload = imageCount < MAX_IMAGE_COUNT;
+  const freeSlots = Math.max(0, MAX_IMAGE_COUNT - imageCount);
 
   async function loadImages() {
     if (!validId) {
@@ -147,14 +162,14 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       }
 
       if (!response.ok || !payload?.success || !payload.listing) {
-        setError(payload?.message || "تصاویر آگهی دریافت نشد.");
+        setError(payload?.message || "عکس‌های آگهی دریافت نشد.");
         return;
       }
 
       setListing(payload.listing);
       setImages(normalizeImages(payload));
     } catch {
-      setError("ارتباط با سرویس تصاویر برقرار نشد.");
+      setError("ارتباط با سرویس عکس‌های آگهی برقرار نشد.");
     } finally {
       setLoading(false);
     }
@@ -176,12 +191,12 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     );
 
     if (!available) {
-      setError("برای هر آگهی حداکثر ۶ تصویر قابل ثبت است.");
+      setError("ظرفیت ۶ عکس این آگهی تکمیل است.");
       return;
     }
 
     if (invalid) {
-      setError("فرمت تصاویر باید JPG، PNG یا WEBP و حجم هر فایل حداکثر ۶ مگابایت باشد.");
+      setError("فرمت عکس باید JPG، PNG یا WEBP و حجم هر فایل حداکثر ۶ مگابایت باشد.");
       return;
     }
 
@@ -205,15 +220,19 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
         const payload = await readJson<MutationResponse>(response);
 
         if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || `آپلود تصویر ${file.name} انجام نشد.`);
+          throw new Error(payload?.message || `آپلود ${file.name} انجام نشد.`);
         }
         uploaded += 1;
       }
 
-      setNotice(`${new Intl.NumberFormat("fa-IR").format(uploaded)} تصویر با موفقیت اضافه شد.`);
+      if (selected.length > files.length) {
+        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس اضافه شد؛ ظرفیت این آگهی ۶ عکس است.`);
+      } else {
+        setNotice(`${uploaded.toLocaleString("fa-IR")} عکس با موفقیت اضافه شد.`);
+      }
       await loadImages();
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "آپلود تصاویر انجام نشد.");
+      setError(uploadError instanceof Error ? uploadError.message : "آپلود عکس‌ها انجام نشد.");
     } finally {
       setWorking(false);
     }
@@ -240,13 +259,13 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       });
       const payload = await readJson<MutationResponse>(response);
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "تغییر تصویر اصلی انجام نشد.");
+        throw new Error(payload?.message || "تغییر عکس اصلی انجام نشد.");
       }
 
       setImages((current) => current.map((item) => ({ ...item, isCover: item.id === image.id })));
-      setNotice("تصویر اصلی آگهی تغییر کرد.");
+      setNotice("عکس اصلی آگهی تغییر کرد.");
     } catch (coverError) {
-      setError(coverError instanceof Error ? coverError.message : "تغییر تصویر اصلی انجام نشد.");
+      setError(coverError instanceof Error ? coverError.message : "تغییر عکس اصلی انجام نشد.");
     } finally {
       setActiveImageId(0);
       setWorking(false);
@@ -255,8 +274,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
 
   async function deleteImage(image: NormalizedImage) {
     if (!image.id || working) return;
-    const confirmed = window.confirm("این تصویر از آگهی حذف شود؟");
-    if (!confirmed) return;
+    if (!window.confirm("این عکس از آگهی حذف شود؟")) return;
 
     setWorking(true);
     setActiveImageId(image.id);
@@ -277,13 +295,13 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       });
       const payload = await readJson<MutationResponse>(response);
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "حذف تصویر انجام نشد.");
+        throw new Error(payload?.message || "حذف عکس انجام نشد.");
       }
 
-      setNotice("تصویر از آگهی حذف شد.");
+      setNotice("عکس حذف شد.");
       await loadImages();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "حذف تصویر انجام نشد.");
+      setError(deleteError instanceof Error ? deleteError.message : "حذف عکس انجام نشد.");
     } finally {
       setActiveImageId(0);
       setWorking(false);
@@ -296,8 +314,8 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.header}>
-          <Link href={`/account/listings/${listingId}`}>← مدیریت آگهی</Link>
-          <Link className={styles.brand} href="/">
+          <Link className={styles.backLink} href={`/account/listings/${listingId}/edit`}>← بازگشت به ویرایش</Link>
+          <Link className={styles.brand} href="/" aria-label="چاکود">
             <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
           </Link>
         </header>
@@ -305,14 +323,15 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
         {loading && (
           <section className={styles.stateCard}>
             <span className={styles.loader} />
-            <h1>در حال دریافت تصاویر آگهی</h1>
+            <h1>در حال آماده‌سازی عکس‌ها</h1>
+            <p>چند لحظه صبر کنید.</p>
           </section>
         )}
 
         {!loading && error && !listing && (
           <section className={styles.stateCard}>
             <span className={styles.stateIcon}>!</span>
-            <h1>تصاویر در دسترس نیستند</h1>
+            <h1>عکس‌ها در دسترس نیستند</h1>
             <p>{error}</p>
             <button type="button" onClick={() => void loadImages()}>تلاش دوباره</button>
           </section>
@@ -320,89 +339,110 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
 
         {!loading && listing && (
           <>
-            <section className={styles.hero}>
-              <div>
-                <span>مدیریت رسانه آگهی</span>
+            <section className={styles.titleCard}>
+              <div className={styles.titleText}>
+                <span>عکس‌های آگهی</span>
                 <h1>{listing.title || `آگهی شماره ${listing.id}`}</h1>
-                <p>حداکثر ۶ تصویر واقعی و واضح اضافه کنید. تصویر اصلی روی کارت و صفحه آگهی نمایش داده می‌شود.</p>
+                <p>تا ۶ عکس واضح از زوایای مختلف خودرو انتخاب کنید. عکس اصلی روی کارت آگهی دیده می‌شود.</p>
               </div>
-              <div className={styles.heroStats}>
-                <strong>{new Intl.NumberFormat("fa-IR").format(imageCount)}</strong>
-                <span>تصویر از {new Intl.NumberFormat("fa-IR").format(MAX_IMAGE_COUNT)}</span>
+              <div className={styles.capacity} aria-label={`${imageCount} عکس از ۶`}>
+                <strong>{imageCount.toLocaleString("fa-IR")}</strong>
+                <span>از ۶ عکس</span>
               </div>
             </section>
+
+            <div className={styles.progress} aria-hidden="true">
+              {Array.from({ length: MAX_IMAGE_COUNT }, (_, index) => (
+                <i key={index} className={index < imageCount ? styles.progressFilled : ""} />
+              ))}
+            </div>
 
             {error && <div className={styles.error}>{error}</div>}
             {notice && <div className={styles.notice}>{notice}</div>}
 
-            <section className={styles.uploadPanel}>
-              <div>
-                <span>افزودن تصویر</span>
-                <h2>تصاویر جدید را انتخاب کنید</h2>
-                <p>فرمت‌های JPG، PNG و WEBP با حداکثر حجم ۶ مگابایت برای هر تصویر پذیرفته می‌شوند.</p>
-              </div>
-              <label className={`${styles.uploadButton} ${!canUpload || working ? styles.disabled : ""}`}>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  disabled={!canUpload || working}
-                  onChange={(event) => void uploadFiles(event)}
-                />
-                {working ? "در حال انجام عملیات..." : canUpload ? "انتخاب تصاویر" : "ظرفیت تصاویر تکمیل است"}
-              </label>
-            </section>
-
-            {cover && (
-              <section className={styles.coverPanel}>
-                <div className={styles.coverImage}><img src={cover.url} alt="تصویر اصلی آگهی" /></div>
+            <section className={styles.board}>
+              <header className={styles.boardHeader}>
                 <div>
-                  <span>تصویر اصلی فعلی</span>
-                  <h2>این تصویر روی کارت آگهی نمایش داده می‌شود</h2>
-                  <p>برای تغییر آن، روی «انتخاب به‌عنوان اصلی» در یکی از تصاویر پایین بزنید.</p>
+                  <span>گالری خودرو</span>
+                  <h2>{cover ? "عکس اصلی را مشخص کنید" : "اولین عکس را اضافه کنید"}</h2>
                 </div>
-              </section>
-            )}
+                {canUpload ? (
+                  <label className={`${styles.addButton} ${working ? styles.disabled : ""}`}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={working}
+                      onChange={(event) => void uploadFiles(event)}
+                    />
+                    {working ? "در حال انجام…" : "+ افزودن عکس"}
+                  </label>
+                ) : (
+                  <span className={styles.fullBadge}>۶/۶ تکمیل</span>
+                )}
+              </header>
 
-            {images.length ? (
-              <section className={styles.imageGrid}>
+              <div className={styles.slotsGrid}>
                 {images.map((image, index) => (
-                  <article key={`${image.id}-${image.url}`} className={`${styles.imageCard} ${image.isCover ? styles.coverCard : ""}`}>
-                    <div className={styles.imageWrap}>
-                      <img src={image.url} alt={`تصویر ${index + 1} آگهی`} />
-                      {image.isCover && <span>تصویر اصلی</span>}
+                  <article
+                    key={`${image.id}-${image.url}`}
+                    className={`${styles.photoSlot} ${image.isCover ? styles.coverSlot : ""}`}
+                  >
+                    <div className={styles.photoFrame}>
+                      <img src={image.url} alt={`عکس ${index + 1} آگهی`} />
+                      <span className={styles.slotNumber}>{(index + 1).toLocaleString("fa-IR")}</span>
+                      {image.isCover ? <span className={styles.coverBadge}>عکس اصلی</span> : null}
                     </div>
-                    <div className={styles.imageActions}>
+                    <div className={styles.photoActions}>
                       <button
                         type="button"
                         disabled={!image.id || image.isCover || working}
                         onClick={() => void setCover(image)}
                       >
-                        {activeImageId === image.id && working ? "در حال ذخیره..." : image.isCover ? "تصویر اصلی" : "انتخاب به‌عنوان اصلی"}
+                        {activeImageId === image.id && working
+                          ? "در حال ذخیره…"
+                          : image.isCover
+                            ? "اصلی"
+                            : "انتخاب به‌عنوان اصلی"}
                       </button>
                       <button
                         type="button"
                         className={styles.deleteButton}
                         disabled={!image.id || working}
                         onClick={() => void deleteImage(image)}
+                        aria-label={`حذف عکس ${index + 1}`}
                       >
                         حذف
                       </button>
                     </div>
                   </article>
                 ))}
-              </section>
-            ) : (
-              <section className={styles.emptyState}>
-                <span>▧</span>
-                <h2>هنوز تصویری ثبت نشده است</h2>
-                <p>حداقل یک تصویر واقعی از خودرو اضافه کنید تا آگهی برای خریداران قابل اعتمادتر باشد.</p>
-              </section>
-            )}
+
+                {Array.from({ length: freeSlots }, (_, index) => (
+                  <label key={`empty-${index}`} className={`${styles.emptySlot} ${working ? styles.disabled : ""}`}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={working}
+                      onChange={(event) => void uploadFiles(event)}
+                    />
+                    <span className={styles.plus}>＋</span>
+                    <strong>افزودن عکس</strong>
+                    <small>جایگاه {(imageCount + index + 1).toLocaleString("fa-IR")}</small>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className={styles.hints}>
+              <div><b>۱</b><span>عکس اصلی را از نمای مناسب خودرو انتخاب کنید.</span></div>
+              <div><b>۲</b><span>عکس تار، اسکرین‌شات و تصویر تکراری استفاده نکنید.</span></div>
+              <div><b>۳</b><span>JPG، PNG یا WEBP؛ حداکثر ۶ مگابایت برای هر عکس.</span></div>
+            </section>
 
             <div className={styles.bottomActions}>
-              <Link href={`/account/listings/${listingId}`}>بازگشت به مدیریت آگهی</Link>
-              <Link href={`/cars/${listingId}`}>مشاهده نسخه عمومی</Link>
+              <Link href={`/account/listings/${listingId}/edit`}>تمام؛ بازگشت به ویرایش آگهی</Link>
             </div>
           </>
         )}

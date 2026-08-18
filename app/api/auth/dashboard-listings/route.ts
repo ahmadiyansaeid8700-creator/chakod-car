@@ -9,6 +9,7 @@ import {
   parseJsonResponse,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import { ensureListingAttributionTable } from "../../../../lib/listing-attribution-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,6 +102,7 @@ async function enrichAttributions(request: NextRequest, payload: unknown) {
 
   if (listingIds.length) {
     try {
+      await ensureListingAttributionTable();
       const rows = await getDb()
         .select({
           listingId: listingAttributions.listingId,
@@ -119,7 +121,7 @@ async function enrichAttributions(request: NextRequest, payload: unknown) {
         });
       }
     } catch {
-      // در زمان rollout، نبود موقت جدول نباید لیست آگهی‌ها را از دسترس خارج کند.
+      // نبود موقت storage نباید لیست آگهی‌ها را از دسترس خارج کند.
     }
   }
 

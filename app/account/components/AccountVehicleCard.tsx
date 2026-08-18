@@ -43,6 +43,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 function numeric(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }

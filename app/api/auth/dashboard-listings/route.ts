@@ -93,8 +93,8 @@ async function resolveDealerMembers(request: NextRequest, dealerIds: number[]) {
   return result;
 }
 
-async function enrichAttributions(request: NextRequest, payload: unknown) {
-  if (!isRecord(payload) || !Array.isArray(payload.data)) return payload;
+async function enrichAttributions(request: NextRequest, payload: JsonRecord): Promise<JsonRecord> {
+  if (!Array.isArray(payload.data)) return payload;
 
   const records = payload.data.filter(isRecord);
   const listingIds = Array.from(new Set(records.map((item) => positiveId(item.id)).filter(Boolean)));

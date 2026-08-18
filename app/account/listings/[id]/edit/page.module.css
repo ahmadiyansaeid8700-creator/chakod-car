@@ -165,7 +165,7 @@
   right: 7px;
   bottom: 7px;
   min-height: 25px;
-  display: inline-flex;
+  display: none;
   align-items: center;
   padding: 0 8px;
   border: 1px solid rgba(255, 255, 255, 0.55);

@@ -45,6 +45,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <Link href="/cars">خودروها</Link>
             <Link href="/dealerships">نمایشگاه‌ها</Link>
             <Link href="/businesses">کسب‌وکارها</Link>
+            <Link href="/articles">مقاله</Link>
           </div>
 
           <div className="masterNavActions">

@@ -152,7 +152,7 @@ export default function ListingCard({
   const href = hrefOverride || `/cars/${listing.id}`;
   const imageUrl = getImageUrl(listing.cover_image);
   const sellerLabel = identityName?.trim() || getSellerLabel(listing);
-  const sellerType = getSellerType(listing);
+  const sellerType = identityName?.trim() || getSellerType(listing);
   const dealerVerified = identityVerified ?? Boolean(listing.dealer_verified || listing.is_dealer_verified);
   const sellerDetail = identityDetail?.trim() || (dealerVerified
     ? "نمایشگاه تأییدشده چاکود"

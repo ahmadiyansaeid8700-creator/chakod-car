@@ -264,12 +264,17 @@ export default function AccountListingsPage() {
   }
 
   const scopedDealer = selectedIdentity.owner === "dealer" ? selectedIdentity : null;
+  const backHref = storyMode
+    ? "/"
+    : requestedDealerId
+      ? `/account/business?dealer_id=${requestedDealerId}`
+      : "/account";
 
   return (
     <main className={styles.page} dir="rtl">
       <div className={styles.shell}>
         <header className={styles.topbar}>
-          <Link href={storyMode ? "/" : "/account"} className={styles.back}>
+          <Link href={backHref} className={styles.back}>
             {storyMode ? "بازگشت به صفحه اصلی" : "بازگشت به حساب"}
           </Link>
           <Link href="/" className={styles.logo} aria-label="چاکود"><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></Link>

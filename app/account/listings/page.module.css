@@ -88,40 +88,11 @@
 .resultLine { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 2px 6px; color:#8c7d96; font-size:8.5px; }
 .resultLine button { border:0; background:transparent; color:#6d28d9; font:inherit; font-size:8px; font-weight:850; cursor:pointer; }
 
-.list { display:grid; gap:8px; }
-.card {
-  display:grid;
-  grid-template-columns: 92px minmax(0,1fr);
-  gap:10px;
-  padding:8px;
-  border:1px solid #ebe3f1;
-  border-radius:16px;
-  background:#fff;
-  box-shadow:0 8px 24px rgba(68,32,92,.035);
+.list {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
 }
-
-.imageWrap { position:relative; min-height:82px; border-radius:12px; overflow:hidden; background:#f3eef7; }
-.imageWrap img { width:100%; height:100%; min-height:82px; object-fit:cover; display:block; }
-.noImage { height:100%; min-height:82px; display:grid; place-items:center; color:#9b8ca5; font-size:8px; }
-.status { position:absolute; right:5px; top:5px; max-width:80px; padding:4px 6px; border-radius:999px; font-size:7px; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.statusActive { color:#08775a; background:#ecfaf5; }
-.statusPending { color:#8a5b00; background:#fff4d6; }
-.statusRejected { color:#aa2742; background:#fff0f3; }
-.statusSold { color:#31568f; background:#eef4ff; }
-.statusMuted { color:#71677a; background:#f0edf2; }
-
-.body { min-width:0; display:grid; align-content:start; }
-.titleRow { min-width:0; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-.titleRow strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#271735; font-size:11px; line-height:1.6; }
-.titleRow small { flex:0 0 auto; color:#a092aa; font-size:7px; direction:ltr; }
-.price { margin-top:2px; color:#4f1d78; font-size:10px; font-weight:900; }
-.meta { margin-top:4px; overflow:hidden; color:#8e8098; font-size:8px; line-height:1.6; text-overflow:ellipsis; white-space:nowrap; }
-.owner { margin-top:5px; display:inline-flex; width:max-content; max-width:100%; min-height:22px; align-items:center; padding:0 7px; border-radius:999px; color:#6624ad; background:#f3ebfb; font-size:7.5px; font-weight:850; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.actions { display:flex; gap:6px; margin-top:7px; align-items:center; flex-wrap:wrap; }
-.actions a { min-height:29px; display:inline-flex; align-items:center; justify-content:center; padding:0 9px; border-radius:9px; text-decoration:none; font-size:8px; font-weight:900; }
-.manage { color:#fff; background:#6d28d9; }
-.view { color:#6d28d9; background:#f2eafb; }
-.storyUnavailable { min-height:29px; display:inline-flex; align-items:center; padding:0 9px; border-radius:9px; color:#8a5b00; background:#fff4d6; font-size:7.5px; font-weight:850; }
 
 .state {
   margin-top:9px;
@@ -150,6 +121,15 @@
 .pagination span { color:#8e8098; font-size:8px; }
 .bottomSpace { height:calc(94px + env(safe-area-inset-bottom,0px)); }
 
+@media (max-width: 420px) {
+  .shell { padding-inline: 8px; }
+  .headerCard { gap: 8px; padding: 11px; }
+  .headerCard h1 { font-size: 17px; }
+  .headerCard p { max-width: 240px; }
+  .addButton { min-height: 34px; padding-inline: 9px; font-size: 8.5px; }
+  .list { gap: 7px; }
+}
+
 @media (min-width:700px) {
   .shell { padding:18px 14px 0; }
   .topbar { min-height:54px; }
@@ -164,8 +144,5 @@
   .filtersTop { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.75fr); gap:10px; align-items:start; }
   .identityRow { margin-top:0; justify-content:flex-end; }
   .searchRow { grid-template-columns:minmax(0,1fr) 80px; }
-  .list { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .card { grid-template-columns:112px minmax(0,1fr); padding:9px; }
-  .imageWrap,.imageWrap img,.noImage { min-height:96px; }
-  .titleRow strong { font-size:12px; }
+  .list { grid-template-columns:repeat(3,minmax(0,1fr)); gap: 11px; }
 }

@@ -1,5 +1,6 @@
 import ListingCard from "./ListingCard";
 import type { CatalogListing } from "../ads/[segment]/catalog-types";
+import styles from "./MarketListingItem.module.css";
 
 type Props = {
   listing: CatalogListing;
@@ -9,12 +10,14 @@ type Props = {
 
 export default function MarketListingItem({ listing, tone, badge }: Props) {
   return (
-    <ListingCard
-      listing={listing}
-      tone={tone}
-      badge={badge}
-      variant="grid"
-      showActions
-    />
+    <div className={styles.item}>
+      <ListingCard
+        listing={listing}
+        tone={tone}
+        badge={badge}
+        variant="grid"
+        showActions
+      />
+    </div>
   );
 }

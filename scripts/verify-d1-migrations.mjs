@@ -24,6 +24,7 @@ const migrations = [
   "drizzle/0005_selected_showroom_content.sql",
   "drizzle/0006_account_activity_members.sql",
   "drizzle/0007_instagram_story_queue.sql",
+  "drizzle/0008_listing_attributions.sql",
 ];
 
 const expectedTables = [
@@ -43,6 +44,7 @@ const expectedTables = [
   "selected_showroom_content",
   "account_activity_members",
   "instagram_story_queue",
+  "listing_attributions",
 ];
 
 function run(args) {

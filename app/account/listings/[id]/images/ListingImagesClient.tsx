@@ -100,9 +100,7 @@ function normalizeUrl(value?: string | null) {
   if (!url) return "";
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
   const path = url.startsWith("/") ? url : `/${url}`;
-  return path.startsWith("/uploads/")
-    ? `https://chakod.com${path}`
-    : `https://api.chakod.com${path}`;
+  return `https://api.chakod.com${path}`;
 }
 
 function normalizeImages(payload: ImagesResponse | null): NormalizedImage[] {
@@ -339,7 +337,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       patchPending(pending.localId, { status: "uploading", progress: 0, error: undefined });
 
       try {
-        const payload = await uploadImage(listingId, file, (fileProgress) => {
+        await uploadImage(listingId, file, (fileProgress) => {
           patchPending(pending.localId, { status: "uploading", progress: fileProgress });
           const overall = Math.round(((index + fileProgress / 100) / files.length) * 100);
           setUploadProgress(overall);

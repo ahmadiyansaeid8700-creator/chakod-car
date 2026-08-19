@@ -47,11 +47,13 @@ type MutationResponse = {
 
 type PendingUpload = {
   localId: string;
+  file: File;
   fileName: string;
   previewUrl: string;
   status: "queued" | "uploading" | "uploaded" | "error";
   progress: number;
   error?: string;
+  retryable?: boolean;
 };
 
 const MAX_IMAGE_COUNT = 6;
@@ -149,6 +151,16 @@ function normalizeImages(payload: ImagesResponse | null): NormalizedImage[] {
   });
 }
 
+function uploadFailure(message: string, retryable = false) {
+  const error = new Error(message) as Error & { retryable?: boolean };
+  error.retryable = retryable;
+  return error;
+}
+
+function isRetryableUploadError(error: unknown) {
+  return error instanceof Error && Boolean((error as Error & { retryable?: boolean }).retryable);
+}
+
 function uploadImage(
   listingId: string,
   file: File,
@@ -181,30 +193,30 @@ function uploadImage(
       try {
         payload = JSON.parse(xhr.responseText || "{}") as MutationResponse;
       } catch {
-        reject(new Error("پاسخ سرور برای آپلود عکس معتبر نبود."));
+        reject(uploadFailure("پاسخ سرویس آپلود معتبر نبود."));
         return;
       }
 
       if (xhr.status === 401) {
-        reject(new Error("نشست ورود منقضی شده است؛ صفحه را تازه کنید و دوباره تلاش کنید."));
+        reject(uploadFailure("نشست ورود منقضی شده است؛ صفحه را تازه کنید و دوباره تلاش کنید."));
         return;
       }
 
       if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new Error(payload?.message || `آپلود با خطای ${xhr.status} متوقف شد.`));
+        reject(uploadFailure(payload?.message || `سرویس آپلود با خطای ${xhr.status} پاسخ داد.`));
         return;
       }
 
       if (!payload?.success) {
-        reject(new Error(payload?.message || "سرور آپلود عکس را تأیید نکرد."));
+        reject(uploadFailure(payload?.message || "سرویس، آپلود عکس را تأیید نکرد."));
         return;
       }
 
       resolve(payload);
     };
-    xhr.onerror = () => reject(new Error("ارتباط با سرور هنگام آپلود عکس قطع شد."));
-    xhr.onabort = () => reject(new Error("آپلود عکس متوقف شد."));
-    xhr.ontimeout = () => reject(new Error("آپلود بیش از حد طول کشید؛ دوباره تلاش کنید."));
+    xhr.onerror = () => reject(uploadFailure("ارتباط هنگام بارگذاری عکس قطع شد.", true));
+    xhr.onabort = () => reject(uploadFailure("ارتباط بارگذاری متوقف شد.", true));
+    xhr.ontimeout = () => reject(uploadFailure("زمان ارتباط برای بارگذاری عکس تمام شد.", true));
 
     const body = new FormData();
     body.append("listing_id", listingId);
@@ -293,6 +305,56 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     );
   }
 
+  function discardPendingUpload(item: PendingUpload) {
+    if (working) return;
+    URL.revokeObjectURL(item.previewUrl);
+    setPendingUploads((current) => current.filter((pending) => pending.localId !== item.localId));
+    setError("");
+  }
+
+  async function retryPendingUpload(item: PendingUpload) {
+    if (working || item.status !== "error" || !item.retryable) return;
+
+    setWorking(true);
+    setUploadProgress(0);
+    setError("");
+    setNotice("");
+    patchPending(item.localId, {
+      status: "uploading",
+      progress: 0,
+      error: undefined,
+      retryable: false,
+    });
+
+    try {
+      await uploadImage(listingId, item.file, (progress) => {
+        setUploadProgress(progress);
+        patchPending(item.localId, { status: "uploading", progress });
+      });
+
+      patchPending(item.localId, { status: "uploaded", progress: 100 });
+      const refreshed = await loadImages(false);
+      if (refreshed) {
+        URL.revokeObjectURL(item.previewUrl);
+        setPendingUploads((current) => current.filter((pending) => pending.localId !== item.localId));
+      }
+      setNotice("عکس با موفقیت بارگذاری شد.");
+    } catch (retryError) {
+      const message = retryError instanceof Error ? retryError.message : "بارگذاری مجدد عکس انجام نشد.";
+      const retryable = isRetryableUploadError(retryError);
+      patchPending(item.localId, {
+        status: "error",
+        progress: 0,
+        error: message,
+        retryable,
+      });
+      setError(message);
+    } finally {
+      setWorking(false);
+      setUploadProgress(0);
+    }
+  }
+
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files || []);
     event.target.value = "";
@@ -316,6 +378,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
 
     const previews: PendingUpload[] = files.map((file, index) => ({
       localId: makeLocalId(index),
+      file,
       fileName: file.name,
       previewUrl: URL.createObjectURL(file),
       status: "queued",
@@ -334,10 +397,15 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index];
       const pending = previews[index];
-      patchPending(pending.localId, { status: "uploading", progress: 0, error: undefined });
+      patchPending(pending.localId, {
+        status: "uploading",
+        progress: 0,
+        error: undefined,
+        retryable: false,
+      });
 
       try {
-        const payload = await uploadImage(listingId, file, (fileProgress) => {
+        await uploadImage(listingId, file, (fileProgress) => {
           patchPending(pending.localId, { status: "uploading", progress: fileProgress });
           const overall = Math.round(((index + fileProgress / 100) / files.length) * 100);
           setUploadProgress(overall);
@@ -348,7 +416,12 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       } catch (uploadError) {
         const message = uploadError instanceof Error ? uploadError.message : `آپلود ${file.name} انجام نشد.`;
         failedMessages.push(message);
-        patchPending(pending.localId, { status: "error", progress: 0, error: message });
+        patchPending(pending.localId, {
+          status: "error",
+          progress: 0,
+          error: message,
+          retryable: isRetryableUploadError(uploadError),
+        });
       }
     }
 
@@ -461,6 +534,15 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       setActiveImageId(0);
       setWorking(false);
     }
+  }
+
+  function confirmImages() {
+    if (working) return;
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.assign(`/account/listings/${listingId}/edit`);
   }
 
   const cover = useMemo(() => images.find((image) => image.isCover) || images[0] || null, [images]);
@@ -580,7 +662,11 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                 {pendingUploads.map((item, index) => {
                   const ready = item.status === "uploaded";
                   const failed = item.status === "error";
+                  const retryable = failed && Boolean(item.retryable);
                   const slotNumber = imageCount + index + 1;
+                  const failureText = retryable
+                    ? "ارتباط قطع شد"
+                    : `خطای سرویس: ${item.error || "آپلود عکس انجام نشد."}`;
                   return (
                     <article
                       key={item.localId}
@@ -616,21 +702,23 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                             <span
                               style={{
                                 display: "inline-flex",
+                                maxWidth: "92%",
                                 minHeight: 34,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 border: "1px solid rgba(255,255,255,.38)",
                                 borderRadius: 12,
                                 background: failed ? "rgba(160,30,58,.9)" : "rgba(68,27,105,.8)",
-                                padding: "0 12px",
+                                padding: "7px 12px",
                                 color: "#fff",
                                 fontSize: 10,
                                 fontWeight: 950,
+                                lineHeight: 1.7,
                                 backdropFilter: "blur(8px)",
                               }}
                             >
                               {failed
-                                ? "آپلود نشد"
+                                ? failureText
                                 : item.status === "queued"
                                   ? "در صف آپلود…"
                                   : `${item.progress.toLocaleString("fa-IR")}٪`}
@@ -640,10 +728,21 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
                         {ready && <span className={styles.coverBadge}>آپلود شد ✓</span>}
                       </div>
                       <div className={styles.photoActions}>
-                        <button type="button" disabled>
-                          {failed ? "آپلود ناموفق" : ready ? "آماده" : "در حال بارگذاری…"}
+                        <button
+                          type="button"
+                          disabled={!retryable || working}
+                          onClick={() => void retryPendingUpload(item)}
+                        >
+                          {retryable ? (working ? "در حال اتصال…" : "بارگذاری مجدد") : failed ? "خطای آپلود" : ready ? "آماده" : "در حال بارگذاری…"}
                         </button>
-                        <button type="button" className={styles.deleteButton} disabled>حذف</button>
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          disabled={!failed || working}
+                          onClick={() => discardPendingUpload(item)}
+                        >
+                          حذف
+                        </button>
                       </div>
                     </article>
                   );
@@ -673,7 +772,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
             </section>
 
             <div className={styles.bottomActions}>
-              <Link href={`/account/listings/${listingId}/edit`}>تمام؛ بازگشت به ویرایش آگهی</Link>
+              <button type="button" disabled={working} onClick={confirmImages}>تأیید</button>
             </div>
           </>
         )}

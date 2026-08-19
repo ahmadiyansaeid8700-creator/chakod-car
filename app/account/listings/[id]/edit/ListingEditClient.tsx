@@ -77,6 +77,19 @@ type ImagesPreviewResponse = {
 
 const API_BASE = "https://api.chakod.com";
 const MAX_IMAGE_COUNT = 6;
+const STATUS_TITLES: Record<string, string> = {
+  active: "فعال",
+  approved: "تأیید شده",
+  pending: "در انتظار بررسی",
+  pending_review: "در انتظار بررسی",
+  under_review: "در حال بررسی",
+  rejected: "رد شده",
+  sold: "فروخته شده",
+  inactive: "غیرفعال",
+  disabled: "غیرفعال",
+  draft: "پیش‌نویس",
+  expired: "منقضی شده",
+};
 
 const colors = [
   "سفید", "مشکی", "نقره‌ای", "نوک‌مدادی", "خاکستری", "آبی", "سرمه‌ای",
@@ -154,10 +167,26 @@ function statusCodeOf(status: ListingData["status"]) {
     : String(status?.code || "").trim().toLowerCase();
 }
 
+function statusTitleOf(status: ListingData["status"]) {
+  const code = statusCodeOf(status);
+  if (code && STATUS_TITLES[code]) return STATUS_TITLES[code];
+
+  const raw = typeof status === "object"
+    ? String(status?.title || status?.code || "").trim()
+    : String(status || "").trim();
+  return raw || "نامشخص";
+}
+
 function normalizeImageUrl(value?: string | null) {
   if (!value) return "";
   const url = value.trim();
   if (!url) return "";
+  if (/^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i.test(url)) {
+    return url.replace(
+      /^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i,
+      "https://api.chakod.com/uploads/",
+    );
+  }
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
   const path = url.startsWith("/") ? url : `/${url}`;
   return `https://api.chakod.com${path}`;
@@ -415,7 +444,11 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
       const payload = await readJson<EditResponse>(response);
 
       if (!response.ok || !payload?.success) {
-        setError(payload?.message || "ذخیره تغییرات انجام نشد.");
+        setError(
+          response.status === 503
+            ? "ذخیره تغییرات فعلاً در دسترس نیست. لطفاً کمی بعد دوباره تلاش کنید."
+            : payload?.message || "ذخیره تغییرات انجام نشد.",
+        );
         return;
       }
 
@@ -432,9 +465,8 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
   const brand = listing?.brand_name || listing?.brand || "ثبت نشده";
   const model = listing?.model_name || listing?.model || "ثبت نشده";
   const currentStatusCode = statusCodeOf(listing?.status);
-  const statusTitle = typeof listing?.status === "object"
-    ? listing.status?.title || listing.status?.code
-    : listing?.status || "نامشخص";
+  const statusTitle = statusTitleOf(listing?.status);
+  const canViewPublic = currentStatusCode === "active" || currentStatusCode === "approved";
 
   return (
     <main className={styles.page} dir="rtl">
@@ -494,7 +526,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
               </div>
 
               <div className={styles.heroActions}>
-                {currentStatusCode === "active" ? <Link href={`/cars/${listingId}`}>نمایش عمومی</Link> : null}
+                {canViewPublic ? <Link href={`/cars/${listingId}`}>نمایش عمومی</Link> : null}
               </div>
             </section>
 

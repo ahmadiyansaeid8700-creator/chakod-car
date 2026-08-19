@@ -466,7 +466,7 @@ export default function ListingEditClient({ listingId }: { listingId: string }) 
   const model = listing?.model_name || listing?.model || "ثبت نشده";
   const currentStatusCode = statusCodeOf(listing?.status);
   const statusTitle = statusTitleOf(listing?.status);
-  const canViewPublic = currentStatusCode === "active" || currentStatusCode === "approved";
+  const canViewPublic = currentStatusCode === "active";
 
   return (
     <main className={styles.page} dir="rtl">

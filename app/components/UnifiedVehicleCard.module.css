@@ -7,6 +7,34 @@
   min-width: 0;
 }
 
+.card [data-part="heading"] a {
+  color: #18121f !important;
+  font-weight: 950 !important;
+}
+
+.card [data-part="vehicle-name"] {
+  color: #514858 !important;
+  font-size: 9.5px !important;
+  font-weight: 850 !important;
+}
+
+.card [data-part="meta"] b {
+  color: #3c3342 !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+}
+
+.card [data-part="specs"] small {
+  color: #746b7a !important;
+  font-weight: 850 !important;
+}
+
+.card [data-part="specs"] strong {
+  color: #2e2633 !important;
+  font-size: 8.7px !important;
+  font-weight: 950 !important;
+}
+
 .card [data-part="seller"] {
   display: none !important;
 }
@@ -150,7 +178,7 @@
   }
 
   .card [data-part="identity"] {
-    min-height: 34px !important;
+    min-height: 36px !important;
     margin-top: 0 !important;
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 0 !important;
@@ -171,10 +199,10 @@
 
   .card [data-part="heading"] a {
     max-width: 100%;
-    color: #211329 !important;
-    font-size: 10.4px !important;
+    color: #17101d !important;
+    font-size: 11.5px !important;
     font-weight: 950 !important;
-    line-height: 1.38 !important;
+    line-height: 1.4 !important;
     white-space: normal !important;
     overflow: hidden !important;
     overflow-wrap: anywhere;
@@ -186,18 +214,19 @@
   .card [data-part="vehicle-name"] {
     min-width: 0;
     max-width: 100%;
-    margin-top: 1px !important;
+    margin-top: 2px !important;
     display: block !important;
     overflow: hidden;
-    color: #8b7d95 !important;
-    font-size: 6.8px !important;
-    line-height: 1.3 !important;
+    color: #332a38 !important;
+    font-size: 8.1px !important;
+    font-weight: 900 !important;
+    line-height: 1.35 !important;
     text-overflow: ellipsis;
     white-space: nowrap !important;
   }
 
   .card [data-part="meta"] {
-    min-height: 21px !important;
+    min-height: 23px !important;
     margin-top: 6px !important;
     padding: 0 !important;
     border: 0 !important;
@@ -208,7 +237,7 @@
 
   .card [data-part="meta"] > span {
     min-width: 0;
-    min-height: 21px;
+    min-height: 23px;
     padding: 0 4px;
     border: 1px solid rgba(109, 40, 217, .10);
     border-radius: 7px;
@@ -217,7 +246,9 @@
   }
 
   .card [data-part="meta"] b {
-    font-size: 6.2px !important;
+    color: #2f2734 !important;
+    font-size: 7.2px !important;
+    font-weight: 900 !important;
   }
 
   .card [data-part="meta"] svg {
@@ -242,7 +273,7 @@
   }
 
   .card [data-part="specs"] > span {
-    min-height: 29px !important;
+    min-height: 31px !important;
     padding: 3px 3px !important;
     border: 1px solid rgba(91, 54, 117, .10) !important;
     border-radius: 8px !important;
@@ -257,13 +288,15 @@
   }
 
   .card [data-part="specs"] small {
-    color: #988aa1 !important;
-    font-size: 5.8px !important;
+    color: #625968 !important;
+    font-size: 6.4px !important;
+    font-weight: 850 !important;
   }
 
   .card [data-part="specs"] strong {
-    color: #4b3858 !important;
-    font-size: 7px !important;
+    color: #241d29 !important;
+    font-size: 8.2px !important;
+    font-weight: 950 !important;
   }
 
   .card [data-part="price"] {
@@ -299,15 +332,15 @@
   }
 
   .card [data-part="identity"] {
-    min-height: 32px !important;
+    min-height: 34px !important;
   }
 
   .card [data-part="heading"] a {
-    font-size: 9.5px !important;
+    font-size: 10.5px !important;
   }
 
   .card [data-part="vehicle-name"] {
-    font-size: 6.2px !important;
+    font-size: 7.5px !important;
   }
 
   .card [data-part="meta"] {
@@ -319,11 +352,11 @@
   }
 
   .card [data-part="meta"] b {
-    font-size: 5.7px !important;
+    font-size: 6.6px !important;
   }
 
   .card [data-part="specs"] strong {
-    font-size: 6.5px !important;
+    font-size: 7.5px !important;
   }
 
   .card [data-part="price"] {

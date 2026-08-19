@@ -17,6 +17,8 @@ import {
 
 const API_BASE = "https://api.chakod.com";
 const STORY_DURATION_MS = 6500;
+const MAX_STORIES_PER_OWNER = 10;
+const MAX_OWNER_BUBBLES = 12;
 
 type HomeStoryItem = {
   story_id: number;
@@ -36,11 +38,20 @@ type HomeStoryItem = {
     image_url: string;
   } | null;
   public_url: string;
-
-  // آماده برای API نسخهٔ ویدئویی استوری؛ نبودن این فیلدها مشکلی ایجاد نمی‌کند.
   media_type?: "image" | "video";
   media_url?: string | null;
   thumbnail_url?: string | null;
+
+  // APIهای فعلی و بعدی ممکن است شناسه مالک را با یکی از این نام‌ها برگردانند.
+  // وجود شناسه باعث می‌شود حتی حساب‌های شخصی با نام عمومی، درست گروه‌بندی شوند.
+  story_owner_key?: string | null;
+  owner_key?: string | null;
+  dealer_id?: number | null;
+  owner_id?: number | null;
+  owner_user_id?: number | null;
+  user_id?: number | null;
+  account_id?: number | null;
+  publisher_id?: number | null;
 };
 
 type HomeStoriesResponse = {
@@ -48,6 +59,12 @@ type HomeStoriesResponse = {
   message?: string;
   count?: number;
   data?: HomeStoryItem[];
+};
+
+type StoryGroup = {
+  key: string;
+  label: string;
+  items: HomeStoryItem[];
 };
 
 function formatPrice(value: number | string | null | undefined) {
@@ -73,7 +90,7 @@ function formatPrice(value: number | string | null | undefined) {
 }
 
 function shortTitle(value: string, maxLength = 18) {
-  if (!value) return "آگهی چاکود";
+  if (!value) return "چاکود";
   return value.length <= maxLength ? value : `${value.slice(0, maxLength)}…`;
 }
 
@@ -97,17 +114,96 @@ function getStoryLocation(item: HomeStoryItem) {
   return [item.city, item.neighborhood].filter(Boolean).join("، ") || "ایران";
 }
 
+function normalizedSellerName(item: HomeStoryItem) {
+  return String(item.seller_display_name || "").trim();
+}
+
+function isGenericPersonalLabel(value: string) {
+  return !value || /^(شخصی|فروشنده شخصی|کاربر چاکود|فروشنده)$/u.test(value);
+}
+
+function storyOwnerKey(item: HomeStoryItem) {
+  const explicitKey = String(item.story_owner_key || item.owner_key || "").trim();
+  if (explicitKey) return `owner:${explicitKey}`;
+
+  const numericCandidates = [
+    item.dealer_id,
+    item.owner_id,
+    item.owner_user_id,
+    item.user_id,
+    item.account_id,
+    item.publisher_id,
+  ];
+  const numericOwner = numericCandidates.find(
+    (value) => Number.isSafeInteger(Number(value)) && Number(value) > 0,
+  );
+  if (numericOwner) {
+    return `${item.listing_owner_type || "owner"}:${Number(numericOwner)}`;
+  }
+
+  const seller = normalizedSellerName(item);
+  if (item.listing_owner_type === "dealer" && seller) {
+    return `dealer-name:${seller}`;
+  }
+
+  if (item.listing_owner_type === "personal" && !isGenericPersonalLabel(seller)) {
+    return `personal-name:${seller}`;
+  }
+
+  // بدون شناسه قابل اتکا، دو فروشنده شخصی متفاوت را اشتباه یکی نمی‌کنیم.
+  return `story:${item.story_id}`;
+}
+
+function storyOwnerLabel(item: HomeStoryItem) {
+  const seller = normalizedSellerName(item);
+  if (item.listing_owner_type === "dealer") return seller || "نمایشگاه";
+  if (seller && !isGenericPersonalLabel(seller)) return seller;
+  return "فروشنده شخصی";
+}
+
+function groupStories(items: HomeStoryItem[]) {
+  const groups = new Map<string, StoryGroup>();
+
+  items.forEach((item) => {
+    const key = storyOwnerKey(item);
+    const current = groups.get(key);
+
+    if (current) {
+      if (current.items.length < MAX_STORIES_PER_OWNER) current.items.push(item);
+      return;
+    }
+
+    groups.set(key, {
+      key,
+      label: storyOwnerLabel(item),
+      items: [item],
+    });
+  });
+
+  return Array.from(groups.values()).slice(0, MAX_OWNER_BUBBLES);
+}
+
 export default function HomeStories() {
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState<HomeStoryItem[]>([]);
   const [location, setLocation] =
     useState<HomeLocationSelection>(DEFAULT_HOME_LOCATION);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const touchStartX = useRef<number | null>(null);
 
+  const storyGroups = useMemo(() => groupStories(stories), [stories]);
+  const activeGroup = useMemo(
+    () =>
+      activeGroupIndex === null ? null : storyGroups[activeGroupIndex] || null,
+    [activeGroupIndex, storyGroups],
+  );
   const activeStory = useMemo(
-    () => (activeIndex === null ? null : stories[activeIndex] || null),
-    [activeIndex, stories],
+    () =>
+      activeGroup && activeItemIndex !== null
+        ? activeGroup.items[activeItemIndex] || null
+        : null,
+    [activeGroup, activeItemIndex],
   );
 
   useEffect(() => {
@@ -116,14 +212,12 @@ export default function HomeStories() {
     const handleLocationChange = (event: Event) => {
       const customEvent = event as CustomEvent<HomeLocationSelection>;
       setLocation(customEvent.detail || loadHomeLocation());
-      setActiveIndex(null);
+      setActiveGroupIndex(null);
+      setActiveItemIndex(null);
     };
 
     window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
-
-    return () => {
-      window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
-    };
+    return () => window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
   }, []);
 
   useEffect(() => {
@@ -136,11 +230,11 @@ export default function HomeStories() {
         const scopes = getHomeLocationScopes(location);
         const queries =
           location.mode === "all" || scopes.length === 0
-            ? [new URLSearchParams({ scope: "all", limit: "12" })]
+            ? [new URLSearchParams({ scope: "all", limit: "80" })]
             : scopes.map((scope) => {
                 const params = new URLSearchParams({
                   province: scope.province,
-                  limit: "12",
+                  limit: "80",
                 });
 
                 if (!scope.allCities) {
@@ -166,7 +260,7 @@ export default function HomeStories() {
         if (!ignore) {
           const merged = new Map<number, HomeStoryItem>();
           responses.flat().forEach((item) => merged.set(item.story_id, item));
-          setStories(Array.from(merged.values()).slice(0, 12));
+          setStories(Array.from(merged.values()));
         }
       } catch {
         if (!ignore) setStories([]);
@@ -176,7 +270,6 @@ export default function HomeStories() {
     }
 
     void loadStories();
-
     return () => {
       ignore = true;
     };
@@ -207,29 +300,40 @@ export default function HomeStories() {
   }, []);
 
   const closeStory = useCallback(() => {
-    setActiveIndex(null);
+    setActiveGroupIndex(null);
+    setActiveItemIndex(null);
   }, []);
 
+  function openGroup(groupIndex: number) {
+    const group = storyGroups[groupIndex];
+    const firstStory = group?.items[0];
+    if (!group || !firstStory) return;
+
+    setActiveGroupIndex(groupIndex);
+    setActiveItemIndex(0);
+    trackClick(firstStory);
+  }
+
   const showPrevious = useCallback(() => {
-    setActiveIndex((current) => {
-      if (current === null || stories.length === 0) return null;
-      return (current - 1 + stories.length) % stories.length;
-    });
-  }, [stories.length]);
+    if (!activeGroup || activeItemIndex === null) return;
+    const nextIndex = Math.max(0, activeItemIndex - 1);
+    if (nextIndex === activeItemIndex) return;
+    setActiveItemIndex(nextIndex);
+    trackClick(activeGroup.items[nextIndex]);
+  }, [activeGroup, activeItemIndex, trackClick]);
 
   const showNext = useCallback(() => {
-    setActiveIndex((current) => {
-      if (current === null || stories.length === 0) return null;
-      return (current + 1) % stories.length;
-    });
-  }, [stories.length]);
+    if (!activeGroup || activeItemIndex === null) return;
+    const nextIndex = activeItemIndex + 1;
 
-  function openStory(index: number) {
-    const item = stories[index];
-    if (!item) return;
-    trackClick(item);
-    setActiveIndex(index);
-  }
+    if (nextIndex >= activeGroup.items.length) {
+      closeStory();
+      return;
+    }
+
+    setActiveItemIndex(nextIndex);
+    trackClick(activeGroup.items[nextIndex]);
+  }, [activeGroup, activeItemIndex, closeStory, trackClick]);
 
   useEffect(() => {
     if (!activeStory) return;
@@ -244,7 +348,6 @@ export default function HomeStories() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
@@ -253,16 +356,11 @@ export default function HomeStories() {
 
   useEffect(() => {
     if (!activeStory) return;
-
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    if (reduceMotion) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const timer = window.setTimeout(showNext, STORY_DURATION_MS);
     return () => window.clearTimeout(timer);
-  }, [activeStory, activeIndex, showNext]);
+  }, [activeStory, activeItemIndex, showNext]);
 
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
     touchStartX.current = event.changedTouches[0]?.clientX ?? null;
@@ -274,7 +372,6 @@ export default function HomeStories() {
     touchStartX.current = null;
 
     if (startX === null || endX === undefined) return;
-
     const distance = endX - startX;
     if (Math.abs(distance) < 48) return;
 
@@ -282,85 +379,72 @@ export default function HomeStories() {
     else showNext();
   }
 
-  // در صفحه عمومی، استوری فقط وقتی محتوای واقعی دارد نمایش داده می‌شود.
-  // پیام یا کادر خالی باعث شلوغی و فاصلهٔ اضافی در صفحه اصلی نمی‌شود.
-  if (!loading && stories.length === 0) {
-    return null;
-  }
-
   return (
     <section
       className="homeStories"
       dir="rtl"
-      aria-label="استوری‌های آگهی چاکود"
+      aria-label="استوری‌های چاکود"
     >
-      <div className="storyHeader">
-        <div>
-          <span>استوری‌های تأییدشده</span>
-          <h2>ویژه‌های {location.label}</h2>
-        </div>
+      <div className="storyScroller">
+        <a
+          className="storyItem storyOwnItem"
+          href="/account/stories"
+          aria-label="انتخاب آگهی برای استوری شما"
+        >
+          <span className="storyRing storyOwnRing">
+            <span className="storyAvatar storyOwnAvatar">
+              <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
+            </span>
+          </span>
+          <strong>استوری شما</strong>
+        </a>
 
-        <a href="/dashboard/listings">مدیریت استوری من</a>
+        {loading
+          ? [1, 2, 3, 4, 5].map((item) => (
+              <div className="storySkeleton" key={item} aria-hidden="true">
+                <div />
+                <span />
+              </div>
+            ))
+          : storyGroups.map((group, groupIndex) => {
+              const firstStory = group.items[0];
+              const imageUrl = firstStory ? getStoryImage(firstStory) : "";
+
+              return (
+                <button
+                  type="button"
+                  className="storyItem"
+                  key={group.key}
+                  onClick={() => openGroup(groupIndex)}
+                  title={group.label}
+                  aria-label={`بازکردن ${group.items.length.toLocaleString("fa-IR")} استوری از ${group.label}`}
+                >
+                  <span className="storyRing">
+                    <span className="storyAvatar">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <b>چ</b>
+                      )}
+                    </span>
+                    {group.items.length > 1 ? (
+                      <span className="storyCount">
+                        {group.items.length.toLocaleString("fa-IR")}
+                      </span>
+                    ) : null}
+                  </span>
+                  <strong>{shortTitle(group.label, 14)}</strong>
+                </button>
+              );
+            })}
       </div>
 
-      {loading ? (
-        <div className="storyScroller" aria-label="در حال دریافت استوری‌ها">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <div className="storySkeleton" key={item} aria-hidden="true">
-              <div />
-              <span />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="storyScroller">
-          {stories.map((item, index) => {
-            const imageUrl = getStoryImage(item);
-
-            return (
-              <button
-                type="button"
-                className="storyItem"
-                key={item.story_id}
-                onClick={() => openStory(index)}
-                title={item.title}
-                aria-label={`بازکردن استوری ${item.title}`}
-              >
-                <span className="storyRing">
-                  <span className="storyAvatar">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <b>چ</b>
-                    )}
-                  </span>
-                </span>
-
-                <strong>{shortTitle(item.brand || item.title, 14)}</strong>
-                <span className="storyPrice">
-                  {formatPrice(item.price_toman)}
-                </span>
-
-                {item.listing_owner_type === "dealer" ? (
-                  <em>{item.seller_display_name || "نمایشگاه"}</em>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {activeStory && activeIndex !== null ? (
+      {activeStory && activeGroup && activeItemIndex !== null ? (
         <div
           className="storyViewer"
           role="dialog"
           aria-modal="true"
-          aria-label={`استوری ${activeStory.title}`}
+          aria-label={`استوری‌های ${activeGroup.label}`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -373,14 +457,14 @@ export default function HomeStories() {
 
           <article className="storyViewerCard">
             <div className="storyProgress" aria-hidden="true">
-              {stories.map((story, index) => (
+              {activeGroup.items.map((story, index) => (
                 <span key={story.story_id}>
                   <i
                     key={`${activeStory.story_id}-${index}`}
                     className={
-                      index < activeIndex
+                      index < activeItemIndex
                         ? "done"
-                        : index === activeIndex
+                        : index === activeItemIndex
                           ? "active"
                           : ""
                     }
@@ -398,14 +482,11 @@ export default function HomeStories() {
                     "چ"
                   )}
                 </span>
-
                 <div>
-                  <strong>
-                    {activeStory.seller_display_name ||
-                      activeStory.brand ||
-                      "چاکود"}
-                  </strong>
-                  <small>{getStoryLocation(activeStory)}</small>
+                  <strong>{activeGroup.label}</strong>
+                  <small>
+                    {getStoryLocation(activeStory)} · {Number(activeItemIndex + 1).toLocaleString("fa-IR")} از {Number(activeGroup.items.length).toLocaleString("fa-IR")}
+                  </small>
                 </div>
               </div>
 
@@ -415,8 +496,7 @@ export default function HomeStories() {
             </div>
 
             <div className="storyMedia">
-              {activeStory.media_type === "video" &&
-              getStoryMedia(activeStory) ? (
+              {activeStory.media_type === "video" && getStoryMedia(activeStory) ? (
                 <video
                   key={activeStory.story_id}
                   src={getStoryMedia(activeStory)}
@@ -446,11 +526,10 @@ export default function HomeStories() {
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
-
                 <a
                   href={
                     activeStory.public_url ||
-                    `/listing/${encodeURIComponent(activeStory.listing_id)}`
+                    `/cars/${encodeURIComponent(activeStory.listing_id)}`
                   }
                 >
                   مشاهده آگهی کامل
@@ -458,13 +537,14 @@ export default function HomeStories() {
               </div>
             </div>
 
-            {stories.length > 1 ? (
+            {activeGroup.items.length > 1 ? (
               <>
                 <button
                   type="button"
                   className="storyNav storyNavPrevious"
                   onClick={showPrevious}
-                  aria-label="استوری قبلی"
+                  disabled={activeItemIndex === 0}
+                  aria-label="استوری قبلی همین حساب"
                 >
                   ‹
                 </button>
@@ -472,7 +552,7 @@ export default function HomeStories() {
                   type="button"
                   className="storyNav storyNavNext"
                   onClick={showNext}
-                  aria-label="استوری بعدی"
+                  aria-label="استوری بعدی همین حساب"
                 >
                   ›
                 </button>
@@ -485,59 +565,26 @@ export default function HomeStories() {
       <style>{`
         .homeStories {
           width: 100%;
+          min-height: 92px;
           font-family: Tahoma, Arial, sans-serif;
-        }
-
-        .storyHeader {
-          margin-bottom: 11px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .storyHeader > div > span {
-          color: #6d28d9;
-          font-size: 9px;
-          font-weight: 900;
-        }
-
-        .storyHeader h2 {
-          margin: 3px 0 0;
-          color: #211633;
-          font-size: 17px;
-        }
-
-        .storyHeader > a {
-          min-height: 34px;
-          padding: 0 11px;
-          border-radius: 999px;
-          display: inline-grid;
-          place-items: center;
-          color: #6d28d9;
-          background: #ffffff;
-          border: 1px solid #e8def7;
-          font-size: 8px;
-          font-weight: 900;
         }
 
         .storyScroller {
           display: flex;
-          gap: 12px;
+          align-items: flex-start;
+          gap: 11px;
           overflow-x: auto;
-          padding: 3px 1px 10px;
+          padding: 7px 2px 8px;
           scrollbar-width: none;
           scroll-snap-type: x mandatory;
         }
 
-        .storyScroller::-webkit-scrollbar {
-          display: none;
-        }
+        .storyScroller::-webkit-scrollbar { display: none; }
 
         .storyItem,
         .storySkeleton {
-          min-width: 88px;
-          max-width: 88px;
+          min-width: 80px;
+          max-width: 80px;
           scroll-snap-align: start;
         }
 
@@ -549,40 +596,48 @@ export default function HomeStories() {
           gap: 5px;
           color: inherit;
           background: transparent;
+          text-decoration: none;
           cursor: pointer;
         }
 
         .storyRing {
-          width: 72px;
-          height: 72px;
+          width: 70px;
+          height: 70px;
           padding: 3px;
+          position: relative;
+          isolation: isolate;
           border-radius: 999px;
           display: block;
-          background: conic-gradient(
-            from 0deg,
-            #4c1d95,
-            #8b5cf6,
-            #d8b4fe,
-            #7c3aed,
-            #4c1d95
-          );
-          box-shadow: 0 9px 21px rgba(109, 40, 217, 0.16);
-          transition: transform 0.18s ease;
+          background: conic-gradient(from 210deg, #4c1d95, #7c3aed 25%, #c084fc 48%, #8b5cf6 72%, #4c1d95);
+          box-shadow: 0 10px 26px rgba(91, 33, 182, 0.2), 0 0 0 1px rgba(124, 58, 237, 0.1);
+          transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .storyRing::after {
+          content: "";
+          position: absolute;
+          inset: -5px;
+          z-index: -1;
+          border-radius: inherit;
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.18), transparent 68%);
+          pointer-events: none;
         }
 
         .storyItem:hover .storyRing {
-          transform: translateY(-2px) scale(1.02);
+          transform: translateY(-3px) scale(1.035);
+          box-shadow: 0 14px 30px rgba(91, 33, 182, 0.26), 0 0 0 1px rgba(124, 58, 237, 0.12);
         }
 
         .storyAvatar {
           width: 100%;
           height: 100%;
+          border: 3px solid #fff;
           border-radius: 999px;
           display: grid;
           place-items: center;
           overflow: hidden;
           background: #f3edff;
-          border: 3px solid #ffffff;
+          box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.08);
         }
 
         .storyAvatar img {
@@ -596,6 +651,59 @@ export default function HomeStories() {
           font-size: 21px;
         }
 
+        .storyOwnRing {
+          background: linear-gradient(145deg, #6d28d9, #9b55ed);
+        }
+
+        .storyOwnRing::before {
+          content: "+";
+          position: absolute;
+          right: -1px;
+          bottom: 2px;
+          z-index: 4;
+          width: 22px;
+          height: 22px;
+          border: 3px solid #fff;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          background: #6d28d9;
+          font-size: 16px;
+          font-weight: 950;
+          line-height: 1;
+          box-shadow: 0 5px 12px rgba(76, 29, 149, 0.3);
+        }
+
+        .storyOwnAvatar {
+          background: linear-gradient(145deg, #fff, #efe7ff);
+        }
+
+        .storyOwnAvatar img {
+          width: 62%;
+          height: 62%;
+          object-fit: contain;
+        }
+
+        .storyCount {
+          position: absolute;
+          left: -2px;
+          bottom: 2px;
+          z-index: 4;
+          min-width: 22px;
+          height: 22px;
+          padding: 0 5px;
+          border: 3px solid #fff;
+          border-radius: 999px;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          background: #2f1747;
+          font-size: 8px;
+          font-weight: 950;
+          line-height: 1;
+        }
+
         .storyItem > strong {
           width: 100%;
           overflow: hidden;
@@ -603,37 +711,19 @@ export default function HomeStories() {
           white-space: nowrap;
           text-align: center;
           text-overflow: ellipsis;
-          font-size: 9px;
-        }
-
-        .storyPrice {
-          color: #786d84;
-          font-size: 7px;
-        }
-
-        .storyItem em {
-          max-width: 84px;
-          padding: 3px 6px;
-          border-radius: 999px;
-          overflow: hidden;
-          color: #6d28d9;
-          background: #f3edff;
-          border: 1px solid #e6dbf8;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          font-size: 7px;
-          font-style: normal;
+          font-size: 8.5px;
+          font-weight: 900;
         }
 
         .storySkeleton {
           display: grid;
           justify-items: center;
-          gap: 7px;
+          gap: 6px;
         }
 
         .storySkeleton div {
-          width: 72px;
-          height: 72px;
+          width: 70px;
+          height: 70px;
           border-radius: 999px;
           background: linear-gradient(90deg, #f1ebfa, #fbf9ff, #f1ebfa);
           background-size: 200% 100%;
@@ -641,50 +731,10 @@ export default function HomeStories() {
         }
 
         .storySkeleton span {
-          width: 58px;
-          height: 8px;
+          width: 48px;
+          height: 7px;
           border-radius: 999px;
           background: #f1ebfa;
-        }
-
-        .storyEmpty {
-          min-height: 78px;
-          padding: 12px 14px;
-          border-radius: 17px;
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          color: #5c5068;
-          background: #ffffff;
-          border: 1px dashed #d6c8e8;
-        }
-
-        .storyEmpty > span {
-          width: 38px;
-          height: 38px;
-          flex: 0 0 auto;
-          border-radius: 12px;
-          display: grid;
-          place-items: center;
-          color: #6d28d9;
-          background: #f3edff;
-          font-size: 18px;
-        }
-
-        .storyEmpty strong,
-        .storyEmpty small {
-          display: block;
-        }
-
-        .storyEmpty strong {
-          color: #2d2236;
-          font-size: 10px;
-        }
-
-        .storyEmpty small {
-          margin-top: 3px;
-          color: #8a7f94;
-          font-size: 8px;
         }
 
         .storyViewer {
@@ -744,16 +794,11 @@ export default function HomeStories() {
           width: 0;
           height: 100%;
           border-radius: inherit;
-          background: #ffffff;
+          background: #fff;
         }
 
-        .storyProgress i.done {
-          width: 100%;
-        }
-
-        .storyProgress i.active {
-          animation: storyProgressFill ${STORY_DURATION_MS}ms linear forwards;
-        }
+        .storyProgress i.done { width: 100%; }
+        .storyProgress i.active { animation: storyProgressFill ${STORY_DURATION_MS}ms linear forwards; }
 
         .storyViewerTop {
           position: absolute;
@@ -765,7 +810,7 @@ export default function HomeStories() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          color: #ffffff;
+          color: #fff;
         }
 
         .storySellerIdentity {
@@ -810,7 +855,7 @@ export default function HomeStories() {
 
         .storySellerIdentity small {
           margin-top: 3px;
-          color: rgba(255, 255, 255, 0.65);
+          color: rgba(255, 255, 255, 0.66);
           font-size: 8px;
         }
 
@@ -820,7 +865,7 @@ export default function HomeStories() {
           flex: 0 0 auto;
           border: 1px solid rgba(255, 255, 255, 0.18);
           border-radius: 999px;
-          color: #ffffff;
+          color: #fff;
           background: rgba(15, 10, 20, 0.38);
           font-size: 22px;
           cursor: pointer;
@@ -867,7 +912,7 @@ export default function HomeStories() {
           bottom: 20px;
           left: 18px;
           z-index: 5;
-          color: #ffffff;
+          color: #fff;
         }
 
         .storyViewerDetails > span {
@@ -898,9 +943,10 @@ export default function HomeStories() {
           place-items: center;
           color: #2d163d;
           border-radius: 14px;
-          background: #ffffff;
+          background: #fff;
           font-size: 10px;
           font-weight: 900;
+          text-decoration: none;
         }
 
         .storyNav {
@@ -911,113 +957,39 @@ export default function HomeStories() {
           height: 55px;
           transform: translateY(-50%);
           border: 1px solid rgba(255, 255, 255, 0.13);
-          color: #ffffff;
+          color: #fff;
           background: rgba(10, 7, 14, 0.32);
           font-size: 28px;
           cursor: pointer;
         }
 
-        .storyNavPrevious {
-          right: 0;
-          border-radius: 14px 0 0 14px;
-        }
-
-        .storyNavNext {
-          left: 0;
-          border-radius: 0 14px 14px 0;
-        }
+        .storyNav:disabled { opacity: 0.2; cursor: default; }
+        .storyNavPrevious { right: 0; border-radius: 14px 0 0 14px; }
+        .storyNavNext { left: 0; border-radius: 0 14px 14px 0; }
 
         @keyframes storySkeletonMove {
-          to {
-            background-position: -200% 0;
-          }
+          to { background-position: -200% 0; }
         }
 
         @keyframes storyProgressFill {
-          from {
-            width: 0;
-          }
-          to {
-            width: 100%;
-          }
+          from { width: 0; }
+          to { width: 100%; }
         }
 
         @media (prefers-reduced-motion: reduce) {
           .storyProgress i.active,
-          .storySkeleton div {
-            animation: none;
-          }
+          .storySkeleton div { animation: none; }
         }
 
         @media (max-width: 640px) {
-          .homeStories {
-            padding: 15px 12px 8px;
-            border: 1px solid rgba(231, 225, 239, 0.9);
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 14px 36px rgba(42, 26, 68, 0.06);
-          }
-
-          .storyHeader {
-            margin-bottom: 9px;
-          }
-
-          .storyHeader > div > span {
-            font-size: 8px;
-            letter-spacing: 0.4px;
-          }
-
-          .storyHeader h2 {
-            margin-top: 4px;
-            font-size: 15px;
-            line-height: 1.5;
-          }
-
-          .storyHeader > a {
-            min-height: 30px;
-            padding: 0 7px;
-            border: 0;
-            color: #6d28d9;
-            background: transparent;
-            font-size: 8px;
-          }
-
-          .storyScroller {
-            width: calc(100% + 12px);
-            margin-left: -12px;
-            gap: 10px;
-            padding: 3px 0 10px 12px;
-          }
-
+          .homeStories { min-height: 82px; }
+          .storyScroller { gap: 9px; padding-top: 5px; padding-bottom: 6px; }
           .storyItem,
-          .storySkeleton {
-            min-width: 74px;
-            max-width: 74px;
-          }
-
+          .storySkeleton { min-width: 72px; max-width: 72px; }
           .storyRing,
-          .storySkeleton div {
-            width: 62px;
-            height: 62px;
-          }
-
-          .storyRing {
-            padding: 2px;
-            box-shadow: 0 8px 18px rgba(109, 40, 217, 0.14);
-          }
-
-          .storyAvatar {
-            border-width: 2px;
-          }
-
-          .storyItem > strong {
-            font-size: 8px;
-          }
-
-          .storyViewer {
-            padding: 0;
-          }
-
+          .storySkeleton div { width: 64px; height: 64px; }
+          .storyItem > strong { font-size: 7.5px; }
+          .storyViewer { padding: 0; }
           .storyViewerCard {
             width: 100%;
             height: 100dvh;
@@ -1025,10 +997,7 @@ export default function HomeStories() {
             border: 0;
             border-radius: 0;
           }
-
-          .storyViewerDetails {
-            bottom: max(20px, env(safe-area-inset-bottom));
-          }
+          .storyViewerDetails { bottom: max(20px, env(safe-area-inset-bottom)); }
         }
       `}</style>
     </section>

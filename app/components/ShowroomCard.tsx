@@ -1,22 +1,34 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+
+import { useState } from "react";
 import DealerShareActions from "./DealerShareActions";
 import styles from "./ShowroomCard.module.css";
 
 const API_BASE = "https://api.chakod.com";
 const SITE_BASE = "https://chakod.com";
 
+export type ShowroomListingPreview = {
+  id: number | string;
+  title: string;
+  image?: string | null;
+};
+
 export type ShowroomCardData = {
   key: string;
+  slug?: string | null;
   name: string;
   city: string;
   province?: string;
   listingCount: number;
   logoUrl?: string | null;
   coverImage?: string | null;
+  coverImageDesktop?: string | null;
+  coverImageMobile?: string | null;
   verified?: boolean;
+  featured?: boolean;
+  latestListings?: ShowroomListingPreview[];
 };
 
 type ShowroomCardProps = {
@@ -33,139 +45,191 @@ function getImageUrl(path?: string | null) {
 }
 
 function getInitial(name: string) {
-  const clean = name.trim();
-  return clean ? clean.slice(0, 1) : "چ";
+  return name.trim().slice(0, 1) || "چ";
+}
+
+function CarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m4 15 2.3-6.2A2.8 2.8 0 0 1 8.9 7h6.2a2.8 2.8 0 0 1 2.6 1.8L20 15" />
+      <path d="M3 15h18v4H3z" />
+      <circle cx="7" cy="19" r="1.8" />
+      <circle cx="17" cy="19" r="1.8" />
+    </svg>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 21s7-5 7-12a7 7 0 1 0-14 0c0 7 7 12 7 12Z" />
+      <circle cx="12" cy="9" r="2.3" />
+    </svg>
+  );
+}
+
+function VerifiedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m12 2.7 2.1 1.7 2.7-.1.8 2.6 2.2 1.5-.9 2.6.9 2.5-2.2 1.5-.8 2.6-2.7-.1-2.1 1.7-2.1-1.7-2.7.1-.8-2.6-2.2-1.5.9-2.5-.9-2.6L6.4 7l.8-2.6 2.7.1L12 2.7Z" />
+      <path d="m8.6 11.3 2.1 2.1 4.7-4.8" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 18 9 12l6-6" />
+    </svg>
+  );
+}
+
+function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
+  const imageUrl = getImageUrl(listing.image);
+  const [failedUrl, setFailedUrl] = useState("");
+  const showImage = Boolean(imageUrl) && failedUrl !== imageUrl;
+
+  return (
+    <a
+      className={styles.latestListing}
+      href={`/cars/${listing.id}`}
+      aria-label={`مشاهده آگهی ${listing.title}`}
+      title={listing.title}
+    >
+      {showImage ? (
+        <img
+          src={imageUrl}
+          alt={listing.title}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedUrl(imageUrl)}
+        />
+      ) : (
+        <span className={styles.listingPlaceholder} aria-hidden="true">
+          <CarIcon />
+        </span>
+      )}
+    </a>
+  );
 }
 
 export default function ShowroomCard({ showroom }: ShowroomCardProps) {
-  const href = `/showrooms/${encodeURIComponent(showroom.name)}`;
+  const href = showroom.slug
+    ? `/businesses/${encodeURIComponent(showroom.slug)}`
+    : `/businesses?type=dealer&q=${encodeURIComponent(showroom.name)}`;
+  const desktopCoverUrl = getImageUrl(showroom.coverImageDesktop || showroom.coverImage);
+  const mobileCoverUrl = getImageUrl(
+    showroom.coverImageMobile || showroom.coverImageDesktop || showroom.coverImage,
+  );
   const logoUrl = getImageUrl(showroom.logoUrl);
-  const coverUrl = getImageUrl(showroom.coverImage);
-  const [coverFailed, setCoverFailed] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
+  const [failedCoverUrl, setFailedCoverUrl] = useState("");
+  const [failedLogoUrl, setFailedLogoUrl] = useState("");
 
-  useEffect(() => {
-    setCoverFailed(false);
-  }, [coverUrl]);
-
-  useEffect(() => {
-    setLogoFailed(false);
-  }, [logoUrl]);
-
+  const showCover = Boolean(desktopCoverUrl || mobileCoverUrl) && failedCoverUrl !== (desktopCoverUrl || mobileCoverUrl);
+  const showLogo = Boolean(logoUrl) && failedLogoUrl !== logoUrl;
+  const latestListings = (showroom.latestListings || []).slice(0, 3);
+  const thumbnailSlots = Array.from({ length: 3 }, (_, index) => latestListings[index] || null);
   const location = [showroom.city, showroom.province]
     .filter(Boolean)
     .filter((item, index, values) => values.indexOf(item) === index)
     .join("، ");
-
-  const showCover = Boolean(coverUrl) && !coverFailed;
-  const showLogo = Boolean(logoUrl) && !logoFailed;
   const formattedCount = new Intl.NumberFormat("fa-IR").format(showroom.listingCount);
 
   return (
     <article className={styles.card}>
-      <Link
-        className={styles.cover}
-        href={href}
-        aria-label={`مشاهده ویترین نمایشگاه ${showroom.name}`}
-      >
-        {showCover ? (
-          <img
-            className={styles.coverImage}
-            src={coverUrl}
-            alt={`یکی از خودروهای ${showroom.name}`}
-            loading="lazy"
-            decoding="async"
-            onError={() => setCoverFailed(true)}
-          />
-        ) : (
-          <div className={styles.coverPlaceholder} aria-hidden="true">
-            <span className={styles.placeholderGlow} />
-            <svg viewBox="0 0 220 110">
-              <path d="M38 72h145l-12-29c-3-8-11-13-20-13H79c-10 0-18 5-22 13L38 72Z" />
-              <path d="M25 72h173v14H25z" />
-              <path d="M71 43h79" />
-              <circle cx="70" cy="86" r="13" />
-              <circle cx="158" cy="86" r="13" />
-            </svg>
-          </div>
-        )}
+      <div className={styles.cover}>
+        <a className={styles.coverLink} href={href} aria-label={`مشاهده نمایشگاه ${showroom.name}`}>
+          {showCover ? (
+            <picture>
+              {mobileCoverUrl ? <source media="(max-width: 780px)" srcSet={mobileCoverUrl} /> : null}
+              <img
+                className={styles.coverImage}
+                src={desktopCoverUrl || mobileCoverUrl}
+                alt={`ویترین خودروهای ${showroom.name}`}
+                loading="lazy"
+                decoding="async"
+                onError={() => setFailedCoverUrl(desktopCoverUrl || mobileCoverUrl)}
+              />
+            </picture>
+          ) : (
+            <span className={styles.coverPlaceholder} aria-hidden="true">
+              <span />
+              <CarIcon />
+            </span>
+          )}
+        </a>
 
-        <span className={styles.coverEyebrow}>ویترین خودرو</span>
         <span
-          className={`${styles.status} ${
-            showroom.verified ? styles.verified : styles.active
+          className={`${styles.statusBadge} ${
+            showroom.featured ? styles.featuredBadge : styles.activeBadge
           }`}
         >
-          <i aria-hidden="true" />
-          {showroom.verified ? "تأییدشده چاکود" : "فعال در چاکود"}
+          {showroom.featured ? "منتخب" : "فعال"}
         </span>
-      </Link>
+
+        <div className={styles.shareAction}>
+          <DealerShareActions dealerName={showroom.name} city={showroom.city} href={href} />
+        </div>
+      </div>
 
       <div className={styles.body}>
-        <div className={styles.identity}>
-          <span className={styles.logo} aria-hidden={!showLogo}>
+        <div className={styles.logoWrap}>
+          <a className={styles.logo} href={href} aria-label={`صفحه ${showroom.name}`}>
             {showLogo ? (
               <img
                 src={logoUrl}
                 alt={`لوگوی ${showroom.name}`}
                 loading="lazy"
                 decoding="async"
-                onError={() => setLogoFailed(true)}
+                onError={() => setFailedLogoUrl(logoUrl)}
               />
             ) : (
-              getInitial(showroom.name)
+              <span aria-hidden="true">{getInitial(showroom.name)}</span>
             )}
-          </span>
+          </a>
+        </div>
 
-          <div className={styles.nameBlock}>
-            <Link href={href}>{showroom.name}</Link>
-            <span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21s7-5.1 7-12a7 7 0 1 0-14 0c0 6.9 7 12 7 12Z" />
-                <circle cx="12" cy="9" r="2.4" />
-              </svg>
-              {location || "موقعیت ثبت نشده"}
-            </span>
+        <div className={styles.heading}>
+          <div className={styles.titleRow}>
+            <a href={href}>{showroom.name}</a>
+            {showroom.verified ? (
+              <span className={styles.verifiedMark} title="تأییدشده در چاکود">
+                <VerifiedIcon />
+              </span>
+            ) : null}
           </div>
+          <p>نمایشگاه خودرو</p>
         </div>
 
-        <p className={styles.description}>
-          خودروهای فعال این نمایشگاه را در ویترین عمومی چاکود ببینید و مقایسه کنید.
-        </p>
-
-        <div className={styles.meta}>
-          <span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 15.5 6.2 9a3 3 0 0 1 2.8-2h6a3 3 0 0 1 2.8 2l2.2 6.5" />
-              <path d="M3 15.5h18V19H3z" />
-              <circle cx="7" cy="19" r="2" />
-              <circle cx="17" cy="19" r="2" />
-            </svg>
-            <b>{formattedCount}</b>
-            خودروی فعال
+        <div className={styles.meta} aria-label="اطلاعات نمایشگاه">
+          <span title={location || "موقعیت ثبت نشده"}>
+            <LocationIcon />
+            <b>{location || "موقعیت ثبت نشده"}</b>
           </span>
+          <i aria-hidden="true" />
           <span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 4h14v16H5z" />
-              <path d="M8 8h8M8 12h8M8 16h5" />
-            </svg>
-            ویترین عمومی
+            <CarIcon />
+            <b>{formattedCount} آگهی</b>
           </span>
         </div>
 
-        <div className={styles.actions}>
-          <Link className={styles.primaryAction} href={href}>
-            مشاهده نمایشگاه
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <DealerShareActions
-            dealerName={showroom.name}
-            city={showroom.city}
-            href={href}
-          />
+        <div className={styles.latestGrid} aria-label={`خودروهای منتخب ${showroom.name}`}>
+          {thumbnailSlots.map((listing, index) =>
+            listing ? (
+              <ListingThumbnail key={listing.id} listing={listing} />
+            ) : (
+              <span className={styles.emptyListing} key={`empty-${index}`} aria-hidden="true">
+                <CarIcon />
+              </span>
+            ),
+          )}
         </div>
+
+        <a className={styles.primaryAction} href={href}>
+          <span>مشاهده نمایشگاه</span>
+          <ArrowIcon />
+        </a>
       </div>
     </article>
   );

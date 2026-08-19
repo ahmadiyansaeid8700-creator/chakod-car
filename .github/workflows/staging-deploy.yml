@@ -1,0 +1,318 @@
+name: Deploy staging Worker
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chakod-staging-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_WORKER_NAME: chakod-car-staging
+
+    steps:
+      - name: Checkout staging branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate source
+        run: npm run check:launch
+
+      - name: Verify local D1 migrations
+        run: npm run d1:verify
+
+      - name: Ensure Cloudflare credentials exist
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID repository secrets."
+            exit 1
+          fi
+
+      - name: Build Cloudflare Worker
+        run: npm run build:cloudflare
+
+      - name: Upload staging Worker version
+        id: upload_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version_tag="staging-${GITHUB_SHA:0:12}"
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          npx wrangler versions upload \
+            --tag "$version_tag" \
+            --message "Staging ${GITHUB_SHA}"
+
+      - name: Deploy staging Worker version
+        shell: bash
+        env:
+          VERSION_TAG: ${{ steps.upload_version.outputs.version_tag }}
+        run: |
+          set -euo pipefail
+          npx wrangler versions deploy \
+            --version-tag "${VERSION_TAG}@100%" \
+            --message "Staging ${GITHUB_SHA}" \
+            -y
+
+      - name: Enable workers.dev fallback
+        id: workers_dev
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          worker_subdomain_payload="$(curl --fail --silent --show-error \
+            --request POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${CLOUDFLARE_WORKER_NAME}/subdomain" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            --header 'Content-Type: application/json' \
+            --data '{"enabled":true,"previews_enabled":false}')"
+
+          printf '%s' "$worker_subdomain_payload" | node -e '
+            const fs = require("fs");
+            const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+            if (!payload.success || payload.result?.enabled !== true) {
+              console.error("Could not enable workers.dev for the staging Worker.");
+              process.exit(1);
+            }
+          '
+
+          account_subdomain_payload="$(curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")"
+
+          account_subdomain="$(printf '%s' "$account_subdomain_payload" | node -e '
+            const fs = require("fs");
+            const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+            const subdomain = String(payload.result?.subdomain || "").trim();
+            if (!payload.success || !subdomain) process.exit(1);
+            process.stdout.write(subdomain);
+          ')"
+
+          fallback_url="https://${CLOUDFLARE_WORKER_NAME}.${account_subdomain}.workers.dev/"
+          echo "url=${fallback_url}" >> "$GITHUB_OUTPUT"
+          echo "Workers.dev fallback enabled: ${fallback_url}"
+
+      - name: Ensure staging custom domain binding
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          domains_payload="$(curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")"
+
+          binding_exists="$(printf '%s' "$domains_payload" | node -e '
+            const fs = require("fs");
+            const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+            const domains = Array.isArray(payload.result) ? payload.result : [];
+            const match = payload.success && domains.some(
+              (item) => item.hostname === "staging.chakod.com" && item.service === "chakod-car-staging",
+            );
+            process.stdout.write(match ? "yes" : "no");
+          ')"
+
+          if [ "$binding_exists" = "yes" ]; then
+            echo "Custom domain is already attached; leaving DNS/domain trigger unchanged."
+          else
+            echo "Custom domain binding is missing; restoring it from the Wrangler configuration."
+            npx wrangler triggers deploy
+          fi
+
+      - name: Verify Cloudflare custom domain binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+                const fs = require("fs");
+                const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+                const domains = Array.isArray(payload.result) ? payload.result : [];
+                const match = domains.find((item) => item.hostname === "staging.chakod.com" && item.service === "chakod-car-staging");
+                if (!payload.success || !match) {
+                  console.error("staging.chakod.com is not attached to chakod-car-staging");
+                  process.exit(1);
+                }
+                console.log(`Verified custom domain: ${match.hostname} -> ${match.service}`);
+              '
+
+      - name: Smoke workers.dev fallback
+        shell: bash
+        env:
+          FALLBACK_URL: ${{ steps.workers_dev.outputs.url }}
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 5 \
+            --retry-delay 3 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            --header 'Accept: text/html' \
+            "$FALLBACK_URL")"
+
+          echo "Workers.dev fallback HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "Expected workers.dev fallback HTTP 200, got $status."
+            head -c 1000 "$body_file" || true
+            echo
+            exit 1
+          fi
+          test -s "$body_file"
+
+      - name: Smoke staging homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 5 \
+            --retry-delay 3 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            --header 'Accept: text/html' \
+            'https://staging.chakod.com/')"
+
+          echo "Homepage HTTP $status"
+
+          if [ "$status" != "200" ]; then
+            echo "Expected staging homepage HTTP 200, got $status."
+            head -c 1000 "$body_file" || true
+            echo
+            exit 1
+          fi
+
+          if [ ! -s "$body_file" ]; then
+            echo "Staging homepage returned an empty response body."
+            exit 1
+          fi
+
+      - name: Smoke staging homepage after five minutes
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 300
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 5 \
+            --retry-delay 3 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --header 'Accept: text/html' \
+            'https://staging.chakod.com/')"
+          echo "Five-minute homepage HTTP $status"
+          test "$status" = "200"
+
+      - name: Verify custom domain binding after five minutes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+                const fs = require("fs");
+                const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+                const domains = Array.isArray(payload.result) ? payload.result : [];
+                const match = domains.find((item) => item.hostname === "staging.chakod.com" && item.service === "chakod-car-staging");
+                if (!payload.success || !match) {
+                  console.error("Custom domain disappeared during the five-minute stability window");
+                  process.exit(1);
+                }
+                console.log(`Custom domain still attached: ${match.hostname} -> ${match.service}`);
+              '
+
+      - name: Smoke workers.dev fallback after five minutes
+        shell: bash
+        env:
+          FALLBACK_URL: ${{ steps.workers_dev.outputs.url }}
+        run: |
+          set -euo pipefail
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            "$FALLBACK_URL")"
+          echo "Five-minute workers.dev fallback HTTP $status"
+          test "$status" = "200"
+
+      - name: Smoke staging auth route
+        shell: bash
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --output "$body_file" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data '{"mobile":"0900000000","accept_terms":true}' \
+            'https://staging.chakod.com/api/auth/send-code')"
+
+          cat "$body_file"
+          echo
+          echo "HTTP $status"
+
+          if [ "$status" != "400" ]; then
+            echo "Expected auth route validation HTTP 400, got $status."
+            exit 1
+          fi
+
+          if ! grep -q '"success":false' "$body_file"; then
+            echo "Auth smoke response is not the expected JSON payload."
+            exit 1
+          fi

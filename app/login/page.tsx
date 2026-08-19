@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { type ChangeEvent, useEffect, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
+import { createLocalDevelopmentSession } from "../../lib/local-development-login";
+import { safeReturnTo } from "./return-to";
+
 const RESEND_SECONDS = 90;
+const WELCOME_SPLASH_MS = 2600;
+const LOCAL_DEV_SESSION_MARKER = "chakod-local-dev-session";
+const IS_LOCAL_DEV = process.env.NODE_ENV === "development";
 
 type Step = "mobile" | "code" | "done";
 
@@ -11,9 +17,15 @@ type LoginUser = {
   id?: number;
   mobile?: string;
   full_name?: string | null;
-  account_type?: "personal" | "dealer" | "business";
+  account_type?: "personal" | "dealer" | "parts_store" | "repair_shop" | "car_service" | "business";
   business_name?: string | null;
+  business_city?: string | null;
   display_name?: string;
+  profile_completed?: boolean;
+  phone_verified?: boolean;
+  mobile_verified?: boolean;
+  terms_accepted?: boolean;
+  accepted_terms?: boolean;
 };
 
 function toEnglishDigits(value: string) {
@@ -45,19 +57,8 @@ function formatCountdown(seconds: number) {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function isProfileComplete(user?: LoginUser | null) {
-  if (!user) return false;
-
-  const fullNameOk = Boolean(user.full_name && user.full_name.trim().length >= 2);
-  const type = user.account_type || "personal";
-
-  if (!fullNameOk) return false;
-
-  if (type === "dealer" || type === "business") {
-    return Boolean(user.business_name && user.business_name.trim().length >= 2);
-  }
-
-  return true;
+function needsInitialSetup(user?: LoginUser | null) {
+  return !Boolean(user?.full_name && user.full_name.trim().length >= 2);
 }
 
 async function readApiResponse(res: Response) {
@@ -90,6 +91,11 @@ export default function LoginPage() {
   const canVerify = /^[0-9]{5}$/.test(normalizedCode);
   const canResend = canSend && resendCountdown === 0 && !loading;
 
+  function postLoginDestination(fallback = "/") {
+    const requestedPath = new URLSearchParams(window.location.search).get("returnTo");
+    return safeReturnTo(requestedPath, fallback);
+  }
+
   useEffect(() => {
     if (resendCountdown <= 0) return;
 
@@ -103,6 +109,60 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [resendCountdown]);
 
+  async function loginForLocalDevelopment() {
+    if (!IS_LOCAL_DEV || loading) return;
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const session = await createLocalDevelopmentSession();
+
+      if (!session.success) {
+        setError(session.message);
+        return;
+      }
+
+      const devUser: LoginUser = {
+        id: 0,
+        mobile: "09120000000",
+        full_name: null,
+        account_type: "personal",
+        business_name: null,
+        business_city: null,
+        display_name: "کاربر آزمایشی چاکود",
+        profile_completed: false,
+        phone_verified: true,
+        mobile_verified: true,
+        terms_accepted: true,
+        accepted_terms: true,
+      };
+
+      localStorage.setItem("chakod_session_token", LOCAL_DEV_SESSION_MARKER);
+      localStorage.setItem("chakod_user", JSON.stringify(devUser));
+      localStorage.setItem(
+        "chakod_identity",
+        JSON.stringify({
+          primary_role: "user",
+          role_title: "کاربر آزمایشی",
+          redirect_to: session.redirectTo,
+          roles: ["user"],
+          permissions: [],
+          is_site_owner: false,
+          local_development: true,
+        }),
+      );
+      window.dispatchEvent(new Event("chakod:auth-changed"));
+      setMessage("ورود آزمایشی موفق بود. در حال انتقال...");
+      window.location.assign("/account-v2/onboarding");
+    } catch {
+      setError("ورود آزمایشی لوکال انجام نشد. دوباره تلاش کنید.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function sendCode(isResend = false) {
     if (!canSend || loading) return;
     if (isResend && resendCountdown > 0) return;
@@ -110,8 +170,9 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     setMessage("");
+
     try {
-      const res = await fetch(`${API_BASE}/api/send-login-code.php`, {
+      const res = await fetch("/api/auth/send-code", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -128,7 +189,7 @@ export default function LoginPage() {
       if (!json.success) {
         setError(
           json.message ||
-            "ارسال کد تأیید ناموفق بود. لطفاً چند دقیقه بعد دوباره تلاش کنید."
+            "ارسال کد تأیید ناموفق بود. لطفاً چند دقیقه بعد دوباره تلاش کنید.",
         );
         return;
       }
@@ -190,27 +251,41 @@ export default function LoginPage() {
         localStorage.setItem("chakod_user", JSON.stringify(json.user));
       }
 
-      const nextUrl = isProfileComplete(json.user) ? "/" : "/account?complete=1";
-
-      setMessage(
-        isProfileComplete(json.user)
-          ? "ورود موفق بود. در حال انتقال به صفحه اصلی..."
-          : "ورود موفق بود. لطفاً یک‌بار پروفایل خود را تکمیل کنید."
+      localStorage.setItem(
+        "chakod_identity",
+        JSON.stringify({
+          primary_role: json.primary_role,
+          role_title: json.role_title,
+          redirect_to: json.redirect_to,
+          roles: Array.isArray(json.roles) ? json.roles : [],
+          permissions: Array.isArray(json.permissions) ? json.permissions : [],
+          is_site_owner: Boolean(json.is_site_owner),
+        }),
       );
+      window.dispatchEvent(new Event("chakod:auth-changed"));
 
+      const initialSetupRequired = needsInitialSetup(json.user);
+      const defaultNextUrl = initialSetupRequired
+        ? "/account-v2/onboarding"
+        : safeReturnTo(json.redirect_to, "/account-v2");
+      const nextUrl = initialSetupRequired
+        ? defaultNextUrl
+        : postLoginDestination(defaultNextUrl);
+
+      setMessage("");
       setStep("done");
 
       window.setTimeout(() => {
-        window.location.href = nextUrl;
-      }, 700);
-    } catch (error) {
+        window.location.replace(nextUrl);
+      }, WELCOME_SPLASH_MS);
+    } catch (caughtError) {
       const isTimeout =
-        error instanceof DOMException && error.name === "AbortError";
+        caughtError instanceof DOMException && caughtError.name === "AbortError";
 
       setError(
         isTimeout
           ? "پاسخ سرور طول کشید. دوباره روی تأیید و ورود بزنید."
-          : "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید."
+          : "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.",
       );
       setMessage("");
     } finally {
@@ -222,17 +297,13 @@ export default function LoginPage() {
     <main className="loginPage" dir="rtl">
       <section className="loginShell">
         <div className="topbar">
-          <a href="/" className="homeLink">
+          <Link href="/" className="homeLink">
             صفحه اصلی
-          </a>
+          </Link>
 
-          <a className="brand" href="/">
-            <div className="logoMark">چ</div>
-            <div>
-              <strong>چاکود</strong>
-              <span>پلتفرم رشد کسب‌وکار</span>
-            </div>
-          </a>
+          <Link className="brand" href="/" aria-label="صفحه اصلی چاکود">
+            <img src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
         </div>
 
         <div className="card">
@@ -251,7 +322,9 @@ export default function LoginPage() {
                 <input
                   className="normalInput"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setMobile(event.target.value)
+                  }
                   placeholder="مثلاً 09123456789"
                   inputMode="tel"
                   autoComplete="tel"
@@ -262,7 +335,9 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   checked={accepted}
-                  onChange={(e) => setAccepted(e.target.checked)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setAccepted(event.target.checked)
+                  }
                 />
                 <span>
                   قوانین ثبت آگهی، شرایط استفاده، حریم خصوصی و سیاست پرداخت
@@ -281,9 +356,24 @@ export default function LoginPage() {
                 {loading
                   ? "در حال ارسال..."
                   : accepted
-                  ? "ارسال کد تأیید"
-                  : "ابتدا قوانین را بپذیرید"}
+                    ? "ارسال کد تأیید"
+                    : "ابتدا قوانین را بپذیرید"}
               </button>
+
+              {IS_LOCAL_DEV && (
+                <div className="devLoginBox">
+                  <span>حالت توسعه محلی</span>
+                  <p>برای تست صفحه حساب، بدون پیامک وارد حساب آزمایشی شوید.</p>
+                  <button
+                    type="button"
+                    className="devLoginBtn"
+                    disabled={loading}
+                    onClick={loginForLocalDevelopment}
+                  >
+                    {loading ? "در حال ورود..." : "ورود آزمایشی لوکال"}
+                  </button>
+                </div>
+              )}
 
               {!/^09[0-9]{9}$/.test(normalizedMobile) && mobile.trim() && (
                 <div className="message hintMessage">
@@ -308,8 +398,8 @@ export default function LoginPage() {
                 <input
                   className="codeInput"
                   value={code}
-                  onChange={(e) => {
-                    setCode(normalizeCode(e.target.value));
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setCode(normalizeCode(event.target.value));
                     setError("");
                     setMessage("");
                   }}
@@ -323,13 +413,13 @@ export default function LoginPage() {
               <button
                 className="primaryBtn"
                 disabled={!canVerify || loading}
-                onClick={() => verifyCode()}
+                onClick={verifyCode}
               >
                 {loading
                   ? "در حال تأیید..."
                   : canVerify
-                  ? "تأیید و ورود"
-                  : "کد را وارد کنید"}
+                    ? "تأیید و ورود"
+                    : "کد را وارد کنید"}
               </button>
 
               <div className="resendBox">
@@ -366,13 +456,10 @@ export default function LoginPage() {
           )}
 
           {step === "done" && (
-            <div className="doneBox">
-              <div className="doneIcon">👑</div>
-              <h1>خوش آمدید به چاکود</h1>
-              <p>چند لحظه دیگر وارد مرحله بعد می‌شوید.</p>
-              <a className="primaryLink" href="/account">
-                ادامه
-              </a>
+            <div className="doneBox" aria-hidden="true">
+              <div className="doneIcon">✓</div>
+              <h1>ورود موفق بود</h1>
+              <p>در حال آماده‌سازی چاکود برای شما...</p>
             </div>
           )}
 
@@ -415,36 +502,19 @@ export default function LoginPage() {
         }
 
         .brand {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 11px;
+          justify-content: center;
+          width: 152px;
+          min-height: 52px;
           text-decoration: none;
-          color: #211335;
         }
 
-        .logoMark {
-          width: 46px;
-          height: 46px;
-          border-radius: 17px;
-          background: linear-gradient(135deg, #6d28d9, #9333ea);
-          color: #fff;
-          display: grid;
-          place-items: center;
-          font-weight: 900;
-          box-shadow: 0 14px 30px rgba(76, 29, 149, 0.22);
-        }
-
-        .brand strong {
+        .brand img {
           display: block;
-          font-size: 18px;
-          color: #24123d;
-        }
-
-        .brand span {
-          display: block;
-          margin-top: 3px;
-          color: #7b6a91;
-          font-size: 12px;
+          width: 100%;
+          height: auto;
+          object-fit: contain;
         }
 
         .homeLink {
@@ -567,8 +637,7 @@ export default function LoginPage() {
           margin-right: 6px;
         }
 
-        .primaryBtn,
-        .primaryLink {
+        .primaryBtn {
           width: 100%;
           border: 0;
           border-radius: 17px;
@@ -578,13 +647,54 @@ export default function LoginPage() {
           font-weight: bold;
           font-size: 14px;
           cursor: pointer;
-          text-decoration: none;
           display: inline-block;
           text-align: center;
         }
 
         .primaryBtn:disabled {
           opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .devLoginBox {
+          margin-top: 16px;
+          padding: 16px;
+          border: 1px dashed #c4b5fd;
+          border-radius: 18px;
+          background: #faf7ff;
+          text-align: right;
+        }
+
+        .devLoginBox > span {
+          display: inline-flex;
+          color: #6d28d9;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .devLoginBox p {
+          margin: 7px 0 12px;
+          color: #6d5b83;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .devLoginBtn {
+          width: 100%;
+          min-height: 44px;
+          border: 1px solid #8b5cf6;
+          border-radius: 14px;
+          color: #6d28d9;
+          background: #fff;
+          font: inherit;
+          font-weight: 900;
+          cursor: pointer;
+        }
+
+        .devLoginBtn:disabled,
+        .linkBtn:disabled,
+        .resendBtn:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
         }
 
@@ -596,11 +706,6 @@ export default function LoginPage() {
           font-weight: bold;
           margin-top: 14px;
           cursor: pointer;
-        }
-
-        .linkBtn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
 
         .resendBox {
@@ -627,11 +732,6 @@ export default function LoginPage() {
           font-weight: bold;
           cursor: pointer;
           font-size: 13px;
-        }
-
-        .resendBtn:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
         }
 
         .message {
@@ -681,6 +781,11 @@ export default function LoginPage() {
 
           .topbar {
             margin-bottom: 38px;
+          }
+
+          .brand {
+            width: 126px;
+            min-height: 44px;
           }
 
           .card {

@@ -1,0 +1,217 @@
+.overviewDeck {
+  width: 100%;
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.promoteTile {
+  aspect-ratio: 1 / 1;
+  margin-top: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.overviewDeck .storyTile {
+  background: linear-gradient(145deg, #2f1769, #492083 58%, #5d2aa8);
+  box-shadow: 0 18px 42px rgba(55, 27, 105, 0.18);
+}
+
+.promoteAction {
+  width: 100%;
+  margin-top: auto;
+}
+
+.factGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.factGrid article {
+  min-width: 0;
+}
+
+.factGrid article > div {
+  min-width: 0;
+}
+
+.factGrid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.managementCard {
+  margin-bottom: 18px;
+}
+
+.managementIcon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #0a7458;
+  background: linear-gradient(145deg, #ecfaf4, #e3f5ed);
+  box-shadow: inset 0 0 0 1px rgba(11, 115, 87, 0.08);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.managementLinks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.managementLinks a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(111, 40, 217, 0.12);
+  border-radius: 13px;
+  color: #5d347b;
+  background: #fbf8ff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tabPanel {
+  margin-top: 11px;
+  padding-bottom: 18px;
+}
+
+.profileTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.profileTabs a {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(111, 40, 217, 0.15);
+  border-radius: 14px;
+  color: #654b77;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(66, 31, 99, 0.05);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profileTabs .profileTabActive {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #6421bd, #8a36ed);
+  box-shadow: 0 10px 24px rgba(111, 40, 217, 0.2);
+}
+
+@media (max-width: 760px) {
+  .factGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .overviewDeck {
+    width: 100%;
+    margin-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .overviewDeck .promoteTile {
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
+  }
+
+  .overviewDeck .promoteTile > div:first-child {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 17px;
+  }
+
+  .overviewDeck .promoteTile h2 {
+    margin-top: 2px;
+    font-size: 14px;
+  }
+
+  .overviewDeck .promoteTile p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .promoteAction {
+    width: 100%;
+    min-height: 34px;
+    margin-top: auto;
+    padding-inline: 7px;
+    font-size: 8px;
+  }
+
+  .factGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .factGrid article {
+    min-height: 82px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .factGrid strong {
+    font-size: 12px;
+  }
+
+  .managementLinks {
+    grid-template-columns: 1fr;
+  }
+
+  .managementLinks a {
+    min-height: 44px;
+  }
+
+  .profileTabs a {
+    min-height: 44px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 370px) {
+  .overviewDeck {
+    gap: 7px;
+  }
+
+  .overviewDeck .promoteTile {
+    padding: 9px;
+  }
+
+  .overviewDeck .promoteTile p {
+    -webkit-line-clamp: 2;
+  }
+}

@@ -1,0 +1,559 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  border-bottom: 1px solid rgba(232, 223, 244, 0.96);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 30px rgba(42, 26, 68, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.headerInner {
+  width: min(1240px, calc(100% - 32px));
+  min-height: 64px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+.logo {
+  display: block;
+  width: auto;
+  height: 39px;
+  object-fit: contain;
+}
+
+.primaryNav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #5c5364;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primaryNav a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.primaryNav a:hover,
+.primaryNav .activeNav {
+  color: #6d28d9;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.savedLink,
+.accountLink,
+.submitLink {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.savedLink,
+.accountLink {
+  color: #4c1d95;
+  border: 1px solid #e8dff4;
+  background: #fff;
+}
+
+.savedLink span,
+.submitLink span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.savedLink b,
+.submitLink b {
+  font: inherit;
+}
+
+.savedLink:hover,
+.accountLink:hover {
+  border-color: #c4b5fd;
+  background: #faf7ff;
+}
+
+.submitLink {
+  color: #fff;
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  box-shadow: 0 12px 26px rgba(76, 29, 149, 0.18);
+}
+
+.accountStatus {
+  min-width: 0;
+}
+
+.accountStatus :global(.authStatusShell) {
+  min-width: 0;
+}
+
+.accountStatus :global(.authStatus) {
+  min-width: 132px;
+  min-height: 42px;
+  padding: 5px 8px;
+  border: 1px solid #e8dff4;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #211633;
+  background: #fff;
+  text-decoration: none;
+}
+
+.accountStatus :global(.authStatus:hover) {
+  border-color: #c4b5fd;
+  background: #faf7ff;
+}
+
+.accountStatus :global(.authAvatar) {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #4c1d95, #8b5cf6);
+}
+
+.accountStatus :global(.authStatusText) {
+  min-width: 0;
+}
+
+.accountStatus :global(.authStatusText strong),
+.accountStatus :global(.authStatusText span) {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.accountStatus :global(.authStatusText strong) {
+  color: #211633;
+  font-size: 10px;
+}
+
+.accountStatus :global(.authStatusText span) {
+  margin-top: 2px;
+  color: #786f82;
+  font-size: 8px;
+}
+
+.hero {
+  width: min(1240px, calc(100% - 32px));
+  margin: 14px auto 10px;
+  padding: 16px 20px;
+  border: 1px solid #e7dcf2;
+  border-radius: 18px;
+  color: #17111f;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.075), transparent 18rem),
+    #fff;
+  box-shadow: 0 12px 34px rgba(47, 28, 72, 0.055);
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.hero h1 {
+  margin: 0;
+  color: #17111f;
+  font-size: clamp(23px, 2.3vw, 31px);
+  line-height: 1.4;
+}
+
+.hero p {
+  max-width: 760px;
+  margin: 4px 0 0;
+  color: #786f82;
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.segmentNav {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto 10px;
+  padding: 6px;
+  border: 1px solid #e8dff4;
+  border-radius: 15px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(42, 26, 68, 0.04);
+  scrollbar-width: none;
+}
+
+.segmentNav::-webkit-scrollbar {
+  display: none;
+}
+
+.segmentNav a {
+  min-height: 38px;
+  min-width: 120px;
+  padding: 0 14px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 0 auto;
+  color: #6f6478;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.segmentNav a:hover {
+  color: var(--accent);
+  background: var(--soft);
+}
+
+.segmentNav .segmentActive {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.browser {
+  width: min(1240px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.browser > :global(div:first-child) {
+  grid-template-columns: 276px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.browser :global(aside[aria-label="فیلتر آگهی‌ها"]) {
+  border-radius: 20px;
+  box-shadow: 0 12px 34px rgba(39, 23, 52, 0.055);
+}
+
+.browser :global(aside[aria-label="فیلتر آگهی‌ها"]) > div:first-child {
+  padding: 15px 15px 13px;
+}
+
+/* Market-only polish: keep shared ListingCard rails untouched. */
+.browser :global(article) {
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(37, 24, 51, 0.065);
+}
+
+.browser :global(article) > div:first-child {
+  aspect-ratio: 2.05 / 1;
+  border-radius: 19px 19px 0 0;
+}
+
+.browser :global(article) > div:nth-child(2) {
+  padding-right: 15px;
+  padding-left: 15px;
+  padding-bottom: 15px;
+}
+
+.browser :global(article) > div:nth-child(2) > div:first-child {
+  min-height: auto;
+  margin-top: 0;
+  padding-top: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.browser :global(article) > div:nth-child(2) > div:first-child > span:first-child {
+  display: none;
+}
+
+.browser :global(article) [aria-label="اطلاعات آگهی"] {
+  min-height: 40px;
+  margin-top: 8px;
+}
+
+.browser :global(article) [aria-label="مشخصات اصلی خودرو"] {
+  margin-top: 9px;
+  gap: 6px;
+}
+
+.browser :global(article) [aria-label="مشخصات اصلی خودرو"] > span {
+  min-height: 52px;
+  padding: 6px 4px;
+}
+
+.browser :global(form) input,
+.browser :global(form) select {
+  font-size: 11px !important;
+}
+
+.browser :global(form) label > span {
+  font-size: 10px !important;
+}
+
+.browser :global(form) section > div:first-child {
+  font-size: 11px;
+}
+
+.browser :global(form) section > div:first-child small {
+  font-size: 9px;
+}
+
+@media (max-width: 900px) {
+  .headerInner {
+    gap: 10px;
+  }
+
+  .primaryNav {
+    gap: 14px;
+  }
+
+  .accountLink,
+  .accountStatus {
+    display: none;
+  }
+
+  .browser > :global(div:first-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .headerInner {
+    width: calc(100% - 20px);
+    min-height: 58px;
+  }
+
+  .logo {
+    height: 31px;
+  }
+
+  .primaryNav {
+    display: none;
+  }
+
+  .actions {
+    margin-right: auto;
+  }
+
+  .savedLink {
+    width: 40px;
+    padding: 0;
+  }
+
+  .savedLink b {
+    display: none;
+  }
+
+  .submitLink {
+    min-height: 40px;
+    padding: 0 10px;
+  }
+
+  .hero,
+  .segmentNav,
+  .browser {
+    width: calc(100% - 20px);
+  }
+
+  .hero {
+    margin-top: 9px;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .kicker {
+    margin-bottom: 2px;
+    font-size: 8px;
+  }
+
+  .hero h1 {
+    font-size: 21px;
+    line-height: 1.35;
+  }
+
+  .hero p {
+    margin-top: 3px;
+    font-size: 9px;
+    line-height: 1.7;
+  }
+
+  .segmentNav {
+    margin-bottom: 8px;
+    padding: 4px;
+    gap: 4px;
+    overflow: hidden;
+    border-radius: 13px;
+  }
+
+  .segmentNav a {
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 5px;
+    flex: 1 1 0;
+    border-radius: 9px;
+    font-size: 9px;
+  }
+
+  .browser {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Mobile-first market cards: compact, scannable and clear of the bottom nav. */
+  .browser :global(article) {
+    height: auto;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(37, 24, 51, 0.06);
+  }
+
+  .browser :global(article) > div:first-child {
+    max-height: 148px;
+    aspect-ratio: 2.65 / 1;
+    border-radius: 15px 15px 0 0;
+  }
+
+  .browser :global(article) > div:nth-child(2) {
+    padding: 0 12px 11px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child {
+    min-height: auto;
+    margin-top: 0;
+    padding-top: 9px;
+    display: block;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child > span:first-child {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child a {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:first-child div > span {
+    margin-top: 1px;
+    font-size: 8px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] {
+    min-height: 34px;
+    margin-top: 7px;
+    padding: 0 2px;
+    gap: 6px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] b {
+    font-size: 7px;
+  }
+
+  .browser :global(article) [aria-label="اطلاعات آگهی"] svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] {
+    margin-top: 7px;
+    gap: 5px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] > span {
+    min-height: 43px;
+    padding: 5px 3px;
+    border-radius: 9px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] small {
+    font-size: 6px;
+  }
+
+  .browser :global(article) [aria-label="مشخصات اصلی خودرو"] strong {
+    font-size: 7px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > strong {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Seller type is already present in meta; remove the duplicate seller block on mobile. */
+  .browser :global(article) > div:nth-child(2) > div:nth-child(5) {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child {
+    min-height: 42px;
+    margin-top: 8px;
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 6px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a,
+  .browser :global(article) > div:nth-child(2) > div:last-child > button {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a {
+    padding: 0 10px;
+    justify-content: center;
+  }
+
+  /* QR is not useful as a prominent element on the same phone; keep the view action only. */
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:last-child {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:first-child {
+    display: block;
+    text-align: center;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > a > span:first-child small {
+    display: none;
+  }
+
+  .browser :global(article) > div:nth-child(2) > div:last-child > button span {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 430px) {
+  .browser :global(article) > div:first-child {
+    max-height: 138px;
+    aspect-ratio: 2.7 / 1;
+  }
+}

@@ -266,7 +266,7 @@ export default function ListingDetailClient({ listingId, initialResponse }: Prop
             <button type="button" className={styles.retryButton} onClick={() => void loadListing()}>
               تلاش دوباره
             </button>
-            <Link href="/ads/luxury" className={styles.primaryLink}>بازگشت به خودروها</Link>
+            <Link href="/cars" className={styles.primaryLink}>بازگشت به خودروها</Link>
           </div>
         </section>
       </main>
@@ -309,7 +309,7 @@ export default function ListingDetailClient({ listingId, initialResponse }: Prop
   const dealerVerified = Boolean(
     listing.dealer_is_verified || listing.dealer_verified || listing.is_dealer_verified,
   );
-  const shareUrl = `/listing/${listing.id}`;
+  const shareUrl = `/cars/${listing.id}`;
   const latitude = toFiniteNumber(listing.latitude);
   const longitude = toFiniteNumber(listing.longitude);
   const mapUrl =
@@ -367,7 +367,7 @@ export default function ListingDetailClient({ listingId, initialResponse }: Prop
       <div className={styles.container}>
         <nav className={styles.breadcrumb} aria-label="مسیر صفحه">
           <Link href="/">خانه</Link><span>/</span>
-          <Link href="/ads/luxury">خودروها</Link><span>/</span>
+          <Link href="/cars">خودروها</Link><span>/</span>
           <strong>{title}</strong>
         </nav>
 

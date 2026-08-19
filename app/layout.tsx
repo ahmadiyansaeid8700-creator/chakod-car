@@ -1,88 +1,93 @@
 import type { Metadata, Viewport } from "next";
+import AppViewport from "./components/AppViewport";
+import ChakodAiAssistant from "./components/ChakodAiAssistant";
+import LocalPublicApiBridge from "./components/LocalPublicApiBridge";
 import "./globals.css";
-import MobileBottomNav from "./components/MobileBottomNav";
+import "./mobile-runtime.css";
+import "./ios-form-runtime.css";
+
+const SITE_URL = "https://chakod.com";
+const SITE_DESCRIPTION =
+  "چاکود پلتفرم جستجو و ثبت آگهی خودرو، نمایشگاه های منتخب و خدمات تخصصی خودرو است.";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#fbfbfd",
+};
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chakod.com"),
-  title: {
-    default: "چاکود | بازار خودرو و خدمات خودرویی",
-    template: "%s | چاکود",
-  },
-  description:
-    "چاکود؛ بازار خودرو، ثبت آگهی، نمایشگاه‌ها و خدمات خودرویی.",
+  metadataBase: new URL(SITE_URL),
   applicationName: "چاکود",
-  keywords: [
-    "چاکود",
-    "بازار خودرو",
-    "ثبت آگهی خودرو",
-    "نمایشگاه خودرو",
-    "خرید خودرو",
-    "فروش خودرو",
-    "خدمات خودرویی",
-  ],
   manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [
-      {
-        url: "/brand/chakod-icon-32.png",
-        sizes: "32x32",
-        type: "image/png",
-      },
-      {
-        url: "/brand/chakod-icon-192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        url: "/brand/chakod-icon-512.png",
-        sizes: "512x512",
-        type: "image/png",
-      },
-    ],
-    apple: [
-      {
-        url: "/apple-touch-icon.png",
-        sizes: "180x180",
-        type: "image/png",
-      },
-    ],
-  },
   appleWebApp: {
     capable: true,
     title: "چاکود",
     statusBarStyle: "default",
   },
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false,
+  },
+  title: {
+    default: "چاکود | پلتفرم رشد کسب و کار خودرو",
+    template: "%s | چاکود",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "چاکود",
+    "خرید خودرو",
+    "فروش خودرو",
+    "آگهی خودرو",
+    "خودروهای لوکس",
+    "خودروهای منطقه آزاد",
+    "نمایشگاه خودرو",
+    "خدمات خودرو",
+  ],
   openGraph: {
-    title: "چاکود | بازار خودرو و خدمات خودرویی",
-    description:
-      "ثبت، بررسی و نمایش حرفه‌ای آگهی خودرو و معرفی نمایشگاه‌ها در چاکود.",
-    siteName: "چاکود",
     type: "website",
     locale: "fa_IR",
-    url: "/",
+    url: SITE_URL,
+    siteName: "چاکود",
+    title: "چاکود | پلتفرم رشد کسب و کار خودرو",
+    description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/brand/chakod-og.jpg",
-        width: 1200,
-        height: 630,
-        alt: "چاکود؛ بازار خودرو و خدمات خودرویی",
+        url: "/brand/chakod-logo-horizontal.png",
+        alt: "چاکود؛ پلتفرم رشد کسب و کار خودرو",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "چاکود | بازار خودرو و خدمات خودرویی",
-    description:
-      "ثبت، بررسی و نمایش حرفه‌ای آگهی خودرو و معرفی نمایشگاه‌ها در چاکود.",
-    images: ["/brand/chakod-og.jpg"],
+    card: "summary",
+    title: "چاکود | پلتفرم رشد کسب و کار خودرو",
+    description: SITE_DESCRIPTION,
+    images: ["/brand/chakod-logo-horizontal.png"],
   },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: "#6d28d9",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/brand/chakod-icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/chakod-icon-48.png", sizes: "48x48", type: "image/png" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -93,8 +98,9 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
-        {children}
-        <MobileBottomNav />
+        <LocalPublicApiBridge />
+        <AppViewport>{children}</AppViewport>
+        <ChakodAiAssistant />
       </body>
     </html>
   );

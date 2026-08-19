@@ -1,7 +1,6 @@
-// CHAKOD_HOME_LOCATION_STABLE_ALL_IRAN_V6
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   DEFAULT_HOME_LOCATION,
@@ -10,70 +9,254 @@ import {
   createHomeLocationSelection,
   loadHomeLocation,
   saveHomeLocation,
+  sanitizeHomeLocation,
+  type HomeLocationCityArea,
   type HomeLocationScope,
   type HomeLocationSelection,
 } from "./home-location";
 
-const API_BASE = "https://api.chakod.com";
+const DIRECT_API_URL = "https://api.chakod.com/api/geo-locations.php";
+const PROXY_API_URL = "/api/geo-locations";
 const MAX_PROVINCES = 6;
-const MAX_CITIES = 24;
+const MAX_SELECTED_ITEMS = 24;
 const RECENT_STORAGE_KEY = "chakod_home_location_recent_v2";
-const LOCATION_UI_VERSION_KEY = "chakod_home_location_ui_version";
-const LOCATION_UI_VERSION = "6";
 const RECENT_LIMIT = 4;
+const SEARCH_MIN_LENGTH = 2;
+const CITY_LOAD_CONCURRENCY = 5;
+const GEO_CACHE_PREFIX = "chakod_geo_cache_v4:";
+const GEO_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const GEO_REQUEST_TIMEOUT_MS = 6500;
 
 type GeoResponse = {
-  success: boolean;
+  success?: boolean;
+  type?: string;
+  has_neighborhoods?: boolean;
   data?: string[];
+  message?: string;
 };
 
-async function fetchGeo(province?: string) {
-  const params = new URLSearchParams();
-  if (province) params.set("province", province);
+type GeoResult = {
+  data: string[];
+  type: string;
+  hasNeighborhoods: boolean;
+};
 
-  const response = await fetch(
-    `${API_BASE}/api/geo-locations.php${params.size ? `?${params}` : ""}`,
-    { cache: "no-store" },
-  );
+type GeoCacheEntry = {
+  expiresAt: number;
+  value: GeoResult;
+};
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+const memoryGeoCache = new Map<string, GeoCacheEntry>();
 
-  const json = (await response.json()) as GeoResponse;
-  return json.success && Array.isArray(json.data) ? json.data : [];
-}
+type HomeLocationSelectorProps = {
+  value?: HomeLocationSelection;
+  onChange?: (selection: HomeLocationSelection) => void;
+  persist?: boolean;
+  triggerTitle?: string;
+  dialogEyebrow?: string;
+  dialogTitle?: string;
+};
+
+type CitySearchResult = {
+  province: string;
+  city: string;
+};
+
+type NeighborhoodSearchResult = {
+  province: string;
+  city: string;
+  neighborhood: string;
+};
 
 function normalize(value: string) {
   return String(value || "")
     .trim()
     .replace(/ي/g, "ی")
     .replace(/ك/g, "ک")
+    .replace(/\u200c/g, " ")
+    .replace(/\s+/g, " ")
     .toLowerCase();
+}
+
+function uniqueTexts(values: string[]) {
+  return Array.from(
+    new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
+  );
+}
+
+function buildGeoUrl(base: string, params?: { province?: string; city?: string }) {
+  const search = new URLSearchParams();
+  if (params?.province) search.set("province", params.province);
+  if (params?.city) search.set("city", params.city);
+  return search.size ? `${base}?${search.toString()}` : base;
+}
+
+async function parseGeoResponse(response: Response): Promise<GeoResult> {
+  const text = await response.text();
+  let json: GeoResponse;
+
+  try {
+    json = JSON.parse(text) as GeoResponse;
+  } catch {
+    throw new Error("پاسخ سرویس موقعیت معتبر نیست.");
+  }
+
+  if (!response.ok || !json.success || !Array.isArray(json.data)) {
+    throw new Error(json.message || "دریافت اطلاعات موقعیت انجام نشد.");
+  }
+
+  return {
+    data: uniqueTexts(json.data),
+    type: String(json.type || ""),
+    hasNeighborhoods: Boolean(json.has_neighborhoods),
+  };
+}
+
+function geoCacheKey(params?: { province?: string; city?: string }) {
+  return `${params?.province || "all"}::${params?.city || ""}`;
+}
+
+function readGeoCache(key: string) {
+  const memoryEntry = memoryGeoCache.get(key);
+  if (memoryEntry && memoryEntry.expiresAt > Date.now()) {
+    return memoryEntry.value;
+  }
+
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(`${GEO_CACHE_PREFIX}${key}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GeoCacheEntry;
+    if (!parsed?.value || parsed.expiresAt <= Date.now()) {
+      window.localStorage.removeItem(`${GEO_CACHE_PREFIX}${key}`);
+      return null;
+    }
+    memoryGeoCache.set(key, parsed);
+    return parsed.value;
+  } catch {
+    return null;
+  }
+}
+
+function writeGeoCache(key: string, value: GeoResult) {
+  const entry: GeoCacheEntry = {
+    expiresAt: Date.now() + GEO_CACHE_TTL_MS,
+    value,
+  };
+  memoryGeoCache.set(key, entry);
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(`${GEO_CACHE_PREFIX}${key}`, JSON.stringify(entry));
+    } catch {
+      // پرشدن localStorage نباید انتخاب محدوده را متوقف کند.
+    }
+  }
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), GEO_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function fetchGeo(params?: { province?: string; city?: string }) {
+  const key = geoCacheKey(params);
+  const cached = readGeoCache(key);
+  if (cached) return cached;
+
+  let proxyError: unknown;
+
+  try {
+    const proxyResponse = await fetchWithTimeout(buildGeoUrl(PROXY_API_URL, params), {
+      cache: "default",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    const result = await parseGeoResponse(proxyResponse);
+    if (!params?.province && result.data.length === 0) {
+      throw new Error("فهرست استان‌ها خالی است.");
+    }
+    if (params?.province && !params.city && result.data.length === 0) {
+      throw new Error(`فهرست شهرهای ${params.province} خالی است.`);
+    }
+    writeGeoCache(key, result);
+    return result;
+  } catch (error) {
+    proxyError = error;
+  }
+
+  try {
+    const directResponse = await fetchWithTimeout(buildGeoUrl(DIRECT_API_URL, params), {
+      cache: "default",
+      mode: "cors",
+      headers: { Accept: "application/json" },
+    });
+    const result = await parseGeoResponse(directResponse);
+    if (!params?.province && result.data.length === 0) {
+      throw new Error("فهرست استان‌ها خالی است.");
+    }
+    if (params?.province && !params.city && result.data.length === 0) {
+      throw new Error(`فهرست شهرهای ${params.province} خالی است.`);
+    }
+    writeGeoCache(key, result);
+    return result;
+  } catch (directError) {
+    if (proxyError instanceof Error) throw proxyError;
+    if (directError instanceof Error) throw directError;
+    throw new Error("ارتباط با سرویس موقعیت برقرار نشد.");
+  }
 }
 
 function cloneScopes(scopes: HomeLocationScope[]) {
   return scopes.map((scope) => ({
     ...scope,
     cities: [...scope.cities],
+    areas: (scope.areas || []).map((area) => ({
+      ...area,
+      neighborhoods: [...area.neighborhoods],
+    })),
   }));
 }
 
-function getSelectionCount(scopes: HomeLocationScope[]) {
-  return scopes.reduce(
-    (total, scope) => total + (scope.allCities ? 1 : scope.cities.length),
-    0,
-  );
-}
+function countSelectedItems(scopes: HomeLocationScope[]) {
+  return scopes.reduce((total, scope) => {
+    if (scope.allCities) return total + 1;
 
+    const areasCount = (scope.areas || []).reduce(
+      (areaTotal, area) =>
+        areaTotal + (area.allNeighborhoods ? 1 : area.neighborhoods.length),
+      0,
+    );
+
+    return total + scope.cities.length + areasCount;
+  }, 0);
+}
 
 function selectionSignature(selection: HomeLocationSelection) {
   return selection.scopes
-    .map((scope) =>
-      scope.allCities
-        ? `${scope.province}:*`
-        : `${scope.province}:${[...scope.cities].sort().join("|")}`,
-    )
+    .map((scope) => {
+      if (scope.allCities) return `${scope.province}:*`;
+
+      const cities = [...scope.cities].sort().join("|");
+      const areas = (scope.areas || [])
+        .map((area) =>
+          area.allNeighborhoods
+            ? `${area.city}:*`
+            : `${area.city}:${[...area.neighborhoods].sort().join("|")}`,
+        )
+        .sort()
+        .join(";");
+
+      return `${scope.province}:${cities}#${areas}`;
+    })
     .sort()
-    .join(";");
+    .join(";;");
 }
 
 function readRecentSelections() {
@@ -88,9 +271,7 @@ function readRecentSelections() {
     const selections: HomeLocationSelection[] = [];
 
     for (const item of parsed) {
-      const selection = createHomeLocationSelection(
-        Array.isArray(item?.scopes) ? item.scopes : [],
-      );
+      const selection = sanitizeHomeLocation(item);
       if (selection.mode === "all") continue;
 
       const signature = selectionSignature(selection);
@@ -109,105 +290,119 @@ function readRecentSelections() {
 
 function writeRecentSelections(selections: HomeLocationSelection[]) {
   if (typeof window === "undefined") return;
-
   window.localStorage.setItem(
     RECENT_STORAGE_KEY,
     JSON.stringify(selections.slice(0, RECENT_LIMIT)),
   );
 }
 
-function getProvinceStatus(scope?: HomeLocationScope) {
-  if (!scope) return "";
-  if (scope.allCities) return "کل استان";
-  return `${scope.cities.length.toLocaleString("fa-IR")} شهر`;
+function locationKey(province: string, city: string) {
+  return `${province}::${city}`;
 }
 
-export default function HomeLocationSelector() {
+function splitLocationKey(key: string) {
+  const separatorIndex = key.indexOf("::");
+  return separatorIndex >= 0
+    ? [key.slice(0, separatorIndex), key.slice(separatorIndex + 2)]
+    : ["", ""];
+}
+
+function getProvinceStatus(scope?: HomeLocationScope) {
+  if (!scope) return "انتخاب شهر یا محله";
+  if (scope.allCities) return "کل استان انتخاب شده";
+
+  const areaCount = (scope.areas || []).reduce(
+    (total, area) =>
+      total + (area.allNeighborhoods ? 1 : area.neighborhoods.length),
+    0,
+  );
+  const count = scope.cities.length + areaCount;
+  return `${count.toLocaleString("fa-IR")} محدوده انتخاب شده`;
+}
+
+function getCityArea(scope: HomeLocationScope | undefined, city: string) {
+  return scope?.areas?.find((area) => area.city === city);
+}
+
+export default function HomeLocationSelector({
+  value,
+  onChange,
+  persist = true,
+  triggerTitle = "محدوده نمایش",
+  dialogEyebrow = "محدوده آگهی‌ها",
+  dialogTitle = "انتخاب محدوده",
+}: HomeLocationSelectorProps = {}) {
   const dialogRef = useRef<HTMLElement | null>(null);
+  const cityIndexPromiseRef = useRef<Promise<void> | null>(null);
+
   const [open, setOpen] = useState(false);
   const [savedSelection, setSavedSelection] = useState<HomeLocationSelection>(
     DEFAULT_HOME_LOCATION,
   );
   const [draftScopes, setDraftScopes] = useState<HomeLocationScope[]>([]);
   const [provinces, setProvinces] = useState<string[]>([]);
+  const [citiesByProvince, setCitiesByProvince] = useState<Record<string, string[]>>({});
+  const [neighborhoodsByCity, setNeighborhoodsByCity] = useState<Record<string, string[]>>({});
+  const [cityHasNeighborhoods, setCityHasNeighborhoods] = useState<Record<string, boolean>>({});
   const [expandedProvince, setExpandedProvince] = useState("");
-  const [citiesByProvince, setCitiesByProvince] = useState<
-    Record<string, string[]>
-  >({});
+  const [expandedCityKey, setExpandedCityKey] = useState("");
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingProvince, setLoadingProvince] = useState("");
-  const [loadingProvinces, setLoadingProvinces] = useState(true);
+  const [loadingCityKey, setLoadingCityKey] = useState("");
+  const [indexingCities, setIndexingCities] = useState(false);
+  const [cityIndexReady, setCityIndexReady] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [loadVersion, setLoadVersion] = useState(0);
   const [recentSelections, setRecentSelections] = useState<HomeLocationSelection[]>([]);
+
+  const loadProvinces = useCallback(async () => {
+    setLoadingProvinces(true);
+    setError("");
+
+    try {
+      const result = await fetchGeo();
+      if (!result.data.length) {
+        throw new Error("فهرست استان‌ها خالی است.");
+      }
+      setProvinces(result.data);
+    } catch (loadError) {
+      setProvinces([]);
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "دریافت فهرست استان‌ها انجام نشد.",
+      );
+    } finally {
+      setLoadingProvinces(false);
+    }
+  }, []);
 
   useEffect(() => {
     let loadedSelection = DEFAULT_HOME_LOCATION;
-    let storedRecents: HomeLocationSelection[] = [];
 
     try {
-      const currentVersion = window.localStorage.getItem(
-        LOCATION_UI_VERSION_KEY,
-      );
-
-      if (currentVersion !== LOCATION_UI_VERSION) {
-        /*
-         * داده‌های انتخاب موقعیت نسخه‌های آزمایشی قبلی ممکن است با ساختار
-         * جدید سازگار نباشند. این مهاجرت فقط یک‌بار اجرا می‌شود و شروع
-         * نسخه پایدار را روی «سراسر ایران» می‌گذارد.
-         */
-        window.localStorage.removeItem(HOME_LOCATION_STORAGE_KEY);
-        window.localStorage.removeItem("chakod_home_location_recent_v1");
-        window.localStorage.removeItem(RECENT_STORAGE_KEY);
-        window.localStorage.setItem(
-          LOCATION_UI_VERSION_KEY,
-          LOCATION_UI_VERSION,
-        );
-        saveHomeLocation(DEFAULT_HOME_LOCATION);
-      } else {
-        loadedSelection = loadHomeLocation();
-        storedRecents = readRecentSelections();
-      }
+      loadedSelection = value
+        ? sanitizeHomeLocation(value)
+        : persist
+          ? loadHomeLocation()
+          : DEFAULT_HOME_LOCATION;
     } catch {
       loadedSelection = DEFAULT_HOME_LOCATION;
-      storedRecents = [];
     }
 
     setSavedSelection(loadedSelection);
-
-    if (loadedSelection.mode !== "all") {
-      const currentSignature = selectionSignature(loadedSelection);
-      const merged = [
-        loadedSelection,
-        ...storedRecents.filter(
-          (item) => selectionSignature(item) !== currentSignature,
-        ),
-      ].slice(0, RECENT_LIMIT);
-      setRecentSelections(merged);
-      writeRecentSelections(merged);
-    } else {
-      setRecentSelections(storedRecents);
-    }
-
-    let ignore = false;
-
-    void fetchGeo()
-      .then((data) => {
-        if (!ignore) setProvinces(data);
-      })
-      .catch(() => {
-        if (!ignore) setError("دریافت فهرست استان‌ها انجام نشد.");
-      })
-      .finally(() => {
-        if (!ignore) setLoadingProvinces(false);
-      });
+    setRecentSelections(readRecentSelections());
+    void loadProvinces();
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === HOME_LOCATION_STORAGE_KEY) {
+      if (persist && event.key === HOME_LOCATION_STORAGE_KEY) {
         setSavedSelection(loadHomeLocation());
       }
     };
 
     const handleLocationChange = (event: Event) => {
+      if (!persist) return;
       const customEvent = event as CustomEvent<HomeLocationSelection>;
       setSavedSelection(customEvent.detail || loadHomeLocation());
     };
@@ -216,11 +411,14 @@ export default function HomeLocationSelector() {
     window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
 
     return () => {
-      ignore = true;
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
     };
-  }, []);
+  }, [loadProvinces, loadVersion, persist]);
+
+  useEffect(() => {
+    if (value) setSavedSelection(sanitizeHomeLocation(value));
+  }, [value]);
 
   useEffect(() => {
     if (!open) return;
@@ -228,8 +426,8 @@ export default function HomeLocationSelector() {
     const scopes = cloneScopes(savedSelection.scopes);
     setDraftScopes(scopes);
     setExpandedProvince(scopes[0]?.province || "");
+    setExpandedCityKey("");
     setQuery("");
-    setError("");
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -255,67 +453,234 @@ export default function HomeLocationSelector() {
   }, [open, savedSelection]);
 
   useEffect(() => {
-    if (!open || !expandedProvince || citiesByProvince[expandedProvince]) {
-      return;
+    if (!open || loadingProvinces || provinces.length > 0) return;
+    void loadProvinces();
+  }, [loadProvinces, loadingProvinces, open, provinces.length]);
+
+  const ensureProvinceCities = useCallback(
+    async (province: string) => {
+      if (!province || citiesByProvince[province]) return citiesByProvince[province] || [];
+
+      setLoadingProvince(province);
+      setError("");
+
+      try {
+        const result = await fetchGeo({ province });
+        setCitiesByProvince((current) => ({
+          ...current,
+          [province]: result.data,
+        }));
+        return result.data;
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : `دریافت شهرهای ${province} انجام نشد.`,
+        );
+        return [];
+      } finally {
+        setLoadingProvince("");
+      }
+    },
+    [citiesByProvince],
+  );
+
+  useEffect(() => {
+    if (open && expandedProvince && !citiesByProvince[expandedProvince]) {
+      void ensureProvinceCities(expandedProvince);
+    }
+  }, [citiesByProvince, ensureProvinceCities, expandedProvince, open]);
+
+  const ensureCityNeighborhoods = useCallback(
+    async (province: string, city: string) => {
+      const key = locationKey(province, city);
+      if (Object.prototype.hasOwnProperty.call(neighborhoodsByCity, key)) {
+        return neighborhoodsByCity[key];
+      }
+
+      setLoadingCityKey(key);
+      setError("");
+
+      try {
+        const result = await fetchGeo({ province, city });
+        setNeighborhoodsByCity((current) => ({
+          ...current,
+          [key]: result.data,
+        }));
+        setCityHasNeighborhoods((current) => ({
+          ...current,
+          [key]: result.hasNeighborhoods || result.data.length > 0,
+        }));
+        return result.data;
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : `دریافت محله‌های ${city} انجام نشد.`,
+        );
+        return [];
+      } finally {
+        setLoadingCityKey("");
+      }
+    },
+    [neighborhoodsByCity],
+  );
+
+  useEffect(() => {
+    if (!open || !expandedCityKey) return;
+    const [province, city] = splitLocationKey(expandedCityKey);
+    if (province && city) void ensureCityNeighborhoods(province, city);
+  }, [ensureCityNeighborhoods, expandedCityKey, open]);
+
+  const ensureCityIndex = useCallback(async () => {
+    if (cityIndexReady || indexingCities || !provinces.length) return;
+    if (cityIndexPromiseRef.current) return cityIndexPromiseRef.current;
+
+    const task = (async () => {
+      setIndexingCities(true);
+      setError("");
+
+      try {
+        for (let index = 0; index < provinces.length; index += CITY_LOAD_CONCURRENCY) {
+          const batch = provinces.slice(index, index + CITY_LOAD_CONCURRENCY);
+          const results = await Promise.all(
+            batch.map(async (province) => {
+              if (citiesByProvince[province]) {
+                return [province, citiesByProvince[province]] as const;
+              }
+
+              try {
+                const result = await fetchGeo({ province });
+                return [province, result.data] as const;
+              } catch {
+                return [province, [] as string[]] as const;
+              }
+            }),
+          );
+
+          setCitiesByProvince((current) => {
+            const next = { ...current };
+            for (const [province, cities] of results) {
+              if (!next[province]) next[province] = cities;
+            }
+            return next;
+          });
+        }
+
+        setCityIndexReady(true);
+      } finally {
+        setIndexingCities(false);
+        cityIndexPromiseRef.current = null;
+      }
+    })();
+
+    cityIndexPromiseRef.current = task;
+    return task;
+  }, [citiesByProvince, cityIndexReady, indexingCities, provinces]);
+
+  useEffect(() => {
+    const normalizedQuery = normalize(query);
+    if (open && normalizedQuery.length >= SEARCH_MIN_LENGTH) {
+      void ensureCityIndex();
+    }
+  }, [ensureCityIndex, open, query]);
+
+  const normalizedQuery = normalize(query);
+
+  const provinceResults = useMemo(() => {
+    if (normalizedQuery.length < SEARCH_MIN_LENGTH) return [];
+    return provinces.filter((province) =>
+      normalize(province).includes(normalizedQuery),
+    );
+  }, [normalizedQuery, provinces]);
+
+  const cityResults = useMemo(() => {
+    if (normalizedQuery.length < SEARCH_MIN_LENGTH) return [] as CitySearchResult[];
+
+    const results: CitySearchResult[] = [];
+    for (const province of provinces) {
+      for (const city of citiesByProvince[province] || []) {
+        if (normalize(city).includes(normalizedQuery)) {
+          results.push({ province, city });
+          if (results.length >= 24) return results;
+        }
+      }
+    }
+    return results;
+  }, [citiesByProvince, normalizedQuery, provinces]);
+
+  const neighborhoodResults = useMemo(() => {
+    if (normalizedQuery.length < SEARCH_MIN_LENGTH) {
+      return [] as NeighborhoodSearchResult[];
     }
 
-    let ignore = false;
-    setLoadingProvince(expandedProvince);
-    setError("");
-
-    void fetchGeo(expandedProvince)
-      .then((data) => {
-        if (!ignore) {
-          setCitiesByProvince((current) => ({
-            ...current,
-            [expandedProvince]: data,
-          }));
+    const results: NeighborhoodSearchResult[] = [];
+    for (const [key, neighborhoods] of Object.entries(neighborhoodsByCity)) {
+      const [province, city] = splitLocationKey(key);
+      for (const neighborhood of neighborhoods) {
+        if (normalize(neighborhood).includes(normalizedQuery)) {
+          results.push({ province, city, neighborhood });
+          if (results.length >= 24) return results;
         }
-      })
-      .catch(() => {
-        if (!ignore) {
-          setError(`دریافت شهرهای ${expandedProvince} انجام نشد.`);
-        }
-      })
-      .finally(() => {
-        if (!ignore) setLoadingProvince("");
-      });
+      }
+    }
+    return results;
+  }, [neighborhoodsByCity, normalizedQuery]);
 
-    return () => {
-      ignore = true;
-    };
-  }, [citiesByProvince, expandedProvince, open]);
+  const visibleProvinces = useMemo(() => {
+    if (normalizedQuery.length < SEARCH_MIN_LENGTH) return provinces;
 
-  const filteredProvinces = useMemo(() => {
-    const normalizedQuery = normalize(query);
-    if (!normalizedQuery) return provinces;
+    const provinceSet = new Set(provinceResults);
+    cityResults.forEach((result) => provinceSet.add(result.province));
+    neighborhoodResults.forEach((result) => provinceSet.add(result.province));
 
-    return provinces.filter((province) => {
-      if (normalize(province).includes(normalizedQuery)) return true;
-
-      const cities = citiesByProvince[province] || [];
-      return cities.some((city) => normalize(city).includes(normalizedQuery));
-    });
-  }, [citiesByProvince, provinces, query]);
+    return provinces.filter((province) => provinceSet.has(province));
+  }, [cityResults, neighborhoodResults, normalizedQuery, provinceResults, provinces]);
 
   const draftSelection = useMemo(
     () => createHomeLocationSelection(draftScopes),
     [draftScopes],
   );
-
-  const totalSelections = getSelectionCount(draftScopes);
+  const totalSelections = countSelectedItems(draftScopes);
 
   function findScope(province: string) {
     return draftScopes.find((scope) => scope.province === province);
   }
 
-  function toggleExpand(province: string) {
+  function canAddSelection(current: HomeLocationScope[], amount = 1) {
+    if (countSelectedItems(current) + amount > MAX_SELECTED_ITEMS) {
+      setError(`حداکثر ${MAX_SELECTED_ITEMS} محدوده را می‌توان انتخاب کرد.`);
+      return false;
+    }
+    return true;
+  }
+
+  function toggleExpandProvince(province: string) {
     setExpandedProvince((current) => (current === province ? "" : province));
+    setExpandedCityKey("");
+    setError("");
+  }
+
+  function openProvince(province: string) {
+    setQuery("");
+    setExpandedProvince(province);
+    setExpandedCityKey("");
+    setError("");
+    void ensureProvinceCities(province);
+  }
+
+  function openCity(province: string, city: string) {
+    const key = locationKey(province, city);
+    setQuery("");
+    setExpandedProvince(province);
+    setExpandedCityKey(key);
+    setError("");
+    void ensureProvinceCities(province);
+    void ensureCityNeighborhoods(province, city);
   }
 
   function selectWholeProvince(province: string) {
     setError("");
-
     setDraftScopes((current) => {
       const existing = current.find((scope) => scope.province === province);
 
@@ -328,64 +693,191 @@ export default function HomeLocationSelector() {
         return current;
       }
 
-      if (existing) {
+      if (!existing && !canAddSelection(current)) return current;
+
+      const nextScope: HomeLocationScope = {
+        province,
+        allCities: true,
+        cities: [],
+        areas: [],
+      };
+
+      return existing
+        ? current.map((scope) =>
+            scope.province === province ? nextScope : scope,
+          )
+        : [...current, nextScope];
+    });
+  }
+
+  function toggleWholeCity(province: string, city: string) {
+    setError("");
+    setDraftScopes((current) => {
+      const existing = current.find((scope) => scope.province === province);
+      const citySelected = Boolean(existing?.allCities || existing?.cities.includes(city));
+
+      if (existing?.allCities) {
         return current.map((scope) =>
           scope.province === province
-            ? { province, allCities: true, cities: [] }
+            ? {
+                province,
+                allCities: false,
+                cities: [city],
+                areas: [],
+              }
             : scope,
         );
       }
 
-      return [...current, { province, allCities: true, cities: [] }];
-    });
-  }
+      if (citySelected) {
+        return current.flatMap((scope) => {
+          if (scope.province !== province) return [scope];
 
-  function toggleCity(province: string, city: string) {
-    setError("");
-
-    setDraftScopes((current) => {
-      const existing = current.find((scope) => scope.province === province);
-      const selectedCities = current.reduce(
-        (total, scope) => total + (scope.allCities ? 0 : scope.cities.length),
-        0,
-      );
-      const currentCities = existing?.allCities ? [] : existing?.cities || [];
-      const alreadySelected = currentCities.includes(city);
+          const cities = scope.cities.filter((item) => item !== city);
+          const areas = (scope.areas || []).filter((area) => area.city !== city);
+          return cities.length || areas.length
+            ? [{ ...scope, cities, areas }]
+            : [];
+        });
+      }
 
       if (!existing && current.length >= MAX_PROVINCES) {
         setError(`حداکثر ${MAX_PROVINCES} استان را می‌توان انتخاب کرد.`);
         return current;
       }
-
-      if (!alreadySelected && selectedCities >= MAX_CITIES) {
-        setError(`حداکثر ${MAX_CITIES} شهر را می‌توان انتخاب کرد.`);
-        return current;
-      }
-
-      const nextCities = alreadySelected
-        ? currentCities.filter((item) => item !== city)
-        : [...currentCities, city];
+      if (!canAddSelection(current)) return current;
 
       if (existing) {
-        if (nextCities.length === 0) {
-          return current.filter((scope) => scope.province !== province);
-        }
-
         return current.map((scope) =>
           scope.province === province
-            ? { province, allCities: false, cities: nextCities }
+            ? {
+                ...scope,
+                allCities: false,
+                cities: [...scope.cities, city],
+                areas: (scope.areas || []).filter((area) => area.city !== city),
+              }
             : scope,
         );
       }
 
       return [
         ...current,
-        { province, allCities: false, cities: [city] },
+        {
+          province,
+          allCities: false,
+          cities: [city],
+          areas: [],
+        },
       ];
     });
   }
 
-  function removeProvince(province: string) {
+  function toggleNeighborhood(province: string, city: string, neighborhood: string) {
+    setError("");
+    setDraftScopes((current) => {
+      const existing = current.find((scope) => scope.province === province);
+      const area = getCityArea(existing, city);
+      const neighborhoodSelected = Boolean(
+        existing?.allCities ||
+          existing?.cities.includes(city) ||
+          area?.allNeighborhoods ||
+          area?.neighborhoods.includes(neighborhood),
+      );
+
+      if (existing?.allCities || existing?.cities.includes(city)) {
+        return current.map((scope) =>
+          scope.province === province
+            ? {
+                province,
+                allCities: false,
+                cities: scope.cities.filter((item) => item !== city),
+                areas: [
+                  ...(scope.areas || []).filter((item) => item.city !== city),
+                  {
+                    city,
+                    allNeighborhoods: false,
+                    neighborhoods: [neighborhood],
+                  },
+                ],
+              }
+            : scope,
+        );
+      }
+
+      if (neighborhoodSelected) {
+        return current.flatMap((scope) => {
+          if (scope.province !== province) return [scope];
+
+          const areas = (scope.areas || []).flatMap((item) => {
+            if (item.city !== city) return [item];
+            if (item.allNeighborhoods) return [];
+
+            const neighborhoods = item.neighborhoods.filter(
+              (value) => value !== neighborhood,
+            );
+            return neighborhoods.length
+              ? [{ ...item, neighborhoods }]
+              : [];
+          });
+
+          return scope.cities.length || areas.length
+            ? [{ ...scope, areas }]
+            : [];
+        });
+      }
+
+      if (!existing && current.length >= MAX_PROVINCES) {
+        setError(`حداکثر ${MAX_PROVINCES} استان را می‌توان انتخاب کرد.`);
+        return current;
+      }
+      if (!canAddSelection(current)) return current;
+
+      if (existing) {
+        return current.map((scope) => {
+          if (scope.province !== province) return scope;
+
+          const currentArea = getCityArea(scope, city);
+          const nextArea: HomeLocationCityArea = currentArea
+            ? {
+                city,
+                allNeighborhoods: false,
+                neighborhoods: [...currentArea.neighborhoods, neighborhood],
+              }
+            : {
+                city,
+                allNeighborhoods: false,
+                neighborhoods: [neighborhood],
+              };
+
+          return {
+            ...scope,
+            areas: [
+              ...(scope.areas || []).filter((item) => item.city !== city),
+              nextArea,
+            ],
+          };
+        });
+      }
+
+      return [
+        ...current,
+        {
+          province,
+          allCities: false,
+          cities: [],
+          areas: [
+            {
+              city,
+              allNeighborhoods: false,
+              neighborhoods: [neighborhood],
+            },
+          ],
+        },
+      ];
+    });
+  }
+
+  function removeScope(province: string) {
     setDraftScopes((current) =>
       current.filter((scope) => scope.province !== province),
     );
@@ -395,10 +887,30 @@ export default function HomeLocationSelector() {
     setDraftScopes((current) =>
       current.flatMap((scope) => {
         if (scope.province !== province) return [scope];
-
         const cities = scope.cities.filter((item) => item !== city);
-        return cities.length
-          ? [{ ...scope, cities }]
+        const areas = (scope.areas || []).filter((area) => area.city !== city);
+        return cities.length || areas.length
+          ? [{ ...scope, cities, areas }]
+          : [];
+      }),
+    );
+  }
+
+  function removeNeighborhood(province: string, city: string, neighborhood: string) {
+    setDraftScopes((current) =>
+      current.flatMap((scope) => {
+        if (scope.province !== province) return [scope];
+
+        const areas = (scope.areas || []).flatMap((area) => {
+          if (area.city !== city) return [area];
+          const neighborhoods = area.neighborhoods.filter(
+            (item) => item !== neighborhood,
+          );
+          return neighborhoods.length ? [{ ...area, neighborhoods }] : [];
+        });
+
+        return scope.cities.length || areas.length
+          ? [{ ...scope, areas }]
           : [];
       }),
     );
@@ -407,22 +919,28 @@ export default function HomeLocationSelector() {
   function clearSelection() {
     setDraftScopes([]);
     setExpandedProvince("");
-    setQuery("");
+    setExpandedCityKey("");
     setError("");
   }
 
-  function chooseAllIran() {
-    clearSelection();
-    setSavedSelection(DEFAULT_HOME_LOCATION);
-    saveHomeLocation(DEFAULT_HOME_LOCATION);
+  function commitSelection(selection: HomeLocationSelection) {
+    const safeSelection = sanitizeHomeLocation(selection);
+    setSavedSelection(safeSelection);
+    if (persist) saveHomeLocation(safeSelection);
+    onChange?.(safeSelection);
     setOpen(false);
   }
 
-  function clearRecentSelections() {
-    setRecentSelections([]);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(RECENT_STORAGE_KEY);
-    }
+  function chooseAllIran() {
+    commitSelection(DEFAULT_HOME_LOCATION);
+  }
+
+  function chooseRecent(selection: HomeLocationSelection) {
+    setDraftScopes(cloneScopes(selection.scopes));
+    setExpandedProvince(selection.scopes[0]?.province || "");
+    setExpandedCityKey("");
+    setQuery("");
+    setError("");
   }
 
   function removeRecentSelection(signature: string) {
@@ -433,323 +951,373 @@ export default function HomeLocationSelector() {
     writeRecentSelections(next);
   }
 
-  function chooseRecent(selection: HomeLocationSelection) {
-    setDraftScopes(cloneScopes(selection.scopes));
-    setExpandedProvince(selection.scopes[0]?.province || "");
-    setQuery("");
-    setError("");
-  }
-
   function applySelection() {
     const nextSelection = draftScopes.length
       ? draftSelection
       : DEFAULT_HOME_LOCATION;
 
     if (nextSelection.mode !== "all") {
-      const nextSignature = selectionSignature(nextSelection);
+      const signature = selectionSignature(nextSelection);
       const merged = [
         nextSelection,
         ...recentSelections.filter(
-          (item) => selectionSignature(item) !== nextSignature,
+          (selection) => selectionSignature(selection) !== signature,
         ),
       ].slice(0, RECENT_LIMIT);
       setRecentSelections(merged);
       writeRecentSelections(merged);
     }
 
-    saveHomeLocation(nextSelection);
-    setOpen(false);
+    commitSelection(nextSelection);
   }
 
+  const hasSearchResults =
+    provinceResults.length > 0 ||
+    cityResults.length > 0 ||
+    neighborhoodResults.length > 0;
+
   return (
-    <div className="homeLocationSelector" dir="rtl">
+    <div className="chakodLocationSelector" dir="rtl">
       <button
         type="button"
-        className="homeLocationTrigger"
+        className={`chakodLocationTrigger ${open ? "open" : ""}`}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        <span className="homeLocationPin" aria-hidden="true">⌖</span>
-        <span className="homeLocationTriggerCopy">
-          <small>محدوده نمایش</small>
+        <span className="chakodLocationPin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+            <path
+              d="M19 9.8c0 4.8-7 10.7-7 10.7S5 14.6 5 9.8a7 7 0 1 1 14 0Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+            />
+            <circle cx="12" cy="9.8" r="2.2" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+        </span>
+        <span className="chakodLocationTriggerCopy">
+          <small>{triggerTitle}</small>
           <strong>{savedSelection.label}</strong>
         </span>
-        <span className="homeLocationArrow" aria-hidden="true">⌄</span>
+        <span className="chakodLocationArrowWrap" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="none">
+            <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
       </button>
 
-      {open && typeof document !== "undefined" ? createPortal((
-        <div
-          className="homeLocationSimpleBackdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setOpen(false);
-          }}
-        >
-          <section
-            ref={dialogRef}
-            className="homeLocationSimpleDialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="home-location-title"
-            tabIndex={-1}
-          >
-            <header className="homeLocationSimpleHeader">
-              <div>
-                <span>محدوده آگهی‌ها</span>
-                <h2 id="home-location-title">انتخاب شهر</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="بستن"
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="chakodLocationBackdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.currentTarget === event.target) setOpen(false);
+              }}
+            >
+              <section
+                ref={dialogRef}
+                className="chakodLocationDialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="chakod-location-title"
+                tabIndex={-1}
               >
-                ×
-              </button>
-            </header>
+                <header className="chakodLocationHeader">
+                  <div>
+                    <span>{dialogEyebrow}</span>
+                    <h2 id="chakod-location-title">{dialogTitle}</h2>
+                    <p>سراسر ایران، یک استان کامل، شهر یا محله‌های مشخص را انتخاب کنید.</p>
+                  </div>
+                  <button type="button" onClick={() => setOpen(false)} aria-label="بستن">
+                    <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
+                      <path d="M5 5 15 15M15 5 5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </header>
 
-            <div className="homeLocationSimpleSearchWrap">
-              <label className="homeLocationSimpleSearch">
-                <span aria-hidden="true">⌕</span>
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="جست‌وجوی استان یا شهر"
-                />
-                {query ? (
-                  <button type="button" onClick={() => setQuery("")}>×</button>
-                ) : null}
-              </label>
+                <div className="chakodLocationSearchWrap">
+                  <label className="chakodLocationSearch">
+                    <span aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                        <circle cx="10.5" cy="10.5" r="6.2" stroke="currentColor" strokeWidth="1.8" />
+                        <path d="m15.2 15.2 4.4 4.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="جست‌وجوی استان، شهر یا محله"
+                    />
+                    {query ? (
+                      <button type="button" onClick={() => setQuery("")} aria-label="پاک کردن جست‌وجو">×</button>
+                    ) : null}
+                  </label>
 
-              <button
-                type="button"
-                className={`homeLocationSimpleAll ${draftScopes.length === 0 ? "active" : ""}`}
-                onClick={chooseAllIran}
-              >
-                <span aria-hidden="true">◎</span>
-                <strong>سراسر ایران</strong>
-                <small>
-                  {draftScopes.length === 0
-                    ? "انتخاب پیش‌فرض"
-                    : "انتخاب و بستن"}
-                </small>
-              </button>
-            </div>
-
-            {draftScopes.length ? (
-              <div className="homeLocationSimpleSelected" aria-label="محدوده‌های انتخاب‌شده">
-                <div className="homeLocationSimpleSelectedHead">
-                  <strong>انتخاب‌های من</strong>
-                  <button type="button" onClick={clearSelection}>پاک کردن همه</button>
-                </div>
-
-                <div className="homeLocationSimpleChips">
-                  {draftScopes.flatMap((scope) =>
-                    scope.allCities
-                      ? [
-                          <button
-                            key={`province-${scope.province}`}
-                            type="button"
-                            onClick={() => removeProvince(scope.province)}
-                          >
-                            کل {scope.province}<span>×</span>
-                          </button>,
-                        ]
-                      : scope.cities.map((city) => (
-                          <button
-                            key={`${scope.province}-${city}`}
-                            type="button"
-                            onClick={() => removeCity(scope.province, city)}
-                          >
-                            {city}<small>{scope.province}</small><span>×</span>
-                          </button>
-                        )),
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            <main className="homeLocationSimpleBody">
-              {!query && recentSelections.length ? (
-                <section className="homeLocationRecent" aria-label="انتخاب‌های قبلی">
-                  <div className="homeLocationRecentHead">
+                  <button
+                    type="button"
+                    className={`chakodLocationAll ${draftScopes.length === 0 ? "active" : ""}`}
+                    onClick={chooseAllIran}
+                  >
+                    <span aria-hidden="true">◎</span>
                     <div>
-                      <strong>انتخاب‌های قبلی</strong>
-                      <small>برای استفاده دوباره انتخاب کن</small>
+                      <strong>سراسر ایران</strong>
+                      <small>نمایش همه آگهی‌ها</small>
                     </div>
-                    <button
-                      type="button"
-                      onClick={clearRecentSelections}
-                    >
-                      پاک کردن سابقه
-                    </button>
+                  </button>
+                </div>
+
+                {draftScopes.length ? (
+                  <div className="chakodLocationSelected">
+                    <div className="chakodLocationSelectedHead">
+                      <strong>انتخاب‌های من</strong>
+                      <button type="button" onClick={clearSelection}>پاک کردن همه</button>
+                    </div>
+                    <div className="chakodLocationChips">
+                      {draftScopes.flatMap((scope) => {
+                        if (scope.allCities) {
+                          return [
+                            <button key={`${scope.province}-all`} type="button" onClick={() => removeScope(scope.province)}>
+                              کل {scope.province}<span>×</span>
+                            </button>,
+                          ];
+                        }
+
+                        return [
+                          ...scope.cities.map((city) => (
+                            <button key={`${scope.province}-${city}`} type="button" onClick={() => removeCity(scope.province, city)}>
+                              {city}<small>{scope.province}</small><span>×</span>
+                            </button>
+                          )),
+                          ...(scope.areas || []).flatMap((area) =>
+                            area.neighborhoods.map((neighborhood) => (
+                              <button key={`${scope.province}-${area.city}-${neighborhood}`} type="button" onClick={() => removeNeighborhood(scope.province, area.city, neighborhood)}>
+                                {neighborhood}<small>{area.city}</small><span>×</span>
+                              </button>
+                            )),
+                          ),
+                        ];
+                      })}
+                    </div>
                   </div>
-                  <div className="homeLocationRecentRail">
-                    {recentSelections.map((selection) => {
-                      const signature = selectionSignature(selection);
-                      const active =
-                        signature === selectionSignature(draftSelection);
+                ) : null}
 
-                      return (
-                        <div
-                          key={signature}
-                          className={`homeLocationRecentItem ${active ? "active" : ""}`}
-                        >
-                          <button
-                            type="button"
-                            className="homeLocationRecentUse"
-                            onClick={() => chooseRecent(selection)}
-                          >
-                            <span aria-hidden="true">↻</span>
-                            <strong>{selection.label}</strong>
-                          </button>
-                          <button
-                            type="button"
-                            className="homeLocationRecentRemove"
-                            aria-label={`حذف ${selection.label} از انتخاب‌های قبلی`}
-                            onClick={() => removeRecentSelection(signature)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : null}
+                <main className="chakodLocationBody">
+                  {!query && recentSelections.length ? (
+                    <section className="chakodLocationRecent">
+                      <div className="chakodLocationRecentHead">
+                        <div><strong>انتخاب‌های قبلی</strong><small>برای استفاده دوباره انتخاب کنید</small></div>
+                        <button type="button" onClick={() => {
+                          setRecentSelections([]);
+                          window.localStorage.removeItem(RECENT_STORAGE_KEY);
+                        }}>پاک کردن سابقه</button>
+                      </div>
+                      <div className="chakodLocationRecentRail">
+                        {recentSelections.map((selection) => {
+                          const signature = selectionSignature(selection);
+                          return (
+                            <div key={signature} className="chakodLocationRecentItem">
+                              <button type="button" className="chakodLocationRecentUse" onClick={() => chooseRecent(selection)}>
+                                <span>↻</span><strong>{selection.label}</strong>
+                              </button>
+                              <button type="button" className="chakodLocationRecentRemove" onClick={() => removeRecentSelection(signature)}>×</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
 
-              {loadingProvinces ? (
-                <div className="homeLocationSimpleState">در حال دریافت استان‌ها...</div>
-              ) : null}
-
-              {!loadingProvinces && filteredProvinces.length === 0 ? (
-                <div className="homeLocationSimpleState">محدوده‌ای پیدا نشد.</div>
-              ) : null}
-
-              <div className="homeLocationSimpleList">
-                {filteredProvinces.map((province) => {
-                  const scope = findScope(province);
-                  const expanded = expandedProvince === province;
-                  const cities = citiesByProvince[province] || [];
-                  const normalizedQuery = normalize(query);
-                  const filteredCities = normalizedQuery
-                    ? cities.filter((city) => normalize(city).includes(normalizedQuery))
-                    : cities;
-
-                  return (
-                    <section
-                      key={province}
-                      className={`homeLocationSimpleProvince ${expanded ? "expanded" : ""}`}
-                    >
-                      <div className="homeLocationSimpleProvinceRow">
-                        <button
-                          type="button"
-                          className={`homeLocationSimpleProvinceCheck ${scope?.allCities ? "checked" : scope ? "partial" : ""}`}
-                          onClick={() => selectWholeProvince(province)}
-                          aria-label={`انتخاب کل استان ${province}`}
-                        >
-                          {scope?.allCities ? "✓" : scope ? "•" : ""}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="homeLocationSimpleProvinceName"
-                          onClick={() => toggleExpand(province)}
-                          aria-expanded={expanded}
-                        >
-                          <span>
-                            <strong>{province}</strong>
-                            <small>{scope ? getProvinceStatus(scope) : "انتخاب شهر"}</small>
-                          </span>
-                          <b aria-hidden="true">⌄</b>
-                        </button>
+                  {normalizedQuery.length >= SEARCH_MIN_LENGTH ? (
+                    <section className="chakodLocationSearchResults">
+                      <div className="chakodLocationSearchResultsHead">
+                        <strong>نتایج جست‌وجو</strong>
+                        {indexingCities ? <small>در حال بررسی شهرهای همه استان‌ها...</small> : null}
                       </div>
 
-                      {expanded ? (
-                        <div className="homeLocationSimpleCities">
-                          <button
-                            type="button"
-                            className={`homeLocationSimpleWholeProvince ${scope?.allCities ? "active" : ""}`}
-                            onClick={() => selectWholeProvince(province)}
-                          >
-                            <span>{scope?.allCities ? "✓" : ""}</span>
-                            <strong>همه شهرهای {province}</strong>
-                          </button>
+                      {!hasSearchResults && !indexingCities ? (
+                        <div className="chakodLocationEmptySearch">نتیجه‌ای پیدا نشد. نام را کوتاه‌تر وارد کنید.</div>
+                      ) : null}
 
-                          {loadingProvince === province ? (
-                            <div className="homeLocationSimpleCityState">در حال دریافت شهرها...</div>
-                          ) : null}
+                      {provinceResults.length ? (
+                        <div className="chakodLocationResultGroup">
+                          <span>استان‌ها</span>
+                          <div>
+                            {provinceResults.map((province) => (
+                              <button key={province} type="button" onClick={() => openProvince(province)}>
+                                <strong>{province}</strong><small>مشاهده همه شهرها</small><b>←</b>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
 
-                          {loadingProvince !== province && filteredCities.length === 0 ? (
-                            <div className="homeLocationSimpleCityState">شهری پیدا نشد.</div>
-                          ) : null}
+                      {cityResults.length ? (
+                        <div className="chakodLocationResultGroup">
+                          <span>شهرها</span>
+                          <div>
+                            {cityResults.map(({ province, city }) => (
+                              <button key={`${province}-${city}`} type="button" onClick={() => openCity(province, city)}>
+                                <strong>{city}</strong><small>{province}</small><b>←</b>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
 
-                          <div className="homeLocationSimpleCityGrid">
-                            {filteredCities.map((city) => {
-                              const checked = Boolean(
-                                scope &&
-                                  !scope.allCities &&
-                                  scope.cities.includes(city),
-                              );
-
-                              return (
-                                <button
-                                  key={city}
-                                  type="button"
-                                  className={checked ? "selected" : ""}
-                                  onClick={() => toggleCity(province, city)}
-                                >
-                                  <span>{checked ? "✓" : ""}</span>
-                                  <strong>{city}</strong>
-                                </button>
-                              );
-                            })}
+                      {neighborhoodResults.length ? (
+                        <div className="chakodLocationResultGroup">
+                          <span>محله‌ها</span>
+                          <div>
+                            {neighborhoodResults.map(({ province, city, neighborhood }) => (
+                              <button key={`${province}-${city}-${neighborhood}`} type="button" onClick={() => toggleNeighborhood(province, city, neighborhood)}>
+                                <strong>{neighborhood}</strong><small>{city}، {province}</small><b>+</b>
+                              </button>
+                            ))}
                           </div>
                         </div>
                       ) : null}
                     </section>
-                  );
-                })}
-              </div>
+                  ) : null}
 
-              {error ? <div className="homeLocationSimpleError">{error}</div> : null}
-            </main>
+                  {loadingProvinces ? <div className="chakodLocationState">در حال دریافت استان‌ها...</div> : null}
 
-            <footer className="homeLocationSimpleFooter">
-              <div>
-                <strong>{draftScopes.length ? draftSelection.label : "سراسر ایران"}</strong>
-                <small>
-                  {draftScopes.length
-                    ? `${totalSelections.toLocaleString("fa-IR")} محدوده انتخاب شده`
-                    : "نمایش همه آگهی‌ها"}
-                </small>
-              </div>
+                  {error ? (
+                    <div className="chakodLocationError">
+                      <span>{error}</span>
+                      <button type="button" onClick={() => {
+                        setError("");
+                        setLoadVersion((value) => value + 1);
+                      }}>تلاش دوباره</button>
+                    </div>
+                  ) : null}
 
-              <button type="button" onClick={applySelection}>
-                {draftScopes.length
-                  ? `اعمال ${totalSelections.toLocaleString("fa-IR")} محدوده`
-                  : "اعمال سراسر ایران"}
-              </button>
-            </footer>
-          </section>
-        </div>
-        ), document.body) : null}
+                  {!loadingProvinces && !error && provinces.length === 0 ? (
+                    <div className="chakodLocationEmptyState">
+                      <strong>فهرست موقعیت‌ها دریافت نشد</strong>
+                      <span>اتصال به سرویس موقعیت برقرار نیست یا مسیر API در دسترس نیست.</span>
+                      <button type="button" onClick={() => setLoadVersion((value) => value + 1)}>
+                        دریافت دوباره
+                      </button>
+                    </div>
+                  ) : null}
+
+                  <div className="chakodLocationList">
+                    {visibleProvinces.map((province) => {
+                      const scope = findScope(province);
+                      const expanded = expandedProvince === province;
+                      const cities = citiesByProvince[province] || [];
+
+                      return (
+                        <section key={province} className={`chakodLocationProvince ${expanded ? "expanded" : ""}`}>
+                          <div className="chakodLocationProvinceRow">
+                            <button
+                              type="button"
+                              className={`chakodLocationProvinceCheck ${scope?.allCities ? "checked" : scope ? "partial" : ""}`}
+                              onClick={() => selectWholeProvince(province)}
+                              aria-label={`انتخاب کل استان ${province}`}
+                            >
+                              {scope?.allCities ? "✓" : scope ? "•" : ""}
+                            </button>
+                            <button type="button" className="chakodLocationProvinceName" onClick={() => toggleExpandProvince(province)}>
+                              <span><strong>{province}</strong><small>{getProvinceStatus(scope)}</small></span>
+                              <b><svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></b>
+                            </button>
+                          </div>
+
+                          {expanded ? (
+                            <div className="chakodLocationCities">
+                              <button type="button" className={`chakodLocationWholeProvince ${scope?.allCities ? "active" : ""}`} onClick={() => selectWholeProvince(province)}>
+                                <span>{scope?.allCities ? "✓" : ""}</span><div><strong>کل استان {province}</strong><small>تمام شهرها و محله‌های این استان</small></div>
+                              </button>
+
+                              {loadingProvince === province ? <div className="chakodLocationCityState">در حال دریافت شهرها...</div> : null}
+                              {loadingProvince !== province && cities.length === 0 ? <div className="chakodLocationCityState">شهری برای این استان دریافت نشد.</div> : null}
+
+                              <div className="chakodLocationCityList">
+                                {cities.map((city) => {
+                                  const key = locationKey(province, city);
+                                  const cityExpanded = expandedCityKey === key;
+                                  const citySelected = Boolean(scope?.allCities || scope?.cities.includes(city));
+                                  const cityArea = getCityArea(scope, city);
+                                  const cityPartial = Boolean(cityArea?.neighborhoods.length);
+                                  const neighborhoods = neighborhoodsByCity[key] || [];
+                                  const hasNeighborhoods = cityHasNeighborhoods[key];
+
+                                  return (
+                                    <section key={key} className={`chakodLocationCity ${cityExpanded ? "expanded" : ""}`}>
+                                      <div className="chakodLocationCityRow">
+                                        <button type="button" className={`chakodLocationCityCheck ${citySelected ? "checked" : cityPartial ? "partial" : ""}`} onClick={() => toggleWholeCity(province, city)}>
+                                          {citySelected ? "✓" : cityPartial ? "•" : ""}
+                                        </button>
+                                        <button type="button" className="chakodLocationCityName" onClick={() => {
+                                          setExpandedCityKey((current) => current === key ? "" : key);
+                                          setError("");
+                                        }}>
+                                          <span><strong>{city}</strong><small>{citySelected ? "کل شهر انتخاب شده" : cityPartial ? `${cityArea?.neighborhoods.length || 0} محله انتخاب شده` : "انتخاب شهر یا محله"}</small></span>
+                                          <b><svg viewBox="0 0 20 20" width="15" height="15" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></b>
+                                        </button>
+                                      </div>
+
+                                      {cityExpanded ? (
+                                        <div className="chakodLocationNeighborhoods">
+                                          <button type="button" className={`chakodLocationWholeCity ${citySelected ? "active" : ""}`} onClick={() => toggleWholeCity(province, city)}>
+                                            <span>{citySelected ? "✓" : ""}</span><div><strong>کل شهر {city}</strong><small>همه محله‌های این شهر</small></div>
+                                          </button>
+
+                                          {loadingCityKey === key ? <div className="chakodLocationNeighborhoodState">در حال دریافت محله‌ها...</div> : null}
+                                          {loadingCityKey !== key && hasNeighborhoods === false ? <div className="chakodLocationNeighborhoodState">برای این شهر محله‌ای ثبت نشده است.</div> : null}
+
+                                          {neighborhoods.length ? (
+                                            <div className="chakodLocationNeighborhoodGrid">
+                                              {neighborhoods.map((neighborhood) => {
+                                                const selected = Boolean(citySelected || cityArea?.neighborhoods.includes(neighborhood));
+                                                return (
+                                                  <button key={neighborhood} type="button" className={selected ? "selected" : ""} onClick={() => toggleNeighborhood(province, city, neighborhood)}>
+                                                    <span>{selected ? "✓" : ""}</span><strong>{neighborhood}</strong>
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      ) : null}
+                                    </section>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
+                        </section>
+                      );
+                    })}
+                  </div>
+                </main>
+
+                <footer className="chakodLocationFooter">
+                  <div><strong>{draftScopes.length ? draftSelection.label : "سراسر ایران"}</strong><small>{draftScopes.length ? `${totalSelections.toLocaleString("fa-IR")} محدوده انتخاب شده` : "نمایش همه آگهی‌ها"}</small></div>
+                  <button type="button" onClick={applySelection}>{draftScopes.length ? `اعمال ${totalSelections.toLocaleString("fa-IR")} محدوده` : "اعمال سراسر ایران"}</button>
+                </footer>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <style>{`
-        .homeLocationSelector{position:relative;font-family:Tahoma,Arial,sans-serif}.homeLocationTrigger{min-height:42px;max-width:270px;padding:6px 9px;border:1px solid #e6dcf6;border-radius:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;color:#211633;background:rgba(255,255,255,.96);cursor:pointer;box-shadow:0 10px 28px rgba(76,29,149,.08)}.homeLocationPin{width:31px;height:31px;border-radius:11px;display:grid;place-items:center;color:#6d28d9;background:#f3edff;font-size:17px}.homeLocationTriggerCopy{min-width:0;text-align:right}.homeLocationTrigger small,.homeLocationTrigger strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.homeLocationTrigger small{color:#8a7f96;font-size:8px}.homeLocationTrigger strong{margin-top:2px;font-size:10px}.homeLocationArrow{color:#6d28d9;font-size:14px}
-        .homeLocationSimpleBackdrop{position:fixed;inset:0;z-index:2147483647;isolation:isolate;padding:12px;display:grid;place-items:center;background:rgba(25,18,34,.52);backdrop-filter:blur(7px)}.homeLocationSimpleDialog{width:min(680px,100%);height:min(720px,calc(100dvh - 24px));overflow:hidden;border:1px solid #e8e1ef;border-radius:22px;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;color:#24192e;background:#fff;box-shadow:0 32px 90px rgba(27,18,36,.3);outline:none;contain:layout paint}
-        .homeLocationSimpleHeader{min-height:64px;padding:11px 15px;border-bottom:1px solid #eee8f2;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff}.homeLocationSimpleHeader>div>span{color:#7c3aed;font-size:8px;font-weight:900}.homeLocationSimpleHeader h2{margin:3px 0 0;font-size:18px}.homeLocationSimpleHeader>button{width:36px;height:36px;border:1px solid #e7dfec;border-radius:11px;color:#65576e;background:#fff;cursor:pointer;font-size:20px}
-        .homeLocationSimpleSearchWrap{padding:9px 15px;border-bottom:1px solid #f0ebf3;display:grid;grid-template-columns:minmax(0,1fr) 134px;gap:8px;background:#fff}.homeLocationSimpleSearch{height:42px;padding:0 11px;border:1px solid #dfd6e6;border-radius:12px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;background:#faf8fc}.homeLocationSimpleSearch>span{color:#7c3aed;font-size:16px}.homeLocationSimpleSearch input{width:100%;border:0;outline:0;color:#251a2e;background:transparent;font:inherit;font-size:10px}.homeLocationSimpleSearch button{width:24px;height:24px;border:0;border-radius:8px;color:#6c5e75;background:#ece6f0;cursor:pointer}.homeLocationSimpleAll{height:42px;padding:0 9px;border:1px solid #e2d9e8;border-radius:12px;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:7px;text-align:right;color:#55475f;background:#fff;cursor:pointer}.homeLocationSimpleAll>span{grid-row:1/3;align-self:center;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#7c3aed;background:#f2ebfb;font-size:13px}.homeLocationSimpleAll strong{align-self:end;font-size:9px}.homeLocationSimpleAll small{align-self:start;color:#91849a;font-size:7px}.homeLocationSimpleAll.active{border-color:#9d78ed;background:#f7f2ff}
-        .homeLocationSimpleSelected{padding:7px 15px 6px;border-bottom:1px solid #f1ecf4;background:#fcfaff}.homeLocationSimpleSelectedHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.homeLocationSimpleSelectedHead strong{font-size:8px}.homeLocationSimpleSelectedHead button{border:0;color:#7c3aed;background:transparent;cursor:pointer;font-size:8px;font-weight:900}.homeLocationSimpleChips{margin-top:6px;display:flex;gap:5px;overflow-x:auto;padding-bottom:1px;scrollbar-width:none}.homeLocationSimpleChips::-webkit-scrollbar{display:none}.homeLocationSimpleChips>button{min-height:28px;padding:0 8px;border:1px solid #ded2eb;border-radius:9px;display:flex;align-items:center;gap:5px;white-space:nowrap;color:#5b21b6;background:#fff;cursor:pointer;font-size:8px;font-weight:900}.homeLocationSimpleChips small{color:#9a8da3;font-size:6px;font-weight:400}.homeLocationSimpleChips span{color:#9a8da3;font-size:11px}
-        .homeLocationSimpleBody{min-height:0;overflow:auto;padding:7px 15px 14px;overscroll-behavior:contain;scrollbar-gutter:stable;background:#fff;touch-action:pan-y}.homeLocationRecent{margin:2px 0 8px;padding:8px;border:1px solid #eee7f3;border-radius:12px;background:#fbf9fd}.homeLocationRecentHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.homeLocationRecentHead>div{min-width:0}.homeLocationRecentHead strong,.homeLocationRecentHead small{display:block}.homeLocationRecentHead strong{font-size:8px}.homeLocationRecentHead small{margin-top:2px;color:#94869d;font-size:7px}.homeLocationRecentHead>button{border:0;color:#7c3aed;background:transparent;cursor:pointer;font-size:8px;font-weight:900}.homeLocationRecentRail{margin-top:6px;display:flex;gap:6px;overflow-x:auto;padding-bottom:1px;scrollbar-width:none}.homeLocationRecentRail::-webkit-scrollbar{display:none}.homeLocationRecentItem{min-height:34px;max-width:220px;border:1px solid #e3dbea;border-radius:10px;display:grid;grid-template-columns:minmax(0,1fr) 27px;overflow:hidden;color:#5a4b63;background:#fff}.homeLocationRecentItem.active{border-color:#9d78ed;color:#5b21b6;background:#f7f2ff}.homeLocationRecentUse{min-width:0;padding:0 8px;border:0;display:flex;align-items:center;gap:6px;white-space:nowrap;color:inherit;background:transparent;cursor:pointer}.homeLocationRecentUse span{width:20px;height:20px;flex:0 0 auto;border-radius:7px;display:grid;place-items:center;color:#6d28d9;background:#f3edff;font-size:11px}.homeLocationRecentUse strong{overflow:hidden;text-overflow:ellipsis;font-size:8px}.homeLocationRecentRemove{border:0;border-right:1px solid #eee6f3;color:#9a8da3;background:transparent;cursor:pointer;font-size:14px}
-        .homeLocationSimpleList{display:grid}.homeLocationSimpleProvince{border-bottom:1px solid #eee8f1}.homeLocationSimpleProvinceRow{min-height:47px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:7px}.homeLocationSimpleProvinceCheck{width:27px;height:27px;border:1px solid #d9cfdf;border-radius:8px;display:grid;place-items:center;color:#fff;background:#fff;cursor:pointer;font-size:10px;font-weight:900}.homeLocationSimpleProvinceCheck.checked{border-color:#7c3aed;background:#7c3aed}.homeLocationSimpleProvinceCheck.partial{border-color:#9d78ed;color:#7c3aed;background:#f5efff}.homeLocationSimpleProvinceName{min-width:0;height:47px;border:0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:right;color:#33273b;background:transparent;cursor:pointer}.homeLocationSimpleProvinceName>span{min-width:0}.homeLocationSimpleProvinceName strong,.homeLocationSimpleProvinceName small{display:block}.homeLocationSimpleProvinceName strong{font-size:10px}.homeLocationSimpleProvinceName small{margin-top:2px;color:#95889e;font-size:7px}.homeLocationSimpleProvinceName>b{transition:transform .18s ease;color:#8b7c95;font-size:14px}.homeLocationSimpleProvince.expanded .homeLocationSimpleProvinceName>b{transform:rotate(180deg)}
-        .homeLocationSimpleCities{margin:0 34px 8px 0;padding:8px;border:1px solid #e9e1ee;border-radius:12px;background:#faf8fc}.homeLocationSimpleWholeProvince{width:100%;min-height:38px;padding:6px 8px;border:1px solid #ded5e5;border-radius:10px;display:flex;align-items:center;gap:7px;text-align:right;color:#51445a;background:#fff;cursor:pointer}.homeLocationSimpleWholeProvince>span,.homeLocationSimpleCityGrid>button>span{width:22px;height:22px;flex:0 0 auto;border:1px solid #d8cedf;border-radius:7px;display:grid;place-items:center;color:#fff;background:#fff;font-size:8px;font-weight:900}.homeLocationSimpleWholeProvince strong{font-size:8px}.homeLocationSimpleWholeProvince.active{color:#5b21b6;border-color:#9d78ed;background:#f5efff}.homeLocationSimpleWholeProvince.active>span{border-color:#7c3aed;background:#7c3aed}.homeLocationSimpleCityGrid{margin-top:7px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.homeLocationSimpleCityGrid>button{min-height:36px;padding:5px 6px;border:1px solid #e4dce9;border-radius:9px;display:flex;align-items:center;gap:6px;text-align:right;color:#584b61;background:#fff;cursor:pointer}.homeLocationSimpleCityGrid>button strong{font-size:8px}.homeLocationSimpleCityGrid>button.selected{color:#5b21b6;border-color:#9d78ed;background:#f5efff}.homeLocationSimpleCityGrid>button.selected>span{border-color:#7c3aed;background:#7c3aed}.homeLocationSimpleState,.homeLocationSimpleCityState{min-height:72px;display:grid;place-items:center;color:#8d8096;font-size:9px}.homeLocationSimpleCityState{min-height:46px}.homeLocationSimpleError{margin-top:8px;padding:8px 10px;border:1px solid #ffd2cc;border-radius:9px;color:#b42318;background:#fff3f1;font-size:8px}
-        .homeLocationSimpleFooter{position:relative;z-index:4;min-height:64px;padding:8px 15px calc(8px + env(safe-area-inset-bottom));border-top:1px solid #eae3ef;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;box-shadow:0 -8px 24px rgba(38,24,48,.07)}.homeLocationSimpleFooter>div{min-width:0}.homeLocationSimpleFooter strong,.homeLocationSimpleFooter small{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.homeLocationSimpleFooter strong{font-size:8px}.homeLocationSimpleFooter small{margin-top:3px;color:#8e8297;font-size:7px}.homeLocationSimpleFooter>button{min-height:40px;padding:0 17px;border:0;border-radius:11px;color:#fff;background:linear-gradient(135deg,#5b21b6,#8b5cf6);box-shadow:0 8px 20px rgba(109,40,217,.22);cursor:pointer;font-size:9px;font-weight:900}
-        @media(max-width:760px){.homeLocationTrigger{width:min(165px,100%);max-width:165px;min-height:38px;padding:4px 6px;border-radius:12px}.homeLocationPin{width:29px;height:29px;border-radius:9px}.homeLocationTrigger small{display:none}.homeLocationTrigger strong{margin:0;font-size:9px}.homeLocationSimpleBackdrop{padding:0;place-items:stretch;background:#fff;backdrop-filter:none}.homeLocationSimpleDialog{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;min-height:100dvh;border:0;border-radius:0;grid-template-rows:auto auto auto minmax(0,1fr) auto;box-shadow:none;contain:none}.homeLocationSimpleHeader{min-height:52px;padding:7px 10px}.homeLocationSimpleHeader>div>span{font-size:7px}.homeLocationSimpleHeader h2{font-size:15px}.homeLocationSimpleHeader>button{width:34px;height:34px}.homeLocationSimpleSearchWrap{padding:7px 10px;grid-template-columns:1fr;gap:6px}.homeLocationSimpleSearch,.homeLocationSimpleAll{height:38px}.homeLocationSimpleAll{grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:1fr}.homeLocationSimpleAll>span{grid-row:auto}.homeLocationSimpleAll strong,.homeLocationSimpleAll small{align-self:center}.homeLocationSimpleAll small{justify-self:end}.homeLocationSimpleSearch input{font-size:9px}.homeLocationSimpleSelected{padding:5px 10px}.homeLocationSimpleChips{margin-top:5px}.homeLocationSimpleBody{padding:5px 10px 10px;scroll-padding-bottom:16px}.homeLocationRecent{margin-bottom:6px;padding:7px}.homeLocationRecentHead small{display:none}.homeLocationRecentItem{max-width:190px}.homeLocationSimpleProvinceRow,.homeLocationSimpleProvinceName{min-height:43px;height:43px}.homeLocationSimpleProvinceName strong{font-size:10px}.homeLocationSimpleCities{margin:0 0 7px;padding:7px}.homeLocationSimpleCityGrid{grid-template-columns:1fr 1fr}.homeLocationSimpleCityGrid>button{min-height:36px}.homeLocationSimpleFooter{min-height:58px;padding:7px 10px max(7px,env(safe-area-inset-bottom));box-shadow:0 -10px 24px rgba(38,24,48,.1)}.homeLocationSimpleFooter>button{min-height:41px;padding:0 13px}}
-        @media(max-width:390px){.homeLocationSimpleAll small{font-size:7px}.homeLocationSimpleFooter>div{display:none}.homeLocationSimpleFooter>button{width:100%}.homeLocationSimpleCityGrid{grid-template-columns:1fr 1fr}.homeLocationRecentItem{max-width:165px}}
-        @media(max-width:340px){.homeLocationSimpleCityGrid{grid-template-columns:1fr}.homeLocationSimpleAll small{display:none}}
-        @media(max-height:650px) and (max-width:760px){.homeLocationSimpleHeader{min-height:46px;padding-block:5px}.homeLocationSimpleHeader>div>span{display:none}.homeLocationSimpleHeader h2{margin:0}.homeLocationSimpleSearchWrap{padding-block:5px}.homeLocationSimpleSelected{padding-block:4px}.homeLocationSimpleFooter{min-height:52px;padding-block:5px}.homeLocationSimpleFooter>button{min-height:39px}.homeLocationSimpleProvinceRow,.homeLocationSimpleProvinceName{min-height:40px;height:40px}}
+        .chakodLocationSelector{position:relative;font-family:Tahoma,Arial,sans-serif}.chakodLocationTrigger{width:100%;min-height:54px;padding:10px 12px;border:1px solid #e3d8f3;border-radius:18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;color:#211633;background:linear-gradient(180deg,#fff,#fcf9ff);cursor:pointer;box-shadow:0 14px 36px rgba(76,29,149,.09);transition:.18s}.chakodLocationTrigger:hover,.chakodLocationTrigger.open{border-color:#b794f4;box-shadow:0 18px 40px rgba(109,40,217,.14);transform:translateY(-1px)}.chakodLocationPin{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7c3aed,#a855f7)}.chakodLocationTriggerCopy{min-width:0;text-align:right}.chakodLocationTriggerCopy small,.chakodLocationTriggerCopy strong{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.chakodLocationTriggerCopy small{color:#8a7f96;font-size:11px}.chakodLocationTriggerCopy strong{margin-top:4px;font-size:13px}.chakodLocationArrowWrap{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#6d28d9;background:#f4eeff;transition:.2s}.chakodLocationTrigger.open .chakodLocationArrowWrap{transform:rotate(180deg)}
+        .chakodLocationBackdrop{position:fixed;inset:0;z-index:2147483647;padding:18px;display:grid;place-items:center;background:rgba(22,18,30,.56);backdrop-filter:blur(8px)}.chakodLocationDialog{width:min(780px,100%);height:min(850px,calc(100dvh - 36px));overflow:hidden;border:1px solid #e8e1ef;border-radius:24px;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;color:#24192e;background:#fff;box-shadow:0 38px 100px rgba(27,18,36,.32);outline:none}.chakodLocationHeader{padding:18px 20px;border-bottom:1px solid #efe8f5;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.chakodLocationHeader>div>span{display:inline-flex;padding:6px 10px;border-radius:999px;color:#7c3aed;background:#f4eeff;font-size:12px;font-weight:800}.chakodLocationHeader h2{margin:10px 0 0;font-size:26px}.chakodLocationHeader p{margin:8px 0 0;color:#7e7289;font-size:14px}.chakodLocationHeader>button{width:42px;height:42px;border:1px solid #e7dfec;border-radius:14px;display:grid;place-items:center;color:#65576e;background:#fff;cursor:pointer}
+        .chakodLocationSearchWrap{padding:14px 20px;border-bottom:1px solid #f0ebf3;display:grid;grid-template-columns:minmax(0,1fr) 176px;gap:10px}.chakodLocationSearch{height:50px;padding:0 14px;border:1px solid #dfd6e6;border-radius:15px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;background:#faf8fc}.chakodLocationSearch>span{color:#7c3aed}.chakodLocationSearch input{width:100%;border:0;outline:0;background:transparent;font:inherit;font-size:14px}.chakodLocationSearch button{width:26px;height:26px;border:0;border-radius:9px;background:#ece6f0;cursor:pointer}.chakodLocationAll{height:50px;padding:0 12px;border:1px solid #e2d9e8;border-radius:15px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;text-align:right;background:#fff;cursor:pointer}.chakodLocationAll.active,.chakodLocationAll:hover{border-color:#9d78ed;background:#f7f2ff}.chakodLocationAll>span{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#7c3aed;background:#f2ebfb}.chakodLocationAll strong,.chakodLocationAll small{display:block}.chakodLocationAll strong{font-size:13px}.chakodLocationAll small{margin-top:2px;color:#91849a;font-size:11px}
+        .chakodLocationSelected{padding:12px 20px;border-bottom:1px solid #f1ecf4;background:#fcfaff}.chakodLocationSelectedHead{display:flex;justify-content:space-between}.chakodLocationSelectedHead strong,.chakodLocationSelectedHead button{font-size:12px}.chakodLocationSelectedHead button{border:0;color:#7c3aed;background:transparent;cursor:pointer;font-weight:800}.chakodLocationChips{margin-top:10px;display:flex;gap:8px;overflow-x:auto}.chakodLocationChips>button{min-height:34px;padding:0 10px;border:1px solid #ded2eb;border-radius:11px;display:flex;align-items:center;gap:6px;white-space:nowrap;color:#5b21b6;background:#fff;cursor:pointer;font-size:12px;font-weight:800}.chakodLocationChips small{color:#9a8da3;font-size:10px;font-weight:400}.chakodLocationChips span{font-size:14px}
+        .chakodLocationBody{min-height:0;overflow:auto;padding:12px 20px 16px}.chakodLocationRecent,.chakodLocationSearchResults{margin-bottom:12px;padding:12px;border:1px solid #eee7f3;border-radius:15px;background:#fbf9fd}.chakodLocationRecentHead,.chakodLocationSearchResultsHead{display:flex;justify-content:space-between;gap:10px}.chakodLocationRecentHead strong,.chakodLocationRecentHead small{display:block}.chakodLocationRecentHead small,.chakodLocationSearchResultsHead small{color:#94869d;font-size:11px}.chakodLocationRecentHead>button{border:0;color:#7c3aed;background:transparent;cursor:pointer}.chakodLocationRecentRail{margin-top:8px;display:flex;gap:8px;overflow-x:auto}.chakodLocationRecentItem{min-height:38px;border:1px solid #e3dbea;border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) 30px;overflow:hidden;background:#fff}.chakodLocationRecentUse{padding:0 10px;border:0;display:flex;align-items:center;gap:7px;background:transparent;cursor:pointer}.chakodLocationRecentRemove{border:0;border-right:1px solid #eee6f3;background:transparent;cursor:pointer}.chakodLocationResultGroup{margin-top:12px}.chakodLocationResultGroup>span{display:block;margin-bottom:6px;color:#776982;font-size:11px;font-weight:800}.chakodLocationResultGroup>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.chakodLocationResultGroup button{min-height:48px;padding:7px 10px;border:1px solid #e4dce9;border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;text-align:right;background:#fff;cursor:pointer}.chakodLocationResultGroup strong{font-size:13px}.chakodLocationResultGroup small{color:#91849a;font-size:11px}.chakodLocationResultGroup b{grid-column:2;grid-row:1/3;align-self:center;color:#7c3aed}.chakodLocationEmptySearch{margin-top:10px;color:#8d8096;font-size:12px}
+        .chakodLocationError{margin-bottom:10px;padding:10px 12px;border:1px solid #ffd2cc;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;color:#b42318;background:#fff3f1;font-size:12px}.chakodLocationError button{border:0;border-radius:9px;padding:7px 10px;color:#fff;background:#b42318;cursor:pointer}.chakodLocationState,.chakodLocationCityState,.chakodLocationNeighborhoodState{min-height:70px;display:grid;place-items:center;color:#8d8096;font-size:12px}.chakodLocationEmptyState{min-height:180px;padding:24px;border:1px dashed #d8cae8;border-radius:16px;display:grid;place-items:center;align-content:center;gap:9px;text-align:center;color:#6d5c78;background:#fcfaff}.chakodLocationEmptyState strong{color:#33213f;font-size:15px}.chakodLocationEmptyState span{max-width:420px;font-size:12px;line-height:1.8}.chakodLocationEmptyState button{min-height:38px;padding:0 15px;border:0;border-radius:11px;color:#fff;background:linear-gradient(135deg,#5b21b6,#8b5cf6);cursor:pointer;font:inherit;font-size:12px;font-weight:800}
+        .chakodLocationProvince{border-bottom:1px solid #eee8f1}.chakodLocationProvinceRow{min-height:58px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}.chakodLocationProvinceCheck,.chakodLocationCityCheck{width:32px;height:32px;border:1px solid #d9cfdf;border-radius:10px;display:grid;place-items:center;color:#fff;background:#fff;cursor:pointer}.chakodLocationProvinceCheck.checked,.chakodLocationCityCheck.checked{border-color:#7c3aed;background:#7c3aed}.chakodLocationProvinceCheck.partial,.chakodLocationCityCheck.partial{border-color:#9d78ed;color:#7c3aed;background:#f5efff}.chakodLocationProvinceName,.chakodLocationCityName{min-width:0;height:58px;border:0;display:flex;align-items:center;justify-content:space-between;text-align:right;background:transparent;cursor:pointer}.chakodLocationProvinceName strong,.chakodLocationProvinceName small,.chakodLocationCityName strong,.chakodLocationCityName small{display:block}.chakodLocationProvinceName strong{font-size:15px}.chakodLocationProvinceName small,.chakodLocationCityName small{margin-top:3px;color:#95889e;font-size:11px}.chakodLocationProvinceName b,.chakodLocationCityName b{display:grid;transition:.2s}.chakodLocationProvince.expanded>.chakodLocationProvinceRow .chakodLocationProvinceName b,.chakodLocationCity.expanded>.chakodLocationCityRow .chakodLocationCityName b{transform:rotate(180deg)}
+        .chakodLocationCities{margin-bottom:10px;padding:12px;border:1px solid #e9e1ee;border-radius:16px;background:#faf8fc}.chakodLocationWholeProvince,.chakodLocationWholeCity{width:100%;min-height:46px;padding:8px 10px;border:1px solid #ded5e5;border-radius:12px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;text-align:right;background:#fff;cursor:pointer}.chakodLocationWholeProvince>span,.chakodLocationWholeCity>span,.chakodLocationNeighborhoodGrid button>span{width:24px;height:24px;border:1px solid #d8cedf;border-radius:8px;display:grid;place-items:center;color:#fff}.chakodLocationWholeProvince.active,.chakodLocationWholeCity.active{border-color:#9d78ed;color:#5b21b6;background:#f5efff}.chakodLocationWholeProvince.active>span,.chakodLocationWholeCity.active>span{border-color:#7c3aed;background:#7c3aed}.chakodLocationWholeProvince strong,.chakodLocationWholeProvince small,.chakodLocationWholeCity strong,.chakodLocationWholeCity small{display:block}.chakodLocationWholeProvince strong,.chakodLocationWholeCity strong{font-size:13px}.chakodLocationWholeProvince small,.chakodLocationWholeCity small{color:#8f8398;font-size:11px}.chakodLocationCity{margin-top:7px;border:1px solid #e4dce9;border-radius:13px;background:#fff;overflow:hidden}.chakodLocationCityRow{min-height:52px;padding:0 9px;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px}.chakodLocationCityName{height:52px}.chakodLocationCityName strong{font-size:13px}.chakodLocationNeighborhoods{padding:10px;border-top:1px solid #eee8f1;background:#fcfbfd}.chakodLocationNeighborhoodGrid{margin-top:9px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.chakodLocationNeighborhoodGrid button{min-height:40px;padding:6px 7px;border:1px solid #e4dce9;border-radius:10px;display:flex;align-items:center;gap:7px;text-align:right;background:#fff;cursor:pointer}.chakodLocationNeighborhoodGrid button.selected{border-color:#9d78ed;color:#5b21b6;background:#f5efff}.chakodLocationNeighborhoodGrid button.selected>span{border-color:#7c3aed;background:#7c3aed}.chakodLocationNeighborhoodGrid strong{font-size:11px}
+        .chakodLocationFooter{min-height:74px;padding:10px 20px;border-top:1px solid #eae3ef;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -8px 24px rgba(38,24,48,.07)}.chakodLocationFooter strong,.chakodLocationFooter small{display:block}.chakodLocationFooter strong{font-size:13px}.chakodLocationFooter small{margin-top:4px;color:#8e8297;font-size:11px}.chakodLocationFooter>button{min-height:44px;padding:0 18px;border:0;border-radius:13px;color:#fff;background:linear-gradient(135deg,#5b21b6,#8b5cf6);cursor:pointer;font-size:13px;font-weight:800}
+        @media(max-width:760px){.chakodLocationBackdrop{padding:0;place-items:stretch;background:#fff;backdrop-filter:none}.chakodLocationDialog{position:fixed;inset:0;width:100%;height:100dvh;border:0;border-radius:0}.chakodLocationHeader{padding:14px}.chakodLocationHeader h2{font-size:19px}.chakodLocationHeader p{font-size:11px}.chakodLocationSearchWrap{padding:10px 14px;grid-template-columns:1fr}.chakodLocationSelected,.chakodLocationBody{padding-right:14px;padding-left:14px}.chakodLocationResultGroup>div{grid-template-columns:1fr}.chakodLocationProvinceName strong{font-size:13px;line-height:1.45}.chakodLocationCityName strong,.chakodLocationWholeProvince strong,.chakodLocationWholeCity strong,.chakodLocationResultGroup strong{font-size:12px;line-height:1.45}.chakodLocationProvinceName small,.chakodLocationCityName small,.chakodLocationWholeProvince small,.chakodLocationWholeCity small,.chakodLocationResultGroup small{font-size:10px}.chakodLocationNeighborhoodGrid strong{font-size:10.5px;line-height:1.45}.chakodLocationChips>button{font-size:11px}.chakodLocationNeighborhoodGrid{grid-template-columns:1fr 1fr}.chakodLocationFooter{padding:10px 14px}.chakodLocationFooter>button{padding:0 14px}}
+        @media(max-width:390px){.chakodLocationTriggerCopy small{display:none}.chakodLocationHeader p{display:none}.chakodLocationNeighborhoodGrid{grid-template-columns:1fr 1fr}.chakodLocationFooter>div{display:none}.chakodLocationFooter>button{width:100%}}
+        @media(max-width:340px){.chakodLocationNeighborhoodGrid{grid-template-columns:1fr}}
       `}</style>
     </div>
   );

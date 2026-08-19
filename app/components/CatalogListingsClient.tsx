@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import ListingCard from "./ListingCard";
+import MarketListingItem from "./MarketListingItem";
 import CatalogFilterPanel from "../ads/[segment]/CatalogFilterPanel";
 import type {
   CatalogFacets,
@@ -13,9 +13,10 @@ import type {
   CatalogSegment,
 } from "../ads/[segment]/catalog-types";
 import styles from "../ads/[segment]/CatalogPage.module.css";
+import { carMarketPath, withSearchParams } from "../../lib/car-routes";
 
 type Props = {
-  apiUrl: string;
+  clientApiUrl: string;
   segment: CatalogSegment;
   badge: string;
   filters: CatalogFilters;
@@ -122,12 +123,11 @@ function buildHref(
     params.set("page", String(options.page));
   }
 
-  const search = params.toString();
-  return `/ads/${segment}${search ? `?${search}` : ""}`;
+  return withSearchParams(carMarketPath(segment), Object.fromEntries(params));
 }
 
 export default function CatalogListingsClient({
-  apiUrl,
+  clientApiUrl,
   segment,
   badge,
   filters,
@@ -148,7 +148,7 @@ export default function CatalogListingsClient({
     async function load() {
       try {
         setStatus("loading");
-        const apiResponse = await fetch(apiUrl, {
+        const apiResponse = await fetch(clientApiUrl, {
           cache: "no-store",
           headers: { Accept: "application/json" },
           signal: controller.signal,
@@ -169,7 +169,7 @@ export default function CatalogListingsClient({
 
     load();
     return () => controller.abort();
-  }, [apiUrl, initialResponse]);
+  }, [clientApiUrl, initialResponse]);
 
   const facets = response?.facets || emptyFacets;
   const resultCount = response?.total || 0;
@@ -255,10 +255,6 @@ export default function CatalogListingsClient({
     ].filter((item): item is { key: string; label: string } => Boolean(item));
   }, [facets.brands, facets.categories, facets.models, filters]);
 
-  function changeSort(nextSort: string) {
-    window.location.href = buildHref(segment, filters, { sort: nextSort });
-  }
-
   const tone = segment === "all" ? "neutral" : segment;
 
   return (
@@ -285,21 +281,6 @@ export default function CatalogListingsClient({
                 : `مرتب‌شده بر اساس ${sortLabels[filters.sort] || "انتخاب شما"}`}
             </span>
           </div>
-
-          <select
-            className={styles.sortControl}
-            value={filters.sort}
-            onChange={(event) => changeSort(event.target.value)}
-            aria-label="مرتب‌سازی آگهی‌ها"
-          >
-            <option value="vip">پیشنهاد چاکود</option>
-            <option value="newest">جدیدترین آگهی</option>
-            <option value="cheap">ارزان‌ترین</option>
-            <option value="expensive">گران‌ترین</option>
-            <option value="low_mileage">کم‌کارکردترین</option>
-            <option value="newest_year">جدیدترین سال ساخت</option>
-            <option value="popular">پربازدیدترین</option>
-          </select>
         </div>
 
         {activeItems.length > 0 ? (
@@ -313,7 +294,7 @@ export default function CatalogListingsClient({
                 <span aria-hidden="true">×</span>
               </Link>
             ))}
-            <Link className={styles.clearAllChip} href={`/ads/${segment}`}>
+            <Link className={styles.clearAllChip} href={carMarketPath(segment)}>
               پاک‌کردن همه
             </Link>
           </div>
@@ -347,12 +328,11 @@ export default function CatalogListingsClient({
         ) : response && response.data.length > 0 ? (
           <div className={styles.grid}>
             {response.data.map((listing) => (
-              <ListingCard
+              <MarketListingItem
                 key={listing.id}
                 listing={listing}
                 tone={tone}
                 badge={badge}
-                variant="grid"
               />
             ))}
           </div>
@@ -363,7 +343,7 @@ export default function CatalogListingsClient({
             <p>
               محدوده قیمت، موقعیت یا مشخصات خودرو را تغییر بده تا گزینه‌های بیشتری ببینی.
             </p>
-            <Link href={`/ads/${segment}`}>نمایش همه آگهی‌های این بخش</Link>
+            <Link href={carMarketPath(segment)}>نمایش همه آگهی‌های این بخش</Link>
           </div>
         )}
 

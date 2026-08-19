@@ -1,28 +1,56 @@
 {
-  "name": "chakod-car",
+  "name": "chakod-platform",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "install:ci": "bash scripts/install-ci.sh",
+    "dev": "vite --config vite.windows.config.ts",
+    "dev:cloudflare": "vite",
+    "build": "bash scripts/build-verified.sh",
+    "build:cloudflare": "vite build --config vite.cloudflare.config.ts",
+    "build:cpanel": "vite build --config vite.cpanel.config.ts",
+    "build:preflight": "vite build --config vite.windows.config.ts",
+    "start": "vinext start",
+    "start:cpanel": "node app.cjs",
+    "smoke:portable": "bash scripts/smoke-portable.sh",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test:contracts": "node --experimental-strip-types --test tests/homepage-contract.test.mjs tests/dealer-directory-contract.test.mjs tests/ai-assistant-contract.test.mjs tests/finance-commerce-contract.test.mjs tests/featured-showroom-contract.test.mjs tests/public-business-contract.test.mjs tests/migration-chain-contract.test.mjs tests/local-development-login.test.mjs tests/local-development-session.test.mjs tests/local-public-api.test.mjs tests/route-access.test.mjs tests/listing-publication-policy.test.mjs tests/instagram-story-publishing-contract.test.mjs",
+    "check:launch": "npx tsc --noEmit -p tsconfig.launch.json && npm run test:contracts",
+    "d1:verify": "node scripts/verify-d1-migrations.mjs",
+    "instagram:publisher": "node scripts/run-instagram-story-publisher.mjs",
+    "validate:artifact": "bash scripts/validate-artifact.sh",
+    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
+    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
   },
   "dependencies": {
-    "next": "16.2.11",
-    "qrcode": "^1.5.4",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "drizzle-orm": "0.45.2",
+    "next": "16.3.0",
+    "qrcode": "1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+    "@cloudflare/vite-plugin": "1.51.1",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.19.19",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.0",
+    "react-server-dom-webpack": "19.2.8",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.1.5",
+    "wrangler": "4.120.0"
+  },
+  "type": "module",
+  "displayName": "چاکود"
 }

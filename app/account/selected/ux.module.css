@@ -1,0 +1,209 @@
+.scope {
+  display: contents;
+}
+
+/* Active showroom: remove the duplicated target card and make status compact. */
+.scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="selectionPanel"]) {
+  grid-template-columns: 1fr;
+  margin-top: 12px;
+}
+
+.scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="targetPreview"]) {
+  display: none;
+}
+
+.scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="activeNotice"]) {
+  min-height: 0;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="activeNotice"] > small) {
+  margin-inline-start: auto;
+}
+
+/* The showroom editor is a four-step flow, not one long undifferentiated form. */
+.scope :global([class*="showroomManager"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.scope :global([class*="showroomManager"])::before {
+  content: "ویترین را مرحله‌به‌مرحله تنظیم کن";
+  order: 0;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  color: #5b21b6;
+  background: #f6f0ff;
+  font-size: 9px;
+  font-weight: 950;
+  text-align: right;
+}
+
+.scope :global([class*="managerHeading"]) {
+  order: 0;
+}
+
+.scope :global([class*="bannerGrid"]) {
+  order: 1;
+  position: relative;
+  padding-top: 48px;
+}
+
+.scope :global([class*="bannerGrid"])::before {
+  content: "۱ · بنرهای صفحه اول";
+  position: absolute;
+  top: 12px;
+  right: 0;
+  left: 0;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #4c1d95;
+  background: #f8f4ff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.scope :global([class*="bannerGrid"]:has(input:disabled))::after {
+  content: "در حال بارگذاری بنر…";
+  position: absolute;
+  z-index: 20;
+  inset: 44px 0 0;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #5b21b6;
+  background: rgba(250, 247, 255, 0.9);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.scope :global([class*="bannerUploader"]) {
+  min-height: 205px;
+}
+
+.scope :global([class*="bannerUploader"] > img) {
+  min-height: 122px;
+  object-fit: cover;
+}
+
+.scope :global([class*="vehiclePicker"]) {
+  order: 2;
+  padding-top: 46px;
+  position: relative;
+}
+
+.scope :global([class*="vehiclePicker"])::before {
+  content: "۲ · خودروهای ویترین را انتخاب کن";
+  position: absolute;
+  top: 10px;
+  right: 0;
+  left: 0;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #4c1d95;
+  background: #f8f4ff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.scope :global([class*="selectedVehicles"]) {
+  order: 3;
+  padding-top: 46px;
+  position: relative;
+}
+
+.scope :global([class*="selectedVehicles"])::before {
+  content: "۳ · ترتیب نمایش را تنظیم کن";
+  position: absolute;
+  top: 10px;
+  right: 0;
+  left: 0;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #4c1d95;
+  background: #f8f4ff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.scope :global([class*="managerMessage"]) {
+  order: 4;
+}
+
+.scope :global([class*="managerFooter"]) {
+  order: 5;
+  position: relative;
+  padding-top: 52px;
+}
+
+.scope :global([class*="managerFooter"])::before {
+  content: "۴ · ذخیره و انتشار";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  left: 12px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #4c1d95;
+  background: #f4edff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+@media (max-width: 780px) {
+  .scope :global([class*="builder"]:has([class*="showroomManager"])) {
+    padding-top: 16px;
+  }
+
+  .scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="builderIntro"] p) {
+    display: none;
+  }
+
+  .scope :global([class*="builder"]:has([class*="showroomManager"]) [class*="activeNotice"] > small) {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  .scope :global([class*="bannerGrid"]) {
+    grid-template-columns: 1fr;
+  }
+
+  .scope :global([class*="bannerUploader"]) {
+    min-height: 190px;
+  }
+
+  .scope :global([class*="bannerUploader"] > img) {
+    min-height: 128px;
+    max-height: 210px;
+  }
+
+  .scope :global([class*="vehicleGrid"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scope :global([class*="managerHeading"] p) {
+    margin-top: 4px;
+    line-height: 1.7;
+  }
+}

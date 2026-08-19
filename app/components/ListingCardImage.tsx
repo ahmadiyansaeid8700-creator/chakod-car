@@ -8,29 +8,55 @@ type Props = {
   alt: string;
 };
 
+const API_ORIGIN = "https://api.chakod.com";
+
+function normalizeImageSrc(value: string) {
+  const src = String(value || "").trim();
+  if (!src) return "";
+
+  if (/^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i.test(src)) {
+    return src.replace(
+      /^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i,
+      `${API_ORIGIN}/uploads/`,
+    );
+  }
+
+  if (src.startsWith("/uploads/")) return `${API_ORIGIN}${src}`;
+  if (src.startsWith("uploads/")) return `${API_ORIGIN}/${src}`;
+  return src;
+}
+
 function Placeholder() {
   return (
-    <div className={styles.placeholder} aria-label="تصویر خودرو ثبت نشده است">
-      <svg viewBox="0 0 160 80" aria-hidden="true">
-        <path d="M24 53h112l-8-21c-2-5-7-8-12-8H55c-5 0-10 3-13 8L24 53Z" />
-        <path d="M17 54h126v10H17z" />
-        <circle cx="48" cy="65" r="10" />
-        <circle cx="116" cy="65" r="10" />
-        <path d="M52 30h55l10 23H38l14-23Z" />
-      </svg>
-      <span>تصویر خودرو در حال تکمیل است</span>
+    <div className={styles.placeholder} aria-label="تصویر برای این آگهی ثبت نشده است">
+      <img
+        src="/brand/chakod-symbol.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          width: 48,
+          height: 56,
+          objectFit: "contain",
+          opacity: 0.82,
+          filter: "drop-shadow(0 8px 14px rgba(15, 8, 26, 0.22))",
+        }}
+      />
+      <span style={{ fontSize: 9, color: "rgba(255,255,255,.78)" }}>
+        بدون تصویر
+      </span>
     </div>
   );
 }
 
 export default function ListingCardImage({ src, alt }: Props) {
   const [failed, setFailed] = useState(false);
+  const normalizedSrc = normalizeImageSrc(src);
 
-  if (!src || failed) return <Placeholder />;
+  if (!normalizedSrc || failed) return <Placeholder />;
 
   return (
     <img
-      src={src}
+      src={normalizedSrc}
       alt={alt}
       loading="lazy"
       decoding="async"

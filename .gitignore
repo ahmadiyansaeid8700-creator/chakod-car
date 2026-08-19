@@ -17,9 +17,6 @@
 /.next/
 /out/
 
-# production
-/build
-
 # misc
 .DS_Store
 *.pem
@@ -37,5 +34,35 @@ yarn-error.log*
 .vercel
 
 # typescript
-*.tsbuildinfo
 next-env.d.ts
+/dist/
+/.wrangler/
+/.sites-runtime/
+/outputs/
+/work/
+# Local dependencies and generated files
+node_modules/
+.next/
+build/
+dist/
+out/
+*.log
+tsconfig.tsbuildinfo
+ping-body.json
+
+# Local runtime folders
+.sites-runtime/
+.wrangler/
+.wrangler-backup/
+.openai/
+
+# Local uploads
+uploads/
+
+# Local configuration and possible secrets
+.npmrc
+.env
+.env.*
+!.env.example
+app/api/config.php
+app/api/config.php.secure

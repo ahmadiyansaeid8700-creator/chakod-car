@@ -1,0 +1,17 @@
+.item {
+  min-width: 0;
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  :global(div):has(> .item) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  :global(div):has(> .item) {
+    gap: 6px !important;
+  }
+}

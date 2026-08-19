@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import CreateActionMenu from "./CreateActionMenu";
+import MobileAccountSwitcher from "./MobileAccountSwitcher";
 import styles from "./MobileBottomNav.module.css";
 
 type NavItem = {
@@ -13,10 +15,6 @@ type NavItem = {
   icon: ReactNode;
   primary?: boolean;
   isActive: (pathname: string) => boolean;
-};
-
-type CachedUser = {
-  account_type?: "personal" | "dealer" | "business";
 };
 
 type CachedIdentity = {
@@ -37,62 +35,19 @@ const ADMIN_ROLES = new Set([
 ]);
 
 function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-      <path
-        d="M3.5 10.7 12 3.8l8.5 6.9v8a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8v-8Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path d="M9.2 20.5v-6.2h5.6v6.2" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M3.5 10.7 12 3.8l8.5 6.9v8a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8v-8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M9.2 20.5v-6.2h5.6v6.2" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>;
 }
-
 function MarketIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-      <path
-        d="M4.2 10.2h15.6l-1.1-4.1a1.8 1.8 0 0 0-1.7-1.3H7a1.8 1.8 0 0 0-1.7 1.3l-1.1 4.1Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path d="M5.3 10.2v7.2c0 1 .8 1.8 1.8 1.8h9.8c1 0 1.8-.8 1.8-1.8v-7.2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8 19.2v-4.5h8v4.5" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M4.2 10.2h15.6l-1.1-4.1a1.8 1.8 0 0 0-1.7-1.3H7a1.8 1.8 0 0 0-1.7 1.3l-1.1 4.1Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><path d="M5.3 10.2v7.2c0 1 .8 1.8 1.8 1.8h9.8c1 0 1.8-.8 1.8-1.8v-7.2" stroke="currentColor" strokeWidth="1.8"/><path d="M8 19.2v-4.5h8v4.5" stroke="currentColor" strokeWidth="1.8"/></svg>;
 }
-
 function SubmitIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>;
 }
-
-function BookmarkIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-      <path
-        d="M6.5 5.2c0-1 .8-1.7 1.7-1.7h7.6c1 0 1.7.8 1.7 1.7v15.3L12 17.1l-5.5 3.4V5.2Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function DailyCardIcon() {
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M8 3.8v3.4M16 3.8v3.4M4 9.4h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M12 12.1l.8 1.7 1.9.2-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.2.8-1.7Z" stroke="currentColor" strokeWidth="1.45" strokeLinejoin="round"/></svg>;
 }
-
 function AccountIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8"/><path d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
 }
 
 function safePath(value?: string) {
@@ -109,135 +64,98 @@ function readJson<T>(key: string): T | null {
 }
 
 function resolveAccountDestination() {
-  const user = readJson<CachedUser>("chakod_user");
   const identity = readJson<CachedIdentity>("chakod_identity") || {};
-  const loggedIn = Boolean(localStorage.getItem("chakod_session_token") && user);
+  const loggedIn = Boolean(localStorage.getItem("chakod_session_token") || localStorage.getItem("chakod_user"));
 
-  if (!loggedIn) {
-    return { href: "/login", title: "ورود" };
-  }
+  if (!loggedIn) return { href: "/login", title: "ورود", switcher: false };
 
-  const hasAdminAccess =
-    Boolean(identity.is_site_owner) ||
-    [identity.primary_role, ...(identity.roles || [])].some(
-      (role) => role && ADMIN_ROLES.has(role),
-    );
+  const hasAdminAccess = Boolean(identity.is_site_owner) ||
+    [identity.primary_role, ...(identity.roles || [])].some((role) => role && ADMIN_ROLES.has(role));
 
   if (hasAdminAccess) {
     return {
       href: safePath(identity.redirect_to) ? identity.redirect_to! : "/admin",
       title: "مدیریت",
+      switcher: false,
     };
   }
 
-  if (user?.account_type === "dealer" || user?.account_type === "business") {
-    return { href: "/dashboard", title: "نمایشگاه" };
-  }
-
-  return { href: "/account", title: "حساب" };
+  return { href: "/account-v2/profile", title: "حساب", switcher: true };
 }
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
-  const [accountDestination, setAccountDestination] = useState({
-    href: "/login",
-    title: "ورود",
-  });
+  const [accountDestination, setAccountDestination] = useState({ href: "/login", title: "ورود", switcher: false });
 
   useEffect(() => {
     const syncDestination = () => setAccountDestination(resolveAccountDestination());
-
     syncDestination();
     window.addEventListener("storage", syncDestination);
     window.addEventListener("chakod:auth-changed", syncDestination);
-
     return () => {
       window.removeEventListener("storage", syncDestination);
       window.removeEventListener("chakod:auth-changed", syncDestination);
     };
   }, []);
 
-  const navItems = useMemo<NavItem[]>(
-    () => [
-      {
-        id: "home",
-        title: "خانه",
-        href: "/",
-        icon: <HomeIcon />,
-        isActive: (currentPath) => currentPath === "/",
+  const navItems = useMemo<NavItem[]>(() => [
+    { id: "home", title: "خانه", href: "/", icon: <HomeIcon />, isActive: (p) => p === "/" },
+    { id: "market", title: "بازار", href: "/cars", icon: <MarketIcon />, isActive: (p) => p === "/cars" || p.startsWith("/cars/") },
+    {
+      id: "submit",
+      title: "ثبت آگهی",
+      href: "/account/listings/new",
+      icon: <SubmitIcon />,
+      primary: true,
+      isActive: (p) =>
+        p === "/account/listings/new" ||
+        p.startsWith("/advertising/stories") ||
+        p.startsWith("/advertising/selected"),
+    },
+    { id: "daily-card", title: "کارت روز", href: "/account/showcase", icon: <DailyCardIcon />, isActive: (p) => p === "/account/showcase" || p.startsWith("/account/showcase/") },
+    {
+      id: "account",
+      title: accountDestination.title,
+      href: accountDestination.href,
+      icon: <AccountIcon />,
+      isActive: (p) => {
+        if (accountDestination.href === "/admin") return p.startsWith("/admin");
+        if (accountDestination.href === "/login") return p.startsWith("/login");
+        if (p === "/account/showcase" || p.startsWith("/account/showcase/")) return false;
+        return p === "/account" || p.startsWith("/account/") || p.startsWith("/account-v2/");
       },
-      {
-        id: "market",
-        title: "بازار",
-        href: "/ads",
-        icon: <MarketIcon />,
-        isActive: (currentPath) => currentPath === "/ads" || currentPath.startsWith("/ads/"),
-      },
-      {
-        id: "submit",
-        title: "ثبت آگهی",
-        href: "/submit",
-        icon: <SubmitIcon />,
-        primary: true,
-        isActive: (currentPath) => currentPath === "/submit" || currentPath.startsWith("/submit/"),
-      },
-      {
-        id: "saved",
-        title: "نشان‌شده‌ها",
-        href: "/account/saved",
-        icon: <BookmarkIcon />,
-        isActive: (currentPath) =>
-          currentPath === "/account/saved" || currentPath.startsWith("/account/saved/"),
-      },
-      {
-        id: "account",
-        title: accountDestination.title,
-        href: accountDestination.href,
-        icon: <AccountIcon />,
-        isActive: (currentPath) => {
-          if (accountDestination.href === "/admin") return currentPath.startsWith("/admin");
-          if (accountDestination.href === "/dashboard") return currentPath.startsWith("/dashboard");
-          if (accountDestination.href === "/login") return currentPath.startsWith("/login");
+    },
+  ], [accountDestination]);
 
-          const isAccountRoute = currentPath === "/account" || currentPath.startsWith("/account/");
-          const isSavedRoute = currentPath === "/account/saved" || currentPath.startsWith("/account/saved/");
-          return isAccountRoute && !isSavedRoute;
-        },
-      },
-    ],
-    [accountDestination],
-  );
-
-  const shouldHide =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/super-admin") ||
-    pathname.startsWith("/showrooms");
-
-  if (shouldHide) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/super-admin")) return null;
 
   return (
     <>
       <div className={styles.pageSpacer} aria-hidden="true" />
-
       <div className={styles.navigationShell}>
         <nav className={styles.navigation} aria-label="منوی اصلی نسخه موبایل">
           {navItems.map((item) => {
             const active = item.isActive(pathname);
+            const className = [styles.navigationItem, item.primary ? styles.primaryItem : "", active ? styles.activeItem : ""].filter(Boolean).join(" ");
+
+            if (item.id === "submit") {
+              return (
+                <CreateActionMenu
+                  key={item.id}
+                  triggerClassName={className}
+                  iconClassName={styles.primaryIcon}
+                  titleClassName={styles.primaryTitle}
+                  icon={item.icon}
+                />
+              );
+            }
+
+            if (item.id === "account" && accountDestination.switcher) {
+              return <div key={item.id} className={className}><MobileAccountSwitcher />{!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}</div>;
+            }
 
             return (
-              <Link
-                key={item.id}
-                href={item.href}
-                aria-label={item.title}
-                aria-current={active ? "page" : undefined}
-                className={[
-                  styles.navigationItem,
-                  item.primary ? styles.primaryItem : "",
-                  active ? styles.activeItem : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
+              <Link key={item.id} href={item.href} aria-label={item.title} aria-current={active ? "page" : undefined} className={className}>
                 <span className={item.primary ? styles.primaryIcon : styles.navigationIcon}>{item.icon}</span>
                 <span className={item.primary ? styles.primaryTitle : styles.navigationTitle}>{item.title}</span>
                 {!item.primary && <span className={styles.activeIndicator} aria-hidden="true" />}

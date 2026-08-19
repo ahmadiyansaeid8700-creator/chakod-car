@@ -1,0 +1,166 @@
+.root {
+  min-height: 100%;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #07030e;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.root:has(:global(.doneBox)) .overlay {
+  visibility: visible;
+  animation: overlayIn 260ms ease-out both;
+}
+
+.splashFrame {
+  position: relative;
+  width: min(100vw, calc(100vh * 1.7768331562));
+  aspect-ratio: 1672 / 941;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(1.015);
+  background: #07030e;
+}
+
+.root:has(:global(.doneBox)) .splashFrame {
+  animation: artworkIn 420ms 60ms ease-out both;
+}
+
+.splashArtwork {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.headlightFlash {
+  position: absolute;
+  top: 60.1%;
+  width: 13.5%;
+  aspect-ratio: 2.7 / 1;
+  border-radius: 50%;
+  opacity: 0;
+  mix-blend-mode: screen;
+  filter: blur(4px);
+  background:
+    radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(223, 239, 255, 0.9) 24%,
+      rgba(165, 128, 255, 0.68) 46%,
+      rgba(116, 52, 255, 0.18) 68%,
+      transparent 78%);
+  box-shadow:
+    0 0 18px rgba(255, 255, 255, 0.82),
+    0 0 44px rgba(176, 122, 255, 0.72),
+    0 0 78px rgba(123, 58, 237, 0.48);
+}
+
+.headlightLeft {
+  left: 29.7%;
+}
+
+.headlightRight {
+  right: 29.7%;
+}
+
+.root:has(:global(.doneBox)) .headlightFlash {
+  animation: headlightHello 1480ms 760ms ease-in-out both;
+}
+
+.floorPulse {
+  position: absolute;
+  left: 50%;
+  top: 71.5%;
+  width: 38%;
+  height: 7%;
+  transform: translateX(-50%) scaleX(0.72);
+  border-radius: 50%;
+  opacity: 0;
+  filter: blur(14px);
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.54), rgba(76, 29, 149, 0.12) 54%, transparent 74%);
+}
+
+.root:has(:global(.doneBox)) .floorPulse {
+  animation: floorHello 2100ms 520ms ease-out both;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes artworkIn {
+  0% { opacity: 0; transform: scale(1.025); filter: brightness(0.86); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes headlightHello {
+  0%, 12% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  34% {
+    opacity: 0.08;
+    transform: scale(0.94);
+  }
+  51% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  66% {
+    opacity: 0.08;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 0.26;
+    transform: scale(1);
+  }
+}
+
+@keyframes floorHello {
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.72); }
+  42% { opacity: 0.9; transform: translateX(-50%) scaleX(1); }
+  100% { opacity: 0.46; transform: translateX(-50%) scaleX(1.06); }
+}
+
+@media (max-aspect-ratio: 3 / 4) {
+  .splashFrame {
+    width: 100vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root:has(:global(.doneBox)) .overlay,
+  .root:has(:global(.doneBox)) .splashFrame,
+  .root:has(:global(.doneBox)) .headlightFlash,
+  .root:has(:global(.doneBox)) .floorPulse {
+    animation: none;
+  }
+
+  .root:has(:global(.doneBox)) .overlay,
+  .root:has(:global(.doneBox)) .splashFrame {
+    opacity: 1;
+  }
+
+  .root:has(:global(.doneBox)) .headlightFlash {
+    opacity: 0.22;
+  }
+
+  .root:has(:global(.doneBox)) .floorPulse {
+    opacity: 0.4;
+  }
+}

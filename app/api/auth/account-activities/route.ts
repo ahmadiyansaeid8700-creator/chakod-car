@@ -1,0 +1,517 @@
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { NextRequest } from "next/server";
+
+import { getDb } from "../../../../db";
+import { accountActivities } from "../../../../db/schema";
+import {
+  listAccountActivityMemberships,
+  type AccountActivityTeamIdentity,
+} from "../../../../lib/account-activity-team";
+import {
+  authApiUrl,
+  jsonResponse,
+  parseJsonResponse,
+  rejectCrossSiteMutation,
+  requestIdentityHeaders,
+} from "../../../../lib/chakod-auth-proxy";
+import { getRuntimeEnv } from "../../../../lib/runtime-env";
+import { readServerIdentity } from "../../../../lib/server-route-access";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const ACTIVITY_TYPES = ["dealer", "parts_store", "repair_shop", "car_service"] as const;
+type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+type AccountUser = {
+  id: number;
+  mobile: string;
+  accountType: string;
+  businessName: string;
+  displayName: string;
+};
+
+type DealerItem = {
+  id: number;
+  name: string;
+  phone: string;
+  province: string;
+  city: string;
+  neighborhood: string;
+  address: string;
+  role: string;
+  active: boolean;
+};
+
+let activitySchemaReady: Promise<void> | null = null;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function clean(value: unknown, maxLength: number) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function normalizePhone(value: unknown) {
+  if (typeof value !== "string") return "";
+  let phone = value
+    .trim()
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[^0-9+]/g, "");
+  if (phone.startsWith("+98")) phone = `0${phone.slice(3)}`;
+  if (phone.startsWith("98") && phone.length === 12) phone = `0${phone.slice(2)}`;
+  return phone.slice(0, 16);
+}
+
+function normalizeName(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fa")
+    .replace(/[يى]/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/[ؤ]/g, "و")
+    .replace(/[إأ]/g, "ا")
+    .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
+}
+
+function isActivityType(value: string): value is ActivityType {
+  return (ACTIVITY_TYPES as readonly string[]).includes(value);
+}
+
+async function ensureAccountActivitiesSchema() {
+  if (!activitySchemaReady) {
+    activitySchemaReady = (async () => {
+      const d1 = getRuntimeEnv().DB;
+      await d1.prepare(`CREATE TABLE IF NOT EXISTS account_activities (
+        id integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        owner_user_id integer NOT NULL,
+        activity_type text NOT NULL,
+        name text NOT NULL,
+        phone text DEFAULT '' NOT NULL,
+        province text DEFAULT '' NOT NULL,
+        city text DEFAULT '' NOT NULL,
+        neighborhood text DEFAULT '' NOT NULL,
+        address text DEFAULT '' NOT NULL,
+        external_dealer_id integer,
+        source text DEFAULT 'native' NOT NULL,
+        status text DEFAULT 'draft' NOT NULL,
+        verification_status text DEFAULT 'unverified' NOT NULL,
+        created_at text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at text DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`).run();
+      await d1
+        .prepare(
+          "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_owner_type_unique ON account_activities (owner_user_id, activity_type)",
+        )
+        .run();
+      await d1
+        .prepare(
+          "CREATE UNIQUE INDEX IF NOT EXISTS account_activities_external_dealer_unique ON account_activities (external_dealer_id)",
+        )
+        .run();
+      await d1.prepare("SELECT 1 FROM account_activities LIMIT 1").run();
+    })().catch((error) => {
+      activitySchemaReady = null;
+      throw error;
+    });
+  }
+
+  return activitySchemaReady;
+}
+
+async function readAccountUser(): Promise<AccountUser | null> {
+  const raw: unknown = await readServerIdentity("/api/me.php");
+  if (!isRecord(raw) || raw.success !== true || !isRecord(raw.user)) return null;
+
+  const id = Math.round(Number(raw.user.id || 0));
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+
+  return {
+    id,
+    mobile: normalizePhone(raw.user.mobile),
+    accountType: clean(raw.user.account_type, 40),
+    businessName: clean(raw.user.business_name, 160),
+    displayName: clean(raw.user.display_name ?? raw.user.full_name ?? raw.user.name, 120),
+  };
+}
+
+function normalizeDealer(item: Record<string, unknown>): DealerItem | null {
+  const id = Math.round(Number(item.id ?? item.dealer_id ?? 0));
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+
+  const active = item.is_active !== false && Number(item.is_active ?? 1) !== 0;
+  return {
+    id,
+    name: clean(item.dealer_name ?? item.name ?? item.title, 160) || `نمایشگاه ${id}`,
+    phone: normalizePhone(item.dealer_phone ?? item.phone),
+    province: clean(item.province, 80),
+    city: clean(item.city, 80),
+    neighborhood: clean(item.neighborhood, 100),
+    address: clean(item.address, 500),
+    role: clean(item.role, 60).toLowerCase(),
+    active,
+  };
+}
+
+async function fetchDealers(request: NextRequest): Promise<DealerItem[]> {
+  try {
+    const response = await fetch(authApiUrl("/api/my-dealers.php"), {
+      method: "GET",
+      cache: "no-store",
+      headers: requestIdentityHeaders(request),
+      signal: AbortSignal.timeout(12_000),
+    });
+    const payload = await parseJsonResponse(response);
+    const list = Array.isArray(payload?.data) ? payload.data : [];
+    return list
+      .filter(isRecord)
+      .map(normalizeDealer)
+      .filter((item): item is DealerItem => Boolean(item));
+  } catch {
+    return [];
+  }
+}
+
+function resolveOwnedDealer(dealers: DealerItem[], user: AccountUser) {
+  const activeDealers = dealers.filter((dealer) => dealer.active);
+  const explicitOwners = activeDealers.filter((dealer) => dealer.role === "owner");
+  if (explicitOwners.length === 1) return explicitOwners[0];
+
+  const businessName = normalizeName(user.businessName);
+  if (businessName) {
+    const nameMatches = activeDealers.filter(
+      (dealer) => normalizeName(dealer.name) === businessName,
+    );
+    if (nameMatches.length === 1) return nameMatches[0];
+  }
+
+  if (user.mobile) {
+    const phoneMatches = activeDealers.filter(
+      (dealer) => dealer.phone && dealer.phone === user.mobile,
+    );
+    if (phoneMatches.length === 1) return phoneMatches[0];
+  }
+
+  if (activeDealers.length === 1) return activeDealers[0];
+  return null;
+}
+
+async function syncLegacyActivities(request: NextRequest, user: AccountUser) {
+  const db = getDb();
+  const dealers = await fetchDealers(request);
+  const dealerToImport = user.accountType === "dealer" ? resolveOwnedDealer(dealers, user) : null;
+
+  const [existingDealerActivity] = await db
+    .select()
+    .from(accountActivities)
+    .where(
+      and(
+        eq(accountActivities.ownerUserId, user.id),
+        eq(accountActivities.activityType, "dealer"),
+      ),
+    )
+    .limit(1);
+
+  if (dealerToImport) {
+    const dealerValues = {
+      name: dealerToImport.name,
+      phone: dealerToImport.phone,
+      province: dealerToImport.province,
+      city: dealerToImport.city,
+      neighborhood: dealerToImport.neighborhood,
+      address: dealerToImport.address,
+      externalDealerId: dealerToImport.id,
+      status: dealerToImport.active ? "active" : "disabled",
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    };
+
+    if (!existingDealerActivity) {
+      await db
+        .insert(accountActivities)
+        .values({
+          ownerUserId: user.id,
+          activityType: "dealer",
+          ...dealerValues,
+          source: "legacy_dealer",
+        })
+        .onConflictDoNothing();
+    } else if (
+      existingDealerActivity.source === "legacy_dealer" &&
+      Number(existingDealerActivity.externalDealerId || 0) !== dealerToImport.id
+    ) {
+      const [dealerConflict] = await db
+        .select({ id: accountActivities.id, ownerUserId: accountActivities.ownerUserId })
+        .from(accountActivities)
+        .where(eq(accountActivities.externalDealerId, dealerToImport.id))
+        .limit(1);
+
+      if (!dealerConflict || dealerConflict.id === existingDealerActivity.id) {
+        await db
+          .update(accountActivities)
+          .set(dealerValues)
+          .where(eq(accountActivities.id, existingDealerActivity.id));
+      }
+    }
+  } else if (
+    existingDealerActivity?.source === "legacy_dealer" &&
+    dealers.some((dealer) => dealer.active)
+  ) {
+    await db
+      .update(accountActivities)
+      .set({
+        externalDealerId: null,
+        status: "disabled",
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .where(eq(accountActivities.id, existingDealerActivity.id));
+  }
+
+  if (
+    isActivityType(user.accountType) &&
+    user.accountType !== "dealer" &&
+    user.businessName.length >= 2
+  ) {
+    await db
+      .insert(accountActivities)
+      .values({
+        ownerUserId: user.id,
+        activityType: user.accountType,
+        name: user.businessName,
+        phone: user.mobile,
+        source: "legacy_professional_profile",
+        status: "active",
+      })
+      .onConflictDoNothing();
+  }
+
+  return dealers;
+}
+
+function publicActivity(row: typeof accountActivities.$inferSelect) {
+  return {
+    id: row.id,
+    type: row.activityType,
+    name: row.name,
+    phone: row.phone,
+    province: row.province,
+    city: row.city,
+    neighborhood: row.neighborhood,
+    address: row.address,
+    external_dealer_id: row.externalDealerId,
+    status: row.status,
+    verification_status: row.verificationStatus,
+    can_publish_vehicle: row.activityType === "dealer" && Boolean(row.externalDealerId) && row.status === "active",
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const user = await readAccountUser();
+  if (!user) {
+    return jsonResponse({ success: false, message: "برای مشاهده کسب‌وکارها وارد حساب شوید." }, 401);
+  }
+
+  try {
+    await ensureAccountActivitiesSchema();
+    const dealers = await syncLegacyActivities(request, user);
+    const rows = await getDb()
+      .select()
+      .from(accountActivities)
+      .where(eq(accountActivities.ownerUserId, user.id))
+      .orderBy(accountActivities.id);
+
+    const ownedDealerIds = new Set(
+      rows
+        .filter((row) => row.activityType === "dealer" && row.externalDealerId)
+        .map((row) => Number(row.externalDealerId)),
+    );
+
+    const memberships = dealers
+      .filter((dealer) => dealer.active && !ownedDealerIds.has(dealer.id))
+      .map((dealer) => ({
+        type: "dealer",
+        external_dealer_id: dealer.id,
+        name: dealer.name,
+        role: dealer.role || "member",
+        can_publish_vehicle: true,
+      }));
+
+    const teamIdentity: AccountActivityTeamIdentity = {
+      id: user.id,
+      mobile: user.mobile,
+      displayName: user.displayName,
+    };
+    const activityMembershipRows = user.mobile
+      ? await listAccountActivityMemberships(teamIdentity)
+      : [];
+    const ownedActivityIds = new Set(rows.map((row) => row.id));
+    const activityMemberIds = Array.from(new Set(
+      activityMembershipRows
+        .filter((membership) => !ownedActivityIds.has(membership.activity_id))
+        .map((membership) => membership.activity_id),
+    ));
+    const memberActivities = activityMemberIds.length
+      ? await getDb()
+          .select()
+          .from(accountActivities)
+          .where(inArray(accountActivities.id, activityMemberIds))
+      : [];
+    const memberActivityMap = new Map(memberActivities.map((activity) => [activity.id, activity]));
+    const activityMemberships = activityMembershipRows.flatMap((membership) => {
+      const activity = memberActivityMap.get(membership.activity_id);
+      if (!activity || activity.activityType === "dealer" || activity.status === "disabled") return [];
+      return [{
+        activity_id: activity.id,
+        type: activity.activityType,
+        name: activity.name,
+        role: membership.role,
+        status: membership.status,
+        logo_url: null,
+      }];
+    });
+
+    const existingTypes = new Set(rows.map((row) => row.activityType));
+    return jsonResponse({
+      success: true,
+      activities: rows.map(publicActivity),
+      memberships,
+      activity_memberships: activityMemberships,
+      available_types: ACTIVITY_TYPES.filter((type) => !existingTypes.has(type)),
+    });
+  } catch {
+    return jsonResponse(
+      { success: false, message: "فهرست کسب‌وکارها فعلاً در دسترس نیست. دوباره تلاش کنید." },
+      503,
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
+
+  const user = await readAccountUser();
+  if (!user) {
+    return jsonResponse({ success: false, message: "برای افزودن کسب‌وکار وارد حساب شوید." }, 401);
+  }
+
+  let input: Record<string, unknown>;
+  try {
+    const value: unknown = await request.json();
+    input = isRecord(value) ? value : {};
+  } catch {
+    return jsonResponse({ success: false, message: "اطلاعات کسب‌وکار معتبر نیست." }, 400);
+  }
+
+  const type = clean(input.type, 40);
+  const name = clean(input.name, 160);
+  const phone = normalizePhone(input.phone) || user.mobile;
+  const province = clean(input.province, 80);
+  const city = clean(input.city, 80);
+  const neighborhood = clean(input.neighborhood, 100);
+  const address = clean(input.address, 500);
+
+  if (!isActivityType(type)) {
+    return jsonResponse({ success: false, message: "نوع کسب‌وکار معتبر نیست." }, 422);
+  }
+  if (name.length < 2) {
+    return jsonResponse({ success: false, message: "نام کسب‌وکار را کامل وارد کنید." }, 422);
+  }
+  if (!province || !city) {
+    return jsonResponse({ success: false, message: "استان و شهر کسب‌وکار را انتخاب کنید." }, 422);
+  }
+
+  try {
+    await ensureAccountActivitiesSchema();
+    await syncLegacyActivities(request, user);
+    const [existing] = await getDb()
+      .select({ id: accountActivities.id })
+      .from(accountActivities)
+      .where(and(eq(accountActivities.ownerUserId, user.id), eq(accountActivities.activityType, type)))
+      .limit(1);
+
+    if (existing) {
+      return jsonResponse(
+        { success: false, message: "از این نوع کسب‌وکار قبلاً برای این حساب ثبت شده است." },
+        409,
+      );
+    }
+  } catch {
+    return jsonResponse({ success: false, message: "بررسی کسب‌وکارهای فعلی انجام نشد." }, 503);
+  }
+
+  let externalDealerId: number | null = null;
+  let status = "draft";
+
+  if (type === "dealer") {
+    try {
+      const upstream = await fetch(authApiUrl("/api/my-dealers.php"), {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          ...requestIdentityHeaders(request),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dealer_name: name,
+          dealer_phone: phone,
+          province,
+          city,
+          neighborhood,
+          address,
+        }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      const payload = await parseJsonResponse(upstream);
+      if (!upstream.ok || payload?.success !== true) {
+        return jsonResponse(
+          { success: false, message: clean(payload?.message, 300) || "ثبت نمایشگاه انجام نشد." },
+          upstream.status || 502,
+        );
+      }
+
+      externalDealerId = Math.round(Number(payload.dealer_id ?? payload.id ?? 0)) || null;
+      if (!externalDealerId) {
+        const dealers = await fetchDealers(request);
+        const match = dealers.find((dealer) => dealer.role === "owner" && dealer.name === name) || dealers.find((dealer) => dealer.role === "owner");
+        externalDealerId = match?.id || null;
+      }
+      status = "active";
+    } catch {
+      return jsonResponse({ success: false, message: "ارتباط با سرویس ثبت نمایشگاه برقرار نشد." }, 502);
+    }
+  }
+
+  try {
+    const [row] = await getDb()
+      .insert(accountActivities)
+      .values({
+        ownerUserId: user.id,
+        activityType: type,
+        name,
+        phone,
+        province,
+        city,
+        neighborhood,
+        address,
+        externalDealerId,
+        source: type === "dealer" ? "external_dealer" : "native",
+        status,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .returning();
+
+    return jsonResponse(
+      {
+        success: true,
+        message: type === "dealer" ? "نمایشگاه به کسب‌وکارهای شما اضافه شد." : "کسب‌وکار به حساب شما اضافه شد.",
+        activity: publicActivity(row),
+      },
+      201,
+    );
+  } catch {
+    return jsonResponse({ success: false, message: "ذخیره کسب‌وکار انجام نشد." }, 503);
+  }
+}

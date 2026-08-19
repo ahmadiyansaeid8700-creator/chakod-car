@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
+import { canOpenAdminCommerce } from "../../lib/route-access";
 
 type AdminMeResponse = {
   success: boolean;
@@ -64,14 +64,17 @@ export default function AdminPage() {
     null
   );
   const [error, setError] = useState("");
+  const [requiresLogin, setRequiresLogin] = useState(false);
 
   const loadAdmin = useCallback(async () => {
     setLoading(true);
     setError("");
+    setRequiresLogin(false);
 
     const token = getToken();
 
     if (!token) {
+      setRequiresLogin(true);
       setData({
         success: false,
         is_admin: false,
@@ -85,9 +88,10 @@ export default function AdminPage() {
 
     try {
       const response = await fetch(
-        `${API_BASE}/api/admin-me.php`,
+        "/api/admin/me",
         {
           method: "GET",
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${token}`,
             "X-Session-Token": token,
@@ -100,13 +104,22 @@ export default function AdminPage() {
       const json =
         await readJson<AdminMeResponse>(response);
 
+      if (response.status === 401 || response.status === 403) {
+        setRequiresLogin(true);
+        setData(json);
+        setError(json.message || "نشست مدیریت معتبر نیست.");
+        return;
+      }
+
+      if (!response.ok) {
+        setData(null);
+        setError(json.message || "سرویس مدیریت فعلاً پاسخ نداد.");
+        return;
+      }
+
       setData(json);
 
-      if (
-        !response.ok ||
-        !json.success ||
-        !json.is_admin
-      ) {
+      if (!json.success || !json.is_admin) {
         setError(
           json.message || "دسترسی مدیریت تأیید نشد."
         );
@@ -142,20 +155,26 @@ export default function AdminPage() {
   }
 
   if (!data?.success || !data.is_admin) {
+    const connectionProblem = !requiresLogin && data === null;
+
     return (
       <main className="adminPage" dir="rtl">
         <section className="stateCard denied">
           <div className="lockIcon" aria-hidden="true">
             🔒
           </div>
-          <h1>دسترسی مدیریت فعال نیست</h1>
+          <h1>
+            {connectionProblem
+              ? "ارتباط با سرور مدیریت برقرار نشد"
+              : "دسترسی مدیریت فعال نیست"}
+          </h1>
           <p>
             {error ||
               data?.message ||
               "شما دسترسی مدیریت سایت را ندارید."}
           </p>
           <div className="stateActions">
-            <Link href="/login">ورود دوباره</Link>
+            {requiresLogin && <Link href="/login">ورود دوباره</Link>}
             <button type="button" onClick={() => void loadAdmin()}>
               بررسی مجدد
             </button>
@@ -180,13 +199,31 @@ export default function AdminPage() {
     canManageListings ||
     hasPermission(admin, "listings.view");
 
-  const canManageAdmins = !!admin?.can_manage_admins;
-  const canManageSettings = !!admin?.can_manage_settings;
-  const canViewPayments = !!admin?.can_view_payments;
-  const canAuditServices = !!admin?.can_audit_services;
+  const canManageBusinesses = hasPermission(
+    admin,
+    "businesses.manage"
+  );
+
+  const canViewBusinesses =
+    canManageBusinesses ||
+    hasPermission(admin, "businesses.view");
+
+  const isSuperAdmin = admin?.role === "super_admin";
+  const canManageAdmins =
+    isSuperAdmin && !!admin?.can_manage_admins;
+  const canManageSettings =
+    isSuperAdmin && !!admin?.can_manage_settings;
+  const canViewPayments =
+    isSuperAdmin && !!admin?.can_view_payments;
+  const canAuditServices =
+    isSuperAdmin && !!admin?.can_audit_services;
+
+  const canOpenCommerce = canOpenAdminCommerce(admin);
 
   const hasVisibleModule =
     canViewListings ||
+    canViewBusinesses ||
+    canOpenCommerce ||
     canManageAdmins ||
     canManageSettings ||
     canViewPayments ||
@@ -234,6 +271,16 @@ export default function AdminPage() {
           </article>
         )}
 
+        {canViewBusinesses && (
+          <article>
+            <span>کسب‌وکارهای خودرو</span>
+            <strong>
+              {canManageBusinesses ? "مدیریت کامل" : "فقط مشاهده"}
+            </strong>
+            <p>بررسی و تأیید نمایشگاه‌ها، تعمیرگاه‌ها، مراکز خدمات و فروشگاه‌های قطعات.</p>
+          </article>
+        )}
+
         {canViewPayments && (
           <article>
             <span>پرداخت‌ها</span>
@@ -270,52 +317,39 @@ export default function AdminPage() {
             </Link>
           )}
 
-          {canViewPayments && (
-            <article className="module pending" aria-disabled="true">
-              <span className="moduleIcon">$</span>
-              <b>پرداخت‌ها و خدمات</b>
+          {canViewBusinesses && (
+            <Link className="module active" href="/admin/businesses">
+              <span className="moduleIcon">ک</span>
+              <b>مدیریت کسب‌وکارهای خودرو</b>
               <p>
-                دسترسی شما مجاز است؛ صفحه مستقل این بخش در چک‌لیست
-                ساخت قرار دارد.
+                اطلاعات کسب‌وکارها را بررسی، تأیید، رد یا تعلیق کن و جایگاه صفحه اصلی را مدیریت کن؛ بدون دسترسی به مبلغ و موجودی.
               </p>
-              <em>در حال ساخت</em>
-            </article>
+              <em>ورود به بخش</em>
+            </Link>
           )}
 
-          {canManageSettings && (
-            <article className="module pending" aria-disabled="true">
-              <span className="moduleIcon">⚙</span>
-              <b>تنظیمات و قیمت‌گذاری</b>
+          {canOpenCommerce && (
+            <Link className="module active" href="/admin/commerce">
+              <span className="moduleIcon">₮</span>
+              <b>مدیریت مالی و تجاری</b>
               <p>
-                مدیریت قیمت خدمات و تنظیمات عمومی بدون نیاز به
-                کدنویسی.
+                تعرفه‌ها، قیمت استان‌ها، پرداخت‌ها، اشتراک‌ها، تبلیغات
+                و سطح دسترسی مدیران را از داخل سایت کنترل کن.
               </p>
-              <em>در حال ساخت</em>
-            </article>
-          )}
-
-          {canManageAdmins && (
-            <article className="module pending" aria-disabled="true">
-              <span className="moduleIcon">+</span>
-              <b>مدیریت ادمین‌ها</b>
-              <p>
-                افزودن شماره تأییدشده، انتخاب نقش و تعیین
-                دسترسی‌ها.
-              </p>
-              <em>در حال ساخت</em>
-            </article>
+              <em>ورود به بخش</em>
+            </Link>
           )}
 
           {canAuditServices && (
-            <article className="module pending" aria-disabled="true">
-              <span className="moduleIcon small">AI</span>
-              <b>گزارش‌ها و نظارت هوشمند</b>
+            <Link className="module active" href="/admin/audit-logs">
+              <span className="moduleIcon small">≡</span>
+              <b>گزارش تغییرات و نظارت</b>
               <p>
-                گزارش تخلف، رویدادهای امنیتی و بازخورد نظارتی
-                ادمین‌ها.
+                رویدادهای مدیریتی و سوابق قابل ممیزی را از گزارش تغییرات
+                Commerce بررسی کن.
               </p>
-              <em>در حال ساخت</em>
-            </article>
+              <em>ورود به بخش</em>
+            </Link>
           )}
         </section>
       ) : (
@@ -348,6 +382,10 @@ export default function AdminPage() {
         {canViewListings && (
           <Link href="/admin/listings">آگهی‌ها</Link>
         )}
+        {canViewBusinesses && (
+          <Link href="/admin/businesses">کسب‌وکارها</Link>
+        )}
+        <Link href="/admin/commerce">مالی و تجاری</Link>
         <Link href="/">سایت</Link>
       </nav>
 

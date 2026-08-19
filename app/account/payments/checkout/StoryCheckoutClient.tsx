@@ -1,0 +1,421 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  canShareImageFile,
+  createDoubleStoryShareFile,
+  downloadShareFile,
+} from "../../../lib/double-story-share";
+import styles from "./StoryCheckoutClient.module.css";
+
+type StoryListing = {
+  id: number;
+  title: string;
+  brand?: string;
+  model?: string;
+  year?: string;
+  price_toman?: number;
+  seller_display_name?: string;
+  cover_image_url?: string;
+};
+
+type Pricing = {
+  coupon_code?: string;
+  coupon_valid?: boolean;
+  coupon_message?: string;
+  original_amount_toman: number;
+  discount_amount_toman: number;
+  final_amount_toman: number;
+};
+
+type CheckoutResponse = {
+  success?: boolean;
+  message?: string;
+  listing?: StoryListing;
+  pricing?: Pricing;
+  duration_hours?: number;
+  test_coupon_available?: boolean;
+  expires_at?: string;
+  story_id?: number;
+  public_story_id?: number;
+  share_path?: string;
+  share_url?: string;
+};
+
+type ShareState = "idle" | "shared" | "copied" | "error";
+
+function authHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("chakod_session_token") || "";
+  return token ? { Authorization: `Bearer ${token}`, "X-Session-Token": token } : {};
+}
+
+function money(value: number | undefined) {
+  const number = Number(value || 0);
+  return number <= 0 ? "رایگان" : `${number.toLocaleString("fa-IR")} تومان`;
+}
+
+async function readJson(response: Response): Promise<CheckoutResponse> {
+  return (await response.json().catch(() => ({}))) as CheckoutResponse;
+}
+
+export default function StoryCheckoutClient({ listingId }: { listingId: number }) {
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [listing, setListing] = useState<StoryListing | null>(null);
+  const [pricing, setPricing] = useState<Pricing | null>(null);
+  const [coupon, setCoupon] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [expiresAt, setExpiresAt] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareFile, setShareFile] = useState<File | null>(null);
+  const [shareState, setShareState] = useState<ShareState>("idle");
+  const [testCouponAvailable, setTestCouponAvailable] = useState(false);
+
+  const vehicle = useMemo(
+    () => [listing?.brand, listing?.model, listing?.year].filter(Boolean).join(" · "),
+    [listing],
+  );
+
+  async function loadQuote(code = "") {
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const params = new URLSearchParams({ listing_id: String(listingId) });
+      if (code.trim()) params.set("discount_code", code.trim());
+      const response = await fetch(`/api/stories/checkout?${params.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        headers: { Accept: "application/json", ...authHeaders() },
+      });
+      const payload = await readJson(response);
+      if (!response.ok || !payload.success || !payload.listing || !payload.pricing) {
+        throw new Error(payload.message || "اطلاعات دبل استوری دریافت نشد.");
+      }
+
+      setListing(payload.listing);
+      setPricing(payload.pricing);
+      setTestCouponAvailable(payload.test_coupon_available === true);
+      if (payload.pricing.coupon_message) setMessage(payload.pricing.coupon_message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "ارتباط با سرور برقرار نشد.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadQuote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingId]);
+
+  useEffect(() => {
+    let ignore = false;
+    setShareFile(null);
+    if (!success || !shareUrl || !listing) return () => { ignore = true; };
+
+    void createDoubleStoryShareFile({
+      title: listing.title,
+      sellerName: listing.seller_display_name,
+      brand: listing.brand,
+      model: listing.model,
+      year: listing.year,
+      priceToman: listing.price_toman,
+      imageUrl: listing.cover_image_url,
+      publicStoryUrl: shareUrl,
+    })
+      .then((file) => {
+        if (!ignore) setShareFile(file);
+      })
+      .catch(() => {
+        if (!ignore) setShareFile(null);
+      });
+
+    return () => { ignore = true; };
+  }, [listing, shareUrl, success]);
+
+  async function applyCoupon() {
+    if (!coupon.trim()) {
+      setMessage("");
+      await loadQuote();
+      return;
+    }
+    await loadQuote(coupon);
+  }
+
+  async function activateStory() {
+    if (!pricing?.coupon_valid || pricing.final_amount_toman !== 0) return;
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+    setShareState("idle");
+
+    try {
+      const response = await fetch("/api/stories/checkout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ listing_id: listingId, discount_code: coupon.trim() }),
+      });
+      const payload = await readJson(response);
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || "فعال‌سازی دبل استوری انجام نشد.");
+      }
+      setExpiresAt(payload.expires_at || "");
+      const nextShareUrl = payload.share_url
+        || (payload.share_path && typeof window !== "undefined" ? `${window.location.origin}${payload.share_path}` : "");
+      setShareUrl(nextShareUrl);
+      setSuccess(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "فعال‌سازی دبل استوری انجام نشد.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function copyDoubleStoryLink() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareState("copied");
+    } catch {
+      window.prompt("لینک دبل استوری را کپی کنید:", shareUrl);
+    }
+  }
+
+  async function shareDoubleStory() {
+    if (!shareUrl) return;
+    setShareState("idle");
+    if (!canShareImageFile(shareFile) || !shareFile) {
+      setShareState("error");
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `دبل استوری ${listing?.title || "چاکود"}`,
+        text: `${listing?.title || "دبل استوری چاکود"}\n${shareUrl}`,
+        files: [shareFile],
+      });
+      setShareState("shared");
+    } catch (reason) {
+      if (reason instanceof DOMException && reason.name === "AbortError") return;
+      setShareState("error");
+    }
+  }
+
+  if (loading && !listing) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          <section className={styles.card}>
+            <div className={styles.state}><div><strong>در حال آماده‌سازی دبل استوری…</strong></div></div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (error && !listing) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          <section className={styles.card}>
+            <div className={styles.state}>
+              <div>
+                <strong>دبل استوری آماده نشد</strong>
+                <p>{error}</p>
+                <Link href="/account/stories">بازگشت به انتخاب آگهی</Link>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (success) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          <header className={styles.header}>
+            <Link href="/account/stories">دبل استوری‌ها</Link>
+            <Link href="/" aria-label="چاکود">
+              <img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+            </Link>
+          </header>
+
+          <section className={styles.card}>
+            <div className={styles.shareHub}>
+              <div className={styles.successHero}>
+                <span className={styles.successIcon}>✓</span>
+                <span className={styles.successEyebrow}>انتشار داخل چاکود انجام شد</span>
+                <h1 className={styles.successTitle}>حالا استوری را بیرون چاکود پخش کن</h1>
+                <p className={styles.successText}>
+                  بخش دوم «دبل استوری» آماده است: تصویر ۹:۱۶ را در استوری، پست یا پیام‌رسان‌ها منتشر می‌کنی و لینک عمومی همین استوری هم مسیر برگشت مخاطب به چاکود است.
+                  {expiresAt ? " استوری داخل چاکود تا ۲۴ ساعت فعال می‌ماند." : ""}
+                </p>
+              </div>
+
+              <div className={styles.sharePreview} aria-label={`پیش‌نمایش دبل استوری ${listing?.title || "چاکود"}`}>
+                <div className={styles.sharePreviewMedia}>
+                  {listing?.cover_image_url ? (
+                    <img
+                      src={listing.cover_image_url}
+                      alt=""
+                      onError={(event) => { event.currentTarget.style.display = "none"; }}
+                    />
+                  ) : (
+                    <div className={styles.sharePreviewFallback}>چ</div>
+                  )}
+                </div>
+                <div className={styles.sharePreviewCopy}>
+                  <span className={styles.sharePreviewBadge}>دبل استوری · چاکود</span>
+                  <strong>{listing?.title || "آگهی خودرو"}</strong>
+                  <span>{vehicle || listing?.seller_display_name || "آماده برای اشتراک"}</span>
+                </div>
+              </div>
+
+              <div className={styles.shareFlow} aria-label="مسیر دبل استوری">
+                <div className={styles.shareFlowStep}>
+                  <strong>داخل چاکود</strong>
+                  <small>منتشر شد</small>
+                </div>
+                <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
+                <div className={styles.shareFlowStep}>
+                  <strong>شبکه‌ها</strong>
+                  <small>اشتراک تصویر</small>
+                </div>
+                <span className={styles.shareFlowArrow} aria-hidden="true">←</span>
+                <div className={styles.shareFlowStep}>
+                  <strong>برگشت مخاطب</strong>
+                  <small>به استوری چاکود</small>
+                </div>
+              </div>
+
+              {shareUrl ? (
+                <>
+                  <button
+                    className={styles.sharePrimary}
+                    type="button"
+                    disabled={!shareFile}
+                    onClick={() => void shareDoubleStory()}
+                  >
+                    <span aria-hidden="true">↗</span>
+                    {shareFile ? "اشتراک‌گذاری برای استوری یا پست" : "در حال آماده‌سازی تصویر…"}
+                  </button>
+
+                  <div className={styles.shareActions}>
+                    <button className={styles.shareSecondary} type="button" disabled={!shareFile} onClick={() => downloadShareFile(shareFile)}>
+                      ذخیره تصویر
+                    </button>
+                    <button className={styles.shareSecondary} type="button" onClick={() => void copyDoubleStoryLink()}>
+                      {shareState === "copied" ? "لینک کپی شد ✓" : "کپی لینک"}
+                    </button>
+                  </div>
+
+                  <div className={styles.publicLink}>{shareUrl}</div>
+                  <p className={styles.shareHint}>
+                    Share اصلی فایل تصویری ۹:۱۶ را می‌فرستد. اپ مقصد تعیین می‌کند آن را به‌صورت Story، Post یا پیام منتشر کنی؛ لینک عمومی هم برای برگشت مخاطب به چاکود باقی می‌ماند.
+                  </p>
+
+                  {shareState === "shared" ? <p className={styles.message}>تصویر برای اشتراک‌گذاری ارسال شد.</p> : null}
+                  {shareState === "error" ? <p className={styles.error}>اشتراک تصویری روی این دستگاه باز نشد؛ تصویر را ذخیره یا لینک را کپی کن.</p> : null}
+                </>
+              ) : (
+                <p className={styles.error}>لینک عمومی ساخته نشد؛ استوری فعال شده اما لینک اشتراک آماده نیست.</p>
+              )}
+
+              {shareUrl ? <a className={styles.homeAfterShare} href={shareUrl}>پیش‌نمایش استوری عمومی</a> : null}
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <Link href="/account/stories">بازگشت</Link>
+          <Link href="/" aria-label="چاکود">
+            <img className={styles.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+          </Link>
+        </header>
+
+        <section className={styles.card}>
+          <div className={styles.top}>
+            <span>مرحله دوم · دبل استوری</span>
+            <h1>آماده انتشار داخل چاکود</h1>
+            <p>آگهی را یک‌بار داخل چاکود منتشر کن؛ بعد از فعال‌سازی، تصویر اشتراک و لینک عمومی همین استوری آماده می‌شود.</p>
+          </div>
+
+          <div className={styles.preview}>
+            <div className={styles.bubble} aria-hidden="true">
+              <span>
+                {listing?.cover_image_url ? (
+                  <img
+                    src={listing.cover_image_url}
+                    alt=""
+                    onError={(event) => { event.currentTarget.style.display = "none"; }}
+                  />
+                ) : "چ"}
+              </span>
+            </div>
+            <div className={styles.previewCopy}>
+              <small>آگهی انتخاب‌شده</small>
+              <strong>{listing?.title || "آگهی خودرو"}</strong>
+              {vehicle ? <span>{vehicle}</span> : null}
+              {listing?.seller_display_name ? <span>{listing.seller_display_name}</span> : null}
+            </div>
+          </div>
+
+          <div className={styles.payment}>
+            <div className={styles.rows}>
+              <div className={styles.row}><span>دبل استوری · نمایش داخل چاکود برای ۲۴ ساعت</span><strong>{money(pricing?.original_amount_toman)}</strong></div>
+              {Number(pricing?.discount_amount_toman || 0) > 0 ? (
+                <div className={`${styles.row} ${styles.discount}`}><span>تخفیف</span><strong>− {money(pricing?.discount_amount_toman)}</strong></div>
+              ) : null}
+              <div className={`${styles.row} ${styles.total}`}><span>مبلغ قابل پرداخت</span><strong>{money(pricing?.final_amount_toman)}</strong></div>
+            </div>
+
+            <label className={styles.couponLabel}>
+              کد تخفیف
+              <div className={styles.couponBox}>
+                <input
+                  value={coupon}
+                  onChange={(event) => setCoupon(event.target.value.toUpperCase())}
+                  onKeyDown={(event) => { if (event.key === "Enter") void applyCoupon(); }}
+                  placeholder="مثلاً STORY100"
+                  maxLength={40}
+                />
+                <button type="button" onClick={() => void applyCoupon()} disabled={loading}>{loading ? "…" : "اعمال"}</button>
+              </div>
+            </label>
+
+            {testCouponAvailable ? <p className={styles.hint}>برای تست، کد <code>STORY100</code> تخفیف ۱۰۰٪ دارد.</p> : null}
+            {message ? <p className={pricing?.coupon_valid ? styles.message : styles.error}>{message}</p> : null}
+            {error ? <p className={styles.error}>{error}</p> : null}
+
+            <button className={styles.action} type="button" disabled={submitting || !pricing?.coupon_valid || pricing.final_amount_toman !== 0} onClick={() => void activateStory()}>
+              {submitting ? "در حال انتشار…" : pricing?.coupon_valid && pricing.final_amount_toman === 0 ? "انتشار داخل چاکود و ساخت دبل استوری" : "پرداخت و انتشار دبل استوری"}
+            </button>
+            {!pricing?.coupon_valid ? <p className={styles.afterPay}>در نسخه تست با کد بالا رایگان فعال می‌شود؛ پرداخت آنلاین بعداً روی همین مرحله قرار می‌گیرد.</p> : null}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

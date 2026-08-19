@@ -1,0 +1,134 @@
+.page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.14), transparent 30%),
+    linear-gradient(180deg, #faf8ff, #f7f6fb 55%, #ffffff);
+  color: #21142f;
+}
+
+.card {
+  display: grid;
+  width: min(520px, 100%);
+  justify-items: center;
+  padding: 34px;
+  border: 1px solid rgba(74, 52, 99, 0.13);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.97);
+  text-align: center;
+  box-shadow: 0 26px 60px rgba(55, 35, 78, 0.13);
+}
+
+.brand img {
+  display: block;
+  width: 136px;
+  height: auto;
+}
+
+.statusIcon {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  margin: 26px 0 14px;
+  place-items: center;
+  border-radius: 24px;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.loading {
+  background: #efe7ff;
+  color: #6d28d9;
+}
+
+.success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.eyebrow {
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.card h1 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.card > p {
+  margin: 0;
+  color: #766981;
+  line-height: 1.9;
+}
+
+.reference {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8f5fc;
+}
+
+.reference small {
+  color: #8a7e92;
+}
+
+.reference strong {
+  color: #4c1d95;
+  word-break: break-all;
+}
+
+.actions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.actions a {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.primary {
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  color: #fff;
+}
+
+.secondary {
+  border: 1px solid rgba(109, 40, 217, 0.18);
+  color: #6d28d9;
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 12px 12px 126px;
+  }
+
+  .card {
+    padding: 26px 20px;
+    border-radius: 22px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

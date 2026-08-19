@@ -1,0 +1,406 @@
+.page {
+  min-height: 100vh;
+  color: #281a34;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(126, 48, 213, 0.11), transparent 30%),
+    linear-gradient(180deg, #fbf9ff 0%, #f8f5fc 100%);
+}
+
+.shell {
+  width: min(660px, 100%);
+  margin: 0 auto;
+  padding: 14px 14px 70px;
+}
+
+.topbar {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.logo {
+  width: 110px;
+  display: inline-flex;
+}
+
+.logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.back {
+  color: #7025bf;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.hero,
+.businessCard,
+.form,
+.doneCard,
+.state {
+  border: 1px solid rgba(88, 48, 126, 0.11);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 34px rgba(66, 31, 99, 0.055);
+}
+
+.hero {
+  padding: 18px;
+  border-radius: 21px;
+}
+
+.hero > span {
+  color: #7b2bd0;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.hero h1 {
+  margin: 5px 0 4px;
+  font-size: 21px;
+  line-height: 1.5;
+}
+
+.hero p {
+  margin: 0;
+  color: #8e8197;
+  font-size: 10px;
+  line-height: 1.9;
+}
+
+.error,
+.notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.error {
+  border: 1px solid #ffd2d9;
+  color: #a12643;
+  background: #fff4f6;
+}
+
+.notice {
+  border: 1px solid #cfeee3;
+  color: #08735a;
+  background: #effbf7;
+}
+
+.state {
+  min-height: 80px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 16px;
+  color: #766a7d;
+  font-size: 10px;
+}
+
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #eee6f5;
+  border-top-color: #7a29cd;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.businessCard {
+  min-height: 82px;
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 13px;
+  border-radius: 17px;
+}
+
+.businessIcon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(145deg, #56178d, #8c31dc);
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.businessCard > div:nth-child(2) {
+  min-width: 0;
+}
+
+.businessCard span,
+.businessCard strong,
+.businessCard small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.businessCard span {
+  color: #81738b;
+  font-size: 8px;
+}
+
+.businessCard strong {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.businessCard small {
+  margin-top: 4px;
+  color: #9a8da2;
+  font-size: 8px;
+}
+
+.ownerBadge,
+.memberBadge {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.ownerBadge {
+  color: #087459;
+  background: #eaf9f3;
+}
+
+.memberBadge {
+  color: #9a6200;
+  background: #fff5da;
+}
+
+.form,
+.doneCard {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.warning {
+  padding: 12px;
+  border: 1px solid #f2dfb5;
+  border-radius: 13px;
+  color: #7c570e;
+  background: #fffaf0;
+}
+
+.warning strong {
+  display: block;
+  font-size: 10px;
+}
+
+.warning p {
+  margin: 4px 0 0;
+  font-size: 9px;
+  line-height: 1.8;
+}
+
+.stepHead {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin: 14px 0 9px;
+}
+
+.stepHead > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: #7829ca;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.stepHead strong,
+.stepHead small {
+  display: block;
+}
+
+.stepHead strong {
+  font-size: 10px;
+}
+
+.stepHead small {
+  margin-top: 2px;
+  color: #96899e;
+  font-size: 8px;
+}
+
+.sendButton,
+.deleteButton {
+  width: 100%;
+  min-height: 43px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sendButton {
+  color: #6620b0;
+  background: #f1e8fa;
+}
+
+.deleteButton {
+  margin-top: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #a92749, #c83e5d);
+}
+
+.sendButton:disabled,
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.field {
+  display: block;
+  margin-top: 12px;
+}
+
+.field > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.field > span small {
+  color: #9a8da2;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid #e6dcec;
+  border-radius: 12px;
+  color: #2b1c38;
+  background: #fff;
+  font: inherit;
+  outline: none;
+}
+
+.field input {
+  min-height: 43px;
+  padding: 0 12px;
+  text-align: center;
+  direction: ltr;
+  letter-spacing: 0.3em;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
+  padding: 11px 12px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: #9e60d8;
+  box-shadow: 0 0 0 3px rgba(126, 48, 213, 0.08);
+}
+
+.doneCard {
+  text-align: center;
+}
+
+.doneCard > span {
+  color: #087459;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.doneCard h2 {
+  margin: 8px 0 5px;
+  direction: ltr;
+  font-size: 16px;
+}
+
+.doneCard p {
+  margin: 0 0 13px;
+  color: #8d8095;
+  font-size: 9px;
+  line-height: 1.8;
+}
+
+.doneCard a {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #6020ad, #8b30d7);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+@media (max-width: 620px) {
+  .shell {
+    padding: 9px 9px 90px;
+  }
+
+  .topbar {
+    min-height: 48px;
+  }
+
+  .logo {
+    width: 100px;
+  }
+
+  .hero {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .hero h1 {
+    font-size: 18px;
+  }
+
+  .businessCard {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    padding: 11px;
+  }
+
+  .businessIcon {
+    width: 42px;
+    height: 42px;
+  }
+}

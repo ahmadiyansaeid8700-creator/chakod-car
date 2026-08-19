@@ -1,0 +1,88 @@
+name: Security audit inventory
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/security-audit-report.yml
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/launch-3-local-baseline
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+
+      - name: Install lockfile
+        run: npm ci
+
+      - name: Capture audit inventory
+        run: npm audit --json > /tmp/chakod-audit.json || true
+
+      - name: Build durable markdown report
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const audit = JSON.parse(fs.readFileSync('/tmp/chakod-audit.json', 'utf8'));
+          const vulnerabilities = audit.vulnerabilities || {};
+          const severityOrder = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };
+          const rows = Object.entries(vulnerabilities)
+            .map(([name, item]) => ({ name, ...item }))
+            .sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9) || a.name.localeCompare(b.name));
+          const summary = audit.metadata?.vulnerabilities || {};
+          const lines = [
+            '# گزارش فعلی npm audit — Launch 3',
+            '',
+            `- Critical: ${summary.critical ?? 0}`,
+            `- High: ${summary.high ?? 0}`,
+            `- Moderate: ${summary.moderate ?? 0}`,
+            `- Low: ${summary.low ?? 0}`,
+            `- Total: ${summary.total ?? rows.length}`,
+            '',
+            '| Package | Severity | Direct | Range | Fix available | Via |',
+            '| --- | --- | --- | --- | --- | --- |',
+          ];
+          for (const item of rows) {
+            const fix = item.fixAvailable === true
+              ? 'yes'
+              : item.fixAvailable === false
+                ? 'no'
+                : item.fixAvailable && typeof item.fixAvailable === 'object'
+                  ? `${item.fixAvailable.name || ''}@${item.fixAvailable.version || ''}${item.fixAvailable.isSemVerMajor ? ' (major)' : ''}`
+                  : 'unknown';
+            const via = Array.isArray(item.via)
+              ? item.via.map((entry) => typeof entry === 'string' ? entry : `${entry.source || ''}:${entry.title || ''}`).join('<br>')
+              : '';
+            lines.push(`| ${item.name} | ${item.severity || ''} | ${item.isDirect ? 'yes' : 'no'} | ${String(item.range || '').replaceAll('|', '\\|')} | ${fix} | ${via.replaceAll('|', '\\|')} |`);
+          }
+          lines.push('', 'این فایل فقط inventory است. هیچ `npm audit fix --force` اجرا نشده است.');
+          fs.mkdirSync('docs', { recursive: true });
+          fs.writeFileSync('docs/SECURITY-AUDIT-CURRENT.md', lines.join('\n') + '\n');
+          NODE
+
+      - name: Commit audit inventory
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/SECURITY-AUDIT-CURRENT.md
+          if git diff --cached --quiet; then
+            echo "Audit report unchanged."
+            exit 0
+          fi
+          git commit -m "docs: refresh Launch-3 security audit inventory"
+          git push origin HEAD:agent/launch-3-local-baseline

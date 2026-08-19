@@ -1,0 +1,291 @@
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: #fbfbfd;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+}
+
+.appViewport {
+  min-height: 100dvh;
+}
+
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    padding-bottom: 0 !important;
+  }
+
+  .appViewport {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .appViewport::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  body:has(.loginPage) .appViewport {
+    overflow-y: hidden;
+    overscroll-behavior: none;
+  }
+
+  .loginPage {
+    width: 100%;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      12px
+      max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+  }
+
+  .loginPage .loginShell {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .loginPage .topbar {
+    min-height: 50px;
+    margin-bottom: 0 !important;
+    padding: 0 2px 8px;
+  }
+
+  .loginPage .card {
+    align-self: center;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .loginPage .card::-webkit-scrollbar {
+    display: none;
+    width: 0;
+  }
+
+  .siteHeader {
+    min-height: 58px;
+    padding: 5px 12px;
+  }
+
+  .brand {
+    width: 102px;
+    height: 43px;
+  }
+
+  .primaryButton.compact {
+    min-height: 36px;
+    padding-inline: 10px;
+    border-radius: 10px;
+    font-size: 9.5px;
+  }
+
+  .chakodMasterHome .chakodLocationTrigger {
+    min-height: 48px;
+    padding: 7px 10px;
+    gap: 8px;
+    border-color: #ddd2ea;
+    background: #ffffff;
+  }
+
+  .chakodMasterHome .chakodLocationPin {
+    width: 31px;
+    height: 31px;
+    flex: 0 0 31px;
+  }
+
+  .chakodMasterHome .chakodLocationTriggerCopy {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: grid;
+    gap: 2px;
+    text-align: right;
+  }
+
+  .chakodMasterHome .chakodLocationTriggerCopy small {
+    color: #6e6478;
+    font-size: 9.5px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .chakodMasterHome .chakodLocationTriggerCopy strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #24182e;
+    font-size: 12.5px;
+    font-weight: 950;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chakodMasterHome .chakodLocationArrowWrap {
+    color: #5b2aa1;
+  }
+
+  .locationInner,
+  .storiesSection,
+  .cityBanner,
+  .hero,
+  .marketStats,
+  .serviceSection,
+  .marketSection,
+  .trustSection,
+  .finalCta,
+  .siteFooter {
+    width: calc(100% - 20px);
+  }
+
+  .locationInner {
+    min-height: 56px;
+  }
+
+  .storiesSection {
+    padding-block: 14px;
+  }
+
+  .storiesRail {
+    gap: 10px;
+  }
+
+  .storyItem {
+    flex-basis: 60px;
+  }
+
+  .storyRing {
+    width: 56px;
+    height: 56px;
+  }
+
+  .hero {
+    gap: 18px;
+    padding: 20px 0 42px;
+  }
+
+  .hero h1 {
+    margin-block: 10px 14px;
+    font-size: clamp(31px, 8.5vw, 43px);
+    line-height: 1.3;
+    letter-spacing: -1.25px;
+  }
+
+  .heroCopy > p {
+    margin-bottom: 22px;
+    font-size: 12px;
+    line-height: 1.85;
+  }
+
+  .searchBox {
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 16px;
+  }
+
+  .searchBox input,
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  .searchBox button {
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .serviceSection,
+  .marketSection,
+  .trustSection {
+    padding-top: 54px;
+  }
+
+  .serviceItem {
+    min-height: 86px;
+    border-radius: 16px;
+  }
+
+  .serviceIcon {
+    width: 37px;
+    height: 37px;
+    border-radius: 12px;
+  }
+
+  .listingGrid {
+    gap: 12px;
+  }
+
+  .listingCard {
+    min-height: 196px;
+    border-radius: 17px;
+  }
+
+  .listingMedia {
+    min-height: 196px;
+  }
+
+  .listingBody {
+    padding: 14px 12px;
+  }
+
+  .listingHeading h3 {
+    font-size: 14px;
+  }
+
+  .finalCta {
+    margin-top: 54px;
+    padding: 26px 18px;
+    border-radius: 20px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 760px) {
+  html,
+  body {
+    height: 100%;
+    min-height: 100%;
+    background: #fbfbfd;
+  }
+
+  .appViewport {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .loginPage {
+    height: 100% !important;
+    max-height: 100%;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+}

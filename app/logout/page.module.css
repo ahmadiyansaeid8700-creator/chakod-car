@@ -1,0 +1,71 @@
+.page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background:
+    radial-gradient(circle at top right, rgba(124,58,237,.16), transparent 35%),
+    linear-gradient(180deg, #fbf9ff, #f6f3fa);
+  padding: 20px;
+  color: #21172f;
+}
+
+.card {
+  display: grid;
+  width: min(460px, 100%);
+  place-items: center;
+  border: 1px solid rgba(78,54,103,.12);
+  border-radius: 28px;
+  background: #fff;
+  padding: 34px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(57,37,78,.12);
+}
+
+.brand img {
+  display: block;
+  width: 138px;
+  height: auto;
+}
+
+.icon {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  margin-top: 28px;
+  border-radius: 22px;
+  background: #f1eafd;
+  color: #6d28d9;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.done {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.card h1 {
+  margin: 20px 0 8px;
+}
+
+.card p {
+  margin: 0;
+  color: #786a82;
+  line-height: 1.9;
+}
+
+.homeLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+  border-radius: 13px;
+  background: #6d28d9;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}

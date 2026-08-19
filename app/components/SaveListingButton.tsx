@@ -150,6 +150,11 @@ export default function SaveListingButton({
       setIsSaved(nextSaved);
       setChecked(true);
       onChange?.(nextSaved);
+      window.dispatchEvent(
+        new CustomEvent("chakod:saved-changed", {
+          detail: { listingId: id, isSaved: nextSaved },
+        }),
+      );
     } catch {
       window.alert("ارتباط با سرور برای نشان‌کردن برقرار نشد.");
     } finally {

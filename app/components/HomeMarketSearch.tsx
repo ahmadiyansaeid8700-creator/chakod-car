@@ -60,7 +60,7 @@ export default function HomeMarketSearch({
   return (
     <form
       className="masterSearch masterHeaderSearch"
-      action="/ads/all"
+      action="/cars"
       method="get"
       role="search"
     >
@@ -69,7 +69,21 @@ export default function HomeMarketSearch({
       </label>
 
       <span className="masterSearchLeadingIcon" aria-hidden="true">
-        ⌕
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+          <circle
+            cx="10.5"
+            cy="10.5"
+            r="6.4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          />
+          <path
+            d="m15.4 15.4 4.3 4.3"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
       </span>
 
       <input
@@ -87,7 +101,21 @@ export default function HomeMarketSearch({
       <button type="submit" aria-label="جست‌وجو در بازار خودرو">
         <span className="masterSearchButtonText">جست‌وجو</span>
         <span className="masterSearchButtonIcon" aria-hidden="true">
-          ⌕
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+            <circle
+              cx="10.5"
+              cy="10.5"
+              r="6.4"
+              stroke="currentColor"
+              strokeWidth="1.9"
+            />
+            <path
+              d="m15.4 15.4 4.3 4.3"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+            />
+          </svg>
         </span>
       </button>
     </form>

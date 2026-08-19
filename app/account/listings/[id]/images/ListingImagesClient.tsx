@@ -337,7 +337,7 @@ export default function ListingImagesClient({ listingId }: { listingId: string }
       patchPending(pending.localId, { status: "uploading", progress: 0, error: undefined });
 
       try {
-        await uploadImage(listingId, file, (fileProgress) => {
+        const payload = await uploadImage(listingId, file, (fileProgress) => {
           patchPending(pending.localId, { status: "uploading", progress: fileProgress });
           const overall = Math.round(((index + fileProgress / 100) / files.length) * 100);
           setUploadProgress(overall);

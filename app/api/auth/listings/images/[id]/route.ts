@@ -10,8 +10,38 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const API_ORIGIN = "https://api.chakod.com";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function normalizeMediaUrls(value: unknown): unknown {
+  if (typeof value === "string") {
+    const url = value.trim();
+    if (!url) return value;
+
+    if (/^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i.test(url)) {
+      return url.replace(
+        /^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i,
+        `${API_ORIGIN}/uploads/`,
+      );
+    }
+
+    if (url.startsWith("/uploads/")) return `${API_ORIGIN}${url}`;
+    if (url.startsWith("uploads/")) return `${API_ORIGIN}/${url}`;
+    return value;
+  }
+
+  if (Array.isArray(value)) return value.map((item) => normalizeMediaUrls(item));
+
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizeMediaUrls(item)]),
+    );
+  }
+
+  return value;
 }
 
 export async function GET(
@@ -86,14 +116,17 @@ export async function GET(
         ? responseImages
         : listingImages;
 
+    const normalizedListing = normalizeMediaUrls({
+      ...managedListing,
+      ...detailListing,
+      id: Number(id),
+    });
+    const normalizedImages = normalizeMediaUrls(images);
+
     return jsonResponse({
       success: true,
-      listing: {
-        ...managedListing,
-        ...detailListing,
-        id: Number(id),
-      },
-      images,
+      listing: normalizedListing,
+      images: normalizedImages,
       detail_available: detailResponse.ok && detailPayload?.success === true,
     });
   } catch {

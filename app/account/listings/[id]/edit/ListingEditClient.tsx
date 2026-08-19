@@ -160,9 +160,7 @@ function normalizeImageUrl(value?: string | null) {
   if (!url) return "";
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
   const path = url.startsWith("/") ? url : `/${url}`;
-  return path.startsWith("/uploads/")
-    ? `https://chakod.com${path}`
-    : `https://api.chakod.com${path}`;
+  return `https://api.chakod.com${path}`;
 }
 
 function imagePreview(payload: ImagesPreviewResponse | null) {

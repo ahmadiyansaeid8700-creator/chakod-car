@@ -8,6 +8,24 @@ type Props = {
   alt: string;
 };
 
+const API_ORIGIN = "https://api.chakod.com";
+
+function normalizeImageSrc(value: string) {
+  const src = String(value || "").trim();
+  if (!src) return "";
+
+  if (/^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i.test(src)) {
+    return src.replace(
+      /^https?:\/\/(?:www\.)?chakod\.com\/uploads\//i,
+      `${API_ORIGIN}/uploads/`,
+    );
+  }
+
+  if (src.startsWith("/uploads/")) return `${API_ORIGIN}${src}`;
+  if (src.startsWith("uploads/")) return `${API_ORIGIN}/${src}`;
+  return src;
+}
+
 function Placeholder() {
   return (
     <div className={styles.placeholder} aria-label="تصویر برای این آگهی ثبت نشده است">
@@ -32,12 +50,13 @@ function Placeholder() {
 
 export default function ListingCardImage({ src, alt }: Props) {
   const [failed, setFailed] = useState(false);
+  const normalizedSrc = normalizeImageSrc(src);
 
-  if (!src || failed) return <Placeholder />;
+  if (!normalizedSrc || failed) return <Placeholder />;
 
   return (
     <img
-      src={src}
+      src={normalizedSrc}
       alt={alt}
       loading="lazy"
       decoding="async"

@@ -54,6 +54,12 @@ type SectionConfig = {
   description: string;
   allHref: string;
   fallbackLabels: string[];
+  fallbackItems?: Array<{
+    label: string;
+    description: string;
+    href: string;
+    icon: "wash" | "detail" | "shield";
+  }>;
 };
 
 const SECTIONS: SectionConfig[] = [
@@ -62,8 +68,28 @@ const SECTIONS: SectionConfig[] = [
     kicker: "خدمات خودرویی",
     title: "خدمات خودرویی برتر",
     description: "کارواش، دیتیلینگ، سرامیک، شیشه دودی و خدمات تخصصی خودرو.",
-    allHref: "/businesses?type=car_service",
+    allHref: "/car-services",
     fallbackLabels: ["کارواش و دیتیلینگ", "سرامیک و محافظ رنگ", "خدمات تخصصی خودرو"],
+    fallbackItems: [
+      {
+        label: "کارواش حرفه‌ای",
+        description: "شست‌وشوی بدنه و نظافت داخلی خودرو",
+        href: "/car-services?category=car_wash",
+        icon: "wash",
+      },
+      {
+        label: "دیتیلینگ خودرو",
+        description: "احیای رنگ، پولیش و صفرشویی تخصصی",
+        href: "/car-services?category=detailing",
+        icon: "detail",
+      },
+      {
+        label: "سرامیک و محافظ رنگ",
+        description: "پوشش سرامیک و محافظت حرفه‌ای بدنه",
+        href: "/car-services?category=ceramic_coating",
+        icon: "shield",
+      },
+    ],
   },
   {
     type: "parts_store",
@@ -160,6 +186,35 @@ function selectedBusinessOrder(selected: SelectedPlacement[], type: BusinessType
   return order;
 }
 
+function ServiceIcon({ type }: { type: "wash" | "detail" | "shield" }) {
+  if (type === "shield") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 8 50 15v14c0 13-7 22-18 28C21 51 14 42 14 29V15Z" />
+        <path d="m24 32 6 6 11-13" />
+      </svg>
+    );
+  }
+
+  if (type === "detail") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M14 39h36l-4-13a7 7 0 0 0-7-5H25a7 7 0 0 0-7 5Z" />
+        <path d="M18 39v8m28-8v8M23 45h18M49 13v8m-4-4h8" />
+        <circle cx="23" cy="39" r="2" /><circle cx="41" cy="39" r="2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 40h36l-4-12a7 7 0 0 0-7-5H25a7 7 0 0 0-7 5Z" />
+      <path d="M18 40v7m28-7v7M23 46h18" />
+      <path d="M20 12c0 4-4 6-4 10m16-10c0 4-4 6-4 10m16-10c0 4-4 6-4 10" />
+    </svg>
+  );
+}
+
 function FeaturedBusinessSection({
   config,
   items,
@@ -191,6 +246,12 @@ function FeaturedBusinessSection({
     })
     .slice(0, 8);
   const hasItems = status === "ready" && sectionItems.length > 0;
+  const fallbackItems = config.fallbackItems ?? config.fallbackLabels.map((label) => ({
+    label,
+    description: `مشاهده فهرست کامل ${locationLabel}`,
+    href: config.allHref,
+    icon: "detail" as const,
+  }));
 
   return (
     <section
@@ -267,32 +328,27 @@ function FeaturedBusinessSection({
                 </span>
               </Link>
             ))
-          : config.fallbackLabels.map((label, index) => (
+          : fallbackItems.map((item) => (
               <Link
                 className="featuredBusinessCard featuredBusinessFallback"
-                href={config.allHref}
-                key={label}
+                href={item.href}
+                key={item.href}
               >
                 <span className="featuredBusinessMedia">
-                  <span
-                    className="featuredBusinessCoverFallback"
-                    aria-hidden="true"
-                  >
-                    چ
+                  <span className="featuredBusinessServiceIcon">
+                    <ServiceIcon type={item.icon} />
                   </span>
-                  <span className="featuredBusinessIdentity">
-                    <b>{index + 1}</b>
-                  </span>
+                  <em>خدمات تخصصی</em>
                 </span>
                 <span className="featuredBusinessCopy">
-                  <strong>{label}</strong>
+                  <strong>{item.label}</strong>
                   <small>
                     {status === "loading"
                       ? `در حال دریافت گزینه‌های ${locationLabel}`
-                      : `مشاهده فهرست کامل ${locationLabel}`}
+                      : item.description}
                   </small>
                   <b>
-                    ورود به بخش <span aria-hidden="true">←</span>
+                    مشاهده مراکز <span aria-hidden="true">←</span>
                   </b>
                 </span>
               </Link>
@@ -521,6 +577,55 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessTags i { min-height: 23px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; color: #604878; background: #f3edfa; font-size: 7px; font-style: normal; font-weight: 850; }
         .featuredBusinessCopy > b { margin-top: auto; padding-top: 13px; color: #5b21b6; font-size: 8px; font-weight: 950; }
 
+        .featuredBusinessFallback {
+          min-height: 238px;
+          grid-template-rows: 108px minmax(0, 1fr);
+          border-color: #dfd0ef;
+          background: linear-gradient(180deg, #fff 0%, #fdfbff 100%);
+        }
+        .featuredBusinessFallback .featuredBusinessMedia {
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 74% 18%, rgba(196, 181, 253, .52), transparent 38%),
+            linear-gradient(135deg, #f8f4ff, #eee7fb);
+        }
+        .featuredBusinessServiceIcon {
+          width: 58px;
+          height: 58px;
+          border: 1px solid rgba(109, 40, 217, .16);
+          border-radius: 18px;
+          display: grid;
+          place-items: center;
+          color: #6d28d9;
+          background: rgba(255, 255, 255, .82);
+          box-shadow: 0 12px 28px rgba(76, 29, 149, .12);
+        }
+        .featuredBusinessServiceIcon svg {
+          width: 38px;
+          height: 38px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 3;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .featuredBusinessFallback .featuredBusinessCopy { padding: 14px 16px 15px; }
+        .featuredBusinessFallback .featuredBusinessCopy > small {
+          margin-top: 7px;
+          line-height: 1.8;
+          text-overflow: unset;
+          white-space: normal;
+        }
+        .featuredBusinessFallback .featuredBusinessCopy > b {
+          margin-top: 13px;
+          padding: 9px 11px;
+          border-radius: 10px;
+          display: flex;
+          justify-content: space-between;
+          background: #f2ebfb;
+        }
+
         @media (max-width: 900px) {
           .featuredBusinessRail { grid-auto-columns: min(330px, 78vw); }
         }
@@ -531,6 +636,9 @@ export default function HomeFeaturedBusinesses() {
           .featuredBusinessHeader { align-items: flex-start; flex-direction: column; gap: 10px; }
           .featuredBusinessRail { grid-auto-columns: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
+          .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
+          .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
+          .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }
         }
       `}</style>
     </div>

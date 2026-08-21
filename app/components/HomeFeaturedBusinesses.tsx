@@ -55,6 +55,7 @@ type SectionConfig = {
   allHref: string;
   fallbackLabels: string[];
   selectedOnly?: boolean;
+  emptyLabel?: string;
   fallbackItems?: Array<{
     label: string;
     description: string;
@@ -72,14 +73,17 @@ const SECTIONS: SectionConfig[] = [
     allHref: "/car-services",
     fallbackLabels: [],
     selectedOnly: true,
+    emptyLabel: "مراکز",
   },
   {
     type: "parts_store",
     kicker: "قطعات و لوازم",
     title: "فروشگاه‌های لوازم یدکی برتر",
     description: "قطعات یدکی، لاستیک، باتری و لوازم جانبی از فروشندگان منتخب.",
-    allHref: "/businesses?type=parts_store",
-    fallbackLabels: ["قطعات یدکی", "لاستیک و باتری", "لوازم جانبی خودرو"],
+    allHref: "/parts-stores",
+    fallbackLabels: [],
+    selectedOnly: true,
+    emptyLabel: "فروشگاه‌ها",
   },
   {
     type: "repair_shop",
@@ -261,7 +265,7 @@ function FeaturedBusinessSection({
       {config.selectedOnly && !hasItems ? (
         <div className="featuredBusinessEmpty">
           <strong>هنوز جایگاه منتخب فعالی ثبت نشده است</strong>
-          <span>مراکز دارای جایگاه ویژه در این بخش نمایش داده می‌شوند.</span>
+          <span>{config.emptyLabel || "کسب‌وکارهای"} دارای جایگاه ویژه در این بخش نمایش داده می‌شوند.</span>
         </div>
       ) : (
       <div className="featuredBusinessRail">

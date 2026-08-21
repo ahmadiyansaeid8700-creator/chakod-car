@@ -40,6 +40,23 @@ type ApiResponse = {
   data?: ApiListing[];
 };
 
+type PublicBusiness = {
+  id: number;
+  slug: string;
+  name: string;
+  province: string;
+  city: string;
+  neighborhood?: string;
+  logo_url: string;
+  cover_url: string;
+  is_verified: boolean;
+};
+
+type BusinessesResponse = {
+  success?: boolean;
+  items?: PublicBusiness[];
+};
+
 type FeaturedPlacement = {
   id: number;
   dealer_id: number;
@@ -141,6 +158,43 @@ function buildFeaturedUrls(location: HomeLocationSelection) {
   );
 }
 
+function buildBusinessQueries(location: HomeLocationSelection) {
+  const scopes = getHomeLocationScopes(location);
+
+  if (location.mode === "all" || scopes.length === 0) {
+    return [new URLSearchParams({ limit: "100", type: "dealer" })];
+  }
+
+  return scopes.map(
+    (scope) =>
+      new URLSearchParams({
+        limit: "100",
+        type: "dealer",
+        province: scope.province,
+      }),
+  );
+}
+
+async function fetchBusinesses(location: HomeLocationSelection, signal: AbortSignal) {
+  const responses = await Promise.all(
+    buildBusinessQueries(location).map(async (params) => {
+      const response = await fetch(`/api/businesses?${params.toString()}`, {
+        cache: "no-store",
+        signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json()) as BusinessesResponse;
+      if (!payload.success) throw new Error("Business request failed");
+      return Array.isArray(payload.items) ? payload.items : [];
+    }),
+  );
+
+  const merged = new Map<number, PublicBusiness>();
+  responses.flat().forEach((business) => merged.set(Number(business.id), business));
+  return Array.from(merged.values());
+}
+
 async function fetchListings(urls: string[], signal: AbortSignal) {
   return Promise.all(
     urls.map(async (url) => {
@@ -215,6 +269,26 @@ function dealerIdFromKey(key: string) {
   return match ? Number(match[1]) : 0;
 }
 
+function businessDealer(
+  business: PublicBusiness,
+  listingDealer?: DealerPreview,
+): DealerPreview {
+  return {
+    key: `business:${business.id}`,
+    slug: business.slug || listingDealer?.slug || null,
+    name: business.name,
+    city: business.city || listingDealer?.city || "شهر نامشخص",
+    province: business.province || listingDealer?.province || "",
+    listingCount: listingDealer?.listingCount || 0,
+    logoUrl: business.logo_url || listingDealer?.logoUrl || null,
+    coverImage: business.cover_url || listingDealer?.coverImage || null,
+    verified: Boolean(business.is_verified || listingDealer?.verified),
+    featured: false,
+    latestAt: listingDealer?.latestAt || 0,
+    latestListings: listingDealer?.latestListings || [],
+  };
+}
+
 function matchesQuery(dealer: DealerPreview, query: string) {
   if (!query.trim()) return true;
   const listingTitles = (dealer.latestListings || []).map((listing) => listing.title).join(" ");
@@ -250,6 +324,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
   const [location, setLocation] = useState<HomeLocationSelection>(DEFAULT_HOME_LOCATION);
   const [locationReady, setLocationReady] = useState(false);
   const [listings, setListings] = useState<ApiListing[]>([]);
+  const [businesses, setBusinesses] = useState<PublicBusiness[]>([]);
   const [placements, setPlacements] = useState<FeaturedPlacement[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
@@ -272,20 +347,27 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     const controller = new AbortController();
     setStatus("loading");
     setListings([]);
+    setBusinesses([]);
     setPlacements([]);
 
     async function load() {
       try {
+        const businessesPromise = fetchBusinesses(location, controller.signal);
         const placementResponses = await Promise.all(
           buildFeaturedUrls(location).map(async (url) => {
-            const response = await fetch(url, {
-              cache: "no-store",
-              signal: controller.signal,
-              headers: { Accept: "application/json" },
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const payload = (await response.json()) as FeaturedResponse;
-            return payload.success && Array.isArray(payload.data) ? payload.data : [];
+            try {
+              const response = await fetch(url, {
+                cache: "no-store",
+                signal: controller.signal,
+                headers: { Accept: "application/json" },
+              });
+              if (!response.ok) return [];
+              const payload = (await response.json()) as FeaturedResponse;
+              return payload.success && Array.isArray(payload.data) ? payload.data : [];
+            } catch (error: unknown) {
+              if ((error as Error).name === "AbortError") throw error;
+              return [];
+            }
           }),
         );
 
@@ -299,16 +381,24 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         const urls = Array.from(
           new Set([...buildListingUrls(location), ...buildDealerListingUrls(nextPlacements)]),
         );
-        const listingResponses = await fetchListings(urls, controller.signal);
+        const [nextBusinesses, listingResponses] = await Promise.all([
+          businessesPromise,
+          fetchListings(urls, controller.signal).catch((error: unknown) => {
+            if ((error as Error).name === "AbortError") throw error;
+            return [];
+          }),
+        ]);
         const mergedListings = new Map<number | string, ApiListing>();
         listingResponses.flat().forEach((item) => mergedListings.set(item.id, item));
 
         setListings(Array.from(mergedListings.values()));
+        setBusinesses(nextBusinesses);
         setPlacements(nextPlacements);
         setStatus("ready");
       } catch (error: unknown) {
         if ((error as Error).name !== "AbortError") {
           setListings([]);
+          setBusinesses([]);
           setPlacements([]);
           setStatus("error");
         }
@@ -321,40 +411,59 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
 
   const dealers = useMemo(() => {
     const listingDealers = buildDealers(listings);
+    const listingsById = new Map<number, DealerPreview>();
+    const listingsByName = new Map<string, DealerPreview>();
+    listingDealers.forEach((dealer) => {
+      const dealerId = dealerIdFromKey(dealer.key);
+      if (dealerId > 0) listingsById.set(dealerId, dealer);
+      listingsByName.set(normalizeText(dealer.name), dealer);
+    });
+
+    const businessesById = new Map<number, PublicBusiness>();
+    const businessesByName = new Map<string, PublicBusiness>();
+    businesses.forEach((business) => {
+      businessesById.set(Number(business.id), business);
+      businessesByName.set(normalizeText(business.name), business);
+    });
+
     const placementOrder = new Map<number, number>();
-    const placementMap = new Map<number, FeaturedPlacement>();
     placements.forEach((item, index) => {
       const dealerId = Number(item.dealer_id);
       placementOrder.set(dealerId, index);
-      placementMap.set(dealerId, item);
     });
 
     const dealerMap = new Map<number, DealerPreview>();
-    listingDealers.forEach((dealer) => {
-      const dealerId = dealerIdFromKey(dealer.key);
-      if (!dealerId || !placementMap.has(dealerId)) return;
-      dealerMap.set(dealerId, applyPlacement(dealer, placementMap.get(dealerId)!));
-    });
+    const usedBusinessIds = new Set<number>();
+    const usedListingKeys = new Set<string>();
 
     placements.forEach((placement) => {
       const dealerId = Number(placement.dealer_id);
       if (!dealerId || dealerMap.has(dealerId)) return;
-      dealerMap.set(dealerId, {
-        key: `id:${dealerId}`,
-        slug: null,
-        name: placement.dealer_name?.trim() || `نمایشگاه ${dealerId}`,
-        city: "",
-        province: placement.province || "",
-        listingCount: 0,
-        logoUrl: null,
-        coverImage: placement.desktop_banner_url || placement.mobile_banner_url || null,
-        coverImageDesktop: placement.desktop_banner_url || null,
-        coverImageMobile: placement.mobile_banner_url || placement.desktop_banner_url || null,
-        verified: false,
-        featured: true,
-        latestAt: 0,
-        latestListings: [],
-      });
+
+      const placementName = normalizeText(placement.dealer_name);
+      const matchedBusiness = businessesById.get(dealerId) || businessesByName.get(placementName);
+      const matchedListing = listingsById.get(dealerId) || listingsByName.get(placementName);
+      if (matchedBusiness) usedBusinessIds.add(Number(matchedBusiness.id));
+      if (matchedListing) usedListingKeys.add(matchedListing.key);
+
+      const base = matchedBusiness
+        ? businessDealer(matchedBusiness, matchedListing)
+        : matchedListing || {
+            key: `id:${dealerId}`,
+            slug: null,
+            name: placement.dealer_name?.trim() || `نمایشگاه ${dealerId}`,
+            city: "",
+            province: placement.province || "",
+            listingCount: 0,
+            logoUrl: null,
+            coverImage: null,
+            verified: false,
+            featured: false,
+            latestAt: 0,
+            latestListings: [],
+          };
+
+      dealerMap.set(dealerId, applyPlacement({ ...base, key: `id:${dealerId}` }, placement));
     });
 
     const placedDealers = Array.from(dealerMap.values()).sort(
@@ -362,12 +471,21 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
         (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
     );
-    const placedIds = new Set(placedDealers.map((dealer) => dealerIdFromKey(dealer.key)));
-    const organicDealers = listingDealers
-      .filter((dealer) => {
-        const dealerId = dealerIdFromKey(dealer.key);
-        return !dealerId || !placedIds.has(dealerId);
-      })
+    const businessNames = new Set(businesses.map((business) => normalizeText(business.name)));
+    const organicDealers = [
+      ...businesses
+        .filter((business) => !usedBusinessIds.has(Number(business.id)))
+        .map((business) =>
+          businessDealer(
+            business,
+            listingsById.get(Number(business.id)) || listingsByName.get(normalizeText(business.name)),
+          ),
+        ),
+      ...listingDealers.filter(
+        (dealer) =>
+          !usedListingKeys.has(dealer.key) && !businessNames.has(normalizeText(dealer.name)),
+      ),
+    ]
       .sort(
         (a, b) =>
           Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||
@@ -379,7 +497,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     return [...placedDealers, ...organicDealers]
       .filter((dealer) => matchesQuery(dealer, query))
       .slice(0, 8);
-  }, [listings, placements, query]);
+  }, [businesses, listings, placements, query]);
 
   return (
     <section className={styles.dealerSection} id="showrooms">

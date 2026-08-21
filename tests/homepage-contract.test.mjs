@@ -147,5 +147,7 @@ test("uses the canonical catalog segments for homepage luxury and free-zone rail
   assert.match(vehicles, /\/api\/catalog\?/);
   assert.match(vehicles, /buildCatalogApiUrls\("luxury", location\)/);
   assert.match(vehicles, /buildCatalogApiUrls\("freezone", location\)/);
+  assert.match(vehicles, /buildListingsApiUrls\(location\)[\s\S]*?\.catch\(\(\) => \[\]\)/);
+  assert.match(vehicles, /buildCatalogApiUrls\("luxury", location\)[\s\S]*?\.catch\(\(\) => \[\]\)/);
   assert.doesNotMatch(catalogItem, /showActions/);
 });

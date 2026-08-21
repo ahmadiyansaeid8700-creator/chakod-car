@@ -670,6 +670,7 @@
 }
 
 .homeRailTrack {
+  direction: rtl;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: clamp(292px, 28vw, 342px);

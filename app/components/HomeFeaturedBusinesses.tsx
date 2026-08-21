@@ -532,6 +532,7 @@ export default function HomeFeaturedBusinesses() {
         }
 
         .featuredBusinessRail {
+          direction: rtl;
           min-width: 0;
           display: grid;
           grid-auto-flow: column;

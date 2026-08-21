@@ -141,17 +141,13 @@ function listingMatchesLocation(
 
 function buildListingsApiUrls(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
+  const nationwideUrl = `${API_BASE_URL}?${new URLSearchParams({ limit: "100", sort: "vip" }).toString()}`;
 
   if (location.mode === "all" || scopes.length === 0) {
-    return [
-      `${API_BASE_URL}?${new URLSearchParams({
-        limit: "100",
-        sort: "vip",
-      }).toString()}`,
-    ];
+    return [nationwideUrl];
   }
 
-  return Array.from(new Set(scopes.map((scope) => scope.province))).map(
+  return [nationwideUrl, ...Array.from(new Set(scopes.map((scope) => scope.province))).map(
     (province) => {
       const params = new URLSearchParams({
         limit: "100",
@@ -160,7 +156,7 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
       });
       return `${API_BASE_URL}?${params.toString()}`;
     },
-  );
+  )];
 }
 
 function buildCatalogApiUrls(
@@ -170,7 +166,7 @@ function buildCatalogApiUrls(
   const provinces = location.mode === "all"
     ? []
     : Array.from(new Set(getHomeLocationScopes(location).map((scope) => scope.province)));
-  const scopes = provinces.length ? provinces : [""];
+  const scopes = provinces.length ? ["", ...provinces] : [""];
 
   return scopes.map((province) => {
     const params = new URLSearchParams({ segment, limit: "9", sort: "vip" });
@@ -193,15 +189,31 @@ async function fetchListingPayloads(urls: string[], signal: AbortSignal) {
   );
 }
 
-function mergeListings(payloads: ApiResponse[], location: HomeLocationSelection) {
+function mergeListings(payloads: ApiResponse[]) {
   const merged = new Map<number | string, Listing>();
   payloads.forEach((payload) => {
     if (!payload.success || !Array.isArray(payload.data)) return;
     payload.data.forEach((listing) => {
-      if (listingMatchesLocation(listing, location)) merged.set(listing.id, listing);
+      merged.set(listing.id, listing);
     });
   });
   return Array.from(merged.values());
+}
+
+function resolveListingsForLocation(listings: Listing[], location: HomeLocationSelection) {
+  if (location.mode === "all") return { items: listings, label: "سراسر ایران" };
+  const exactItems = listings.filter((item) => listingMatchesLocation(item, location));
+  if (exactItems.length > 0) return { items: exactItems, label: location.label };
+  const scopes = getHomeLocationScopes(location);
+  const provinces = new Set(scopes.map((scope) => normalizeText(scope.province)));
+  const provinceItems = listings.filter((item) => provinces.has(normalizeText(item.province)));
+  if (provinceItems.length > 0) {
+    return {
+      items: provinceItems,
+      label: scopes.length === 1 ? `پیشنهادهای استان ${scopes[0].province}` : "پیشنهادهای همان استان‌ها",
+    };
+  }
+  return { items: listings, label: "پیشنهادهای سراسر ایران" };
 }
 
 function ShowcaseSection({
@@ -341,9 +353,9 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           }
         }
 
-        setListings(mergeListings(payloads, location));
-        setLuxuryListings(mergeListings(luxuryPayloads, location));
-        setFreezoneListings(mergeListings(freezonePayloads, location));
+        setListings(mergeListings(payloads));
+        setLuxuryListings(mergeListings(luxuryPayloads));
+        setFreezoneListings(mergeListings(freezonePayloads));
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
@@ -364,15 +376,19 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const sorted = [...listings].sort(byNewest);
     const luxuryOrder = selectedOrder(selected, "luxury");
     const freezoneOrder = selectedOrder(selected, "freezone");
+    const luxuryResolved = resolveListingsForLocation(luxuryListings, location);
+    const freezoneResolved = resolveListingsForLocation(freezoneListings, location);
 
     return {
-      luxury: [...luxuryListings].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
-      freezone: [...freezoneListings].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      luxury: [...luxuryResolved.items].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      luxuryLabel: luxuryResolved.label,
+      freezone: [...freezoneResolved.items].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      freezoneLabel: freezoneResolved.label,
       searchResults: query
         ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
         : [],
     };
-  }, [freezoneListings, listings, luxuryListings, query, selected]);
+  }, [freezoneListings, listings, location, luxuryListings, query, selected]);
 
   return (
     <>
@@ -426,7 +442,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             tone="luxury"
             allHref="/cars/luxury"
             status={status}
-            locationLabel={location.label || "سراسر ایران"}
+            locationLabel={data.luxuryLabel}
           />
 
           <ShowcaseSection
@@ -439,7 +455,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             tone="freezone"
             allHref="/cars/free-zone"
             status={status}
-            locationLabel={location.label || "سراسر ایران"}
+            locationLabel={data.freezoneLabel}
           />
         </>
       )}

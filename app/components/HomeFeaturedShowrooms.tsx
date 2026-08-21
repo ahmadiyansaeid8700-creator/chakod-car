@@ -110,24 +110,20 @@ function listingPreview(listing: ApiListing): ShowroomListingPreview {
 
 function buildListingUrls(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
+  const nationwideUrl = `${API_BASE_URL}?${new URLSearchParams({ limit: "100", sort: "vip" }).toString()}`;
 
   if (location.mode === "all" || scopes.length === 0) {
-    return [
-      `${API_BASE_URL}?${new URLSearchParams({
-        limit: "100",
-        sort: "vip",
-      }).toString()}`,
-    ];
+    return [nationwideUrl];
   }
 
-  return scopes.map((scope) => {
+  return [nationwideUrl, ...scopes.map((scope) => {
     const params = new URLSearchParams({
       limit: "100",
       sort: "vip",
       province: scope.province,
     });
     return `${API_BASE_URL}?${params.toString()}`;
-  });
+  })];
 }
 
 function buildDealerListingUrls(placements: FeaturedPlacement[]) {
@@ -153,26 +149,53 @@ function buildFeaturedUrls(location: HomeLocationSelection) {
     return ["/api/featured-showrooms"];
   }
 
-  return Array.from(new Set(scopes.map((scope) => scope.province))).map(
+  return ["/api/featured-showrooms", ...Array.from(new Set(scopes.map((scope) => scope.province))).map(
     (province) => `/api/featured-showrooms?province=${encodeURIComponent(province)}`,
-  );
+  )];
 }
 
 function buildBusinessQueries(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
+  const nationwideQuery = new URLSearchParams({ limit: "100", type: "dealer" });
 
   if (location.mode === "all" || scopes.length === 0) {
-    return [new URLSearchParams({ limit: "100", type: "dealer" })];
+    return [nationwideQuery];
   }
 
-  return scopes.map(
+  return [nationwideQuery, ...scopes.map(
     (scope) =>
       new URLSearchParams({
         limit: "100",
         type: "dealer",
         province: scope.province,
       }),
-  );
+  )];
+}
+
+function dealerMatchesLocation(dealer: DealerPreview, location: HomeLocationSelection) {
+  if (location.mode === "all") return true;
+  return getHomeLocationScopes(location).some((scope) => {
+    if (normalizeText(scope.province) !== normalizeText(dealer.province)) return false;
+    if (scope.allCities) return true;
+    return scope.cities.some((city) => normalizeText(city) === normalizeText(dealer.city)) ||
+      (scope.areas || []).some((area) => normalizeText(area.city) === normalizeText(dealer.city));
+  });
+}
+
+function resolveDealersForLocation(dealers: DealerPreview[], location: HomeLocationSelection) {
+  if (location.mode === "all") return { items: dealers, label: "سراسر ایران" };
+  const exactItems = dealers.filter((dealer) => dealerMatchesLocation(dealer, location));
+  if (exactItems.length > 0) return { items: exactItems, label: location.label };
+  const scopes = getHomeLocationScopes(location);
+  const provinces = new Set(scopes.map((scope) => normalizeText(scope.province)));
+  const provinceItems = dealers.filter((dealer) => provinces.has(normalizeText(dealer.province)));
+  if (provinceItems.length > 0) {
+    return {
+      items: provinceItems,
+      label: scopes.length === 1 ? `پیشنهادهای استان ${scopes[0].province}` : "پیشنهادهای همان استان‌ها",
+    };
+  }
+  return { items: dealers, label: "پیشنهادهای سراسر ایران" };
 }
 
 async function fetchBusinesses(location: HomeLocationSelection, signal: AbortSignal) {
@@ -495,9 +518,13 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
       );
 
     return [...placedDealers, ...organicDealers]
-      .filter((dealer) => matchesQuery(dealer, query))
-      .slice(0, 8);
+      .filter((dealer) => matchesQuery(dealer, query));
   }, [businesses, listings, placements, query]);
+
+  const resolvedDealers = useMemo(
+    () => resolveDealersForLocation(dealers, location),
+    [dealers, location],
+  );
 
   return (
     <section className={styles.dealerSection} id="showrooms">
@@ -505,7 +532,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         <div>
           <span className={styles.eyebrow}>ویترین نمایشگاه‌ها</span>
           <h2>نمایشگاه‌های منتخب چاکود</h2>
-          <p className={styles.locationLabel}>{location.label}</p>
+          <p className={styles.locationLabel}>{resolvedDealers.label}</p>
         </div>
 
         <div className={styles.sectionActions}>
@@ -529,9 +556,9 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
             </span>
           ))}
         </div>
-      ) : dealers.length > 0 ? (
+      ) : resolvedDealers.items.length > 0 ? (
         <div className={styles.dealerRail}>
-          {dealers.map((dealer) => (
+          {resolvedDealers.items.slice(0, 8).map((dealer) => (
             <ShowroomCard density="compact" key={dealer.key} showroom={dealer} />
           ))}
         </div>

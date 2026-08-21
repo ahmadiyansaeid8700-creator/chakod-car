@@ -152,13 +152,14 @@ test("uses the canonical catalog segments for homepage luxury and free-zone rail
   assert.doesNotMatch(catalogItem, /showActions/);
 });
 
-test("shows only paid selected car services on home and keeps the directory separate", () => {
+test("shows all active businesses on home while premium placements rank first", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const servicesPage = read("app/car-services/page.tsx");
 
   assert.match(businesses, /allHref: "\/car-services"/);
-  assert.match(businesses, /selectedOnly: true/);
-  assert.match(businesses, /selectedOrder\.has\(normalizeText\(item\.name\)\)/);
+  assert.match(businesses, /visibility: "all"/);
+  assert.match(businesses, /HOME_BUSINESS_POLICY\.visibility === "all"/);
+  assert.match(businesses, /selectedOrder\.get\(normalizeText\(a\.name\)\)/);
   assert.doesNotMatch(businesses, /href: "\/car-services\?category=/);
   assert.match(businesses, /featuredBusinessEmpty/);
   assert.match(businesses, /featuredBusinessHeader \{[\s\S]*?align-items: flex-start/);
@@ -168,13 +169,13 @@ test("shows only paid selected car services on home and keeps the directory sepa
   assert.match(servicesPage, /lockType/);
 });
 
-test("shows only paid selected parts stores on home and keeps a dedicated directory", () => {
+test("keeps parts stores on the shared homepage visibility policy and a dedicated directory", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const partsPage = read("app/parts-stores/page.tsx");
 
   assert.match(
     businesses,
-    /type: "parts_store"[\s\S]*?allHref: "\/parts-stores"[\s\S]*?fallbackLabels: \[\][\s\S]*?selectedOnly: true/,
+    /type: "parts_store"[\s\S]*?allHref: "\/parts-stores"[\s\S]*?fallbackLabels: \[\]/,
   );
   assert.match(partsPage, /<BusinessesPage/);
   assert.match(partsPage, /initialType="parts_store"/);
@@ -182,16 +183,31 @@ test("shows only paid selected parts stores on home and keeps a dedicated direct
   assert.match(partsPage, /lockType/);
 });
 
-test("shows only paid selected repair shops on home and keeps a dedicated directory", () => {
+test("keeps repair shops on the shared homepage visibility policy and a dedicated directory", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const workshopsPage = read("app/workshops/page.tsx");
 
   assert.match(
     businesses,
-    /type: "repair_shop"[\s\S]*?allHref: "\/workshops"[\s\S]*?fallbackLabels: \[\][\s\S]*?selectedOnly: true/,
+    /type: "repair_shop"[\s\S]*?allHref: "\/workshops"[\s\S]*?fallbackLabels: \[\]/,
   );
   assert.match(workshopsPage, /<BusinessesPage/);
   assert.match(workshopsPage, /initialType="repair_shop"/);
   assert.match(workshopsPage, /basePath="\/workshops"/);
   assert.match(workshopsPage, /lockType/);
+});
+
+test("never leaves a localized homepage empty while nationwide inventory exists", () => {
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+  const vehicles = read("app/components/HomePublicListingsClient.tsx");
+  const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
+
+  assert.match(businesses, /const nationwideQuery = new URLSearchParams\(\{ limit: "100" \}\)/);
+  assert.match(businesses, /const exactItems = typeItems\.filter\(\(item\) => businessMatchesLocation\(item, location\)\)/);
+  assert.match(businesses, /label: "پیشنهادهای سراسر ایران"/);
+  assert.match(businesses, /resolveBusinessesForLocation\(items, config\.type, location, selected\)/);
+  assert.match(vehicles, /resolveListingsForLocation/);
+  assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
+  assert.match(showrooms, /resolveDealersForLocation/);
+  assert.match(showrooms, /resolvedDealers\.label/);
 });

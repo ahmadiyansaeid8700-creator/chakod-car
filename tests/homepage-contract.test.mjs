@@ -131,3 +131,11 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
     assert.ok(css.includes(token), `home rail CSS must include ${token}`);
   }
 });
+
+test("uses the same compact showroom-card design law on home and directory", () => {
+  const homeShowrooms = read("app/components/HomeFeaturedShowrooms.tsx");
+  const directory = read("app/dealerships/DealerDirectoryClient.tsx");
+
+  assert.match(homeShowrooms, /<ShowroomCard density="compact"/);
+  assert.match(directory, /<ShowroomCard[\s\S]*?density="compact"/);
+});

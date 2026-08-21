@@ -152,15 +152,16 @@ test("uses the canonical catalog segments for homepage luxury and free-zone rail
   assert.doesNotMatch(catalogItem, /showActions/);
 });
 
-test("uses a dedicated car-services route and category-specific service cards", () => {
+test("shows only paid selected car services on home and keeps the directory separate", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const servicesPage = read("app/car-services/page.tsx");
 
   assert.match(businesses, /allHref: "\/car-services"/);
-  assert.match(businesses, /href: "\/car-services\?category=car_wash"/);
-  assert.match(businesses, /href: "\/car-services\?category=detailing"/);
-  assert.match(businesses, /href: "\/car-services\?category=ceramic_coating"/);
-  assert.doesNotMatch(businesses, /<b>\{index \+ 1\}<\/b>/);
+  assert.match(businesses, /selectedOnly: true/);
+  assert.match(businesses, /selectedOrder\.has\(normalizeText\(item\.name\)\)/);
+  assert.doesNotMatch(businesses, /href: "\/car-services\?category=/);
+  assert.match(businesses, /featuredBusinessEmpty/);
+  assert.match(businesses, /featuredBusinessHeader \{[\s\S]*?align-items: flex-start/);
   assert.match(servicesPage, /<BusinessesPage/);
   assert.match(servicesPage, /initialType="car_service"/);
   assert.match(servicesPage, /basePath="\/car-services"/);

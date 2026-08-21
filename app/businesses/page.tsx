@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
+import MobileBackButton from "../components/MobileBackButton";
 import styles from "./page.module.css";
 
 type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
@@ -390,7 +391,7 @@ export default function BusinessesPage({
       </header>
 
       <header className={styles.mobileHeader} aria-label="ناوبری صفحه">
-        <button type="button" onClick={() => window.history.back()} aria-label="برگشت به صفحه قبل">‹</button>
+        <MobileBackButton />
         <strong>{mobileTitle}</strong>
         <a href="/" aria-label="صفحه اصلی چاکود"><img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" /></a>
       </header>

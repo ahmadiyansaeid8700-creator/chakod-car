@@ -11,6 +11,17 @@ test("keeps legacy dealers route as canonical account redirect", async () => {
   assert.match(legacy, /redirect\("\/account\/business\/dealers"\)/);
 });
 
+test("uses the approved homepage showroom card in compact directory mode", async () => {
+  const directory = await source("app/dealerships/DealerDirectoryClient.tsx");
+  const sharedCard = await source("app/components/ShowroomCard.tsx");
+
+  assert.match(directory, /import ShowroomCard from "\.\.\/components\/ShowroomCard"/);
+  assert.match(directory, /density="compact"/);
+  assert.match(sharedCard, /density\?: "default" \| "compact"/);
+  assert.match(sharedCard, /showroom\.href \|\|/);
+  assert.doesNotMatch(directory, /selectedCard|ordinaryCard|ShowroomBanner|VehicleStrip/);
+});
+
 test("keeps multi-dealer management behind authenticated proxy", async () => {
   const route = await source("app/api/auth/dealers/route.ts");
   assert.match(route, /\/api\/my-dealers\.php/);

@@ -226,3 +226,13 @@ test("keeps the mobile location name readable and the homepage footer identity c
   assert.match(page, /شرکت یکتا الکترونیک گلشن نوین/);
   assert.match(page, /تأسیس ۱۳۹۴/);
 });
+
+test("contains large location selections inside the mobile dialog", () => {
+  const selector = read("app/components/HomeLocationSelector.tsx");
+
+  assert.match(selector, /\.chakodLocationDialog\{[^}]*min-width:0/);
+  assert.match(selector, /\.chakodLocationSelected\{[^}]*min-width:0;[^}]*overflow:hidden/);
+  assert.match(selector, /\.chakodLocationChips\{[^}]*width:100%;[^}]*max-width:100%;[^}]*overflow-x:auto/);
+  assert.match(selector, /\.chakodLocationBody\{[^}]*overflow-y:auto;[^}]*overflow-x:hidden/);
+  assert.match(selector, /@media\(max-width:760px\)[\s\S]*?\.chakodLocationFooter\{[^}]*width:100%;[^}]*box-sizing:border-box/);
+});

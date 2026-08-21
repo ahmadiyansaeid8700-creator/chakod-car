@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DEFAULT_HOME_LOCATION,
   HOME_LOCATION_EVENT,
@@ -54,14 +54,20 @@ type SectionConfig = {
   description: string;
   allHref: string;
   fallbackLabels: string[];
-  selectedOnly?: boolean;
-  emptyLabel?: string;
   fallbackItems?: Array<{
     label: string;
     description: string;
     href: string;
     icon: "wash" | "detail" | "shield";
   }>;
+};
+
+type HomeBusinessVisibilityMode = "all" | "selected";
+
+// در فاز فعلی همه کسب‌وکارهای فعال نمایش داده می‌شوند و جایگاه ویژه فقط رتبه را بهتر می‌کند.
+// وقتی موجودی سایت به حد کافی رسید، مالک محصول فقط این مقدار را به "selected" تغییر می‌دهد.
+const HOME_BUSINESS_POLICY: { visibility: HomeBusinessVisibilityMode } = {
+  visibility: "all",
 };
 
 const SECTIONS: SectionConfig[] = [
@@ -72,8 +78,6 @@ const SECTIONS: SectionConfig[] = [
     description: "کارواش، دیتیلینگ، سرامیک، شیشه دودی و خدمات تخصصی خودرو.",
     allHref: "/car-services",
     fallbackLabels: [],
-    selectedOnly: true,
-    emptyLabel: "مراکز",
   },
   {
     type: "parts_store",
@@ -82,8 +86,6 @@ const SECTIONS: SectionConfig[] = [
     description: "قطعات یدکی، لاستیک، باتری و لوازم جانبی از فروشندگان منتخب.",
     allHref: "/parts-stores",
     fallbackLabels: [],
-    selectedOnly: true,
-    emptyLabel: "فروشگاه‌ها",
   },
   {
     type: "repair_shop",
@@ -92,8 +94,6 @@ const SECTIONS: SectionConfig[] = [
     description: "مکانیکی، برق خودرو، سرویس دوره‌ای و تعمیرگاه‌های منتخب چاکود.",
     allHref: "/workshops",
     fallbackLabels: [],
-    selectedOnly: true,
-    emptyLabel: "تعمیرگاه‌ها",
   },
 ];
 
@@ -149,18 +149,19 @@ function businessMatchesLocation(
 
 function buildBusinessQueries(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
+  const nationwideQuery = new URLSearchParams({ limit: "100" });
 
   if (location.mode === "all" || scopes.length === 0) {
-    return [new URLSearchParams({ limit: "100" })];
+    return [nationwideQuery];
   }
 
-  return scopes.map(
+  return [nationwideQuery, ...scopes.map(
     (scope) =>
       new URLSearchParams({
         limit: "100",
         province: scope.province,
       }),
-  );
+  )];
 }
 
 function selectedBusinessOrder(selected: SelectedPlacement[], type: BusinessType) {
@@ -172,6 +173,42 @@ function selectedBusinessOrder(selected: SelectedPlacement[], type: BusinessType
       if (key && !order.has(key)) order.set(key, index);
     });
   return order;
+}
+
+function resolveBusinessesForLocation(
+  items: PublicBusiness[],
+  type: BusinessType,
+  location: HomeLocationSelection,
+  selected: SelectedPlacement[],
+) {
+  const selectedOrder = selectedBusinessOrder(selected, type);
+  const typeItems = items.filter(
+    (item) =>
+      item.business_type === type &&
+      (HOME_BUSINESS_POLICY.visibility === "all" ||
+        selectedOrder.has(normalizeText(item.name))),
+  );
+
+  if (location.mode === "all") return { items: typeItems, label: "سراسر ایران" };
+
+  const exactItems = typeItems.filter((item) => businessMatchesLocation(item, location));
+  if (exactItems.length > 0) return { items: exactItems, label: location.label };
+
+  const scopes = getHomeLocationScopes(location);
+  const selectedProvinces = new Set(scopes.map((scope) => normalizeText(scope.province)));
+  const provinceItems = typeItems.filter((item) =>
+    selectedProvinces.has(normalizeText(item.province)),
+  );
+  if (provinceItems.length > 0) {
+    return {
+      items: provinceItems,
+      label: scopes.length === 1
+        ? `پیشنهادهای استان ${scopes[0].province}`
+        : "پیشنهادهای همان استان‌ها",
+    };
+  }
+
+  return { items: typeItems, label: "پیشنهادهای سراسر ایران" };
 }
 
 function ServiceIcon({ type }: { type: "wash" | "detail" | "shield" }) {
@@ -218,11 +255,7 @@ function FeaturedBusinessSection({
 }) {
   const selectedOrder = selectedBusinessOrder(selected, config.type);
   const sectionItems = items
-    .filter(
-      (item) =>
-        item.business_type === config.type &&
-        (!config.selectedOnly || selectedOrder.has(normalizeText(item.name))),
-    )
+    .filter((item) => item.business_type === config.type)
     .sort((a, b) => {
       const aRank = selectedOrder.get(normalizeText(a.name));
       const bRank = selectedOrder.get(normalizeText(b.name));
@@ -264,10 +297,10 @@ function FeaturedBusinessSection({
         </Link>
       </div>
 
-      {config.selectedOnly && !hasItems ? (
+      {status !== "loading" && !hasItems && fallbackItems.length === 0 ? (
         <div className="featuredBusinessEmpty">
-          <strong>هنوز جایگاه منتخب فعالی ثبت نشده است</strong>
-          <span>{config.emptyLabel || "کسب‌وکارهای"} دارای جایگاه ویژه در این بخش نمایش داده می‌شوند.</span>
+          <strong>هنوز مورد فعالی برای نمایش ثبت نشده است</strong>
+          <span>به‌محض ثبت مورد معتبر، این بخش به‌صورت خودکار تکمیل می‌شود.</span>
         </div>
       ) : (
       <div className="featuredBusinessRail">
@@ -436,23 +469,21 @@ export default function HomeFeaturedBusinesses() {
     return () => controller.abort();
   }, [location, locationReady]);
 
-  const filteredItems = useMemo(
-    () => items.filter((item) => businessMatchesLocation(item, location)),
-    [items, location],
-  );
-
   return (
     <div className="featuredBusinesses" dir="rtl">
-      {SECTIONS.map((config) => (
-        <FeaturedBusinessSection
-          config={config}
-          items={filteredItems}
-          selected={selected}
-          status={status}
-          locationLabel={location.label}
-          key={config.type}
-        />
-      ))}
+      {SECTIONS.map((config) => {
+        const resolved = resolveBusinessesForLocation(items, config.type, location, selected);
+        return (
+          <FeaturedBusinessSection
+            config={config}
+            items={resolved.items}
+            selected={selected}
+            status={status}
+            locationLabel={resolved.label}
+            key={config.type}
+          />
+        );
+      })}
 
       <style>{`
         .featuredBusinesses {

@@ -67,27 +67,6 @@ type Props = {
   query: string;
 };
 
-const FALLBACK_CARDS = [
-  {
-    title: "نمایشگاه‌های منتخب چاکود",
-    description: "ویترین نمایشگاه‌های حرفه‌ای و خودروهای فعال هر مجموعه",
-    label: "مشاهده نمایشگاه‌ها",
-    href: "/dealerships",
-  },
-  {
-    title: "خودروهای موجود نمایشگاه‌ها",
-    description: "پیش‌نمایش خودروها داخل کارت منتخب هر نمایشگاه",
-    label: "ورود به ویترین‌ها",
-    href: "/dealerships",
-  },
-  {
-    title: "ثبت نمایشگاه در چاکود",
-    description: "ساخت ویترین حرفه‌ای برای معرفی مجموعه و خودروهای موجود",
-    label: "ثبت نمایشگاه",
-    href: "/account/business/new",
-  },
-] as const;
-
 function normalizeText(value: unknown) {
   return String(value || "")
     .trim()
@@ -222,7 +201,7 @@ function buildDealers(listings: ApiListing[]): DealerPreview[] {
       logoUrl,
       coverImage: listing.cover_image || null,
       verified,
-      featured: true,
+      featured: false,
       latestAt: listingTime(listing),
       latestListings: [listingPreview(listing)],
     });
@@ -341,6 +320,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
   }, [location, locationReady]);
 
   const dealers = useMemo(() => {
+    const listingDealers = buildDealers(listings);
     const placementOrder = new Map<number, number>();
     const placementMap = new Map<number, FeaturedPlacement>();
     placements.forEach((item, index) => {
@@ -350,7 +330,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     });
 
     const dealerMap = new Map<number, DealerPreview>();
-    buildDealers(listings).forEach((dealer) => {
+    listingDealers.forEach((dealer) => {
       const dealerId = dealerIdFromKey(dealer.key);
       if (!dealerId || !placementMap.has(dealerId)) return;
       dealerMap.set(dealerId, applyPlacement(dealer, placementMap.get(dealerId)!));
@@ -377,25 +357,37 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
       });
     });
 
-    return Array.from(dealerMap.values())
-      .filter((dealer) => matchesQuery(dealer, query))
+    const placedDealers = Array.from(dealerMap.values()).sort(
+      (a, b) =>
+        (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
+        (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
+    );
+    const placedIds = new Set(placedDealers.map((dealer) => dealerIdFromKey(dealer.key)));
+    const organicDealers = listingDealers
+      .filter((dealer) => {
+        const dealerId = dealerIdFromKey(dealer.key);
+        return !dealerId || !placedIds.has(dealerId);
+      })
       .sort(
         (a, b) =>
-          (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
-          (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
-      )
+          Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||
+          b.listingCount - a.listingCount ||
+          b.latestAt - a.latestAt ||
+          a.name.localeCompare(b.name, "fa"),
+      );
+
+    return [...placedDealers, ...organicDealers]
+      .filter((dealer) => matchesQuery(dealer, query))
       .slice(0, 8);
   }, [listings, placements, query]);
-
-  const showFallback = status !== "ready" || dealers.length === 0;
 
   return (
     <section className={styles.dealerSection} id="showrooms">
       <div className={styles.sectionIntro}>
         <div>
-          <span className={styles.eyebrow}>نمایشگاه‌های چاکود</span>
-          <h2>نمایشگاه‌های منتخب</h2>
-          <p className="featuredShowroomLocation">{location.label}</p>
+          <span className={styles.eyebrow}>ویترین نمایشگاه‌ها</span>
+          <h2>نمایشگاه‌های منتخب چاکود</h2>
+          <p className={styles.locationLabel}>{location.label}</p>
         </div>
 
         <div className={styles.sectionActions}>
@@ -406,124 +398,36 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
         </div>
       </div>
 
-      {showFallback ? (
-        <div
-          className="featuredShowroomFallbackRail"
-          aria-live={status === "loading" ? "polite" : undefined}
-        >
-          {FALLBACK_CARDS.map((card, index) => (
-            <Link className="featuredShowroomFallbackCard" href={card.href} key={card.title}>
-              <span className="featuredShowroomFallbackVisual">
-                <img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" />
-                <i>{String(index + 1).padStart(2, "0")}</i>
-              </span>
-              <span className="featuredShowroomFallbackCopy">
-                <strong>{card.title}</strong>
-                <small>{card.description}</small>
-                <b>
-                  {card.label}
-                  <span aria-hidden="true">←</span>
-                </b>
-              </span>
-            </Link>
+      {status === "loading" ? (
+        <div className={styles.skeletonRail} aria-label="در حال دریافت نمایشگاه‌ها" aria-live="polite">
+          {[0, 1, 2].map((item) => (
+            <span className={styles.skeletonCard} key={item} aria-hidden="true">
+              <span className={styles.skeletonCover} />
+              <span className={styles.skeletonLogo} />
+              <span className={styles.skeletonTitle} />
+              <span className={styles.skeletonMeta} />
+              <span className={styles.skeletonProducts} />
+              <span className={styles.skeletonButton} />
+            </span>
           ))}
         </div>
-      ) : (
+      ) : dealers.length > 0 ? (
         <div className={styles.dealerRail}>
           {dealers.map((dealer) => (
             <ShowroomCard key={dealer.key} showroom={dealer} />
           ))}
         </div>
+      ) : (
+        <div className={styles.compactEmpty} role="status">
+          <strong>{status === "error" ? "دریافت نمایشگاه‌ها انجام نشد" : "نمایشگاهی در این محدوده پیدا نشد"}</strong>
+          <span>
+            {status === "error"
+              ? "اتصال اینترنت را بررسی و صفحه را دوباره بارگذاری کنید."
+              : "محدوده نمایش را تغییر دهید یا همه نمایشگاه‌ها را ببینید."}
+          </span>
+          <Link href="/dealerships">مشاهده همه نمایشگاه‌ها</Link>
+        </div>
       )}
-
-      <style>{`
-        .featuredShowroomLocation {
-          margin: 5px 0 0;
-          color: #6d28d9;
-          font-size: 9px;
-          font-weight: 900;
-        }
-        .featuredShowroomFallbackRail {
-          min-width: 0;
-          display: grid;
-          grid-auto-flow: column;
-          grid-auto-columns: minmax(300px, calc((100% - 32px) / 3));
-          gap: 16px;
-          overflow-x: auto;
-          overflow-y: hidden;
-          padding: 2px 1px 24px;
-          scroll-snap-type: inline mandatory;
-          scrollbar-width: thin;
-          scrollbar-color: #d7cce8 transparent;
-        }
-        .featuredShowroomFallbackCard {
-          min-height: 230px;
-          padding: 22px;
-          border: 1px solid #e4d8f1;
-          border-radius: 24px;
-          display: grid;
-          grid-template-columns: 92px minmax(0, 1fr);
-          align-items: center;
-          gap: 18px;
-          color: #21152f;
-          background:
-            radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.12), transparent 14rem),
-            linear-gradient(145deg, #ffffff, #faf7ff);
-          box-shadow: 0 16px 42px rgba(42, 26, 68, 0.075);
-          scroll-snap-align: start;
-        }
-        .featuredShowroomFallbackVisual {
-          position: relative;
-          width: 92px;
-          height: 118px;
-          border-radius: 22px;
-          display: grid;
-          place-items: center;
-          background: linear-gradient(155deg, #f2eaff, #ffffff);
-        }
-        .featuredShowroomFallbackVisual img { width: 52px; height: 64px; object-fit: contain; }
-        .featuredShowroomFallbackVisual i {
-          position: absolute;
-          left: 8px;
-          bottom: 7px;
-          color: #8b5cf6;
-          font-size: 9px;
-          font-style: normal;
-          font-weight: 900;
-        }
-        .featuredShowroomFallbackCopy,
-        .featuredShowroomFallbackCopy strong,
-        .featuredShowroomFallbackCopy small { display: block; }
-        .featuredShowroomFallbackCopy strong { font-size: 15px; line-height: 1.7; }
-        .featuredShowroomFallbackCopy small { margin-top: 8px; color: #786d82; font-size: 10px; line-height: 1.9; }
-        .featuredShowroomFallbackCopy b {
-          margin-top: 18px;
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          color: #6d28d9;
-          font-size: 9px;
-          font-weight: 900;
-        }
-        @media (max-width: 900px) {
-          .featuredShowroomFallbackRail { grid-auto-columns: min(340px, 82vw); }
-        }
-        @media (max-width: 560px) {
-          .featuredShowroomFallbackRail { grid-auto-columns: min(300px, 84vw); gap: 11px; }
-          .featuredShowroomFallbackCard {
-            min-height: 128px;
-            padding: 14px;
-            grid-template-columns: 70px minmax(0, 1fr);
-            gap: 12px;
-            border-radius: 19px;
-          }
-          .featuredShowroomFallbackVisual { width: 70px; height: 92px; border-radius: 17px; }
-          .featuredShowroomFallbackVisual img { width: 40px; height: 50px; }
-          .featuredShowroomFallbackCopy strong { font-size: 13px; }
-          .featuredShowroomFallbackCopy small { font-size: 8px; }
-          .featuredShowroomFallbackCopy b { margin-top: 10px; font-size: 8px; }
-        }
-      `}</style>
     </section>
   );
 }

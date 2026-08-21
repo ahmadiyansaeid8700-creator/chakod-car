@@ -181,3 +181,17 @@ test("shows only paid selected parts stores on home and keeps a dedicated direct
   assert.match(partsPage, /basePath="\/parts-stores"/);
   assert.match(partsPage, /lockType/);
 });
+
+test("shows only paid selected repair shops on home and keeps a dedicated directory", () => {
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+  const workshopsPage = read("app/workshops/page.tsx");
+
+  assert.match(
+    businesses,
+    /type: "repair_shop"[\s\S]*?allHref: "\/workshops"[\s\S]*?fallbackLabels: \[\][\s\S]*?selectedOnly: true/,
+  );
+  assert.match(workshopsPage, /<BusinessesPage/);
+  assert.match(workshopsPage, /initialType="repair_shop"/);
+  assert.match(workshopsPage, /basePath="\/workshops"/);
+  assert.match(workshopsPage, /lockType/);
+});

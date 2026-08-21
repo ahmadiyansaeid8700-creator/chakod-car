@@ -8,6 +8,7 @@ import ListingCard from "./components/ListingCard";
 import HomeHorizontalRail from "./components/HomeHorizontalRail";
 import HomePublicListingsClient from "./components/HomePublicListingsClient";
 import ShowroomCard, { type ShowroomCardData } from "./components/ShowroomCard";
+import FeaturedShowrooms from "./components/FeaturedShowrooms";
 
 type Category = {
   id: number;
@@ -771,6 +772,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <div className="masterStoriesWrap">
         <HomeStories />
       </div>
+
+      {!query ? <FeaturedShowrooms /> : null}
 
       <HomeBannerSlot />
 

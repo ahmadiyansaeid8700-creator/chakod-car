@@ -1,5 +1,14 @@
-import { redirect } from "next/navigation";
+import BusinessesPage from "../businesses/page";
 
 export default function CarServicesPage() {
-  redirect("/businesses?type=car_service");
+  return (
+    <BusinessesPage
+      initialType="car_service"
+      basePath="/car-services"
+      lockType
+      kicker="راهنمای خدمات خودرویی چاکود"
+      title="خدمات حرفه‌ای خودرو را نزدیک خودتان پیدا کنید"
+      description="کارواش، دیتیلینگ، سرامیک، شیشه دودی و خدمات تخصصی خودرو."
+    />
+  );
 }

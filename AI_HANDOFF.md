@@ -10,7 +10,7 @@
 Date: 2026-08-21
 Requested change: نمایش آگهی‌های واقعی خودروهای لوکس در صفحه اصلی و یکسان‌سازی کارت فهرست با صفحه اصلی
 Root cause: صفحه /cars/luxury از دسته‌بندی رسمی API با segment=luxury استفاده می‌کرد، اما HomePublicListingsClient داده عمومی را با فهرست دستی برند و قیمت دوباره طبقه‌بندی می‌کرد؛ بنابراین خودروهایی مانند آکورا/اینتگرا از صفحه اصلی حذف می‌شدند.
-Implementation: ریل‌های لوکس و منطقه آزاد صفحه اصلی مستقیماً از /api/catalog با segment رسمی و همان فیلتر موقعیت دریافت می‌شوند. MarketListingItem همان ListingCard صفحه اصلی را بدون اکشن متفاوت نمایش می‌دهد.
+Implementation: ریل‌های لوکس و منطقه آزاد صفحه اصلی مستقیماً از /api/catalog با segment رسمی و همان فیلتر موقعیت دریافت می‌شوند. هر منبع مستقل خطاگیری می‌شود تا خرابی درخواست عمومی جست‌وجو، داده صحیح ریل‌های لوکس و منطقه آزاد را حذف نکند. MarketListingItem همان ListingCard صفحه اصلی را بدون اکشن متفاوت نمایش می‌دهد.
 Affected files:
 - app/components/ShowroomCard.tsx
 - app/components/ShowroomCard.module.css

@@ -8,8 +8,9 @@
 
 ```text
 Date: 2026-08-21
-Requested change: یکسان‌سازی قانون طراحی کارت در صفحه اصلی و فهرست نمایشگاه‌ها و منظم‌کردن سه تصویر پایین
-Implementation: هر دو مسیر HomeFeaturedShowrooms و DealerDirectoryClient از ShowroomCard با density="compact" استفاده می‌کنند. ردیف تصاویر سه ستون هم‌اندازه با gap ثابت 8px، عرض 100% و ارتفاع کنترل‌شده دارد.
+Requested change: نمایش آگهی‌های واقعی خودروهای لوکس در صفحه اصلی و یکسان‌سازی کارت فهرست با صفحه اصلی
+Root cause: صفحه /cars/luxury از دسته‌بندی رسمی API با segment=luxury استفاده می‌کرد، اما HomePublicListingsClient داده عمومی را با فهرست دستی برند و قیمت دوباره طبقه‌بندی می‌کرد؛ بنابراین خودروهایی مانند آکورا/اینتگرا از صفحه اصلی حذف می‌شدند.
+Implementation: ریل‌های لوکس و منطقه آزاد صفحه اصلی مستقیماً از /api/catalog با segment رسمی و همان فیلتر موقعیت دریافت می‌شوند. MarketListingItem همان ListingCard صفحه اصلی را بدون اکشن متفاوت نمایش می‌دهد.
 Affected files:
 - app/components/ShowroomCard.tsx
 - app/components/ShowroomCard.module.css
@@ -20,11 +21,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: #18
-Merge commit: 32634d6557e7890afcbdae0d62688166492288a7
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: HomeFeaturedShowrooms-BRwwVQ_C.js و DealerDirectoryClient-wAxn4Di3.js منتشر شدند. کارت «مهر خودرو» در هر دو مسیر کلاس compact مشترک دارد؛ سه جایگاه در Home برابر 122×56 و در Directory برابر 98×56 هستند و فاصله واقعی آن‌ها 8–9px است.
-Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس ادامه بخش بعدی صفحه اصلی
+PR: در حال انتشار
+Merge commit: در حال انتشار
+Deployment state: در انتظار انتشار روی https://staging.chakod.com
+Online verification: در انتظار انتشار
+Exact next action: بررسی ریل لوکس صفحه اصلی و تطبیق کارت با /cars/luxury
 ```
 
 ## شروع سریع در یک چت جدید

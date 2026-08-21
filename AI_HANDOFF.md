@@ -21,11 +21,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: در حال انتشار
-Merge commit: در حال انتشار
-Deployment state: در انتظار انتشار روی https://staging.chakod.com
-Online verification: در انتظار انتشار
-Exact next action: بررسی ریل لوکس صفحه اصلی و تطبیق کارت با /cars/luxury
+PRs: #20 و #21
+Merge commits: afff37517b6f4c398b04f55dc18f4ce4a0b0d4c6 و d7d142c200fd9525ae3345d1f8ae4ce40f8c03ca
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: فایل HomePublicListingsClient-27zH9lbM.js منتشر شد. ریل لوکس صفحه اصلی 7 کارت واقعی با شناسه‌های 18، 11، 10، 8، 3، 2 و 1 نشان داد؛ همان 7 آگهی در /cars/luxury موجودند و کارت‌ها از ListingCard مشترک استفاده می‌کنند.
+Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس بررسی ریل منطقه آزاد
 ```
 
 ## شروع سریع در یک چت جدید

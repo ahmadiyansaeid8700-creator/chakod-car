@@ -167,3 +167,17 @@ test("shows only paid selected car services on home and keeps the directory sepa
   assert.match(servicesPage, /basePath="\/car-services"/);
   assert.match(servicesPage, /lockType/);
 });
+
+test("shows only paid selected parts stores on home and keeps a dedicated directory", () => {
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+  const partsPage = read("app/parts-stores/page.tsx");
+
+  assert.match(
+    businesses,
+    /type: "parts_store"[\s\S]*?allHref: "\/parts-stores"[\s\S]*?fallbackLabels: \[\][\s\S]*?selectedOnly: true/,
+  );
+  assert.match(partsPage, /<BusinessesPage/);
+  assert.match(partsPage, /initialType="parts_store"/);
+  assert.match(partsPage, /basePath="\/parts-stores"/);
+  assert.match(partsPage, /lockType/);
+});

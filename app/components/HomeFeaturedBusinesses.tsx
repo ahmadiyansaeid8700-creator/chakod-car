@@ -90,8 +90,10 @@ const SECTIONS: SectionConfig[] = [
     kicker: "تعمیر و نگهداری",
     title: "تعمیرکاران برتر",
     description: "مکانیکی، برق خودرو، سرویس دوره‌ای و تعمیرگاه‌های منتخب چاکود.",
-    allHref: "/businesses?type=repair_shop",
-    fallbackLabels: ["مکانیکی خودرو", "برق خودرو", "سرویس و نگهداری"],
+    allHref: "/workshops",
+    fallbackLabels: [],
+    selectedOnly: true,
+    emptyLabel: "تعمیرگاه‌ها",
   },
 ];
 

@@ -239,12 +239,20 @@ test("keeps the mobile location name readable and the homepage footer identity c
 
 test("contains large location selections inside the mobile dialog", () => {
   const selector = read("app/components/HomeLocationSelector.tsx");
+  const locationModel = read("app/components/home-location.ts");
 
   assert.match(selector, /\.chakodLocationDialog\{[^}]*min-width:0/);
   assert.match(selector, /\.chakodLocationSelected\{[^}]*min-width:0;[^}]*overflow:hidden/);
-  assert.match(selector, /\.chakodLocationChips\{[^}]*width:100%;[^}]*max-width:100%;[^}]*overflow-x:auto/);
+  assert.match(selector, /\.chakodLocationChips\{[^}]*width:100%;[^}]*max-width:100%;[^}]*overflow-x:hidden/);
   assert.match(selector, /\.chakodLocationBody\{[^}]*overflow-y:auto;[^}]*overflow-x:hidden/);
   assert.match(selector, /@media\(max-width:760px\)[\s\S]*?\.chakodLocationFooter\{[^}]*width:100%;[^}]*box-sizing:border-box/);
+  assert.match(selector, /const MAX_PROVINCES = 31/);
+  assert.match(selector, /const MAX_SELECTED_ITEMS = 96/);
+  assert.match(locationModel, /const MAX_PROVINCES = 31/);
+  assert.match(locationModel, /const MAX_SELECTED_ITEMS = 96/);
+  assert.match(selector, /\.chakodLocationChips\{[^}]*flex-wrap:wrap;[^}]*overflow-y:auto/);
+  assert.match(selector, /aria-label={`حذف کل \${scope\.province}`}/);
+  assert.match(selector, /aria-label="حذف همه انتخاب‌ها"/);
 });
 
 test("keeps the mobile showroom heading concise and close to stories", () => {

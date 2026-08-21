@@ -60,6 +60,20 @@ Online verification: در انتظار پایان انتشار استیجینگ
 Exact next action: Hard Refresh موبایل و تأیید نمایش مستقیم عنوان «نمایشگاه‌های منتخب» بدون متن تزئینی بالای آن
 ```
 
+```text
+Date: 2026-08-21
+Requested change: جلوگیری از زوم خودکار هنگام تایپ در تمام سایت روی iOS
+Root cause: قانون قبلی فقط فیلدهای داخل .appViewport و عرض‌های حداکثر 760px را پوشش می‌داد؛ Portalها و حالت افقی خارج از پوشش بودند.
+Implementation: قانون 16px در app/ios-form-runtime.css به تمام inputهای متنی، textarea، select و contenteditable در سند تعمیم یافت؛ محدودیت عرض حذف شد و زوم دستی کاربر محدود نشد.
+Affected files: app/ios-form-runtime.css، tests/ios-form-zoom-contract.test.mjs
+Verification: تست قرمز قبل از اصلاح ثبت شد؛ سپس 17/17 تست مرتبط موفق؛ TypeScript موفق؛ Build cPanel/Vinext موفق
+PR: #42
+Merge commit: a62d68fed54d8e40624209688c6bffb90af14626
+Deployment state: ادغام‌شده در شاخه استیجینگ؛ بررسی آنلاین پس از پایان Workflow لازم است
+Online verification: در انتظار پایان انتشار استیجینگ
+Exact next action: تست تمرکز روی جست‌وجوی صفحه اصلی، انتخاب موقعیت Portal و یک فرم حساب در Safari آیفون
+```
+
 ## شروع سریع در یک چت جدید
 
 هوش مصنوعی باید قبل از هر تغییر این مراحل را به‌ترتیب انجام دهد:
@@ -259,6 +273,12 @@ Smoke verification آنلاین: موفق
 - در رابط RTL آیکون به سمت راست است؛ برچسب دسترس‌پذیری آن «بازگشت به صفحه قبل» باقی می‌ماند.
 - اگر history قابل بازگشت وجود نداشته باشد، `fallbackHref` معتبر داخلی استفاده شود؛ مقدار پیش‌فرض `/` است.
 - نسخه تیره فقط با `tone="dark"` استفاده شود و اندازه/فوکوس از CSS مشترک تغییر داده نشود مگر با نیاز مستند همان صفحه.
+
+### قانون قفل‌شده جلوگیری از زوم فرم در iOS
+
+- `app/ios-form-runtime.css` مرجع سراسری فیلدهای تایپی iOS است و باید در Root Layout باقی بماند.
+- اندازه محاسبه‌شده input متنی، textarea، select و contenteditable در iOS نباید کمتر از 16px شود؛ Portalها نیز باید پوشش داده شوند.
+- برای حل این مسئله `user-scalable=no` یا `maximum-scale=1` اضافه نشود، چون زوم دستی و دسترس‌پذیری کاربر را محدود می‌کند.
 
 ## روش انتشار استیجینگ
 

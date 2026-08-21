@@ -478,8 +478,27 @@
 }
 
 .compact .cover {
-  aspect-ratio: 2.15 / 1;
+  aspect-ratio: 2.55 / 1;
   border-radius: 19px 19px 0 0;
+}
+
+.compact .statusBadge {
+  top: 10px;
+  right: 10px;
+  min-height: 28px;
+  padding-inline: 10px;
+}
+
+.compact .shareAction {
+  top: 9px;
+  left: 9px;
+}
+
+.compact .shareAction :global(.dealerShareTrigger) {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
 }
 
 .compact .body {
@@ -487,15 +506,15 @@
 }
 
 .compact .logoWrap {
-  min-height: 34px;
-  margin-top: -34px;
+  min-height: 28px;
+  margin-top: -28px;
 }
 
 .compact .logo {
-  width: 68px;
-  height: 68px;
-  border-width: 4px;
-  font-size: 23px;
+  width: 56px;
+  height: 56px;
+  border-width: 3px;
+  font-size: 19px;
 }
 
 .compact .heading {
@@ -511,23 +530,23 @@
 }
 
 .compact .meta {
-  min-height: 40px;
-  margin-top: 10px;
+  min-height: 35px;
+  margin-top: 7px;
 }
 
 .compact .latestGrid {
-  margin-top: 10px;
-  gap: 6px;
+  margin-top: 8px;
+  gap: 5px;
 }
 
 .compact .latestListing,
 .compact .emptyListing {
-  max-height: 72px;
+  max-height: 56px;
 }
 
 .compact .primaryAction {
-  min-height: 43px;
-  margin-top: 11px;
+  min-height: 39px;
+  margin-top: 8px;
   border-radius: 11px;
   font-size: 10px;
 }
@@ -624,27 +643,27 @@
   }
 
   .compact .cover {
-    aspect-ratio: 2.25 / 1;
+    aspect-ratio: 2.7 / 1;
   }
 
   .compact .body {
-    padding: 0 12px 12px;
+    padding: 0 11px 11px;
   }
 
   .compact .logoWrap {
-    min-height: 31px;
-    margin-top: -31px;
+    min-height: 26px;
+    margin-top: -26px;
   }
 
   .compact .logo {
-    width: 62px;
-    height: 62px;
-    font-size: 21px;
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
   }
 
   .compact .latestListing,
   .compact .emptyListing {
-    max-height: 64px;
+    max-height: 52px;
   }
 }
 

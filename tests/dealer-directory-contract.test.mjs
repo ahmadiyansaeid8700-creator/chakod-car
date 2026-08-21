@@ -14,11 +14,15 @@ test("keeps legacy dealers route as canonical account redirect", async () => {
 test("uses the approved homepage showroom card in compact directory mode", async () => {
   const directory = await source("app/dealerships/DealerDirectoryClient.tsx");
   const sharedCard = await source("app/components/ShowroomCard.tsx");
+  const cardStyles = await source("app/components/ShowroomCard.module.css");
 
   assert.match(directory, /import ShowroomCard from "\.\.\/components\/ShowroomCard"/);
   assert.match(directory, /density="compact"/);
   assert.match(sharedCard, /density\?: "default" \| "compact"/);
   assert.match(sharedCard, /showroom\.href \|\|/);
+  assert.match(cardStyles, /\.compact \.cover \{[\s\S]*?aspect-ratio: 2\.55 \/ 1/);
+  assert.match(cardStyles, /\.compact \.logo \{[\s\S]*?width: 56px;[\s\S]*?height: 56px/);
+  assert.match(cardStyles, /@media \(max-width: 700px\)[\s\S]*?\.compact \.logo \{[\s\S]*?width: 52px;[\s\S]*?height: 52px/);
   assert.doesNotMatch(directory, /selectedCard|ordinaryCard|ShowroomBanner|VehicleStrip/);
 });
 

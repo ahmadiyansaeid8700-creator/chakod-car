@@ -1409,14 +1409,19 @@
 
 .masterFooterBrand {
   align-self: center;
+  gap: 10px;
 }
 
-.masterFooterLogo {
+.masterFooterSymbol {
   display: block;
-  width: 188px;
-  height: auto;
+  width: 48px;
+  height: 64px;
   object-fit: contain;
 }
+
+.masterFooterWordmark { display: grid; gap: 2px; }
+.masterFooterWordmark b { color: #fff; font-size: 31px; line-height: 1; font-weight: 950; }
+.masterFooterWordmark small { color: rgba(255,255,255,.66); font-size: 8px; font-weight: 800; }
 
 .masterFooterMain > p {
   margin: 0;
@@ -1841,9 +1846,8 @@
     display: block;
   }
 
-  .masterFooterLogo {
-    width: 176px;
-  }
+  .masterFooterSymbol { width: 42px; height: 58px; }
+  .masterFooterWordmark b { font-size: 28px; }
 
   .masterFooterMain > p {
     margin-top: 12px;
@@ -2071,7 +2075,7 @@
   .masterHeaderTools {
     width: calc(100% - 16px);
     padding: 8px 0;
-    grid-template-columns: minmax(102px, 31vw) minmax(0, 1fr);
+    grid-template-columns:minmax(148px,42vw) minmax(0,1fr);
     gap: 7px;
   }
 
@@ -2092,7 +2096,7 @@
 
 @media (max-width: 380px) {
   .masterHeaderTools {
-    grid-template-columns: minmax(94px, 31vw) minmax(0, 1fr);
+    grid-template-columns: minmax(138px, 42vw) minmax(0, 1fr);
     gap: 6px;
   }
 }

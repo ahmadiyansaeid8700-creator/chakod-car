@@ -20,11 +20,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: در حال انتشار
-Merge commit: در حال انتشار
-Deployment state: در انتظار انتشار روی https://staging.chakod.com
-Online verification: در انتظار انتشار
-Exact next action: بررسی هر دو مسیر / و /dealerships و دریافت تأیید بصری مالک
+PR: #18
+Merge commit: 32634d6557e7890afcbdae0d62688166492288a7
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: HomeFeaturedShowrooms-BRwwVQ_C.js و DealerDirectoryClient-wAxn4Di3.js منتشر شدند. کارت «مهر خودرو» در هر دو مسیر کلاس compact مشترک دارد؛ سه جایگاه در Home برابر 122×56 و در Directory برابر 98×56 هستند و فاصله واقعی آن‌ها 8–9px است.
+Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس ادامه بخش بعدی صفحه اصلی
 ```
 
 ## شروع سریع در یک چت جدید

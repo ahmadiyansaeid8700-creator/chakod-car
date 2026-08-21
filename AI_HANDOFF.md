@@ -19,10 +19,10 @@ Verification:
 - TypeScript موفق
 - 11/11 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: در انتظار انتشار
-Merge commits: در انتظار انتشار
-Deployment state: در انتظار انتشار روی استیجینگ
-Online verification: در انتظار انتشار
+PRs: #29
+Merge commits: b27c03a737e738041355e9abaad5a3547b879396
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: بخش تعمیرکاران صفحه اصلی صفر کارت دسته‌بندی داشت و در نبود جایگاه فعال پیام مخصوص تعمیرگاه‌ها را نشان داد. مشاهده همه به /workshops متصل بود. صفحه مستقل با عنوان «تعمیرکار و تعمیرگاه مناسب خودرو را پیدا کنید» باز شد و URL قفل‌شده type=repair_shop را حفظ کرد.
 Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 

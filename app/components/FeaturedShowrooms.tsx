@@ -132,10 +132,6 @@ export default function FeaturedShowrooms() {
   const dealers = useMemo(() => buildDealers(listings), [listings]);
   const featured = dealers.slice(0, 6);
 
-  if (status === "error" || (status === "ready" && featured.length === 0)) {
-    return null;
-  }
-
   return (
     <section className="homeFeaturedShowrooms" dir="rtl" aria-label="نمایشگاه‌های منتخب چاکود">
       <div className="homeFeaturedShowroomsHeader">
@@ -145,7 +141,7 @@ export default function FeaturedShowrooms() {
           <p>همان اطلاعات و همان کارت‌های صفحه نمایشگاه‌ها؛ با موجودی واقعی و اطلاعات به‌روز.</p>
         </div>
 
-        <Link href="/dealerships" aria-label="مشاهده همه نمایشگاه‌ها">
+        <Link href="/showrooms" aria-label="مشاهده همه نمایشگاه‌ها">
           مشاهده همه
           <span aria-hidden="true">←</span>
         </Link>
@@ -156,6 +152,15 @@ export default function FeaturedShowrooms() {
           <span />
           <span />
           <span />
+        </div>
+      ) : status === "error" || featured.length === 0 ? (
+        <div className="homeFeaturedShowroomsEmpty" role="status">
+          <span aria-hidden="true">▣</span>
+          <div>
+            <strong>ویترین نمایشگاه‌ها در حال به‌روزرسانی است</strong>
+            <p>فهرست کامل نمایشگاه‌های چاکود را در صفحه نمایشگاه‌ها ببینید.</p>
+          </div>
+          <Link href="/showrooms">مشاهده نمایشگاه‌ها</Link>
         </div>
       ) : (
         <div className="homeFeaturedShowroomsGrid">
@@ -248,6 +253,52 @@ export default function FeaturedShowrooms() {
           animation: homeShowroomShimmer 1.15s linear infinite;
         }
 
+        .homeFeaturedShowroomsEmpty {
+          min-height: 150px;
+          padding: 24px;
+          border: 1px dashed #d8c9ee;
+          border-radius: 22px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 18px;
+          color: #22162d;
+          background: rgba(255, 255, 255, 0.72);
+        }
+
+        .homeFeaturedShowroomsEmpty > span {
+          width: 52px;
+          height: 52px;
+          border-radius: 17px;
+          display: grid;
+          place-items: center;
+          color: #6d28d9;
+          background: #f1eafe;
+          font-size: 22px;
+        }
+
+        .homeFeaturedShowroomsEmpty strong {
+          font-size: 13px;
+        }
+
+        .homeFeaturedShowroomsEmpty p {
+          margin: 7px 0 0;
+          color: #786f82;
+          font-size: 10px;
+        }
+
+        .homeFeaturedShowroomsEmpty > a {
+          min-height: 40px;
+          padding: 0 14px;
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          color: #ffffff;
+          background: #6d28d9;
+          font-size: 9px;
+          font-weight: 900;
+        }
+
         @keyframes homeShowroomShimmer {
           to { background-position-x: -200%; }
         }
@@ -277,6 +328,15 @@ export default function FeaturedShowrooms() {
 
           .homeFeaturedShowroomsHeader p {
             display: none;
+          }
+
+          .homeFeaturedShowroomsEmpty {
+            grid-template-columns: auto minmax(0, 1fr);
+            padding: 18px;
+          }
+
+          .homeFeaturedShowroomsEmpty > a {
+            grid-column: 1 / -1;
           }
 
           .homeFeaturedShowroomsHeader > a {

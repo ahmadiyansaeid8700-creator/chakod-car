@@ -16,15 +16,8 @@
   min-width: 0;
 }
 
-.eyebrow {
-  display: block;
-  color: #6d28d9;
-  font-size: 10px;
-  font-weight: 900;
-}
-
 .sectionIntro h2 {
-  margin: 7px 0 0;
+  margin: 0;
   color: #1a1520;
   font-size: 25px;
   font-weight: 900;
@@ -228,10 +221,6 @@
   .sectionIntro h2 {
     margin-top: 4px;
     font-size: 19px;
-  }
-
-  .eyebrow {
-    font-size: 8px;
   }
 
   .sectionActions a {

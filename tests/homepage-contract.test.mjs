@@ -249,6 +249,7 @@ test("keeps the mobile showroom heading concise and close to stories", () => {
 
   assert.match(showrooms, /<h2>نمایشگاه‌های منتخب<\/h2>/);
   assert.doesNotMatch(showrooms, /نمایشگاه‌های منتخب چاکود/);
+  assert.doesNotMatch(showrooms, /ویترین نمایشگاه‌ها/);
   assert.match(css, /@media \(max-width: 900px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 24px/);
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 18px/);
 });

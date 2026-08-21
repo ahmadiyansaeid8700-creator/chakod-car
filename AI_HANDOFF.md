@@ -8,24 +8,28 @@
 
 ```text
 Date: 2026-08-21
-Requested change: تثبیت سیاست موجودی کم و جلوگیری از خالی‌شدن صفحه اصلی پس از انتخاب موقعیت
-Root cause: فیلتر موقعیت فقط داده همان محدوده/استان را دریافت می‌کرد و تصمیم قبلی selectedOnly کسب‌وکارهای عادی را زودتر از موعد از صفحه اصلی حذف می‌کرد.
-Implementation: حالت فعلی نمایش کسب‌وکارها به all برگشت؛ جایگاه ویژه فقط اولویت مرتب‌سازی می‌دهد. خودروها، نمایشگاه‌ها و کسب‌وکارها از زنجیره همان محدوده، همان استان و سپس پیشنهادهای سراسر ایران استفاده می‌کنند و منبع fallback را شفاف نشان می‌دهند. سیاست دائمی در بخش «سیاست قفل‌شده موجودی و موقعیت صفحه اصلی» ثبت شد.
+Requested change: یکسان‌سازی کنترل بازگشت در بالای صفحات موبایل
+Root cause: بعضی مسیرها متن «بازگشت/برگشت» و بعضی مسیرها نویسه‌های پیکانی متفاوت داشتند و قانون مشترکی برای جهت RTL، اندازه، دسترس‌پذیری و fallback وجود نداشت.
+Implementation: کامپوننت مشترک MobileBackButton با آیکون راست‌جهت RTL، aria-label ثابت، focus-visible، نسخه روشن/تیره و fallback امن به صفحه اصلی ساخته شد. هدرهای موبایل نمایشگاه‌ها، کسب‌وکارها، استوری و ناوبری همکاری در فروش به این کنترل متصل شدند.
 Affected files:
-- app/components/HomeFeaturedBusinesses.tsx
-- app/components/HomeFeaturedShowrooms.tsx
-- app/components/HomePublicListingsClient.tsx
-- tests/homepage-contract.test.mjs
+- app/components/MobileBackButton.tsx
+- app/components/MobileBackButton.module.css
+- app/businesses/page.tsx
+- app/dealerships/DealerDirectoryClient.tsx
+- app/stories/[id]/page.tsx
+- app/affiliate/AffiliateLandingClient.tsx
+- app/affiliate/page.module.css
+- tests/mobile-navigation-contract.test.mjs
 - AI_HANDOFF.md
 Verification:
 - TypeScript موفق
-- 12/12 تست قرارداد صفحه اصلی موفق
+- 16/16 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PRs: #31
-Merge commits: 2bf62452e897c518e73a55af6bf1c7741f1dad1e
+PRs: #36
+Merge commits: f943a3147886b6767b02199056a1ec09064e9c44
 Deployment state: ادغام‌شده در شاخه استیجینگ؛ بررسی آنلاین پس از پایان Workflow لازم است
 Online verification: در انتظار پایان انتشار استیجینگ
-Exact next action: بررسی موبایل با موقعیت سراسر ایران، یک شهر دارای داده و یک محله بدون داده؛ سپس ادامه دو بخش پایین صفحه اصلی
+Exact next action: بررسی آیکون بازگشت در عرض‌های 320، 390 و 430 پیکسل و سپس ادامه یکسان‌سازی هر هدر موبایل جدید با MobileBackButton
 ```
 
 ## شروع سریع در یک چت جدید
@@ -217,6 +221,14 @@ Smoke verification آنلاین: موفق
 - `npm audit fix --force` بدون بررسی اثر Breaking Change اجرا نشود.
 - تغییرات نامرتبط کاربر در Worktree حفظ شوند.
 - ادعای «رفع شد»، «تست شد» یا «منتشر شد» فقط با خروجی تازه و قابل مشاهده بیان شود.
+
+### قانون قفل‌شده بازگشت در موبایل
+
+- کنترل بازگشت در هدر موبایل باید از `app/components/MobileBackButton.tsx` استفاده کند.
+- متن دیداری «بازگشت/برگشت» یا نویسه‌های دستی مانند `‹` و `←` در هدر موبایل جدید ساخته نشود.
+- در رابط RTL آیکون به سمت راست است؛ برچسب دسترس‌پذیری آن «بازگشت به صفحه قبل» باقی می‌ماند.
+- اگر history قابل بازگشت وجود نداشته باشد، `fallbackHref` معتبر داخلی استفاده شود؛ مقدار پیش‌فرض `/` است.
+- نسخه تیره فقط با `tone="dark"` استفاده شود و اندازه/فوکوس از CSS مشترک تغییر داده نشود مگر با نیاز مستند همان صفحه.
 
 ## روش انتشار استیجینگ
 

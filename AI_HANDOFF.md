@@ -8,21 +8,21 @@
 
 ```text
 Date: 2026-08-21
-Requested change: یکسان‌سازی قوانین «فروشگاه‌های لوازم یدکی برتر» با بخش خدمات خودرویی برتر
-Root cause: بخش parts_store هنوز کارت‌های دسته‌بندی fallback نشان می‌داد و /parts-stores فقط به فهرست عمومی ریدایرکت می‌شد؛ بنابراین جایگاه ویژه شرط حضور در صفحه اصلی نبود.
-Implementation: parts_store نیز selectedOnly شد؛ دسته‌بندی‌های ساختگی صفحه اصلی حذف شدند و فقط فروشگاه دارای جایگاه ویژه فعال نمایش داده می‌شود. در نبود جایگاه، پیام خالی اختصاصی فروشگاه‌ها دیده می‌شود. /parts-stores به صفحه مستقل و type-locked فروشگاه‌های قطعات تبدیل شد و دکمه مشاهده همه به همین مسیر می‌رود.
+Requested change: یکسان‌سازی قوانین «تعمیرکاران برتر» با دو بخش منتخب کسب‌وکار قبلی
+Root cause: بخش repair_shop هنوز کارت‌های دسته‌بندی fallback نشان می‌داد و /workshops فقط به فهرست عمومی ریدایرکت می‌شد؛ جایگاه ویژه شرط نمایش در صفحه اصلی نبود.
+Implementation: repair_shop نیز selectedOnly شد؛ دسته‌بندی‌های ساختگی صفحه اصلی حذف شدند و فقط تعمیرگاه دارای جایگاه ویژه فعال نمایش داده می‌شود. در نبود جایگاه، پیام خالی اختصاصی تعمیرگاه‌ها دیده می‌شود. /workshops به صفحه مستقل و type-locked تعمیرگاه‌ها تبدیل شد و مشاهده همه به همین مسیر می‌رود.
 Affected files:
 - app/components/HomeFeaturedBusinesses.tsx
-- app/parts-stores/page.tsx
+- app/workshops/page.tsx
 - tests/homepage-contract.test.mjs
 Verification:
 - TypeScript موفق
-- 10/10 تست قرارداد صفحه اصلی موفق
+- 11/11 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: #27
-Merge commits: 39d4c2f50365f11489e52120bb042613fdb5bb90
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: بخش فروشگاه‌های لوازم یدکی صفحه اصلی صفر کارت دسته‌بندی داشت و در نبود جایگاه فعال پیام مخصوص فروشگاه‌ها را نشان داد. دکمه مشاهده همه به /parts-stores متصل بود. صفحه مستقل با عنوان قطعات و لوازم خودرو باز شد و URL قفل‌شده type=parts_store را حفظ کرد.
+PRs: در انتظار انتشار
+Merge commits: در انتظار انتشار
+Deployment state: در انتظار انتشار روی استیجینگ
+Online verification: در انتظار انتشار
 Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 

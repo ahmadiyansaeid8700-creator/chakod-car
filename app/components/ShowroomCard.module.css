@@ -472,6 +472,66 @@
   stroke-linejoin: round;
 }
 
+.compact {
+  height: auto;
+  border-radius: 20px;
+}
+
+.compact .cover {
+  aspect-ratio: 2.15 / 1;
+  border-radius: 19px 19px 0 0;
+}
+
+.compact .body {
+  padding: 0 14px 14px;
+}
+
+.compact .logoWrap {
+  min-height: 34px;
+  margin-top: -34px;
+}
+
+.compact .logo {
+  width: 68px;
+  height: 68px;
+  border-width: 4px;
+  font-size: 23px;
+}
+
+.compact .heading {
+  margin-top: 7px;
+}
+
+.compact .titleRow > a {
+  font-size: 16px;
+}
+
+.compact .heading p {
+  font-size: 9px;
+}
+
+.compact .meta {
+  min-height: 40px;
+  margin-top: 10px;
+}
+
+.compact .latestGrid {
+  margin-top: 10px;
+  gap: 6px;
+}
+
+.compact .latestListing,
+.compact .emptyListing {
+  max-height: 72px;
+}
+
+.compact .primaryAction {
+  min-height: 43px;
+  margin-top: 11px;
+  border-radius: 11px;
+  font-size: 10px;
+}
+
 .coverLink:focus-visible,
 .logo:focus-visible,
 .titleRow > a:focus-visible,
@@ -561,6 +621,30 @@
     margin-top: 13px;
     border-radius: 13px;
     font-size: 11px;
+  }
+
+  .compact .cover {
+    aspect-ratio: 2.25 / 1;
+  }
+
+  .compact .body {
+    padding: 0 12px 12px;
+  }
+
+  .compact .logoWrap {
+    min-height: 31px;
+    margin-top: -31px;
+  }
+
+  .compact .logo {
+    width: 62px;
+    height: 62px;
+    font-size: 21px;
+  }
+
+  .compact .latestListing,
+  .compact .emptyListing {
+    max-height: 64px;
   }
 }
 

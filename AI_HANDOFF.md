@@ -8,9 +8,9 @@
 
 ```text
 Date: 2026-08-21
-Requested change: اصلاح مسیر و بازطراحی کارت‌های بخش «خدمات خودرویی برتر» صفحه اصلی
-Root cause: API عمومی کسب‌وکارها برای type=car_service فعلاً آرایه خالی برمی‌گرداند؛ در نتیجه صفحه اصلی کارت‌های fallback بلند با شماره ساختگی نشان می‌داد. همه کارت‌ها به مسیر عمومی /businesses?type=car_service می‌رفتند و /car-services نیز فقط به همان مسیر ریدایرکت می‌شد.
-Implementation: /car-services به صفحه اختصاصی و type-locked خدمات خودرویی تبدیل شد. دکمه «مشاهده همه» به این مسیر می‌رود و سه کارت جایگزین به دسته‌های car_wash، detailing و ceramic_coating متصل‌اند. شماره‌های ساختگی حذف و کارت‌ها با آیکون مرتبط، ارتفاع کمتر، توضیح و CTA جمع‌وجور بازطراحی شدند. دو بخش بعدی (قطعات و تعمیرگاه‌ها) عمداً تغییری نکردند.
+Requested change: انتقال «مشاهده همه» به بالای سمت چپ و محدودکردن خدمات صفحه اصلی به خریداران جایگاه ویژه
+Root cause: جایگاه منتخب قبلاً فقط ترتیب کسب‌وکارها را تغییر می‌داد و شرط نمایش نبود؛ در نبود داده نیز کارت‌های دسته‌بندی جایگزین در صفحه اصلی ساخته می‌شدند.
+Implementation: بخش car_service با selectedOnly قفل شد؛ فقط کسب‌وکاری نمایش داده می‌شود که نام آن با جایگاه ویژه فعال API تطبیق داشته باشد. کارت‌های دسته‌بندی از صفحه اصلی حذف شدند و در نبود جایگاه فعال، پیام خالی کوتاه نمایش داده می‌شود. فهرست و دسته‌بندی کامل فقط در /car-services باقی ماند. هدر در موبایل نیز ردیفی شد تا «مشاهده همه» بالا و سمت چپ قرار بگیرد.
 Affected files:
 - app/components/HomeFeaturedBusinesses.tsx
 - app/car-services/page.tsx
@@ -19,10 +19,10 @@ Verification:
 - TypeScript موفق
 - 9/9 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: #23
-Merge commits: cd161fb5fd3a1460c2ad3b99eb4e21d235c80b09
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: سه کارت صفحه اصلی با ارتفاع 238px و مسیرهای /car-services?category=car_wash، detailing و ceramic_coating نمایش داده شدند. مسیر کارواش روی /car-services باقی ماند، type=car_service قفل بود و category=car_wash در فیلتر انتخاب شد.
+PRs: در انتظار انتشار
+Merge commits: در انتظار انتشار
+Deployment state: در انتظار انتشار روی استیجینگ
+Online verification: در انتظار انتشار
 Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 

@@ -54,6 +54,7 @@ type SectionConfig = {
   description: string;
   allHref: string;
   fallbackLabels: string[];
+  selectedOnly?: boolean;
   fallbackItems?: Array<{
     label: string;
     description: string;
@@ -69,27 +70,8 @@ const SECTIONS: SectionConfig[] = [
     title: "خدمات خودرویی برتر",
     description: "کارواش، دیتیلینگ، سرامیک، شیشه دودی و خدمات تخصصی خودرو.",
     allHref: "/car-services",
-    fallbackLabels: ["کارواش و دیتیلینگ", "سرامیک و محافظ رنگ", "خدمات تخصصی خودرو"],
-    fallbackItems: [
-      {
-        label: "کارواش حرفه‌ای",
-        description: "شست‌وشوی بدنه و نظافت داخلی خودرو",
-        href: "/car-services?category=car_wash",
-        icon: "wash",
-      },
-      {
-        label: "دیتیلینگ خودرو",
-        description: "احیای رنگ، پولیش و صفرشویی تخصصی",
-        href: "/car-services?category=detailing",
-        icon: "detail",
-      },
-      {
-        label: "سرامیک و محافظ رنگ",
-        description: "پوشش سرامیک و محافظت حرفه‌ای بدنه",
-        href: "/car-services?category=ceramic_coating",
-        icon: "shield",
-      },
-    ],
+    fallbackLabels: [],
+    selectedOnly: true,
   },
   {
     type: "parts_store",
@@ -230,7 +212,11 @@ function FeaturedBusinessSection({
 }) {
   const selectedOrder = selectedBusinessOrder(selected, config.type);
   const sectionItems = items
-    .filter((item) => item.business_type === config.type)
+    .filter(
+      (item) =>
+        item.business_type === config.type &&
+        (!config.selectedOnly || selectedOrder.has(normalizeText(item.name))),
+    )
     .sort((a, b) => {
       const aRank = selectedOrder.get(normalizeText(a.name));
       const bRank = selectedOrder.get(normalizeText(b.name));
@@ -272,6 +258,12 @@ function FeaturedBusinessSection({
         </Link>
       </div>
 
+      {config.selectedOnly && !hasItems ? (
+        <div className="featuredBusinessEmpty">
+          <strong>هنوز جایگاه منتخب فعالی ثبت نشده است</strong>
+          <span>مراکز دارای جایگاه ویژه در این بخش نمایش داده می‌شوند.</span>
+        </div>
+      ) : (
       <div className="featuredBusinessRail">
         {hasItems
           ? sectionItems.map((business) => (
@@ -354,6 +346,7 @@ function FeaturedBusinessSection({
               </Link>
             ))}
       </div>
+      )}
     </section>
   );
 }
@@ -476,7 +469,7 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessHeader {
           margin-bottom: 17px;
           display: flex;
-          align-items: flex-end;
+          align-items: flex-start;
           justify-content: space-between;
           gap: 20px;
         }
@@ -577,6 +570,21 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessTags i { min-height: 23px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; color: #604878; background: #f3edfa; font-size: 7px; font-style: normal; font-weight: 850; }
         .featuredBusinessCopy > b { margin-top: auto; padding-top: 13px; color: #5b21b6; font-size: 8px; font-weight: 950; }
 
+        .featuredBusinessEmpty {
+          min-height: 74px;
+          padding: 15px 17px;
+          border: 1px dashed #d9c8e9;
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 5px;
+          color: #71657b;
+          background: #fdfbff;
+        }
+        .featuredBusinessEmpty strong { color: #352440; font-size: 11px; }
+        .featuredBusinessEmpty span { font-size: 8px; line-height: 1.8; }
+
         .featuredBusinessFallback {
           min-height: 238px;
           grid-template-rows: 108px minmax(0, 1fr);
@@ -633,7 +641,9 @@ export default function HomeFeaturedBusinesses() {
         @media (max-width: 620px) {
           .featuredBusinesses { width: calc(100% - 20px); gap: 18px; }
           .featuredBusinessSection { padding: 18px 14px; border-radius: 22px; }
-          .featuredBusinessHeader { align-items: flex-start; flex-direction: column; gap: 10px; }
+          .featuredBusinessHeader { align-items: flex-start; flex-direction: row; gap: 10px; }
+          .featuredBusinessHeader > div { flex: 1 1 auto; }
+          .featuredBusinessHeader > a { margin-top: 0; }
           .featuredBusinessRail { grid-auto-columns: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }

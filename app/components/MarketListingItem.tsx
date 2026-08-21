@@ -16,7 +16,6 @@ export default function MarketListingItem({ listing, tone, badge }: Props) {
         tone={tone}
         badge={badge}
         variant="grid"
-        showActions
       />
     </div>
   );

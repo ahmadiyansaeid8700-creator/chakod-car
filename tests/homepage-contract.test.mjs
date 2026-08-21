@@ -122,14 +122,20 @@ test("keeps show-all catalog pages on their multi-row grid", () => {
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const css = read("app/home.css");
+  const showroomsCss = read("app/components/HomeFeaturedShowrooms.module.css");
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
 
   for (const token of [
     ".homeRailTrack",
+    "direction: rtl",
     "overflow-x: auto",
     "scroll-snap-type: inline mandatory",
   ]) {
     assert.ok(css.includes(token), `home rail CSS must include ${token}`);
   }
+
+  assert.match(showroomsCss, /\.dealerRail,[\s\S]*?direction: rtl/);
+  assert.match(businesses, /\.featuredBusinessRail \{[\s\S]*?direction: rtl/);
 });
 
 test("uses the same compact showroom-card design law on home and directory", () => {

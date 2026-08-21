@@ -63,7 +63,12 @@ export default function HomeHorizontalRail({
         </div>
       ) : null}
 
-      <div className="homeRailTrack" ref={trackRef} aria-label={ariaLabel}>
+      <div
+        className="homeRailTrack"
+        dir="rtl"
+        ref={trackRef}
+        aria-label={ariaLabel}
+      >
         {children}
       </div>
 

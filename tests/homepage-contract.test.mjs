@@ -122,6 +122,7 @@ test("keeps show-all catalog pages on their multi-row grid", () => {
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const css = read("app/home.css");
+  const rail = read("app/components/HomeHorizontalRail.tsx");
   const showroomsCss = read("app/components/HomeFeaturedShowrooms.module.css");
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
 
@@ -133,6 +134,9 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
   ]) {
     assert.ok(css.includes(token), `home rail CSS must include ${token}`);
   }
+
+  assert.match(rail, /className="homeRailTrack"[\s\S]*?dir="rtl"/);
+  assert.match(css, /\.homeRailTrack \{[\s\S]*?touch-action: pan-x/);
 
   assert.match(showroomsCss, /\.dealerRail,[\s\S]*?direction: rtl/);
   assert.match(businesses, /\.featuredBusinessRail \{[\s\S]*?direction: rtl/);

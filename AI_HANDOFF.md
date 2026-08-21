@@ -4,6 +4,23 @@
 
 این فایل نقطه شروع اجباری هر گفت‌وگوی جدید است. پروژه نباید از صفر بازسازی شود. ابتدا وضعیت واقعی مخزن و استیجینگ بررسی شود، سپس فقط ادامه همین پروژه انجام شود.
 
+## آخرین تغییر آماده انتشار
+
+```text
+Date: 2026-08-21
+Requested change: نمایش کارت مهر خودرو در صفحه اصلی همانند صفحه مشاهده همه نمایشگاه‌ها
+Root cause: صفحه فهرست از /api/businesses?type=dealer استفاده می‌کرد، اما صفحه اصلی فقط نمایشگاه‌های قابل استخراج از listings.php را می‌شناخت و خطای منبع تکمیلی کل بخش را از کار می‌انداخت.
+Affected files:
+- app/components/HomeFeaturedShowrooms.tsx
+- tests/homepage-contract.test.mjs
+Verification:
+- TypeScript موفق
+- 16/16 تست مرتبط موفق
+- Build cPanel/Vinext موفق
+Deployment state: آماده ساخت PR و انتشار
+Exact next action: ادغام در agent/launch-3-local-baseline، انتظار برای Deploy و تأیید کارت مهر خودرو در موبایل
+```
+
 ## شروع سریع در یک چت جدید
 
 هوش مصنوعی باید قبل از هر تغییر این مراحل را به‌ترتیب انجام دهد:

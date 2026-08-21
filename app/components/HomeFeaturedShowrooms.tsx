@@ -531,7 +531,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
       <div className={styles.sectionIntro}>
         <div>
           <span className={styles.eyebrow}>ویترین نمایشگاه‌ها</span>
-          <h2>نمایشگاه‌های منتخب چاکود</h2>
+          <h2>نمایشگاه‌های منتخب</h2>
           <p className={styles.locationLabel}>{resolvedDealers.label}</p>
         </div>
 

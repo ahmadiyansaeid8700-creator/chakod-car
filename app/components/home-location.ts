@@ -42,8 +42,8 @@ export const DEFAULT_HOME_LOCATION: HomeLocationSelection = {
   label: "سراسر ایران",
 };
 
-const MAX_PROVINCES = 6;
-const MAX_SELECTED_ITEMS = 24;
+const MAX_PROVINCES = 31;
+const MAX_SELECTED_ITEMS = 96;
 
 function cleanText(value: unknown) {
   return String(value || "")

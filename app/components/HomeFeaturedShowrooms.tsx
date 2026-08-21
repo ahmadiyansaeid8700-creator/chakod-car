@@ -532,7 +532,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
       ) : dealers.length > 0 ? (
         <div className={styles.dealerRail}>
           {dealers.map((dealer) => (
-            <ShowroomCard key={dealer.key} showroom={dealer} />
+            <ShowroomCard density="compact" key={dealer.key} showroom={dealer} />
           ))}
         </div>
       ) : (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
+import ShowroomCard from "../components/ShowroomCard";
 import styles from "./page.module.css";
 
 type PublicBusiness = {
@@ -37,17 +38,6 @@ type FeaturedResponse = {
   data?: FeaturedPlacement[];
 };
 
-type Vehicle = {
-  id: number;
-  title?: string;
-  cover_image?: string;
-};
-
-type VehicleResponse = {
-  success?: boolean;
-  data?: Vehicle[];
-};
-
 type SelectedShowroom = {
   dealerId: number;
   name: string;
@@ -61,9 +51,6 @@ type SelectedShowroom = {
   profileHref: string;
 };
 
-const API_MEDIA_ORIGIN = "https://api.chakod.com";
-const SITE_MEDIA_ORIGIN = "https://chakod.com";
-
 function normalizeText(value: unknown) {
   return String(value || "")
     .trim()
@@ -76,36 +63,6 @@ function normalizeText(value: unknown) {
     .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
 }
 
-function mediaUrl(value: unknown) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  const normalizedRaw = raw.startsWith("//") ? `https:${raw}` : raw;
-  if (/^https?:\/\//i.test(normalizedRaw)) {
-    try {
-      const url = new URL(normalizedRaw);
-      const hostname = url.hostname.toLowerCase();
-      if (url.protocol === "http:" && (hostname === "chakod.com" || hostname === "api.chakod.com")) {
-        url.protocol = "https:";
-      }
-      if (hostname === "api.chakod.com" && url.pathname.startsWith("/uploads/")) {
-        url.hostname = "chakod.com";
-        url.protocol = "https:";
-      }
-      return url.toString();
-    } catch {
-      return normalizedRaw;
-    }
-  }
-
-  const path = normalizedRaw.startsWith("/") ? normalizedRaw : `/${normalizedRaw}`;
-  try {
-    return new URL(path, path.startsWith("/uploads/") ? SITE_MEDIA_ORIGIN : API_MEDIA_ORIGIN).toString();
-  } catch {
-    return normalizedRaw;
-  }
-}
-
 function safeIds(value: unknown) {
   if (!Array.isArray(value)) return [];
   return Array.from(
@@ -115,115 +72,6 @@ function safeIds(value: unknown) {
         .filter((item) => Number.isSafeInteger(item) && item > 0),
     ),
   ).slice(0, 3);
-}
-
-function ShowroomBanner({ showroom }: { showroom: SelectedShowroom }) {
-  const desktop = mediaUrl(showroom.desktopBanner || showroom.mobileBanner || showroom.fallbackCover);
-  const mobile = mediaUrl(showroom.mobileBanner || showroom.desktopBanner || showroom.fallbackCover);
-  const fallback = mediaUrl(showroom.fallbackCover);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => setFailed(false), [desktop, mobile]);
-
-  if (failed) {
-    return fallback
-      ? <img src={fallback} alt="" loading="eager" />
-      : <span className={styles.bannerFallback} />;
-  }
-  if (!desktop && !mobile) return <span className={styles.bannerFallback} />;
-
-  return (
-    <picture>
-      {mobile ? <source media="(max-width: 700px)" srcSet={mobile} /> : null}
-      <img
-        src={desktop || mobile}
-        alt=""
-        loading="eager"
-        onError={() => setFailed(true)}
-      />
-    </picture>
-  );
-}
-
-function VehicleStrip({ ids }: { ids: number[] }) {
-  const idsKey = safeIds(ids).join(",");
-  const requested = useMemo(() => (idsKey ? idsKey.split(",").map(Number) : []), [idsKey]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(Boolean(idsKey));
-
-  useEffect(() => {
-    if (!idsKey) {
-      setVehicles([]);
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    fetch(`/api/compare-listings?ids=${encodeURIComponent(idsKey)}`, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as VehicleResponse | null;
-        if (!response.ok || !payload?.success || !Array.isArray(payload.data)) {
-          setVehicles([]);
-          return;
-        }
-        const order = new Map(requested.map((id, index) => [id, index]));
-        setVehicles(
-          payload.data
-            .filter((item) => requested.includes(Number(item.id)))
-            .sort((a, b) => (order.get(Number(a.id)) ?? 99) - (order.get(Number(b.id)) ?? 99))
-            .slice(0, 3),
-        );
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setVehicles([]);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [idsKey, requested]);
-
-  if (!idsKey) return null;
-
-  if (loading) {
-    return (
-      <div className={styles.vehicleStrip} aria-label="در حال دریافت خودروهای نمایشگاه">
-        {requested.map((id) => <span className={styles.vehicleSkeleton} key={id} />)}
-      </div>
-    );
-  }
-
-  if (!vehicles.length) return null;
-
-  return (
-    <div className={styles.vehicleStrip} aria-label="نمونه خودروهای نمایشگاه">
-      {vehicles.map((vehicle) => (
-        <a
-          className={styles.vehicleThumb}
-          href={`/cars/${vehicle.id}`}
-          key={vehicle.id}
-          aria-label={String(vehicle.title || `خودرو ${vehicle.id}`)}
-        >
-          {vehicle.cover_image ? (
-            <img
-              src={mediaUrl(vehicle.cover_image)}
-              alt=""
-              loading="lazy"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          ) : null}
-        </a>
-      ))}
-    </div>
-  );
 }
 
 export default function DealerDirectoryClient() {
@@ -362,52 +210,54 @@ export default function DealerDirectoryClient() {
         {error ? <div className={styles.stateError}>{error}</div> : null}
 
         {!loading && !error && selected.length ? (
-          <div className={styles.selectedGrid}>
+          <div className={styles.showroomGrid}>
             {selected.map((showroom) => (
-              <article className={styles.selectedCard} key={showroom.dealerId}>
-                <a className={styles.banner} href={showroom.profileHref}>
-                  <ShowroomBanner showroom={showroom} />
-                  <span>منتخب چاکود</span>
-                </a>
-
-                <div className={styles.showroomIdentity}>
-                  <div className={styles.showroomLogo}>
-                    {showroom.logoUrl ? <img src={mediaUrl(showroom.logoUrl)} alt="" /> : <b>{showroom.name.slice(0, 1)}</b>}
-                  </div>
-                  <div>
-                    <h2>{showroom.name}</h2>
-                    <p>{[showroom.city, showroom.province].filter(Boolean).join("، ") || "نمایشگاه خودرو"}</p>
-                  </div>
-                </div>
-
-                <VehicleStrip ids={showroom.listingIds} />
-
-                <a className={styles.primaryAction} href={showroom.profileHref}>مشاهده نمایشگاه</a>
-              </article>
+              <ShowroomCard
+                density="compact"
+                key={showroom.dealerId}
+                showroom={{
+                  key: `id:${showroom.dealerId}`,
+                  href: showroom.profileHref,
+                  slug: showroom.profileHref.startsWith("/businesses/")
+                    ? decodeURIComponent(showroom.profileHref.slice("/businesses/".length))
+                    : null,
+                  name: showroom.name,
+                  city: showroom.city,
+                  province: showroom.province,
+                  listingCount: showroom.listingIds.length,
+                  logoUrl: showroom.logoUrl,
+                  coverImage: showroom.fallbackCover,
+                  coverImageDesktop: showroom.desktopBanner,
+                  coverImageMobile: showroom.mobileBanner,
+                  featured: true,
+                  latestListings: showroom.listingIds.map((id) => ({ id, title: `خودرو ${id}` })),
+                }}
+              />
             ))}
           </div>
         ) : null}
 
         {!loading && !error && ordinary.length ? (
-          <div className={styles.ordinaryGrid}>
-            {ordinary.map((business) => {
-              const href = `/businesses/${encodeURIComponent(business.slug)}`;
-              return (
-                <article className={styles.ordinaryCard} key={business.id}>
-                  <a className={styles.ordinaryMedia} href={href}>
-                    {business.cover_url ? <img src={mediaUrl(business.cover_url)} alt="" loading="lazy" /> : <span />}
-                    <div className={styles.ordinaryLogo}>
-                      {business.logo_url ? <img src={mediaUrl(business.logo_url)} alt="" /> : <b>{business.name.slice(0, 1)}</b>}
-                    </div>
-                  </a>
-                  <div className={styles.ordinaryBody}>
-                    <h3>{business.name}</h3>
-                    <p>{[business.city, business.province].filter(Boolean).join("، ") || "نمایشگاه خودرو"}</p>
-                    <a href={href}>مشاهده نمایشگاه</a>
-                  </div>
-                </article>
-              );
-            })}
+          <div className={styles.showroomGrid}>
+            {ordinary.map((business) => (
+              <ShowroomCard
+                density="compact"
+                key={business.id}
+                showroom={{
+                  key: `business:${business.id}`,
+                  slug: business.slug,
+                  name: business.name,
+                  city: business.city,
+                  province: business.province,
+                  listingCount: 0,
+                  logoUrl: business.logo_url,
+                  coverImage: business.cover_url,
+                  verified: business.is_verified,
+                  featured: false,
+                  latestListings: [],
+                }}
+              />
+            ))}
           </div>
         ) : null}
 

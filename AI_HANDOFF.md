@@ -19,10 +19,10 @@ Verification:
 - TypeScript موفق
 - 9/9 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: در انتظار انتشار
-Merge commits: در انتظار انتشار
-Deployment state: در انتظار ادغام و انتشار روی استیجینگ
-Online verification: در انتظار انتشار
+PRs: #23
+Merge commits: cd161fb5fd3a1460c2ad3b99eb4e21d235c80b09
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: سه کارت صفحه اصلی با ارتفاع 238px و مسیرهای /car-services?category=car_wash، detailing و ceramic_coating نمایش داده شدند. مسیر کارواش روی /car-services باقی ماند، type=car_service قفل بود و category=car_wash در فیلتر انتخاب شد.
 Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 

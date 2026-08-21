@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
+import MobileBackButton from "../components/MobileBackButton";
 import ShowroomCard from "../components/ShowroomCard";
 import styles from "./page.module.css";
 
@@ -190,7 +191,7 @@ export default function DealerDirectoryClient() {
       </header>
 
       <header className={styles.mobileHeader}>
-        <button type="button" onClick={() => window.history.back()} aria-label="برگشت">‹</button>
+        <MobileBackButton />
         <strong>نمایشگاه‌ها</strong>
         <a href="/" aria-label="صفحه اصلی"><img src="/brand/chakod-symbol.png" alt="" /></a>
       </header>

@@ -324,9 +324,9 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
       try {
         const [payloads, luxuryPayloads, freezonePayloads, selectedResponse] = await Promise.all([
-          fetchListingPayloads(buildListingsApiUrls(location), controller.signal),
-          fetchListingPayloads(buildCatalogApiUrls("luxury", location), controller.signal),
-          fetchListingPayloads(buildCatalogApiUrls("freezone", location), controller.signal),
+          fetchListingPayloads(buildListingsApiUrls(location), controller.signal).catch(() => []),
+          fetchListingPayloads(buildCatalogApiUrls("luxury", location), controller.signal).catch(() => []),
+          fetchListingPayloads(buildCatalogApiUrls("freezone", location), controller.signal).catch(() => []),
           fetch("/api/selected/active", {
             cache: "no-store",
             headers: { Accept: "application/json" },

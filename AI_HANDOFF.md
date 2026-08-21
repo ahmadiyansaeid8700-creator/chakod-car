@@ -19,10 +19,10 @@ Verification:
 - TypeScript موفق
 - 9/9 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: در انتظار انتشار
-Merge commits: در انتظار انتشار
-Deployment state: در انتظار انتشار روی استیجینگ
-Online verification: در انتظار انتشار
+PRs: #25
+Merge commits: 92e5e71eb9ccd569e91fa23fda9974523b52e198
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: بخش خدمات صفحه اصلی هیچ کارت دسته‌بندی نشان نداد؛ چون جایگاه ویژه فعال وجود نداشت، پیام خالی کوتاه نمایش داده شد. دکمه /car-services در بالای سمت چپ هدر قرار گرفت (فاصله 27px از بالا و چپ در عرض دسکتاپ). قانون ردیفی موبایل با تست قراردادی محافظت می‌شود.
 Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 

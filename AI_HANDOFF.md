@@ -47,6 +47,19 @@ Online verification: در انتظار پایان انتشار استیجینگ
 Exact next action: بررسی لمسی ریل خودروهای لوکس، منطقه آزاد، نمایشگاه‌ها و کسب‌وکارها در موبایل واقعی
 ```
 
+```text
+Date: 2026-08-21
+Requested change: حذف عبارت تزئینی «ویترین نمایشگاه‌ها» از زیر استوری
+Implementation: eyebrow و CSS بلااستفاده آن حذف شد و margin بالای عنوان «نمایشگاه‌های منتخب» صفر شد.
+Affected files: app/components/HomeFeaturedShowrooms.tsx، app/components/HomeFeaturedShowrooms.module.css، tests/homepage-contract.test.mjs
+Verification: 15/15 تست صفحه اصلی موفق؛ TypeScript موفق؛ Build cPanel/Vinext موفق
+PR: #40
+Merge commit: e0ab46fad7bef4e3fea4b83fda7c6ee3d92e1367
+Deployment state: ادغام‌شده در شاخه استیجینگ؛ بررسی آنلاین پس از پایان Workflow لازم است
+Online verification: در انتظار پایان انتشار استیجینگ
+Exact next action: Hard Refresh موبایل و تأیید نمایش مستقیم عنوان «نمایشگاه‌های منتخب» بدون متن تزئینی بالای آن
+```
+
 ## شروع سریع در یک چت جدید
 
 هوش مصنوعی باید قبل از هر تغییر این مراحل را به‌ترتیب انجام دهد:
@@ -106,6 +119,7 @@ Merge commit شاخه استیجینگ: 270bc9ad49edc8a8af4ebf63768496c1826976ef
 - موقعیت پیش‌فرض «سراسر ایران» است و موقعیت انتخابی باید داده ریل‌ها را فیلتر کند.
 - بنر تبلیغاتی قدیمی صفحه اصلی حذف شده و نباید برگردد.
 - جایگاه «نمایشگاه منتخب» محصول جایگزین بنر است.
+- بالای عنوان «نمایشگاه‌های منتخب» نباید eyebrow یا عبارت تزئینی «ویترین نمایشگاه‌ها» دوباره اضافه شود.
 
 ### سیاست قفل‌شده موجودی و موقعیت صفحه اصلی
 

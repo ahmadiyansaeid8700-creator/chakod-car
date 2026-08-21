@@ -8,20 +8,23 @@
 
 ```text
 Date: 2026-08-21
-Requested change: نمایش کارت مهر خودرو در صفحه اصلی همانند صفحه مشاهده همه نمایشگاه‌ها
-Root cause: صفحه فهرست از /api/businesses?type=dealer استفاده می‌کرد، اما صفحه اصلی فقط نمایشگاه‌های قابل استخراج از listings.php را می‌شناخت و خطای منبع تکمیلی کل بخش را از کار می‌انداخت.
+Requested change: یکسان‌سازی کارت «مشاهده همه نمایشگاه‌ها» با کارت تأییدشده صفحه اصلی و کاهش اندازه آن در موبایل
+Implementation: مسیر /dealerships از کامپوننت مشترک ShowroomCard با density="compact" استفاده می‌کند؛ مسیر اختصاصی نمایشگاه حفظ شده و Grid موبایل با حداکثر عرض 520px وسط‌چین است. کارت پیش‌فرض صفحه اصلی بدون تغییر باقی مانده است.
 Affected files:
-- app/components/HomeFeaturedShowrooms.tsx
-- tests/homepage-contract.test.mjs
+- app/components/ShowroomCard.tsx
+- app/components/ShowroomCard.module.css
+- app/dealerships/DealerDirectoryClient.tsx
+- app/dealerships/page.module.css
+- tests/dealer-directory-contract.test.mjs
 Verification:
 - TypeScript موفق
-- 16/16 تست مرتبط موفق
+- 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: #12
-Merge commit: 21ad02ecd9247d1d72a1b26da96cb3035063701b
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: کارت «مهر خودرو» با برچسب «منتخب» در صفحه اصلی دیده شد و پیام «دریافت نمایشگاه‌ها انجام نشد» وجود نداشت.
-Exact next action: بررسی بصری کارت در موبایل کاربر و سپس ادامه تکمیل بخش بعدی صفحه اصلی
+PR: در حال انتشار
+Merge commit: در حال انتشار
+Deployment state: در انتظار انتشار روی https://staging.chakod.com
+Online verification: در انتظار انتشار
+Exact next action: بررسی نسخه زنده /dealerships در موبایل و دریافت تأیید مالک
 ```
 
 ## شروع سریع در یک چت جدید

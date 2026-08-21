@@ -20,11 +20,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: در حال انتشار
-Merge commit: در حال انتشار
-Deployment state: در انتظار انتشار روی https://staging.chakod.com
-Online verification: در انتظار انتشار
-Exact next action: بررسی نسخه زنده /dealerships در موبایل و دریافت تأیید مالک
+PR: #14
+Merge commit: 8c0fd2417ab7ed2771d4b86c59617724534ebcba
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: فایل DealerDirectoryClient-B3ZdFKU8.js منتشر شد؛ کارت «مهر خودرو» با کلاس compact، عرض 340px و ارتفاع 440px در Viewport دسکتاپ دیده شد و لینک مستقیم /showrooms/2 حفظ شده است.
+Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس ادامه بخش بعدی صفحه اصلی
 ```
 
 ## شروع سریع در یک چت جدید

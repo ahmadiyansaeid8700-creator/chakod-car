@@ -8,24 +8,22 @@
 
 ```text
 Date: 2026-08-21
-Requested change: نمایش آگهی‌های واقعی خودروهای لوکس در صفحه اصلی و یکسان‌سازی کارت فهرست با صفحه اصلی
-Root cause: صفحه /cars/luxury از دسته‌بندی رسمی API با segment=luxury استفاده می‌کرد، اما HomePublicListingsClient داده عمومی را با فهرست دستی برند و قیمت دوباره طبقه‌بندی می‌کرد؛ بنابراین خودروهایی مانند آکورا/اینتگرا از صفحه اصلی حذف می‌شدند.
-Implementation: ریل‌های لوکس و منطقه آزاد صفحه اصلی مستقیماً از /api/catalog با segment رسمی و همان فیلتر موقعیت دریافت می‌شوند. هر منبع مستقل خطاگیری می‌شود تا خرابی درخواست عمومی جست‌وجو، داده صحیح ریل‌های لوکس و منطقه آزاد را حذف نکند. MarketListingItem همان ListingCard صفحه اصلی را بدون اکشن متفاوت نمایش می‌دهد.
+Requested change: اصلاح مسیر و بازطراحی کارت‌های بخش «خدمات خودرویی برتر» صفحه اصلی
+Root cause: API عمومی کسب‌وکارها برای type=car_service فعلاً آرایه خالی برمی‌گرداند؛ در نتیجه صفحه اصلی کارت‌های fallback بلند با شماره ساختگی نشان می‌داد. همه کارت‌ها به مسیر عمومی /businesses?type=car_service می‌رفتند و /car-services نیز فقط به همان مسیر ریدایرکت می‌شد.
+Implementation: /car-services به صفحه اختصاصی و type-locked خدمات خودرویی تبدیل شد. دکمه «مشاهده همه» به این مسیر می‌رود و سه کارت جایگزین به دسته‌های car_wash، detailing و ceramic_coating متصل‌اند. شماره‌های ساختگی حذف و کارت‌ها با آیکون مرتبط، ارتفاع کمتر، توضیح و CTA جمع‌وجور بازطراحی شدند. دو بخش بعدی (قطعات و تعمیرگاه‌ها) عمداً تغییری نکردند.
 Affected files:
-- app/components/ShowroomCard.tsx
-- app/components/ShowroomCard.module.css
-- app/dealerships/DealerDirectoryClient.tsx
-- app/dealerships/page.module.css
-- tests/dealer-directory-contract.test.mjs
+- app/components/HomeFeaturedBusinesses.tsx
+- app/car-services/page.tsx
+- tests/homepage-contract.test.mjs
 Verification:
 - TypeScript موفق
-- 17/17 تست مرتبط موفق
+- 9/9 تست قرارداد صفحه اصلی موفق
 - Build cPanel/Vinext موفق
-PRs: #20 و #21
-Merge commits: afff37517b6f4c398b04f55dc18f4ce4a0b0d4c6 و d7d142c200fd9525ae3345d1f8ae4ce40f8c03ca
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: فایل HomePublicListingsClient-27zH9lbM.js منتشر شد. ریل لوکس صفحه اصلی 7 کارت واقعی با شناسه‌های 18، 11، 10، 8، 3، 2 و 1 نشان داد؛ همان 7 آگهی در /cars/luxury موجودند و کارت‌ها از ListingCard مشترک استفاده می‌کنند.
-Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس بررسی ریل منطقه آزاد
+PRs: در انتظار انتشار
+Merge commits: در انتظار انتشار
+Deployment state: در انتظار ادغام و انتشار روی استیجینگ
+Online verification: در انتظار انتشار
+Exact next action: بررسی بصری موبایل بخش خدمات و سپس اصلاح بخش «قطعات و لوازم» با دستور مالک
 ```
 
 ## شروع سریع در یک چت جدید

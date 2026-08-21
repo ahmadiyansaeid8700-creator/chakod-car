@@ -211,3 +211,18 @@ test("never leaves a localized homepage empty while nationwide inventory exists"
   assert.match(showrooms, /resolveDealersForLocation/);
   assert.match(showrooms, /resolvedDealers\.label/);
 });
+
+test("keeps the mobile location name readable and the homepage footer identity clean", () => {
+  const selector = read("app/components/HomeLocationSelector.tsx");
+  const page = read("app/page.tsx");
+  const css = read("app/home.css");
+
+  assert.match(selector, /@media\(max-width:640px\)[\s\S]*?\.chakodLocationTriggerCopy small\{display:none\}/);
+  assert.match(selector, /@media\(max-width:640px\)[\s\S]*?\.chakodLocationTriggerCopy strong\{[^}]*font-size:12px/);
+  assert.match(css, /grid-template-columns:minmax\(148px,42vw\) minmax\(0,1fr\)/);
+  assert.match(page, /className="masterFooterSymbol"[\s\S]*?src="\/brand\/chakod-symbol\.png"/);
+  assert.match(page, /className="masterFooterWordmark"[\s\S]*?چاکود/);
+  assert.doesNotMatch(page, /chakod-logo-full-light\.png/);
+  assert.match(page, /شرکت یکتا الکترونیک گلشن نوین/);
+  assert.match(page, /تأسیس ۱۳۹۴/);
+});

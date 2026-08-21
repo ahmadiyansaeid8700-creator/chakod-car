@@ -108,11 +108,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             href="/"
             aria-label="صفحه اصلی چاکود"
           >
-            <img
-              className="masterFooterLogo"
-              src="/brand/chakod-logo-full-light.png"
-              alt="چاکود؛ پلتفرم رشد کسب‌وکار"
-            />
+            <img className="masterFooterSymbol" src="/brand/chakod-symbol.png" alt="" />
+            <span className="masterFooterWordmark">
+              <b>چاکود</b>
+              <small>پلتفرم رشد کسب‌وکار</small>
+            </span>
           </Link>
 
           <p>
@@ -131,9 +131,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <div className="masterFooterBottom">
           <span>
-            © چاکود — کلیه حقوق مادی و معنوی، طراحی و محتوای این وب‌سایت متعلق به شرکت یکتا الکترونیک گلشن نوین است.
+            © چاکود؛ محصول شرکت یکتا الکترونیک گلشن نوین — تأسیس ۱۳۹۴
           </span>
-          <span>هرگونه کپی‌برداری، بازنشر یا استفاده غیرمجاز، پیگرد قانونی دارد.</span>
+          <span>کلیه حقوق مادی و معنوی این وب‌سایت محفوظ است.</span>
         </div>
       </footer>
 

@@ -55,61 +55,6 @@ type SelectedResponse = {
   data?: SelectedPlacement[];
 };
 
-const luxuryBrands = [
-  "porsche",
-  "پورشه",
-  "mercedesbenz",
-  "مرسدسبنز",
-  "bmw",
-  "بیامو",
-  "audi",
-  "آئودی",
-  "lexus",
-  "لکسوس",
-  "landrover",
-  "لندرور",
-  "rangerover",
-  "رنجروور",
-  "jaguar",
-  "جگوار",
-  "volvo",
-  "ولوو",
-  "maserati",
-  "مازراتی",
-  "ferrari",
-  "فراری",
-  "lamborghini",
-  "لامبورگینی",
-  "bentley",
-  "بنتلی",
-  "rollsroyce",
-  "رولزرویس",
-  "astonmartin",
-  "استونمارتین",
-  "mclaren",
-  "مکلارن",
-  "maybach",
-  "مایباخ",
-  "tesla",
-  "تسلا",
-  "genesis",
-  "جنسیس",
-  "infiniti",
-  "اینفینیتی",
-  "cadillac",
-  "کادیلاک",
-  "hongqi",
-  "هونگچی",
-  "tank",
-  "تانک",
-  "fownix",
-  "فونیکس",
-  "extreme",
-  "اکستریم",
-  "lucano",
-  "لوکانو",
-];
-
 function normalizeText(value: string) {
   return String(value || "")
     .trim()
@@ -120,52 +65,6 @@ function normalizeText(value: string) {
     .replace(/[ؤ]/g, "و")
     .replace(/[إأ]/g, "ا")
     .replace(/[\u200c\u200f\u202a-\u202e\s\-_/\\،,.]+/g, "");
-}
-
-function includesAny(value: string, needles: string[]) {
-  const normalizedValue = normalizeText(value);
-  return needles.some((needle) =>
-    normalizedValue.includes(normalizeText(needle)),
-  );
-}
-
-function isFreezone(listing: Listing) {
-  const text = [
-    listing.market_segment || "",
-    listing.category_code,
-    listing.category_name,
-    listing.title,
-    listing.province,
-    listing.city,
-  ].join(" ");
-
-  return (
-    listing.market_segment === "freezone" ||
-    includesAny(text, [
-      "freezone",
-      "منطقه آزاد",
-      "کیش",
-      "قشم",
-      "اروند",
-      "انزلی",
-      "ارس",
-      "ماکو",
-      "چابهار",
-    ])
-  );
-}
-
-function isLuxury(listing: Listing) {
-  return (
-    !isFreezone(listing) &&
-    (listing.market_segment === "luxury" ||
-      listing.category_code === "luxury" ||
-      includesAny(
-        `${listing.brand} ${listing.model} ${listing.title}`,
-        luxuryBrands,
-      ) ||
-      Number(listing.price_toman || 0) >= 2_000_000_000)
-  );
 }
 
 function byNewest(a: Listing, b: Listing) {
@@ -264,6 +163,47 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
   );
 }
 
+function buildCatalogApiUrls(
+  segment: "luxury" | "freezone",
+  location: HomeLocationSelection,
+) {
+  const provinces = location.mode === "all"
+    ? []
+    : Array.from(new Set(getHomeLocationScopes(location).map((scope) => scope.province)));
+  const scopes = provinces.length ? provinces : [""];
+
+  return scopes.map((province) => {
+    const params = new URLSearchParams({ segment, limit: "9", sort: "vip" });
+    if (province) params.set("province", province);
+    return `/api/catalog?${params.toString()}`;
+  });
+}
+
+async function fetchListingPayloads(urls: string[], signal: AbortSignal) {
+  return Promise.all(
+    urls.map(async (url) => {
+      const response = await fetch(url, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return (await response.json()) as ApiResponse;
+    }),
+  );
+}
+
+function mergeListings(payloads: ApiResponse[], location: HomeLocationSelection) {
+  const merged = new Map<number | string, Listing>();
+  payloads.forEach((payload) => {
+    if (!payload.success || !Array.isArray(payload.data)) return;
+    payload.data.forEach((listing) => {
+      if (listingMatchesLocation(listing, location)) merged.set(listing.id, listing);
+    });
+  });
+  return Array.from(merged.values());
+}
+
 function ShowcaseSection({
   id,
   kicker,
@@ -347,6 +287,8 @@ function ShowcaseSection({
 
 export default function HomePublicListingsClient({ query }: { query: string }) {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [luxuryListings, setLuxuryListings] = useState<Listing[]>([]);
+  const [freezoneListings, setFreezoneListings] = useState<Listing[]>([]);
   const [selected, setSelected] = useState<SelectedPlacement[]>([]);
   const [location, setLocation] = useState<HomeLocationSelection>(
     DEFAULT_HOME_LOCATION,
@@ -375,41 +317,22 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
     async function load() {
       setListings([]);
+      setLuxuryListings([]);
+      setFreezoneListings([]);
       setSelected([]);
       setStatus("loading");
 
       try {
-        const [payloads, selectedResponse] = await Promise.all([
-          Promise.all(
-            buildListingsApiUrls(location).map(async (url) => {
-              const response = await fetch(url, {
-                cache: "no-store",
-                headers: { Accept: "application/json" },
-                signal: controller.signal,
-              });
-
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              return (await response.json()) as ApiResponse;
-            }),
-          ),
+        const [payloads, luxuryPayloads, freezonePayloads, selectedResponse] = await Promise.all([
+          fetchListingPayloads(buildListingsApiUrls(location), controller.signal),
+          fetchListingPayloads(buildCatalogApiUrls("luxury", location), controller.signal),
+          fetchListingPayloads(buildCatalogApiUrls("freezone", location), controller.signal),
           fetch("/api/selected/active", {
             cache: "no-store",
             headers: { Accept: "application/json" },
             signal: controller.signal,
           }).catch(() => null),
         ]);
-
-        const merged = new Map<number | string, Listing>();
-
-        for (const payload of payloads) {
-          if (!payload.success || !Array.isArray(payload.data)) continue;
-
-          for (const listing of payload.data) {
-            if (listingMatchesLocation(listing, location)) {
-              merged.set(listing.id, listing);
-            }
-          }
-        }
 
         if (selectedResponse?.ok) {
           const selectedPayload = (await selectedResponse.json()) as SelectedResponse;
@@ -418,11 +341,15 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           }
         }
 
-        setListings(Array.from(merged.values()));
+        setListings(mergeListings(payloads, location));
+        setLuxuryListings(mergeListings(luxuryPayloads, location));
+        setFreezoneListings(mergeListings(freezonePayloads, location));
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setListings([]);
+          setLuxuryListings([]);
+          setFreezoneListings([]);
           setSelected([]);
           setStatus("error");
         }
@@ -439,13 +366,13 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const freezoneOrder = selectedOrder(selected, "freezone");
 
     return {
-      luxury: sorted.filter(isLuxury).sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
-      freezone: sorted.filter(isFreezone).sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      luxury: [...luxuryListings].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      freezone: [...freezoneListings].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
       searchResults: query
         ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
         : [],
     };
-  }, [listings, query, selected]);
+  }, [freezoneListings, listings, luxuryListings, query, selected]);
 
   return (
     <>

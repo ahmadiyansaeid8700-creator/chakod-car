@@ -8,8 +8,8 @@
 
 ```text
 Date: 2026-08-21
-Requested change: یکسان‌سازی کارت «مشاهده همه نمایشگاه‌ها» با کارت تأییدشده صفحه اصلی و کاهش اندازه آن در موبایل
-Implementation: مسیر /dealerships از کامپوننت مشترک ShowroomCard با density="compact" استفاده می‌کند؛ مسیر اختصاصی نمایشگاه حفظ شده و Grid موبایل با حداکثر عرض 520px وسط‌چین است. کارت پیش‌فرض صفحه اصلی بدون تغییر باقی مانده است.
+Requested change: کاهش بیشتر ارتفاع کارت فشرده نمایشگاه و کوچک‌کردن دایره لوگو در موبایل
+Implementation: فقط density="compact" تغییر کرد؛ نسبت کاور موبایل 2.7/1، لوگوی موبایل 52px، پیش‌نمایش‌ها 52px و فاصله‌ها و دکمه کوتاه‌تر شدند. کارت پیش‌فرض صفحه اصلی بدون تغییر باقی مانده است.
 Affected files:
 - app/components/ShowroomCard.tsx
 - app/components/ShowroomCard.module.css
@@ -20,11 +20,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: #14
-Merge commit: 8c0fd2417ab7ed2771d4b86c59617724534ebcba
-Deployment state: منتشرشده روی https://staging.chakod.com
-Online verification: فایل DealerDirectoryClient-B3ZdFKU8.js منتشر شد؛ کارت «مهر خودرو» با کلاس compact، عرض 340px و ارتفاع 440px در Viewport دسکتاپ دیده شد و لینک مستقیم /showrooms/2 حفظ شده است.
-Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس ادامه بخش بعدی صفحه اصلی
+PR: در حال انتشار
+Merge commit: در حال انتشار
+Deployment state: در انتظار انتشار روی https://staging.chakod.com
+Online verification: در انتظار انتشار
+Exact next action: بررسی ارتفاع کارت زنده و دریافت تأیید بصری مالک روی موبایل
 ```
 
 ## شروع سریع در یک چت جدید

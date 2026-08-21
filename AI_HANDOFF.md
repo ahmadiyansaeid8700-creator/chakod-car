@@ -36,6 +36,20 @@ Exact next action: بررسی آیکون بازگشت در عرض‌های 320،
 
 ```text
 Date: 2026-08-21
+Requested change: امکان انتخاب بیش از ۶ استان و جمع‌وجور کردن فهرست انتخاب‌های موقعیت در موبایل
+Root cause: سقف ۶ استان هم در HomeLocationSelector و هم در sanitize مدل home-location تکرار شده بود؛ چیپ‌ها نیز تک‌ردیفی و افقی بودند و انتخاب‌های زیاد از دید خارج می‌شدند.
+Implementation: سقف استان‌ها در UI و مدل ذخیره‌سازی به ۳۱ و ظرفیت محدوده‌ها به ۹۶ افزایش یافت. انتخاب‌ها به چیپ‌های چندردیفی فشرده با ارتفاع کنترل‌شده، ضربدر حذف تکی، aria-label اختصاصی و دکمه واضح «حذف همه» تبدیل شدند.
+Affected files: app/components/HomeLocationSelector.tsx، app/components/home-location.ts، tests/homepage-contract.test.mjs
+Verification: تست قرمز قبل از اصلاح ثبت شد؛ سپس 17/17 تست مرتبط موفق؛ TypeScript موفق؛ Build cPanel/Vinext موفق
+PR: #46
+Merge commit: 285bc2a40aaa8a6325efacc9311d6c0fc9e96ee2
+Deployment state: ادغام‌شده در شاخه استیجینگ؛ بررسی آنلاین پس از پایان Workflow لازم است
+Online verification: در انتظار پایان انتشار استیجینگ
+Exact next action: انتخاب حداقل ۷ استان در Safari آیفون، حذف تکی یکی از چیپ‌ها، حذف همه و تأیید حفظ انتخاب‌ها پس از اعمال
+```
+
+```text
+Date: 2026-08-21
 Requested change: یکسان‌سازی اسکرول «خودروهای لوکس منتخب» با «خودروهای منطقه آزاد» در موبایل
 Root cause: جهت RTL فقط از CSS تأمین می‌شد و ریل پُرِ لوکس در موتورهای لمسی/سافاری رفتار پایدار مشابه ریل کم‌موجودی منطقه آزاد نداشت.
 Implementation: ویژگی dir="rtl" مستقیماً روی عنصر مشترک HomeHorizontalRail قرار گرفت و touch-action: pan-x برای gesture افقی پایدار اضافه شد؛ هر دو بخش همچنان از همین کامپوننت و اندازه/فاصله/اسنپ مشترک استفاده می‌کنند.

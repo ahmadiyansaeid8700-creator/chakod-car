@@ -32,6 +32,66 @@ textarea {
   font-family: inherit;
 }
 
+.homeRailShell {
+  position: relative;
+  width: 100%;
+}
+
+.homeRailTrack {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  direction: rtl;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.homeRailTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.homeRailTrack > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.homeRailControls {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+}
+
+.homeRailControl {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #e5ddff;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.homeRailControl svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.homeRailHint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #777;
+}
+
 @media (max-width: 768px) {
   html {
     scroll-padding-bottom: calc(
@@ -52,5 +112,9 @@ textarea {
     scroll-margin-bottom: calc(
       var(--chakod-mobile-nav-safe-space) + env(safe-area-inset-bottom, 0px)
     );
+  }
+
+  .homeRailTrack > * {
+    flex-basis: 84%;
   }
 }

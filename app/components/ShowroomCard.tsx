@@ -17,6 +17,7 @@ export type ShowroomListingPreview = {
 
 export type ShowroomCardData = {
   key: string;
+  href?: string;
   slug?: string | null;
   name: string;
   city: string;
@@ -33,6 +34,7 @@ export type ShowroomCardData = {
 
 type ShowroomCardProps = {
   showroom: ShowroomCardData;
+  density?: "default" | "compact";
 };
 
 function getImageUrl(path?: string | null) {
@@ -114,10 +116,10 @@ function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
   );
 }
 
-export default function ShowroomCard({ showroom }: ShowroomCardProps) {
-  const href = showroom.slug
+export default function ShowroomCard({ showroom, density = "default" }: ShowroomCardProps) {
+  const href = showroom.href || (showroom.slug
     ? `/businesses/${encodeURIComponent(showroom.slug)}`
-    : `/businesses?type=dealer&q=${encodeURIComponent(showroom.name)}`;
+    : `/businesses?type=dealer&q=${encodeURIComponent(showroom.name)}`);
   const desktopCoverUrl = getImageUrl(showroom.coverImageDesktop || showroom.coverImage);
   const mobileCoverUrl = getImageUrl(
     showroom.coverImageMobile || showroom.coverImageDesktop || showroom.coverImage,
@@ -137,7 +139,7 @@ export default function ShowroomCard({ showroom }: ShowroomCardProps) {
   const formattedCount = new Intl.NumberFormat("fa-IR").format(showroom.listingCount);
 
   return (
-    <article className={styles.card}>
+    <article className={`${styles.card} ${density === "compact" ? styles.compact : ""}`}>
       <div className={styles.cover}>
         <a className={styles.coverLink} href={href} aria-label={`مشاهده نمایشگاه ${showroom.name}`}>
           {showCover ? (

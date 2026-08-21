@@ -99,6 +99,15 @@ test("keeps stories, showrooms and vehicle rails connected to the shared locatio
     assert.ok(source.includes("HOME_LOCATION_EVENT"));
     assert.ok(source.includes("loadHomeLocation"));
   }
+
+  assert.ok(
+    showrooms.includes('fetch(`/api/businesses?${params.toString()}`'),
+    "homepage showrooms must use the canonical dealership directory source",
+  );
+  assert.ok(
+    showrooms.includes('type: "dealer"'),
+    "homepage showroom business requests must be limited to dealerships",
+  );
 });
 
 test("keeps show-all catalog pages on their multi-row grid", () => {

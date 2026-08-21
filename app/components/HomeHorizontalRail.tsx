@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 type HomeHorizontalRailProps = {
   children: ReactNode;
@@ -17,6 +17,20 @@ export default function HomeHorizontalRail({
   showControls = true,
 }: HomeHorizontalRailProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const track = trackRef.current;
+
+    if (!track) {
+      return;
+    }
+
+    // In RTL browsers scrollLeft starts at different positions.
+    // Put the rail on the first card instead of the last loaded item.
+    requestAnimationFrame(() => {
+      track.scrollLeft = 0;
+    });
+  }, []);
 
   function scroll(direction: "previous" | "next") {
     const track = trackRef.current;

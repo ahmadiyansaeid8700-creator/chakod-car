@@ -139,3 +139,13 @@ test("uses the same compact showroom-card design law on home and directory", () 
   assert.match(homeShowrooms, /<ShowroomCard density="compact"/);
   assert.match(directory, /<ShowroomCard[\s\S]*?density="compact"/);
 });
+
+test("uses the canonical catalog segments for homepage luxury and free-zone rails", () => {
+  const vehicles = read("app/components/HomePublicListingsClient.tsx");
+  const catalogItem = read("app/components/MarketListingItem.tsx");
+
+  assert.match(vehicles, /\/api\/catalog\?/);
+  assert.match(vehicles, /buildCatalogApiUrls\("luxury", location\)/);
+  assert.match(vehicles, /buildCatalogApiUrls\("freezone", location\)/);
+  assert.doesNotMatch(catalogItem, /showActions/);
+});

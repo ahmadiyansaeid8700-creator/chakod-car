@@ -20,11 +20,11 @@ Verification:
 - TypeScript موفق
 - 17/17 تست مرتبط موفق
 - Build cPanel/Vinext موفق
-PR: در حال انتشار
-Merge commit: در حال انتشار
-Deployment state: در انتظار انتشار روی https://staging.chakod.com
-Online verification: در انتظار انتشار
-Exact next action: بررسی ارتفاع کارت زنده و دریافت تأیید بصری مالک روی موبایل
+PR: #16
+Merge commit: 403a1a2035c90d1263e0450d021908b3717b61c4
+Deployment state: منتشرشده روی https://staging.chakod.com
+Online verification: فایل DealerDirectoryClient-Sn5Di8r6.js منتشر شد؛ کارت compact «مهر خودرو» در عرض 340px از ارتفاع 440px به 377px کاهش یافت، کاور 133px و لوگوی دسکتاپ 56px است؛ CSS موبایل لوگوی 52px دارد و لینک /showrooms/2 حفظ شده است.
+Exact next action: دریافت تأیید بصری مالک روی موبایل و سپس ادامه بخش بعدی صفحه اصلی
 ```
 
 ## شروع سریع در یک چت جدید

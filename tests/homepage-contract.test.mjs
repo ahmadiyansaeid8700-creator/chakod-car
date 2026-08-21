@@ -236,3 +236,13 @@ test("contains large location selections inside the mobile dialog", () => {
   assert.match(selector, /\.chakodLocationBody\{[^}]*overflow-y:auto;[^}]*overflow-x:hidden/);
   assert.match(selector, /@media\(max-width:760px\)[\s\S]*?\.chakodLocationFooter\{[^}]*width:100%;[^}]*box-sizing:border-box/);
 });
+
+test("keeps the mobile showroom heading concise and close to stories", () => {
+  const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
+  const css = read("app/components/HomeFeaturedShowrooms.module.css");
+
+  assert.match(showrooms, /<h2>نمایشگاه‌های منتخب<\/h2>/);
+  assert.doesNotMatch(showrooms, /نمایشگاه‌های منتخب چاکود/);
+  assert.match(css, /@media \(max-width: 900px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 24px/);
+  assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 18px/);
+});

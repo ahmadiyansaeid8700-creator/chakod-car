@@ -217,7 +217,7 @@
 @media (max-width: 900px) {
   .dealerSection {
     width: min(100% - 28px, 1280px);
-    padding-top: 48px;
+    padding-top: 24px;
   }
 
   .sectionIntro {
@@ -249,6 +249,7 @@
 @media (max-width: 620px) {
   .dealerSection {
     width: calc(100% - 20px);
+    padding-top: 18px;
   }
 
   .dealerRail,

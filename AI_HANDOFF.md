@@ -36,6 +36,20 @@ Exact next action: بررسی آیکون بازگشت در عرض‌های 320،
 
 ```text
 Date: 2026-08-21
+Requested change: یکسان‌سازی اسکرول «خودروهای لوکس منتخب» با «خودروهای منطقه آزاد» در موبایل
+Root cause: جهت RTL فقط از CSS تأمین می‌شد و ریل پُرِ لوکس در موتورهای لمسی/سافاری رفتار پایدار مشابه ریل کم‌موجودی منطقه آزاد نداشت.
+Implementation: ویژگی dir="rtl" مستقیماً روی عنصر مشترک HomeHorizontalRail قرار گرفت و touch-action: pan-x برای gesture افقی پایدار اضافه شد؛ هر دو بخش همچنان از همین کامپوننت و اندازه/فاصله/اسنپ مشترک استفاده می‌کنند.
+Affected files: app/components/HomeHorizontalRail.tsx، app/home.css، tests/homepage-contract.test.mjs
+Verification: تست قرمز قبل از اصلاح ثبت شد؛ سپس 17/17 تست مرتبط موفق؛ TypeScript موفق؛ Build cPanel/Vinext موفق
+PR: #44
+Merge commit: bfb4a0ddc0d632728ef83bf60acd5f97cb0656dc
+Deployment state: ادغام‌شده در شاخه استیجینگ؛ بررسی آنلاین پس از پایان Workflow لازم است
+Online verification: در انتظار پایان انتشار استیجینگ
+Exact next action: تست لمسی ریل لوکس در Safari آیفون و تأیید شروع از راست و نمایش کارت بعدی با کشیدن به چپ
+```
+
+```text
+Date: 2026-08-21
 Requested change: شروع همه ریل‌های صفحه اصلی از راست و مشاهده موارد بعدی با حرکت به چپ
 Implementation: direction: rtl روی ریل مشترک خودروها، ریل نمایشگاه‌ها و ریل کسب‌وکارها صریح شد تا رفتار به جهت ارث‌رسیده مرورگر وابسته نباشد.
 Affected files: app/home.css، app/components/HomeFeaturedShowrooms.module.css، app/components/HomeFeaturedBusinesses.tsx، tests/homepage-contract.test.mjs

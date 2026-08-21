@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import MobileBackButton from "../components/MobileBackButton";
 import styles from "./page.module.css";
 
 type Payload = {
@@ -28,7 +28,6 @@ function fa(value: number) {
 }
 
 export default function AffiliateLandingClient() {
-  const router = useRouter();
   const [data, setData] = useState<Payload | null>(null);
 
   useEffect(() => {
@@ -42,7 +41,7 @@ export default function AffiliateLandingClient() {
   return (
     <main className={styles.page}>
       <nav className={styles.topNav}>
-        <button type="button" onClick={() => window.history.length > 1 ? router.back() : router.push("/")}>بازگشت</button>
+        <MobileBackButton />
         <Link href="/">صفحه اصلی</Link>
         <Link href="/account/affiliate">پنل همکاری در فروش</Link>
         <Link href="/account">حساب کاربری</Link>

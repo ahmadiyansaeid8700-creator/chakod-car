@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -10,6 +10,7 @@ import {
   createDoubleStoryShareFile,
   downloadShareFile,
 } from "../../lib/double-story-share";
+import MobileBackButton from "../../components/MobileBackButton";
 
 type StoryItem = {
   story_id: number;
@@ -163,7 +164,6 @@ const secondaryStyle: CSSProperties = {
 
 export default function PublicStoryPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const storyId = Number(String(params?.id || "").replace(/\D/g, ""));
   const [story, setStory] = useState<StoryItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -245,15 +245,6 @@ export default function PublicStoryPage() {
     return () => { ignore = true; };
   }, [image, location, story]);
 
-  function goBack() {
-    if (typeof window === "undefined") return;
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push("/");
-  }
-
   async function shareStory() {
     if (typeof window === "undefined") return;
     setShareState("idle");
@@ -289,13 +280,7 @@ export default function PublicStoryPage() {
     <main style={pageStyle}>
       <div style={shellStyle}>
         <header style={headerStyle}>
-          <button
-            type="button"
-            onClick={goBack}
-            style={{ padding: 0, border: 0, color: "rgba(255,255,255,.74)", background: "transparent", font: "inherit", fontSize: 11, fontWeight: 850, cursor: "pointer" }}
-          >
-            برگشت
-          </button>
+          <MobileBackButton tone="dark" />
           <Link href="/" aria-label="چاکود" style={{ display: "inline-flex" }}>
             <img src="/brand/chakod-logo-full-light.png" alt="چاکود" style={{ width: 108, height: "auto" }} />
           </Link>

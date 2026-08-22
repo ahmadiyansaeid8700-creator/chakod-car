@@ -289,7 +289,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return jsonResponse({ success: true, data: Array.from(merged.values()).slice(0, 24) });
+    const response = jsonResponse({ success: true, data: Array.from(merged.values()).slice(0, 24) });
+    response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=120");
+    return response;
   } catch {
     return jsonResponse(
       { success: false, message: "فهرست نمایشگاه های منتخب در دسترس نیست.", data: [] },

@@ -301,7 +301,7 @@ async function hydrateOwnedEmptyPlacements(
         const listingIds = Array.isArray(payload.content?.listing_ids)
           ? payload.content.listing_ids.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
           : [];
-        if (!payload.success || listingIds.length < 2) return;
+        if (!payload.success || listingIds.length < 1) return;
 
         const saveResponse = await fetch("/api/selected/showroom", {
           method: "PUT",
@@ -312,7 +312,12 @@ async function hydrateOwnedEmptyPlacements(
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ dealer_id: dealerId, listing_ids: listingIds }),
+          body: JSON.stringify({
+            dealer_id: dealerId,
+            desktop_banner_url: payload.content?.desktop_banner_url || "",
+            mobile_banner_url: payload.content?.mobile_banner_url || "",
+            listing_ids: listingIds,
+          }),
         });
         if (saveResponse.ok) changed = true;
       } catch (error: unknown) {

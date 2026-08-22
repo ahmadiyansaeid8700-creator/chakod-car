@@ -169,7 +169,7 @@ function buildCatalogApiUrls(
   const scopes = provinces.length ? ["", ...provinces] : [""];
 
   return scopes.map((province) => {
-    const params = new URLSearchParams({ segment, limit: "9", sort: "vip" });
+    const params = new URLSearchParams({ segment, limit: "100", sort: "vip" });
     if (province) params.set("province", province);
     return `/api/catalog?${params.toString()}`;
   });
@@ -398,11 +398,11 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const freezoneResolved = resolveListingsForLocation(freezoneListings, location);
 
     return {
-      luxury: [...luxuryResolved.localItems].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
-      luxuryNationwide: [...luxuryResolved.nationwideItems].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      luxury: [...luxuryResolved.localItems].sort(bySelectedThenNewest(luxuryOrder)),
+      luxuryNationwide: [...luxuryResolved.nationwideItems].sort(bySelectedThenNewest(luxuryOrder)),
       luxuryLabel: luxuryResolved.label,
-      freezone: [...freezoneResolved.localItems].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
-      freezoneNationwide: [...freezoneResolved.nationwideItems].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      freezone: [...freezoneResolved.localItems].sort(bySelectedThenNewest(freezoneOrder)),
+      freezoneNationwide: [...freezoneResolved.nationwideItems].sort(bySelectedThenNewest(freezoneOrder)),
       freezoneLabel: freezoneResolved.label,
       searchResults: query
         ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)

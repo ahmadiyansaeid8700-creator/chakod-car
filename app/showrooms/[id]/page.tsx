@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
-const LISTINGS_API = "https://api.chakod.com/api/listings.php?limit=100&sort=vip";
+const LISTINGS_API = "https://api.chakod.com/api/listings.php";
 
 type Listing = {
+  id?: number | string | null;
   dealer_id?: number | string | null;
   dealer_name?: string | null;
   dealer_slug?: string | null;
@@ -11,6 +12,16 @@ type Listing = {
 type ListingsResponse = {
   success?: boolean;
   data?: Listing[];
+};
+
+type FeaturedPlacement = {
+  dealer_id?: number | string | null;
+  listing_ids?: Array<number | string> | null;
+};
+
+type FeaturedResponse = {
+  success?: boolean;
+  data?: FeaturedPlacement[];
 };
 
 export const dynamic = "force-dynamic";
@@ -57,7 +68,25 @@ export default async function LegacyShowroomDetailPage({
     : `/businesses?type=dealer&q=${encodeURIComponent(requested)}`;
 
   try {
-    const response = await fetch(LISTINGS_API, {
+    if (hasNumericId) {
+      const featuredResponse = await fetch("https://staging.chakod.com/api/featured-showrooms", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      });
+      const featuredPayload = (await featuredResponse.json().catch(() => null)) as FeaturedResponse | null;
+      const placement = (featuredPayload?.data || []).find(
+        (item) => Number(item.dealer_id) === numericDealerId,
+      );
+      const selectedListingId = (placement?.listing_ids || [])
+        .map(Number)
+        .find((listingId) => Number.isSafeInteger(listingId) && listingId > 0);
+      if (selectedListingId) destination = `/cars/${selectedListingId}`;
+    }
+
+    const query = new URLSearchParams({ limit: "100", sort: "vip" });
+    if (hasNumericId) query.set("dealer_id", String(numericDealerId));
+    const response = await fetch(`${LISTINGS_API}?${query.toString()}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
       signal: controller.signal,
@@ -75,7 +104,10 @@ export default async function LegacyShowroomDetailPage({
           );
         });
 
-    if (listing?.dealer_slug?.trim()) {
+    if (hasNumericId && listing && destination === "/dealerships") {
+      const listingId = Number(listing.id || 0);
+      if (Number.isSafeInteger(listingId) && listingId > 0) destination = `/cars/${listingId}`;
+    } else if (listing?.dealer_slug?.trim()) {
       destination = `/businesses/${encodeURIComponent(listing.dealer_slug.trim())}`;
     } else if (listing?.dealer_name?.trim()) {
       destination = `/businesses?type=dealer&q=${encodeURIComponent(listing.dealer_name.trim())}`;

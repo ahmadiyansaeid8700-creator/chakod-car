@@ -238,6 +238,8 @@ test("keeps homepage vehicle and showroom cards aligned with the approved mobile
   assert.match(listing, /logoUrl \? <img[\s\S]*?: <CarIcon/);
   assert.match(listingCss, /@media \(max-width: 700px\)[\s\S]*?\.saveButton \{[\s\S]*?display: none !important/);
   assert.match(listingCss, /\.titleLink \{[\s\S]*?-webkit-line-clamp: 2/);
+  assert.match(listingCss, /\.identityRow \{[\s\S]*?margin-top: 0/);
+  assert.match(listingCss, /\.brandMark \{[\s\S]*?transform: translateY\(-27px\)/);
   assert.match(showroomsCss, /grid-auto-columns: clamp\(292px, 28vw, 342px\)/);
   assert.match(showroomsCss, /grid-auto-columns: min\(86vw, 300px\)/);
 });

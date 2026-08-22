@@ -191,10 +191,10 @@
   z-index: 5;
   min-width: 0;
   min-height: 54px;
-  margin-top: -27px;
+  margin-top: 0;
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr);
-  align-items: end;
+  align-items: start;
   gap: 12px;
 }
 
@@ -215,6 +215,7 @@
   box-shadow:
     0 13px 30px rgba(49, 32, 67, 0.17),
     0 0 0 1px color-mix(in srgb, var(--listing-accent) 10%, transparent);
+  transform: translateY(-27px);
 }
 
 .brandMark img {
@@ -237,7 +238,7 @@
 
 .heading {
   min-width: 0;
-  padding: 0 0 5px;
+  padding: 7px 0 5px;
 }
 
 .titleLink {
@@ -631,8 +632,8 @@
   }
 
   .identityRow {
-    min-height: 44px;
-    margin-top: -22px;
+    min-height: 50px;
+    margin-top: 0;
     grid-template-columns: 44px minmax(0, 1fr);
     gap: 10px;
   }
@@ -641,6 +642,7 @@
     width: 44px;
     height: 44px;
     border-width: 3px;
+    transform: translateY(-22px);
   }
 
   .titleLink {

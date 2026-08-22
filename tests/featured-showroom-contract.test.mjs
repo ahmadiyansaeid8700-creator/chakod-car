@@ -69,12 +69,12 @@ test("hydrates an empty paid showroom card and resolves its selected listing det
   assert.match(homepage, /buildSelectedListingUrls\(nextPlacements\)/);
 });
 
-test("keeps selected showrooms in request order and never publishes an empty card", async () => {
+test("keeps every paid selected showroom visible in request order", async () => {
   const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
 
   assert.match(homepage, /function byPlacementRequest/);
   assert.match(homepage, /sort\(byPlacementRequest\)/);
-  assert.match(homepage, /dealer\.latestListings\?\.length/);
+  assert.doesNotMatch(homepage, /placedDealers[\s\S]{0,180}filter\(\(dealer\) => \(dealer\.latestListings/);
   assert.match(homepage, /href:\s*publicHref/);
   assert.match(homepage, /dealer\.listingCount > 0/);
 });

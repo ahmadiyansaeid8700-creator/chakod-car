@@ -612,7 +612,6 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     });
 
     const placedDealers = Array.from(dealerMap.values())
-      .filter((dealer) => (dealer.latestListings?.length || 0) > 0)
       .sort(
         (a, b) =>
           (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -

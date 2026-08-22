@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { formatDualYear } from "../../lib/date-display";
@@ -26,6 +27,9 @@ export type ListingCardData = {
   transmission?: string | null;
   seller_type?: string | null;
   dealer_name?: string | null;
+  dealer_logo_url?: string | null;
+  dealer_logo?: string | null;
+  logo_url?: string | null;
   dealer_verified?: boolean | number | null;
   is_dealer_verified?: boolean | number | null;
   category_name?: string | null;
@@ -136,6 +140,17 @@ function ArrowIcon() {
   );
 }
 
+function CarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m4 15 2.3-6.2A2.8 2.8 0 0 1 8.9 7h6.2a2.8 2.8 0 0 1 2.6 1.8L20 15" />
+      <path d="M3 15h18v4H3z" />
+      <circle cx="7" cy="19" r="1.8" />
+      <circle cx="17" cy="19" r="1.8" />
+    </svg>
+  );
+}
+
 export default function ListingCard({
   listing,
   tone = "neutral",
@@ -151,6 +166,9 @@ export default function ListingCard({
 }: ListingCardProps) {
   const href = hrefOverride || `/cars/${listing.id}`;
   const imageUrl = getImageUrl(listing.cover_image);
+  const logoUrl = getImageUrl(
+    listing.dealer_logo_url || listing.dealer_logo || listing.logo_url,
+  );
   const sellerLabel = identityName?.trim() || getSellerLabel(listing);
   const sellerType = identityName?.trim() || getSellerType(listing);
   const dealerVerified = identityVerified ?? Boolean(listing.dealer_verified || listing.is_dealer_verified);
@@ -163,7 +181,6 @@ export default function ListingCard({
   const displayBadge = badge || listing.category_name || "آگهی خودرو";
   const displayTitle = listing.title?.trim() || "آگهی خودرو";
   const vehicleName = [listing.brand, listing.model, listing.trim_name].filter(Boolean).join(" ") || "خودرو";
-  const brandInitial = (listing.brand || listing.model || displayTitle).trim().slice(0, 1) || "چ";
   const specs = [
     { label: "سال", value: formatDualYear(listing.production_year) },
     { label: "کارکرد", value: formatMileage(listing.mileage_km) },
@@ -184,7 +201,9 @@ export default function ListingCard({
 
       <div className={styles.body} data-part="body">
         <div className={styles.identityRow} data-part="identity">
-          <span className={styles.brandMark} data-part="brand-mark" aria-hidden="true">{brandInitial}</span>
+          <span className={styles.brandMark} data-part="brand-mark" aria-hidden="true">
+            {logoUrl ? <img src={logoUrl} alt="" loading="lazy" decoding="async" /> : <CarIcon />}
+          </span>
           <div className={styles.heading} data-part="heading">
             <Link href={href} prefetch={false} className={styles.titleLink}>{displayTitle}</Link>
             <span className={styles.vehicleName} data-part="vehicle-name">{vehicleName}</span>

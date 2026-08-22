@@ -22,6 +22,9 @@ export type ListingCardData = {
   transmission?: string | null;
   seller_type?: string | null;
   dealer_name?: string | null;
+  dealer_logo_url?: string | null;
+  dealer_logo?: string | null;
+  logo_url?: string | null;
   dealer_verified?: boolean | number | null;
   is_dealer_verified?: boolean | number | null;
   category_name?: string | null;
@@ -96,6 +99,9 @@ export default function ListingCard({
   const dealerVerified = Boolean(
     listing.dealer_verified || listing.is_dealer_verified,
   );
+  const sellerLogoUrl = getImageUrl(
+    listing.dealer_logo_url || listing.dealer_logo || listing.logo_url,
+  );
   const location = [listing.city, listing.neighborhood]
     .filter(Boolean)
     .join("، ");
@@ -161,7 +167,18 @@ export default function ListingCard({
 
         <div className={styles.footer}>
           <div className={styles.seller}>
-            <span className={styles.avatar}>{sellerLabel.slice(0, 1)}</span>
+            <span className={styles.avatar}>
+              {sellerLogoUrl ? (
+                <img src={sellerLogoUrl} alt="" loading="lazy" decoding="async" />
+              ) : (
+                <svg viewBox="0 0 32 24" aria-hidden="true">
+                  <path d="M5 14h22l-2-6c-.6-1.7-2.2-3-4-3H11c-1.8 0-3.4 1.3-4 3l-2 6Z" />
+                  <path d="M3 14h26v4H3z" />
+                  <circle cx="9" cy="19" r="3" />
+                  <circle cx="23" cy="19" r="3" />
+                </svg>
+              )}
+            </span>
             <span className={styles.sellerText}>
               <strong>{sellerLabel}</strong>
               <small>

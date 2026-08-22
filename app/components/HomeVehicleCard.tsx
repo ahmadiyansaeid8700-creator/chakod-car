@@ -44,6 +44,25 @@ export function HomeVehicleCardFallback({
   index,
 }: FallbackProps) {
   const loading = status === "loading";
+
+  if (loading) {
+    return (
+      <article
+        className={`${styles.loadingCard} ${styles[tone]}`}
+        aria-live={index === 0 ? "polite" : undefined}
+        aria-label="در حال دریافت آگهی‌ها"
+      >
+        <span className={styles.loadingMedia} aria-hidden="true" />
+        <div className={styles.loadingBody} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </article>
+    );
+  }
+
   const title = loading ? "در حال دریافت آگهی‌ها" : "آگهی فعالی پیدا نشد";
   const description = loading
     ? `آگهی‌های ${locationLabel} در حال بارگذاری هستند.`

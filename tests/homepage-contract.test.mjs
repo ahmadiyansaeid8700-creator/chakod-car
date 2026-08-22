@@ -130,13 +130,13 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
     ".homeRailTrack",
     "direction: rtl",
     "overflow-x: auto",
-    "scroll-snap-type: inline mandatory",
+    "scroll-snap-type: inline proximity",
   ]) {
     assert.ok(css.includes(token), `home rail CSS must include ${token}`);
   }
 
   assert.match(rail, /className="homeRailTrack"[\s\S]*?dir="rtl"/);
-  assert.match(css, /\.homeRailTrack \{[\s\S]*?touch-action: pan-x/);
+  assert.match(css, /\.homeRailTrack \{[\s\S]*?touch-action: auto/);
 
   assert.match(showroomsCss, /\.dealerRail,[\s\S]*?direction: rtl/);
   assert.match(businesses, /\.featuredBusinessRail \{[\s\S]*?direction: rtl/);
@@ -207,7 +207,7 @@ test("keeps repair shops on the shared homepage visibility policy and a dedicate
   assert.match(workshopsPage, /lockType/);
 });
 
-test("never leaves a localized homepage empty while nationwide inventory exists", () => {
+test("separates localized inventory from nationwide fallback inventory", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const vehicles = read("app/components/HomePublicListingsClient.tsx");
   const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
@@ -217,9 +217,29 @@ test("never leaves a localized homepage empty while nationwide inventory exists"
   assert.match(businesses, /label: "پیشنهادهای سراسر ایران"/);
   assert.match(businesses, /resolveBusinessesForLocation\(items, config\.type, location, selected\)/);
   assert.match(vehicles, /resolveListingsForLocation/);
+  assert.match(vehicles, /localItems/);
+  assert.match(vehicles, /nationwideItems/);
+  assert.match(vehicles, /در محدوده انتخابی شما آگهی وجود ندارد/);
+  assert.match(vehicles, /از اینجا به بعد، آگهی‌های سراسر ایران نمایش داده می‌شوند/);
   assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
   assert.match(showrooms, /resolveDealersForLocation/);
   assert.match(showrooms, /resolvedDealers\.label/);
+});
+
+test("keeps homepage vehicle and showroom cards aligned with the approved mobile treatment", () => {
+  const vehicles = read("app/components/HomePublicListingsClient.tsx");
+  const listing = read("app/components/ListingCard.tsx");
+  const listingCss = read("app/components/ListingCard.module.css");
+  const showroomsCss = read("app/components/HomeFeaturedShowrooms.module.css");
+
+  assert.match(vehicles, /badge="لوکس"/);
+  assert.doesNotMatch(vehicles, /<h2>\{title\}<\/h2>/);
+  assert.match(listing, /dealer_logo_url/);
+  assert.match(listing, /logoUrl \? <img[\s\S]*?: <CarIcon/);
+  assert.match(listingCss, /@media \(max-width: 700px\)[\s\S]*?\.saveButton \{[\s\S]*?display: none !important/);
+  assert.match(listingCss, /\.titleLink \{[\s\S]*?-webkit-line-clamp: 2/);
+  assert.match(showroomsCss, /grid-auto-columns: clamp\(292px, 28vw, 342px\)/);
+  assert.match(showroomsCss, /grid-auto-columns: min\(86vw, 300px\)/);
 });
 
 test("keeps the mobile location name readable and the homepage footer identity clean", () => {

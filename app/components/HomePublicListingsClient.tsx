@@ -201,19 +201,16 @@ function mergeListings(payloads: ApiResponse[]) {
 }
 
 function resolveListingsForLocation(listings: Listing[], location: HomeLocationSelection) {
-  if (location.mode === "all") return { items: listings, label: "سراسر ایران" };
-  const exactItems = listings.filter((item) => listingMatchesLocation(item, location));
-  if (exactItems.length > 0) return { items: exactItems, label: location.label };
-  const scopes = getHomeLocationScopes(location);
-  const provinces = new Set(scopes.map((scope) => normalizeText(scope.province)));
-  const provinceItems = listings.filter((item) => provinces.has(normalizeText(item.province)));
-  if (provinceItems.length > 0) {
-    return {
-      items: provinceItems,
-      label: scopes.length === 1 ? `پیشنهادهای استان ${scopes[0].province}` : "پیشنهادهای همان استان‌ها",
-    };
+  if (location.mode === "all") {
+    return { localItems: listings, nationwideItems: [], label: "سراسر ایران" };
   }
-  return { items: listings, label: "پیشنهادهای سراسر ایران" };
+
+  const localItems = listings.filter((item) => listingMatchesLocation(item, location));
+  const nationwideItems = localItems.length < 9
+    ? listings.filter((item) => !listingMatchesLocation(item, location))
+    : [];
+
+  return { localItems, nationwideItems, label: location.label };
 }
 
 function ShowcaseSection({
@@ -222,6 +219,7 @@ function ShowcaseSection({
   title,
   description,
   listings,
+  nationwideListings,
   badge,
   tone,
   allHref,
@@ -233,6 +231,7 @@ function ShowcaseSection({
   title: string;
   description: string;
   listings: Listing[];
+  nationwideListings: Listing[];
   badge: string;
   tone: Tone;
   allHref: string;
@@ -240,6 +239,8 @@ function ShowcaseSection({
   locationLabel: string;
 }) {
   const hasListings = listings.length > 0;
+  const hasNationwideFallback = nationwideListings.length > 0;
+  const showEmptyState = status !== "loading" && !hasListings;
 
   return (
     <section
@@ -248,9 +249,8 @@ function ShowcaseSection({
     >
       <div className="masterSectionHeader">
         <div className="masterSectionTitleBlock">
-          <span>{kicker}</span>
           <div className="masterSectionTitleRow">
-            <h2>{title}</h2>
+            <span>{kicker}</span>
             <Link
               className="masterShowAllLink"
               href={allHref}
@@ -271,18 +271,10 @@ function ShowcaseSection({
       <HomeHorizontalRail
         ariaLabel={title}
         className={`homeRailShell--${tone}`}
-        showControls={hasListings && listings.length > 3}
+        showControls={hasListings && listings.length + nationwideListings.length > 3}
       >
-        {hasListings
-          ? listings.map((listing) => (
-              <HomeVehicleCard
-                key={listing.id}
-                listing={listing}
-                badge={badge}
-                tone={tone}
-              />
-            ))
-          : [0, 1, 2].map((index) => (
+        {status === "loading"
+          ? [0, 1, 2].map((index) => (
               <HomeVehicleCardFallback
                 key={`${tone}-${index}`}
                 tone={tone}
@@ -291,7 +283,33 @@ function ShowcaseSection({
                 locationLabel={locationLabel}
                 index={index}
               />
+            ))
+          : listings.map((listing) => (
+              <HomeVehicleCard
+                key={listing.id}
+                listing={listing}
+                badge={badge}
+                tone={tone}
+              />
             ))}
+        {showEmptyState || hasNationwideFallback ? (
+          <aside className="homeLocationBoundary" aria-label="مرز آگهی‌های محدوده و سراسر ایران">
+            <strong>
+              {showEmptyState
+                ? "در محدوده انتخابی شما آگهی وجود ندارد"
+                : "آگهی‌های این محدوده تا همین‌جا بود"}
+            </strong>
+            {hasNationwideFallback ? <span>از اینجا به بعد، آگهی‌های سراسر ایران نمایش داده می‌شوند.</span> : null}
+          </aside>
+        ) : null}
+        {nationwideListings.map((listing) => (
+          <HomeVehicleCard
+            key={`nationwide-${listing.id}`}
+            listing={listing}
+            badge={badge}
+            tone={tone}
+          />
+        ))}
       </HomeHorizontalRail>
     </section>
   );
@@ -380,9 +398,11 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     const freezoneResolved = resolveListingsForLocation(freezoneListings, location);
 
     return {
-      luxury: [...luxuryResolved.items].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      luxury: [...luxuryResolved.localItems].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
+      luxuryNationwide: [...luxuryResolved.nationwideItems].sort(bySelectedThenNewest(luxuryOrder)).slice(0, 9),
       luxuryLabel: luxuryResolved.label,
-      freezone: [...freezoneResolved.items].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      freezone: [...freezoneResolved.localItems].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
+      freezoneNationwide: [...freezoneResolved.nationwideItems].sort(bySelectedThenNewest(freezoneOrder)).slice(0, 9),
       freezoneLabel: freezoneResolved.label,
       searchResults: query
         ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
@@ -438,7 +458,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             title="خودروهای لوکس منتخب"
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
             listings={data.luxury}
-            badge="منتخب لوکس"
+            nationwideListings={data.luxuryNationwide}
+            badge="لوکس"
             tone="luxury"
             allHref="/cars/luxury"
             status={status}
@@ -451,6 +472,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             title="خودروهای منطقه آزاد"
             description="ویترین اختصاصی خودروهای مناطق آزاد با امکان بررسی سریع آگهی‌ها."
             listings={data.freezone}
+            nationwideListings={data.freezoneNationwide}
             badge="منطقه آزاد"
             tone="freezone"
             allHref="/cars/free-zone"

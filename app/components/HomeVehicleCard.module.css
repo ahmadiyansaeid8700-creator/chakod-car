@@ -43,6 +43,57 @@
   --home-vehicle-border: #c9e8e3;
 }
 
+.loadingCard {
+  min-width: 0;
+  min-height: 500px;
+  overflow: hidden;
+  border: 1px solid var(--home-vehicle-border);
+  border-radius: 25px;
+  background: #fff;
+  box-shadow: 0 18px 46px rgba(39, 24, 55, 0.06);
+}
+
+.loadingMedia,
+.loadingBody > span {
+  display: block;
+  background: linear-gradient(100deg, #eeeaf2 20%, #faf9fb 42%, #eeeaf2 64%);
+  background-size: 220% 100%;
+  animation: homeVehicleShimmer 1.25s ease-in-out infinite;
+}
+
+.loadingMedia {
+  width: 100%;
+  aspect-ratio: 1.74 / 1;
+}
+
+.loadingBody {
+  padding: 30px 18px 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.loadingBody > span {
+  height: 42px;
+  border-radius: 12px;
+}
+
+.loadingBody > span:first-child {
+  width: 62%;
+  height: 22px;
+}
+
+.loadingBody > span:nth-child(3) {
+  height: 66px;
+}
+
+.loadingBody > span:last-child {
+  height: 49px;
+}
+
+@keyframes homeVehicleShimmer {
+  to { background-position: -120% 0; }
+}
+
 .media {
   position: relative;
   min-width: 0;

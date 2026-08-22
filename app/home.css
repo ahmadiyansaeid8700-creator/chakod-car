@@ -676,13 +676,12 @@
   grid-auto-columns: clamp(292px, 28vw, 342px);
   gap: 15px;
   overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: inline mandatory;
+  overscroll-behavior: auto;
+  scroll-snap-type: inline proximity;
   scroll-padding-inline: 2px;
   padding: 4px 2px 18px;
   scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
+  touch-action: auto;
 }
 
 .homeRailTrack::-webkit-scrollbar {
@@ -693,7 +692,30 @@
   min-width: 0;
   height: 100%;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
+}
+
+.homeLocationBoundary {
+  min-height: 180px;
+  padding: 22px;
+  border: 1px dashed color-mix(in srgb, var(--purple) 36%, #ded7e6);
+  border-radius: 22px;
+  display: grid;
+  place-content: center;
+  gap: 7px;
+  text-align: center;
+  color: #655a6d;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.homeLocationBoundary strong {
+  color: #2b2131;
+  font-size: 13px;
+}
+
+.homeLocationBoundary span {
+  font-size: 9px;
+  line-height: 1.9;
 }
 
 .homeRailControls {

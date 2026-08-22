@@ -173,7 +173,7 @@
   line-height: 1.65;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
 }
 
 .titleRow > span {
@@ -272,15 +272,16 @@
 }
 
 .avatar {
-  width: 31px;
-  height: 31px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
-  border-radius: 10px;
+  overflow: hidden;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   color: #ffffff;
   background: linear-gradient(135deg, var(--listing-accent-dark), var(--listing-accent));
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -380,9 +381,9 @@
   }
 
   .rail .avatar {
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
   }
 
   .rail .avatar svg {

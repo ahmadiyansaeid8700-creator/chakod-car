@@ -328,6 +328,18 @@ export default function AdminPage() {
             </Link>
           )}
 
+          {canManageSettings && (
+            <Link className="module active" href="/admin/rules">
+              <span className="moduleIcon">⚙</span>
+              <b>قوانین و قیمت‌ها</b>
+              <p>
+                سهمیه‌ها، پکیج‌ها، قوانین تأیید، تخفیف خریدار و
+                پورسانت معرف را از یک صفحه کنترل کن.
+              </p>
+              <em>ورود به بخش</em>
+            </Link>
+          )}
+
           {canOpenCommerce && (
             <Link className="module active" href="/admin/commerce">
               <span className="moduleIcon">₮</span>
@@ -384,6 +396,9 @@ export default function AdminPage() {
         )}
         {canViewBusinesses && (
           <Link href="/admin/businesses">کسب‌وکارها</Link>
+        )}
+        {canManageSettings && (
+          <Link href="/admin/rules">قوانین</Link>
         )}
         <Link href="/admin/commerce">مالی و تجاری</Link>
         <Link href="/">سایت</Link>

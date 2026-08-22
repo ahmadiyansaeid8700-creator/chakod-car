@@ -354,7 +354,7 @@ export default function FeaturedShowrooms() {
           .homeFeaturedShowroomsLoading {
             grid-template-columns: none;
             grid-auto-flow: column;
-            grid-auto-columns: min(82vw, 304px);
+            grid-auto-columns: min(78vw, 294px);
             gap: 12px;
             overflow-x: auto;
             padding-bottom: 6px;

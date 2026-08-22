@@ -136,6 +136,7 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
   }
 
   assert.match(rail, /className="homeRailTrack"[\s\S]*?dir="rtl"/);
+  assert.match(rail, /useLayoutEffect[\s\S]*?track\.scrollTo\(\{ left: 0, behavior: "auto" \}\)[\s\S]*?\[children\]/);
   assert.match(css, /\.homeRailTrack \{[\s\S]*?touch-action: auto/);
 
   assert.match(showroomsCss, /\.dealerRail,[\s\S]*?direction: rtl/);

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 type HomeHorizontalRailProps = {
   children: ReactNode;
@@ -17,6 +17,20 @@ export default function HomeHorizontalRail({
   showControls = true,
 }: HomeHorizontalRailProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      // In an RTL rail, zero is the visual start (the right edge). Resetting
+      // after the loading placeholders are replaced keeps the newest item
+      // first on mobile Safari as well as desktop browsers.
+      track.scrollTo({ left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [children]);
 
   function scroll(direction: "previous" | "next") {
     const track = trackRef.current;

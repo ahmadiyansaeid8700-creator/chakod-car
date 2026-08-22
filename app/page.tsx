@@ -10,6 +10,12 @@ import HomePublicListingsClient from "./components/HomePublicListingsClient";
 import ShowroomCard, { type ShowroomCardData } from "./components/ShowroomCard";
 import FeaturedShowrooms from "./components/FeaturedShowrooms";
 
+// The homepage inventory and its loading UI must come from the same deployment.
+// Rendering every request prevents an older HTML shell from being paired with
+// newer client-side chunks by an intermediate cache.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Category = {
   id: number;
   code: string;

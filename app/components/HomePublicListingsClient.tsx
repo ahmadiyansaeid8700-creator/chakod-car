@@ -356,6 +356,7 @@ function ShowcaseSection({
   allHref: string;
 }) {
   if (listings.length === 0) return null;
+  const sectionLabel = title || kicker;
   return (
     <section
       className={`masterSection masterSection--${tone} masterSectionWithAll`}
@@ -365,11 +366,11 @@ function ShowcaseSection({
         <div className="masterSectionTitleBlock">
           <span>{kicker}</span>
           <div className="masterSectionTitleRow">
-            <h2>{title}</h2>
+            {title ? <h2>{title}</h2> : null}
             <a
               className="masterShowAllLink"
               href={allHref}
-              aria-label={`نمایش همه ${title}`}
+              aria-label={`نمایش همه ${sectionLabel}`}
             >
               نمایش همه <span aria-hidden="true">←</span>
             </a>
@@ -380,7 +381,7 @@ function ShowcaseSection({
         </div>
       </div>
       <HomeHorizontalRail
-        ariaLabel={title}
+        ariaLabel={sectionLabel}
         className={`homeRailShell--${tone}`}
         showControls={listings.length > 3}
       >
@@ -692,8 +693,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
         <>
           <ShowcaseSection
             id="luxury"
-            kicker="CHAKOD LUXURY"
-            title="منتخب خودروهای لوکس"
+            kicker="خودروهای لوکس"
+            title=""
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
             listings={localData.luxury}
             badge="لوکس"
@@ -702,8 +703,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           />
           <ShowcaseSection
             id="freezone"
-            kicker="FREE ZONE"
-            title="تازه‌های منطقه آزاد"
+            kicker="خودروهای منطقه آزاد"
+            title=""
             description="ویترین اختصاصی خودروهای منطقه آزاد؛ جدا از بازار عمومی و قابل بررسی سریع."
             listings={localData.freezone}
             badge="منطقه آزاد"

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch {

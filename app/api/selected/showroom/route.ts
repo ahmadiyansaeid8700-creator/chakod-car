@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PRODUCT_CODE = "home_selected_showroom";
-const MIN_SELECTED_LISTINGS = 2;
+const MIN_SELECTED_LISTINGS = 1;
 const MAX_SELECTED_LISTINGS = 6;
 const SITE_MEDIA_ORIGIN = "https://chakod.com";
 
@@ -29,6 +29,11 @@ type ManagedListing = {
   title: string;
   image: string;
   price_toman: number;
+};
+
+type DealerProfileMedia = {
+  desktopBannerUrl: string;
+  mobileBannerUrl: string;
 };
 
 type ContentRow = {
@@ -225,6 +230,36 @@ async function loadDealerListings(request: NextRequest, dealerId: number): Promi
   });
 }
 
+async function loadDealerProfileMedia(request: NextRequest, dealerId: number): Promise<DealerProfileMedia> {
+  try {
+    const response = await fetch(authApiUrl(`/api/professional-profile.php?dealer_id=${dealerId}`), {
+      method: "GET",
+      cache: "no-store",
+      headers: requestIdentityHeaders(request),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const payload = await parseJsonResponse(response);
+    const profile = isRecord(payload?.profile)
+      ? payload.profile
+      : isRecord(payload?.data)
+        ? payload.data
+        : isRecord(payload)
+          ? payload
+          : {};
+    const profileDealerId = safeId(profile.dealer_id);
+    if (!response.ok || payload?.success === false || (profileDealerId && profileDealerId !== dealerId)) {
+      return { desktopBannerUrl: "", mobileBannerUrl: "" };
+    }
+    const coverUrl = publicMediaUrl(profile.cover_url || profile.banner_url);
+    return {
+      desktopBannerUrl: publicMediaUrl(profile.desktop_banner_url) || coverUrl,
+      mobileBannerUrl: publicMediaUrl(profile.mobile_banner_url) || coverUrl,
+    };
+  } catch {
+    return { desktopBannerUrl: "", mobileBannerUrl: "" };
+  }
+}
+
 async function loadContent(orderId: number, ownerKey: string, dealerId: number) {
   await ensureContentSchema();
   const d1 = getRuntimeEnv().DB;
@@ -266,9 +301,10 @@ export async function GET(request: NextRequest) {
     const context = await contextForRequest(request, dealerId);
     if ("error" in context) return context.error;
 
-    const [content, listings] = await Promise.all([
+    const [content, listings, profileMedia] = await Promise.all([
       loadContent(context.order.id, context.ownerKey, dealerId),
       loadDealerListings(request, dealerId),
+      loadDealerProfileMedia(request, dealerId),
     ]);
 
     const savedIds = content ? parseListingIds(content.listing_ids_json) : [];
@@ -288,8 +324,8 @@ export async function GET(request: NextRequest) {
         city: context.dealer.city,
       },
       content: {
-        desktop_banner_url: publicMediaUrl(content?.desktop_banner_url),
-        mobile_banner_url: publicMediaUrl(content?.mobile_banner_url),
+        desktop_banner_url: publicMediaUrl(content?.desktop_banner_url) || profileMedia.desktopBannerUrl,
+        mobile_banner_url: publicMediaUrl(content?.mobile_banner_url) || profileMedia.mobileBannerUrl,
         listing_ids: defaults,
         creative_status: content?.creative_status || "draft",
         saved: Boolean(content),
@@ -324,7 +360,7 @@ export async function PUT(request: NextRequest) {
 
   if (!dealerId) return jsonResponse({ success: false, message: "شناسه نمایشگاه معتبر نیست." }, 400);
   if (requestedIds.length < MIN_SELECTED_LISTINGS) {
-    return jsonResponse({ success: false, message: "برای انتشار نمایشگاه منتخب حداقل دو خودروی فعال انتخاب کنید." }, 422);
+    return jsonResponse({ success: false, message: "برای انتشار نمایشگاه منتخب حداقل یک خودروی فعال انتخاب کنید." }, 422);
   }
 
   try {

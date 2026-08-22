@@ -163,8 +163,10 @@
   width: 94px;
   height: 94px;
   margin-top: -47px;
+  margin-right: 20px;
   border: 5px solid #fff;
   border-radius: 50%;
+  justify-self: end;
 }
 
 .skeletonTitle {

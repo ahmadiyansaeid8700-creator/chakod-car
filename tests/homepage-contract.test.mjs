@@ -145,9 +145,11 @@ test("keeps homepage rails horizontal and responsive on small screens", () => {
 test("uses the same compact showroom-card design law on home and directory", () => {
   const homeShowrooms = read("app/components/HomeFeaturedShowrooms.tsx");
   const directory = read("app/dealerships/DealerDirectoryClient.tsx");
+  const showroomCss = read("app/components/ShowroomCard.module.css");
 
   assert.match(homeShowrooms, /<ShowroomCard density="compact"/);
   assert.match(directory, /<ShowroomCard[\s\S]*?density="compact"/);
+  assert.match(showroomCss, /\.logoWrap \{[\s\S]*?justify-content: flex-start;[\s\S]*?direction: rtl;/);
 });
 
 test("uses the canonical catalog segments for homepage luxury and free-zone rails", () => {

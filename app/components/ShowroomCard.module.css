@@ -225,7 +225,8 @@
   min-height: 47px;
   margin-top: -47px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  direction: rtl;
 }
 
 .logo {

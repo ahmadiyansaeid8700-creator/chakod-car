@@ -45,12 +45,10 @@ textarea {
   overflow-y: hidden;
   direction: rtl;
   scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y pinch-zoom;
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto;
+  touch-action: auto;
+  overscroll-behavior: auto;
 }
 
 /*
@@ -75,6 +73,7 @@ textarea {
 .homeRailTrack > * {
   flex: 0 0 auto;
   scroll-snap-align: start;
+  touch-action: auto;
 }
 
 .homeRailControls {

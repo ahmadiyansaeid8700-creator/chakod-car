@@ -1815,7 +1815,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         }
 
         .homeRailShell--dealers .homeRailTrack {
-          grid-auto-columns: clamp(270px, 25vw, 314px);
+          grid-auto-columns: clamp(292px, 28vw, 342px);
           padding-bottom: 7px;
         }
 
@@ -2488,7 +2488,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           }
 
           .homeRailShell--dealers .homeRailTrack {
-            grid-auto-columns: min(82vw, 304px);
+            grid-auto-columns: min(78vw, 294px);
           }
 
           .masterDealerCover {

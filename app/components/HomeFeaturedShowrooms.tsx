@@ -76,6 +76,13 @@ type FeaturedResponse = {
   data?: FeaturedPlacement[];
 };
 
+type ManagedShowroomResponse = {
+  success?: boolean;
+  content?: {
+    listing_ids?: number[];
+  };
+};
+
 type DealerPreview = ShowroomCardData & {
   latestAt: number;
 };
@@ -141,6 +148,21 @@ function buildDealerListingUrls(placements: FeaturedPlacement[]) {
     });
     return `${API_BASE_URL}?${params.toString()}`;
   });
+}
+
+function buildSelectedListingUrls(placements: FeaturedPlacement[]) {
+  return Array.from(
+    new Set(
+      placements.flatMap((placement) =>
+        Array.isArray(placement.listing_ids)
+          ? placement.listing_ids.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
+          : [],
+      ),
+    ),
+  ).map(
+    (listingId) =>
+      `https://api.chakod.com/api/listing-detail.php?id=${encodeURIComponent(listingId)}`,
+  );
 }
 
 function buildFeaturedUrls(location: HomeLocationSelection) {
@@ -228,9 +250,70 @@ async function fetchListings(urls: string[], signal: AbortSignal) {
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = (await response.json()) as ApiResponse;
-      return payload.success && Array.isArray(payload.data) ? payload.data : [];
+      if (!payload.success) return [];
+      if (Array.isArray(payload.data)) return payload.data;
+      if (payload.data && typeof payload.data === "object") {
+        return [payload.data as ApiListing];
+      }
+      return [];
     }),
   );
+}
+
+async function hydrateOwnedEmptyPlacements(
+  placements: FeaturedPlacement[],
+  signal: AbortSignal,
+) {
+  const emptyPlacements = placements.filter(
+    (placement) =>
+      placement.creative_status === "none" ||
+      !Array.isArray(placement.listing_ids) ||
+      placement.listing_ids.length === 0,
+  );
+
+  let changed = false;
+  await Promise.all(
+    emptyPlacements.map(async (placement) => {
+      try {
+        const dealerId = Number(placement.dealer_id || 0);
+        if (!Number.isSafeInteger(dealerId) || dealerId <= 0) return;
+
+        const response = await fetch(
+          `/api/selected/showroom?dealer_id=${encodeURIComponent(dealerId)}`,
+          {
+            cache: "no-store",
+            credentials: "same-origin",
+            signal,
+            headers: { Accept: "application/json" },
+          },
+        );
+        if (!response.ok) return;
+
+        const payload = (await response.json()) as ManagedShowroomResponse;
+        const listingIds = Array.isArray(payload.content?.listing_ids)
+          ? payload.content.listing_ids.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
+          : [];
+        if (!payload.success || listingIds.length < 2) return;
+
+        const saveResponse = await fetch("/api/selected/showroom", {
+          method: "PUT",
+          cache: "no-store",
+          credentials: "same-origin",
+          signal,
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ dealer_id: dealerId, listing_ids: listingIds }),
+        });
+        if (saveResponse.ok) changed = true;
+      } catch (error: unknown) {
+        if ((error as Error).name === "AbortError") throw error;
+      }
+    }),
+  );
+
+  return changed;
 }
 
 function buildDealers(listings: ApiListing[]): DealerPreview[] {
@@ -399,10 +482,35 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           const dealerId = Number(item.dealer_id || 0);
           if (dealerId > 0 && !mergedPlacements.has(dealerId)) mergedPlacements.set(dealerId, item);
         });
-        const nextPlacements = Array.from(mergedPlacements.values());
+        let nextPlacements = Array.from(mergedPlacements.values());
+
+        if (await hydrateOwnedEmptyPlacements(nextPlacements, controller.signal)) {
+          const refreshedResponses = await Promise.all(
+            buildFeaturedUrls(location).map(async (url) => {
+              const response = await fetch(url, {
+                cache: "no-store",
+                signal: controller.signal,
+                headers: { Accept: "application/json" },
+              });
+              if (!response.ok) return [];
+              const payload = (await response.json()) as FeaturedResponse;
+              return payload.success && Array.isArray(payload.data) ? payload.data : [];
+            }),
+          );
+          const refreshed = new Map<number, FeaturedPlacement>();
+          refreshedResponses.flat().forEach((item) => {
+            const dealerId = Number(item.dealer_id || 0);
+            if (dealerId > 0 && !refreshed.has(dealerId)) refreshed.set(dealerId, item);
+          });
+          nextPlacements = Array.from(refreshed.values());
+        }
 
         const urls = Array.from(
-          new Set([...buildListingUrls(location), ...buildDealerListingUrls(nextPlacements)]),
+          new Set([
+            ...buildListingUrls(location),
+            ...buildDealerListingUrls(nextPlacements),
+            ...buildSelectedListingUrls(nextPlacements),
+          ]),
         );
         const [nextBusinesses, listingResponses] = await Promise.all([
           businessesPromise,

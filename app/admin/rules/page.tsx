@@ -3,28 +3,30 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const API_BASE = "https://api.chakod.com";
+const DIRECT_ADMIN_COMMERCE_URL = "https://api.chakod.com/api/admin-commerce.php";
 
 type SettingValue = string | number | boolean;
 type Settings = Record<string, SettingValue>;
 
-type AdminMeResponse = {
-  success: boolean;
-  is_admin?: boolean;
-  message?: string;
-  admin?: {
-    display_name?: string | null;
-    role_title?: string | null;
-    permissions?: string[];
-    can_manage_settings?: boolean;
-  };
+type Service = {
+  service_key: string;
+  title: string;
+  audience: string;
+  amount_toman: number;
+  duration_value: number;
+  duration_unit: string;
+  is_active: boolean;
+  settings: Record<string, unknown>;
 };
 
-type SettingsResponse = {
-  success: boolean;
+type CommerceResponse = {
+  success?: boolean;
   message?: string;
-  settings?: Settings;
-  updated_at?: string | null;
+  capabilities?: {
+    pricing_view?: boolean;
+    pricing_manage?: boolean;
+  };
+  services?: Service[];
 };
 
 type Field = {
@@ -170,6 +172,40 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
+async function fetchCommerce(options: RequestInit = {}) {
+  const token = getToken();
+  const query = "?section=pricing";
+  const endpoints = [`/api/admin/commerce${query}`, `${DIRECT_ADMIN_COMMERCE_URL}${query}`];
+  let lastError: unknown = null;
+
+  for (const endpoint of endpoints) {
+    const direct = endpoint.startsWith("https://");
+    try {
+      const response = await fetch(endpoint, {
+        ...options,
+        cache: "no-store",
+        credentials: direct ? "omit" : "include",
+        mode: direct ? "cors" : "same-origin",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Session-Token": token,
+          ...(options.headers || {}),
+        },
+      });
+      if (!direct && response.status === 502) {
+        lastError = new Error("ارتباط داخلی با سرور مدیریت برقرار نشد.");
+        continue;
+      }
+      return response;
+    } catch (caught) {
+      lastError = caught;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("ارتباط با مدیریت تجاری برقرار نشد.");
+}
+
 function formatValue(value: SettingValue) {
   if (typeof value === "number") return new Intl.NumberFormat("fa-IR").format(value);
   return String(value);
@@ -186,6 +222,7 @@ export default function AdminRulesPage() {
   const [query, setQuery] = useState("");
   const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [serviceAnchor, setServiceAnchor] = useState<Service | null>(null);
 
   const dirty = JSON.stringify(settings) !== JSON.stringify(savedSettings);
 
@@ -201,34 +238,39 @@ export default function AdminRulesPage() {
     }
 
     try {
-      const meResponse = await fetch(`${API_BASE}/api/admin-me.php`, {
-        headers: { Authorization: `Bearer ${token}`, "X-Session-Token": token, Accept: "application/json" },
-        cache: "no-store",
-      });
-      const me = await readJson<AdminMeResponse>(meResponse);
-      const canManage = !!me.admin?.can_manage_settings || me.admin?.permissions?.includes("*") || me.admin?.permissions?.includes("settings.manage");
+      const response = await fetchCommerce({ method: "GET" });
+      const result = await readJson<CommerceResponse>(response);
 
-      if (!meResponse.ok || !me.success || !me.is_admin || !canManage) {
-        throw new Error(me.message || "دسترسی ویرایش قوانین برای این حساب فعال نیست.");
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "قوانین از سرور مدیریت دریافت نشد.");
       }
 
+      if (!result.capabilities?.pricing_manage) {
+        throw new Error("دسترسی ویرایش قوانین برای این حساب فعال نیست.");
+      }
+
+      const anchor =
+        (result.services || []).find((service) => service.service_key === "listing_personal") ||
+        (result.services || [])[0];
+
+      if (!anchor) {
+        throw new Error("تعرفه پایه برای نگهداری قوانین پیدا نشد.");
+      }
+
+      const stored = anchor.settings?.platform_rules;
+      const platformRules =
+        stored && typeof stored === "object" && !Array.isArray(stored)
+          ? (stored as Settings)
+          : {};
+
+      const next = { ...DEFAULTS, ...platformRules };
+      setServiceAnchor(anchor);
       setAllowed(true);
-
-      const settingsResponse = await fetch(`${API_BASE}/api/admin-settings.php`, {
-        headers: { Authorization: `Bearer ${token}`, "X-Session-Token": token, Accept: "application/json" },
-        cache: "no-store",
-      });
-      const result = await readJson<SettingsResponse>(settingsResponse);
-
-      if (!settingsResponse.ok || !result.success) {
-        throw new Error(result.message || "قوانین از سرور دریافت نشد.");
-      }
-
-      const next = { ...DEFAULTS, ...(result.settings || {}) };
       setSettings(next);
       setSavedSettings(next);
-      setUpdatedAt(result.updated_at || null);
+      setUpdatedAt(typeof anchor.settings?.platform_rules_updated_at === "string" ? anchor.settings.platform_rules_updated_at : null);
     } catch (caught) {
+      setAllowed(false);
       setError(caught instanceof Error ? caught.message : "خطا در دریافت قوانین.");
     } finally {
       setLoading(false);
@@ -259,40 +301,43 @@ export default function AdminRulesPage() {
   }
 
   async function save() {
-    if (!dirty || saving) return;
+    if (!dirty || saving || !serviceAnchor) return;
     setSaving(true);
     setError("");
     setMessage("");
 
     try {
-      const token = getToken();
-      const changed = Object.fromEntries(
-        Object.keys(settings)
-          .filter((key) => settings[key] !== savedSettings[key])
-          .map((key) => [key, settings[key]])
-      );
-
-      const response = await fetch(`${API_BASE}/api/admin-settings.php`, {
+      const savedAt = new Date().toISOString();
+      const response = await fetchCommerce({
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-Session-Token": token,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ settings: changed }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_service",
+          ...serviceAnchor,
+          settings: {
+            ...(serviceAnchor.settings || {}),
+            platform_rules: settings,
+            platform_rules_updated_at: savedAt,
+          },
+        }),
       });
-      const result = await readJson<SettingsResponse>(response);
+      const result = await readJson<{ success?: boolean; message?: string }>(response);
 
       if (!response.ok || !result.success) {
         throw new Error(result.message || "ذخیره قوانین انجام نشد.");
       }
 
-      const next = { ...settings, ...(result.settings || {}) };
-      setSettings(next);
-      setSavedSettings(next);
-      setUpdatedAt(result.updated_at || new Date().toISOString());
-      setMessage("تغییرات قوانین با موفقیت ذخیره شد.");
+      setServiceAnchor((current) => current ? {
+        ...current,
+        settings: {
+          ...(current.settings || {}),
+          platform_rules: settings,
+          platform_rules_updated_at: savedAt,
+        },
+      } : current);
+      setSavedSettings({ ...settings });
+      setUpdatedAt(savedAt);
+      setMessage("تغییرات قوانین با موفقیت ذخیره و در تنظیمات مرکزی ثبت شد.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "خطا در ذخیره قوانین.");
     } finally {

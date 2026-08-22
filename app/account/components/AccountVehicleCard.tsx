@@ -56,10 +56,12 @@ export default function AccountVehicleCard({
   data,
   primaryHref,
   actions = [],
+  selected = false,
 }: {
   data: AccountVehicleCardData;
   primaryHref: string;
   actions?: AccountVehicleCardAction[];
+  selected?: boolean;
 }) {
   const title = vehicleTitle(data);
   const publisher = String(data.submittedByDisplayName || data.publisherFallback || "ثبت‌کننده نامشخص").trim();
@@ -95,7 +97,9 @@ export default function AccountVehicleCard({
         seller_type: "personal",
       }}
       customActions={visibleActions.length ? (
-        <div className={styles.actions}>
+        <div className={styles.actionStack}>
+          {selected ? <span className={styles.selectedBadge}>✓ منتخب‌شده</span> : null}
+          <div className={styles.actions}>
           {visibleActions.map((action) => (
             <Link
               key={`${action.href}:${action.label}`}
@@ -105,6 +109,7 @@ export default function AccountVehicleCard({
               {action.label}
             </Link>
           ))}
+          </div>
         </div>
       ) : null}
     />

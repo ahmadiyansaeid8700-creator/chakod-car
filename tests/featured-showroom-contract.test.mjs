@@ -68,3 +68,25 @@ test("hydrates an empty paid showroom card and resolves its selected listing det
   assert.match(homepage, /listing-detail\.php\?id=/);
   assert.match(homepage, /buildSelectedListingUrls\(nextPlacements\)/);
 });
+
+test("keeps selected showrooms in request order and never publishes an empty card", async () => {
+  const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
+
+  assert.match(homepage, /function byPlacementRequest/);
+  assert.match(homepage, /sort\(byPlacementRequest\)/);
+  assert.match(homepage, /dealer\.latestListings\?\.length/);
+  assert.match(homepage, /href:\s*publicHref/);
+  assert.match(homepage, /dealer\.listingCount > 0/);
+});
+
+test("shows selected placements in the account listing manager", async () => {
+  const page = await source("app/account/listings/page.tsx");
+  const card = await source("app/account/components/AccountVehicleCard.tsx");
+  const active = await source("app/api/selected/active/route.ts");
+
+  assert.match(page, /fetch\("\/api\/selected\/active"/);
+  assert.match(page, /href="\/account\/selected"/);
+  assert.match(page, /selected=\{selectedListingIds\.has/);
+  assert.match(card, /منتخب‌شده/);
+  assert.match(active, /orderBy\(asc\(commerceOrders\.id\)\)/);
+});

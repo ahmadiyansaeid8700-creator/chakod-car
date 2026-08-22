@@ -107,6 +107,14 @@ function listingTime(listing: ApiListing) {
   return new Date(listing.created_at || 0).getTime() || 0;
 }
 
+function placementTime(placement: FeaturedPlacement) {
+  return new Date(placement.start_date || 0).getTime() || Number(placement.id || 0);
+}
+
+function byPlacementRequest(a: FeaturedPlacement, b: FeaturedPlacement) {
+  return placementTime(a) - placementTime(b) || Number(a.id || 0) - Number(b.id || 0);
+}
+
 function listingPreview(listing: ApiListing): ShowroomListingPreview {
   return {
     id: listing.id,
@@ -482,7 +490,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           const dealerId = Number(item.dealer_id || 0);
           if (dealerId > 0 && !mergedPlacements.has(dealerId)) mergedPlacements.set(dealerId, item);
         });
-        let nextPlacements = Array.from(mergedPlacements.values());
+        let nextPlacements = Array.from(mergedPlacements.values()).sort(byPlacementRequest);
 
         if (await hydrateOwnedEmptyPlacements(nextPlacements, controller.signal)) {
           const refreshedResponses = await Promise.all(
@@ -502,7 +510,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
             const dealerId = Number(item.dealer_id || 0);
             if (dealerId > 0 && !refreshed.has(dealerId)) refreshed.set(dealerId, item);
           });
-          nextPlacements = Array.from(refreshed.values());
+          nextPlacements = Array.from(refreshed.values()).sort(byPlacementRequest);
         }
 
         const urls = Array.from(
@@ -577,6 +585,9 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
       if (matchedBusiness) usedBusinessIds.add(Number(matchedBusiness.id));
       if (matchedListing) usedListingKeys.add(matchedListing.key);
 
+      const publicHref = matchedBusiness?.slug
+        ? `/businesses/${encodeURIComponent(matchedBusiness.slug)}`
+        : `/showrooms/${encodeURIComponent(dealerId)}`;
       const base = matchedBusiness
         ? businessDealer(matchedBusiness, matchedListing)
         : matchedListing || {
@@ -594,14 +605,19 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
             latestListings: [],
           };
 
-      dealerMap.set(dealerId, applyPlacement({ ...base, key: `id:${dealerId}` }, placement));
+      dealerMap.set(
+        dealerId,
+        applyPlacement({ ...base, key: `id:${dealerId}`, href: publicHref }, placement),
+      );
     });
 
-    const placedDealers = Array.from(dealerMap.values()).sort(
-      (a, b) =>
-        (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
-        (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
-    );
+    const placedDealers = Array.from(dealerMap.values())
+      .filter((dealer) => (dealer.latestListings?.length || 0) > 0)
+      .sort(
+        (a, b) =>
+          (placementOrder.get(dealerIdFromKey(a.key)) ?? Number.MAX_SAFE_INTEGER) -
+          (placementOrder.get(dealerIdFromKey(b.key)) ?? Number.MAX_SAFE_INTEGER),
+      );
     const businessNames = new Set(businesses.map((business) => normalizeText(business.name)));
     const organicDealers = [
       ...businesses
@@ -617,6 +633,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           !usedListingKeys.has(dealer.key) && !businessNames.has(normalizeText(dealer.name)),
       ),
     ]
+      .filter((dealer) => dealer.listingCount > 0 && (dealer.latestListings?.length || 0) > 0)
       .sort(
         (a, b) =>
           Number(Boolean(b.verified)) - Number(Boolean(a.verified)) ||

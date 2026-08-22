@@ -40,6 +40,8 @@
 .headerCard h1 { margin: 2px 0 0; font-size: 20px; line-height: 1.4; }
 .headerCard p { margin: 3px 0 0; color: #91839a; font-size: 8px; line-height: 1.7; }
 .addButton { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 12px; color: #fff; background: linear-gradient(135deg,#6220ba,#8d2ee0); text-decoration: none; font-size: 10px; font-weight: 900; white-space: nowrap; }
+.headerActions { display:flex; align-items:center; gap:7px; }
+.selectedButton { min-height:38px; display:inline-flex; align-items:center; justify-content:center; padding:0 11px; border:1px solid #d9c5ef; border-radius:12px; color:#6d28d9; background:#fff; text-decoration:none; font-size:9px; font-weight:900; white-space:nowrap; }
 
 .summary {
   display: grid;
@@ -127,6 +129,8 @@
   .headerCard h1 { font-size: 17px; }
   .headerCard p { max-width: 240px; }
   .addButton { min-height: 34px; padding-inline: 9px; font-size: 8.5px; }
+  .headerActions { align-items:stretch; flex-direction:column; gap:5px; }
+  .selectedButton { min-height:30px; font-size:8px; }
   .list { gap: 7px; }
 }
 

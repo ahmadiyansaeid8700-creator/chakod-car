@@ -354,3 +354,5 @@
     font-size: 6px;
   }
 }
+.actionStack { display:grid; gap:7px; }
+.selectedBadge { min-height:28px; padding:0 10px; border:1px solid #d8b4fe; border-radius:9px; display:inline-flex; align-items:center; justify-content:center; color:#6d28d9; background:#f5edff; font-size:9px; font-weight:900; }

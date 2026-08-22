@@ -67,6 +67,16 @@ type ListingsResponse = {
   data?: ListingItem[];
 };
 
+type SelectedPlacement = {
+  placement_key?: string;
+  listing_id?: number | null;
+};
+
+type SelectedResponse = {
+  success?: boolean;
+  data?: SelectedPlacement[];
+};
+
 type IdentityFilter =
   | { key: "all"; label: string; owner: "all"; dealerId: 0 }
   | { key: "personal"; label: string; owner: "personal"; dealerId: 0 }
@@ -136,6 +146,7 @@ export default function AccountListingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [listings, setListings] = useState<ListingItem[]>([]);
+  const [selectedListingIds, setSelectedListingIds] = useState<Set<number>>(new Set());
   const [dealers, setDealers] = useState<DealerItem[]>([]);
   const [summary, setSummary] = useState<Summary>(EMPTY_SUMMARY);
   const [status, setStatus] = useState("all");
@@ -157,6 +168,32 @@ export default function AccountListingsPage() {
     setIdentityKey(`dealer:${requestedDealerId}`);
     setPage(1);
   }, [requestedDealerId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/selected/active", {
+      cache: "no-store",
+      credentials: "include",
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as SelectedResponse;
+      })
+      .then((payload) => {
+        if (!payload?.success || !Array.isArray(payload.data)) return;
+        setSelectedListingIds(
+          new Set(
+            payload.data
+              .map((item) => Number(item.listing_id || 0))
+              .filter((id) => Number.isSafeInteger(id) && id > 0),
+          ),
+        );
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
 
   const identities = useMemo<IdentityFilter[]>(() => [
     { key: "all", label: "همه هویت‌ها", owner: "all", dealerId: 0 },
@@ -300,7 +337,10 @@ export default function AccountListingsPage() {
                   : "آگهی‌های شخصی و نمایشگاه‌های مجاز در یک لیست."}
             </p>
           </div>
-          <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"} className={styles.addButton}>+ ثبت آگهی</Link>
+          <div className={styles.headerActions}>
+            <Link href="/account/selected" className={styles.selectedButton}>منتخب‌شده‌ها</Link>
+            <Link href={scopedDealer ? `/account/listings/new?dealer_id=${scopedDealer.dealerId}` : "/account/listings/new"} className={styles.addButton}>+ ثبت آگهی</Link>
+          </div>
         </section>
 
         <section className={styles.summary} aria-label="خلاصه آگهی‌ها">
@@ -417,6 +457,7 @@ export default function AccountListingsPage() {
                     publisherFallback: ownerLabel,
                   }}
                   actions={actions}
+                  selected={selectedListingIds.has(Number(listing.id))}
                 />
               );
             })}

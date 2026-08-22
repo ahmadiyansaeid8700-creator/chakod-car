@@ -165,6 +165,15 @@ test("uses the canonical catalog segments for homepage luxury and free-zone rail
   assert.doesNotMatch(catalogItem, /showActions/);
 });
 
+test("keeps every homepage vehicle listing after selected placements", () => {
+  const listings = read("app/components/HomePublicListingsClient.tsx");
+
+  assert.match(listings, /segment, limit: "100", sort: "vip"/);
+  assert.match(listings, /sort\(bySelectedThenNewest\(luxuryOrder\)\)/);
+  assert.match(listings, /sort\(bySelectedThenNewest\(freezoneOrder\)\)/);
+  assert.doesNotMatch(listings, /sort\(bySelectedThenNewest\([^)]*\)\)\.slice\(0, 9\)/);
+});
+
 test("shows all active businesses on home while premium placements rank first", () => {
   const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
   const servicesPage = read("app/car-services/page.tsx");

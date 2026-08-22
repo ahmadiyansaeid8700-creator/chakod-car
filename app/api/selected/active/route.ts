@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "../../../../db";
 import { commerceOrders } from "../../../../db/schema";
@@ -54,7 +54,7 @@ export async function GET() {
           inArray(commerceOrders.productCode, [...PRODUCT_CODES]),
         ),
       )
-      .orderBy(desc(commerceOrders.id))
+      .orderBy(asc(commerceOrders.id))
       .limit(200);
 
     const seen = new Set<string>();

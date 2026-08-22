@@ -1401,12 +1401,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           grid-auto-columns: clamp(292px, 28vw, 342px);
           gap: 15px;
           overflow-x: auto;
-          overscroll-behavior-inline: contain;
-          scroll-snap-type: inline mandatory;
+          overscroll-behavior: auto;
+          scroll-snap-type: inline proximity;
           scroll-padding-inline: 2px;
           padding: 4px 2px 18px;
           scrollbar-width: none;
-          -webkit-overflow-scrolling: touch;
+          touch-action: auto;
         }
 
         .homeRailTrack::-webkit-scrollbar {
@@ -1417,7 +1417,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           min-width: 0;
           height: 100%;
           scroll-snap-align: start;
-          scroll-snap-stop: always;
+          scroll-snap-stop: normal;
         }
 
         .homeRailControls {

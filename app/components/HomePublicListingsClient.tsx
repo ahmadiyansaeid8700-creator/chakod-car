@@ -696,7 +696,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             title="منتخب خودروهای لوکس"
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
             listings={localData.luxury}
-            badge="منتخب لوکس"
+            badge="لوکس"
             tone="luxury"
             allHref="/ads/luxury"
           />

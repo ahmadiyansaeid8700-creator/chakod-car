@@ -129,6 +129,19 @@ export default function ListingCard({
           compact
           className={styles.saveButton}
         />
+
+        <span className={styles.mobileLogo} aria-hidden="true">
+          {sellerLogoUrl ? (
+            <img src={sellerLogoUrl} alt="" loading="lazy" decoding="async" />
+          ) : (
+            <svg viewBox="0 0 32 24">
+              <path d="M5 14h22l-2-6c-.6-1.7-2.2-3-4-3H11c-1.8 0-3.4 1.3-4 3l-2 6Z" />
+              <path d="M3 14h26v4H3z" />
+              <circle cx="9" cy="19" r="3" />
+              <circle cx="23" cy="19" r="3" />
+            </svg>
+          )}
+        </span>
       </div>
 
       <div className={styles.body}>

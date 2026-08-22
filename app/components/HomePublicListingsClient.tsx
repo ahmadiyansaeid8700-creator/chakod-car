@@ -45,6 +45,8 @@ type Tone = "luxury" | "freezone" | "economic";
 
 type DealerPreview = ShowroomCardData;
 
+const LOCAL_LISTING_TARGET = 12;
+
 const luxuryBrands = [
   "porsche",
   "پورشه",
@@ -211,7 +213,7 @@ function listingMatchesLocation(
   });
 }
 
-function buildListingsApiUrls(location: HomeLocationSelection) {
+function buildLocalListingsApiUrls(location: HomeLocationSelection) {
   const scopes = getHomeLocationScopes(location);
 
   if (location.mode === "all" || scopes.length === 0) {
@@ -234,6 +236,31 @@ function buildListingsApiUrls(location: HomeLocationSelection) {
       return `${API_BASE_URL}?${params.toString()}`;
     },
   );
+}
+
+function buildNationalListingsApiUrl() {
+  return `${API_BASE_URL}?${new URLSearchParams({
+    limit: "50",
+    sort: "vip",
+  }).toString()}`;
+}
+
+async function fetchListings(url: string, signal: AbortSignal) {
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const payload = (await response.json()) as ApiResponse;
+  return payload.success && Array.isArray(payload.data) ? payload.data : [];
+}
+
+function mergeListings(groups: Listing[][]) {
+  const merged = new Map<number | string, Listing>();
+  groups.flat().forEach((listing) => merged.set(listing.id, listing));
+  return Array.from(merged.values());
 }
 
 function getDealers(listings: Listing[]): DealerPreview[] {
@@ -410,8 +437,30 @@ function DealerSection({ dealers }: { dealers: DealerPreview[] }) {
   );
 }
 
+function buildListingData(source: Listing[], query: string) {
+  const sorted = [...source].sort(byNewest);
+  const freezone = sorted.filter(isFreezone).slice(0, 9);
+  const luxury = sorted.filter(isLuxury).slice(0, 9);
+  const used = new Set([...freezone, ...luxury].map((item) => item.id));
+  const economic = sorted
+    .filter((item) => !used.has(item.id) && isEconomic(item))
+    .slice(0, 9);
+  const searchResults = query
+    ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
+    : [];
+
+  return {
+    freezone,
+    luxury,
+    economic,
+    searchResults,
+    dealers: getDealers(sorted),
+  };
+}
+
 export default function HomePublicListingsClient({ query }: { query: string }) {
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [localListings, setLocalListings] = useState<Listing[]>([]);
+  const [nationalListings, setNationalListings] = useState<Listing[]>([]);
   const [location, setLocation] = useState<HomeLocationSelection>(
     DEFAULT_HOME_LOCATION,
   );
@@ -421,8 +470,10 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
   );
 
   useEffect(() => {
-    setLocation(loadHomeLocation());
-    setLocationReady(true);
+    const frame = window.requestAnimationFrame(() => {
+      setLocation(loadHomeLocation());
+      setLocationReady(true);
+    });
 
     const handleLocationChange = (event: Event) => {
       const customEvent = event as CustomEvent<HomeLocationSelection>;
@@ -432,6 +483,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     window.addEventListener(HOME_LOCATION_EVENT, handleLocationChange);
 
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener(HOME_LOCATION_EVENT, handleLocationChange);
     };
   }, []);
@@ -445,32 +497,29 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
       setStatus("loading");
 
       try {
-        const payloads = await Promise.all(
-          buildListingsApiUrls(location).map(async (url) => {
-            const response = await fetch(url, {
-              cache: "no-store",
-              headers: { Accept: "application/json" },
-              signal: controller.signal,
-            });
+        const localUrls = buildLocalListingsApiUrls(location);
+        const needsNationalFallback = location.mode !== "all";
+        const [localGroups, nationalGroup] = await Promise.all([
+          Promise.all(
+            localUrls.map((url) => fetchListings(url, controller.signal)),
+          ),
+          needsNationalFallback
+            ? fetchListings(buildNationalListingsApiUrl(), controller.signal)
+            : Promise.resolve([] as Listing[]),
+        ]);
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return (await response.json()) as ApiResponse;
-          }),
+        const fetchedLocal = mergeListings(localGroups).filter((listing) =>
+          listingMatchesLocation(listing, location),
         );
 
-        const merged = new Map<number | string, Listing>();
-
-        for (const payload of payloads) {
-          if (!payload.success || !Array.isArray(payload.data)) continue;
-
-          for (const listing of payload.data) {
-            if (listingMatchesLocation(listing, location)) {
-              merged.set(listing.id, listing);
-            }
-          }
-        }
-
-        setListings(Array.from(merged.values()));
+        setLocalListings(fetchedLocal);
+        setNationalListings(
+          needsNationalFallback
+            ? nationalGroup.filter(
+                (listing) => !listingMatchesLocation(listing, location),
+              )
+            : [],
+        );
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") setStatus("error");
@@ -482,25 +531,23 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     return () => controller.abort();
   }, [location, locationReady]);
 
-  const data = useMemo(() => {
-    const sorted = [...listings].sort(byNewest);
-    const freezone = sorted.filter(isFreezone).slice(0, 9);
-    const luxury = sorted.filter(isLuxury).slice(0, 9);
-    const used = new Set([...freezone, ...luxury].map((item) => item.id));
-    const economic = sorted
-      .filter((item) => !used.has(item.id) && isEconomic(item))
-      .slice(0, 9);
-    const searchResults = query
-      ? sorted.filter((item) => matchesQuery(item, query)).slice(0, 12)
-      : [];
-    return {
-      freezone,
-      luxury,
-      economic,
-      searchResults,
-      dealers: getDealers(sorted),
-    };
-  }, [listings, query]);
+  const localData = useMemo(
+    () => buildListingData(localListings, query),
+    [localListings, query],
+  );
+  const nationwideData = useMemo(
+    () => buildListingData(nationalListings, query),
+    [nationalListings, query],
+  );
+  const isLocationScoped = location.mode !== "all";
+  const isLocalInventoryLow =
+    isLocationScoped && localListings.length < LOCAL_LISTING_TARGET;
+  const localVisibleListings = query
+    ? localData.searchResults
+    : [...localListings].sort(byNewest).slice(0, LOCAL_LISTING_TARGET);
+  const nationwideVisibleListings = query
+    ? nationwideData.searchResults
+    : [...nationalListings].sort(byNewest).slice(0, LOCAL_LISTING_TARGET);
 
   if (status === "loading") {
     return (
@@ -525,7 +572,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
     );
   }
 
-  if (status === "ready" && listings.length === 0 && location.mode !== "all") {
+  if (status === "ready" && localListings.length === 0 && isLocationScoped) {
     return (
       <section className="masterSection masterEmptyShowcase" aria-live="polite">
         <span>⌖</span>
@@ -543,7 +590,72 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
   return (
     <>
-      {query ? (
+      {isLocationScoped ? (
+        <>
+          <section className="masterSection masterSearchResults homeLocationResults">
+            <div className="masterSectionHeader">
+              <div>
+                <span>محدوده انتخابی شما</span>
+                <h2>
+                  {query ? `نتایج «${query}» در ${location.label}` : `آگهی‌های ${location.label}`}
+                </h2>
+              </div>
+              <strong className="homeLocationCount">
+                {localVisibleListings.length.toLocaleString("fa-IR")} آگهی
+              </strong>
+            </div>
+            {localVisibleListings.length === 0 ? (
+              <div className="masterEmptyShowcase">
+                <span>⌕</span>
+                <strong>در این محدوده نتیجه‌ای برای جست‌وجوی شما پیدا نشد</strong>
+              </div>
+            ) : (
+              <div className="masterListingGrid">
+                {localVisibleListings.map((listing) => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    badge="محدوده شما"
+                    tone="neutral"
+                    variant="grid"
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {isLocalInventoryLow && nationwideVisibleListings.length > 0 ? (
+            <>
+              <section className="masterSection homeNationwideDivider" aria-label="شروع آگهی‌های سراسر ایران">
+                <span aria-hidden="true">⌖</span>
+                <div>
+                  <strong>آگهی‌های محدوده «{location.label}» تا همین‌جا بود</strong>
+                  <p>تعداد آگهی‌های این محدوده کم است؛ از اینجا به بعد آگهی‌های سایر شهرهای ایران را می‌بینید.</p>
+                </div>
+              </section>
+              <section className="masterSection masterSearchResults homeNationwideResults">
+                <div className="masterSectionHeader">
+                  <div>
+                    <span>پیشنهادهای تکمیلی</span>
+                    <h2>{query ? `نتایج «${query}» در سراسر ایران` : "آگهی‌های سراسر ایران"}</h2>
+                  </div>
+                </div>
+                <div className="masterListingGrid">
+                  {nationwideVisibleListings.map((listing) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      badge="سراسر ایران"
+                      tone="neutral"
+                      variant="grid"
+                    />
+                  ))}
+                </div>
+              </section>
+            </>
+          ) : null}
+        </>
+      ) : query ? (
         <section className="masterSection masterSearchResults">
           <div className="masterSectionHeader">
             <div>
@@ -554,7 +666,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
               پاک‌کردن جست‌وجو
             </Link>
           </div>
-          {data.searchResults.length === 0 ? (
+          {localData.searchResults.length === 0 ? (
             <div className="masterEmptyShowcase">
               <span>⌕</span>
               <strong>نتیجه‌ای پیدا نشد</strong>
@@ -564,7 +676,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             </div>
           ) : (
             <div className="masterListingGrid">
-              {data.searchResults.map((listing) => (
+              {localData.searchResults.map((listing) => (
                 <ListingCard
                   key={listing.id}
                   listing={listing}
@@ -583,7 +695,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             kicker="CHAKOD LUXURY"
             title="منتخب خودروهای لوکس"
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
-            listings={data.luxury}
+            listings={localData.luxury}
             badge="منتخب لوکس"
             tone="luxury"
             allHref="/ads/luxury"
@@ -593,7 +705,7 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             kicker="FREE ZONE"
             title="تازه‌های منطقه آزاد"
             description="ویترین اختصاصی خودروهای منطقه آزاد؛ جدا از بازار عمومی و قابل بررسی سریع."
-            listings={data.freezone}
+            listings={localData.freezone}
             badge="منطقه آزاد"
             tone="freezone"
             allHref="/ads/freezone"
@@ -603,14 +715,14 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
             kicker="SMART VALUE"
             title="انتخاب‌های اقتصادی چاکود"
             description="خودروهای اقتصادی و ارزشمند بر اساس قیمت، سال و کیفیت آگهی."
-            listings={data.economic}
+            listings={localData.economic}
             badge="ارزش خرید"
             tone="economic"
             allHref="/ads/economic"
           />
         </>
       )}
-      <DealerSection dealers={data.dealers} />
+      {!isLocationScoped ? <DealerSection dealers={localData.dealers} /> : null}
     </>
   );
 }

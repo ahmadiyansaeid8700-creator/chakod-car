@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { defaultGoldenOpportunitySettings } from "./types";
+import { saveGoldenOpportunitySettings } from "./api";
 
 export default function GoldenOpportunitySettingsPage() {
   const [settings, setSettings] = useState(defaultGoldenOpportunitySettings);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function update(key: keyof typeof settings, value: string | boolean) {
     setSettings((prev) => ({
@@ -15,8 +17,16 @@ export default function GoldenOpportunitySettingsPage() {
     setSaved(false);
   }
 
-  function save() {
-    setSaved(true);
+  async function save() {
+    const token = localStorage.getItem("chakod_session_token") || "";
+    setLoading(true);
+
+    try {
+      await saveGoldenOpportunitySettings(token, settings);
+      setSaved(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -44,8 +54,10 @@ export default function GoldenOpportunitySettingsPage() {
         <input value={settings.displayHours} onChange={(e) => update("displayHours", e.target.value)} />
       </section>
 
-      <button onClick={save}>ذخیره تنظیمات</button>
-      {saved && <p>تنظیمات آماده ارسال به سامانه مرکزی است.</p>}
+      <button disabled={loading} onClick={save}>
+        {loading ? "در حال ذخیره" : "ذخیره تنظیمات"}
+      </button>
+      {saved && <p>تنظیمات ارسال شد.</p>}
     </main>
   );
 }

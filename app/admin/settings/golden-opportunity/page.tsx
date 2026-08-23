@@ -10,9 +10,11 @@ export default function GoldenOpportunitySettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Permission must be supplied by the central admin session/API.
+  // Default is denied until real permission data is available.
   const adminContext = {
-    role: "super_admin",
-    permissions: ["manage_prices"],
+    role: "",
+    permissions: [] as string[],
   };
 
   if (!canManageGoldenOpportunity(adminContext)) {

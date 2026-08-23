@@ -3,11 +3,25 @@
 import { useState } from "react";
 import { defaultGoldenOpportunitySettings } from "./types";
 import { saveGoldenOpportunitySettings } from "./api";
+import { canManageGoldenOpportunity } from "./permission";
 
 export default function GoldenOpportunitySettingsPage() {
   const [settings, setSettings] = useState(defaultGoldenOpportunitySettings);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const adminContext = {
+    role: "super_admin",
+    permissions: ["manage_prices"],
+  };
+
+  if (!canManageGoldenOpportunity(adminContext)) {
+    return (
+      <main dir="rtl" style={{ padding: 24 }}>
+        دسترسی مدیریت قیمت‌ها برای این بخش فعال نیست.
+      </main>
+    );
+  }
 
   function update(key: keyof typeof settings, value: string | boolean) {
     setSettings((prev) => ({
@@ -20,7 +34,6 @@ export default function GoldenOpportunitySettingsPage() {
   async function save() {
     const token = localStorage.getItem("chakod_session_token") || "";
     setLoading(true);
-
     try {
       await saveGoldenOpportunitySettings(token, settings);
       setSaved(true);
@@ -34,30 +47,22 @@ export default function GoldenOpportunitySettingsPage() {
       <h1>تنظیمات فرصت طلایی</h1>
       <p>مدیریت قیمت، ظرفیت، قوانین AI و بازگشت وجه.</p>
 
-      <section>
-        <label>هزینه بررسی فرصت طلایی</label>
-        <input value={settings.reviewPrice} onChange={(e) => update("reviewPrice", e.target.value)} />
-      </section>
+      <label>هزینه بررسی فرصت طلایی</label>
+      <input value={settings.reviewPrice} onChange={(e) => update("reviewPrice", e.target.value)} />
 
-      <section>
-        <label>ظرفیت هر استان</label>
-        <input value={settings.provinceCapacity} onChange={(e) => update("provinceCapacity", e.target.value)} />
-      </section>
+      <label>ظرفیت هر استان</label>
+      <input value={settings.provinceCapacity} onChange={(e) => update("provinceCapacity", e.target.value)} />
 
-      <section>
-        <label>حداقل امتیاز AI</label>
-        <input value={settings.minimumAiScore} onChange={(e) => update("minimumAiScore", e.target.value)} />
-      </section>
+      <label>حداقل امتیاز AI</label>
+      <input value={settings.minimumAiScore} onChange={(e) => update("minimumAiScore", e.target.value)} />
 
-      <section>
-        <label>مدت نمایش (ساعت)</label>
-        <input value={settings.displayHours} onChange={(e) => update("displayHours", e.target.value)} />
-      </section>
+      <label>مدت نمایش</label>
+      <input value={settings.displayHours} onChange={(e) => update("displayHours", e.target.value)} />
 
       <button disabled={loading} onClick={save}>
         {loading ? "در حال ذخیره" : "ذخیره تنظیمات"}
       </button>
-      {saved && <p>تنظیمات ارسال شد.</p>}
+      {saved && <p>تنظیمات ذخیره شد.</p>}
     </main>
   );
 }

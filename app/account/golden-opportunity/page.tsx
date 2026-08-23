@@ -16,6 +16,8 @@ export default function GoldenOpportunityPage() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [provinceSlots, setProvinceSlots] = useState(5);
+  const [discountPrice, setDiscountPrice] = useState("");
+  const [priceChecked, setPriceChecked] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -48,12 +50,7 @@ export default function GoldenOpportunityPage() {
 
       <section>
         <h2>آگهی‌های قابل شرکت</h2>
-
         {loading && <p>در حال دریافت آگهی‌ها...</p>}
-
-        {!loading && listings.length === 0 && (
-          <p>آگهی قابل شرکت پیدا نشد.</p>
-        )}
 
         {listings.map((item) => (
           <article key={item.id} style={{ marginBottom: 16 }}>
@@ -69,8 +66,22 @@ export default function GoldenOpportunityPage() {
 
       {selectedId && (
         <section>
-          <h2>مرحله بعد</h2>
-          <p>آگهی انتخاب شد. مرحله بعد ثبت تخفیف پیشنهادی و رزرو چرخه است.</p>
+          <h2>ثبت قیمت فرصت طلایی</h2>
+          <p>قیمت فعلی آگهی بررسی می‌شود. لطفاً قیمت پیشنهادی خود را وارد کنید.</p>
+          <input
+            value={discountPrice}
+            onChange={(e) => setDiscountPrice(e.target.value)}
+            placeholder="قیمت پیشنهادی"
+          />
+          <button onClick={() => setPriceChecked(true)}>
+            بررسی شرایط ۴۸ ساعت گذشته
+          </button>
+
+          {priceChecked && (
+            <p>
+              شرایط اولیه ثبت شد. مرحله بعد پرداخت هزینه بررسی و ارسال به AI است.
+            </p>
+          )}
         </section>
       )}
     </main>

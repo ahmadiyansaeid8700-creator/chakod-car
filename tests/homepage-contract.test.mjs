@@ -187,6 +187,10 @@ test("shows all active businesses on home while premium placements rank first", 
   assert.match(businesses, /featuredBusinessSrOnly/);
   assert.doesNotMatch(businesses, /<div className="featuredBusinessHeader">/);
   assert.match(businesses, /business\.business_type_title/);
+  assert.match(businesses, /featuredBusinessType--\$\{business\.business_type\}/);
+  assert.match(businesses, /featuredBusinessType--repair_shop/);
+  assert.match(businesses, /featuredBusinessType--parts_store/);
+  assert.match(businesses, /featuredBusinessType--car_service/);
   assert.match(businesses, /business\.price_range_text/);
   assert.match(businesses, /featuredBusinessAddress/);
   assert.match(businesses, /onError=\{\(event\) =>/);

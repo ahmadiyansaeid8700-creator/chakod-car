@@ -42,13 +42,14 @@ test("presents the public market floor as a live responsive marketplace", async 
   const page = await read("app/market-floor/page.tsx");
   const styles = await read("app/market-floor/page.module.css");
 
-  assert.match(page, /بزن بریم کف بازار/);
+  assert.match(page, /کف بازار چاکود/);
   assert.match(page, /راسته‌های امروز/);
   assert.match(page, /remainingTime/);
   assert.match(page, /selectedProvince/);
   assert.match(page, /ویترین امروز در حال چیده‌شدن است/);
-  assert.match(styles, /\.marketScene/);
-  assert.match(styles, /\.emptyStalls/);
+  assert.match(styles, /\.heroVisual/);
+  assert.match(styles, /\.emptyCriteria/);
+  assert.doesNotMatch(page + styles, /marketSign|carShape|awning|بزن بریم/);
   assert.match(styles, /@media\(max-width:620px\)/);
   assert.match(styles, /scroll-snap-type:x mandatory/);
 });

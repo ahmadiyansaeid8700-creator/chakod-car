@@ -40,15 +40,17 @@ export default function MarketFloorPage() {
 
   return <main dir="rtl" className={styles.page}>
     <section className={styles.hero}>
-      <div className={styles.heroGlow} />
-      <div className={styles.marketSign} aria-hidden="true"><span>کف</span><b>بازار</b></div>
       <div className={styles.heroCopy}>
-        <span className={styles.eyebrow}><i /> بازار زنده فرصت‌های واقعی</span>
-        <h1>بزن بریم کف بازار!</h1>
-        <p>اینجا قیمت نمایشی نداریم؛ فقط خودروهایی وارد ویترین می‌شوند که قیمت، شرایط و کیفیت آگهی‌شان از بررسی هوشمند چاکود عبور کرده باشد.</p>
-        <div className={styles.heroActions}><a href="#today-market" className={styles.primaryAction}>گشتن بین فرصت‌ها <span>↓</span></a><Link href="/account/market-floor" className={styles.secondaryAction}>آگهی من هم بررسی شود</Link></div>
+        <span className={styles.eyebrow}><i /> انتخاب روز هوش چاکود</span>
+        <h1>کف بازار چاکود</h1>
+        <p>ویترین محدود خودروهایی که قیمت، شرایط و کیفیت آگهی آن‌ها بررسی شده است؛ بدون تکمیل اجباری ظرفیت و بدون ادعای تخفیف نمایشی.</p>
+        <div className={styles.heroActions}><a href="#today-market" className={styles.primaryAction}>مشاهده فرصت‌های امروز <span>↓</span></a><Link href="/account/market-floor" className={styles.secondaryAction}>درخواست بررسی آگهی</Link></div>
       </div>
-      <div className={styles.marketScene} aria-hidden="true"><div className={styles.awning}><i /><i /><i /><i /><i /></div><div className={styles.carShape}><span /><b /><i /><em /></div><div className={styles.priceTag}><small>فرصت امروز</small><strong>تأیید هوشمند</strong></div></div>
+      <div className={styles.heroVisual}>
+        {items[0]?.listing.coverUrl ? <img src={items[0].listing.coverUrl} alt="" /> : <div className={styles.visualFallback}><img src="/brand/chakod-symbol.png" alt="" /><span>CHAKOD</span><strong>MARKET FLOOR</strong></div>}
+        <div className={styles.visualShade} />
+        <span className={styles.aiSeal}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/><circle cx="12" cy="12" r="9"/></svg><b>ارزیابی هوشمند</b><small>چرخه امروز</small></span>
+      </div>
       <div className={styles.heroStats}>
         <div><small>فرصت‌های امروز</small><strong>{loading ? "…" : toFa(items.length)}</strong></div>
         <div><small>سقف هر استان</small><strong>۱۰ خودرو</strong></div>
@@ -69,7 +71,7 @@ export default function MarketFloorPage() {
           <div className={styles.cardContent}><span className={styles.location}>⌖ {item.province}</span><h3>{item.listing.title}</h3><div className={styles.facts}>{item.listing.year ? <span><small>مدل</small><b>{toFa(item.listing.year)}</b></span> : null}{item.listing.mileageKm ? <span><small>کارکرد</small><b>{toFa(item.listing.mileageKm.toLocaleString("fa-IR"))} کیلومتر</b></span> : null}</div><p className={styles.reason}>{item.reason}</p><footer><strong>{formatPrice(item.listing.priceToman)}</strong><span>دیدن خودرو ←</span></footer></div>
         </Link>)}
       </div> : <div className={styles.emptyMarket}>
-        <div className={styles.emptyStalls} aria-hidden="true">{["قیمت واقعی", "شرایط مناسب", "آگهی کامل"].map((label) => <div key={label}><span /><b>{label}</b></div>)}</div>
+        <div className={styles.emptyCriteria} aria-hidden="true"><span>معیار ورود به ویترین</span>{["قیمت رقابتی نسبت به نمونه‌های مشابه", "شرایط فنی و بدنه قابل‌قبول", "اطلاعات و تصاویر کامل آگهی"].map((label, index) => <div key={label}><b>۰{toFa(index + 1)}</b><strong>{label}</strong><i>✓</i></div>)}</div>
         <div className={styles.emptyCopy}><span>ویترین امروز در حال چیده‌شدن است</span><h2>{selectedProvince === "همه ایران" ? "هنوز خودرویی از فیلتر کف بازار عبور نکرده" : `هنوز فرصتی برای ${selectedProvince} تأیید نشده`}</h2><p>برای شلوغ نشان‌دادن بازار، آگهی ضعیف وارد نمی‌کنیم. به‌محض تأیید یک فرصت واقعی، همین‌جا در ویترین قرار می‌گیرد.</p><div><Link href="/cars">گشتن در بازار خودرو</Link><Link href="/account/market-floor">بررسی آگهی من</Link></div></div>
       </div>}
     </section>

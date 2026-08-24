@@ -14,13 +14,17 @@ export default async function AdminLayout({
   const adminIdentity = await readServerIdentity("/api/admin-me.php");
 
   if (adminIdentity?.success === true && adminIdentity.is_admin === true) {
-    const admin = (adminIdentity.admin && typeof adminIdentity.admin === "object" ? adminIdentity.admin : {}) as Record<string, unknown>;
+    const identity = adminIdentity as Record<string, unknown>;
+    const rawAdmin = identity.admin;
+    const admin = (rawAdmin && typeof rawAdmin === "object" && !Array.isArray(rawAdmin)
+      ? rawAdmin
+      : {}) as Record<string, unknown>;
     const permissions = Array.isArray(admin.permissions) ? admin.permissions.map(String) : [];
     return (
       <AdminShell access={{
         role: String(admin.role || admin.role_key || ""),
         permissions,
-        isSiteOwner: adminIdentity.is_site_owner === true,
+        isSiteOwner: identity.is_site_owner === true,
       }}>
         {children}
       </AdminShell>

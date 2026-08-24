@@ -114,8 +114,9 @@ function businessLocation(business: PublicBusiness) {
 }
 
 function businessTags(business: PublicBusiness) {
-  return [...(business.category_labels || []), ...(business.services || [])]
-    .filter(Boolean)
+  return Array.from(
+    new Set([...(business.category_labels || []), ...(business.services || [])].filter(Boolean)),
+  )
     .slice(0, 3);
 }
 
@@ -283,14 +284,11 @@ function FeaturedBusinessSection({
       className="featuredBusinessSection"
       aria-labelledby={`featured-${config.type}`}
     >
-      <div className="featuredBusinessHeader">
-        <div>
-          <span>{config.kicker}</span>
-          <h2 id={`featured-${config.type}`}>{config.title}</h2>
-          <p>
-            {config.description} <b>{locationLabel}</b>
-          </p>
-        </div>
+      <h2 className="featuredBusinessSrOnly" id={`featured-${config.type}`}>
+        {config.title}
+      </h2>
+      <div className="featuredBusinessToolbar">
+        <span className="featuredBusinessLocation">{locationLabel}</span>
         <Link href={config.allHref}>
           مشاهده همه
           <span aria-hidden="true">←</span>
@@ -312,39 +310,49 @@ function FeaturedBusinessSection({
                 key={business.id}
               >
                 <span className="featuredBusinessMedia">
+                  <span
+                    className="featuredBusinessCoverFallback"
+                    aria-hidden="true"
+                  >
+                    {business.name.slice(0, 1)}
+                  </span>
                   {business.cover_url ? (
                     <img
                       src={business.cover_url}
                       alt=""
                       loading="lazy"
                       decoding="async"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
                     />
-                  ) : (
-                    <span
-                      className="featuredBusinessCoverFallback"
-                      aria-hidden="true"
-                    >
-                      چ
-                    </span>
-                  )}
+                  ) : null}
+                  <span
+                    className={`featuredBusinessType featuredBusinessType--${business.business_type}`}
+                  >
+                    {business.business_type_title || config.kicker}
+                  </span>
                   <span className="featuredBusinessIdentity">
+                    <b>{business.name.slice(0, 1)}</b>
                     {business.logo_url ? (
                       <img
                         src={business.logo_url}
                         alt=""
                         loading="lazy"
                         decoding="async"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
                       />
-                    ) : (
-                      <b>{business.name.slice(0, 1)}</b>
-                    )}
+                    ) : null}
                   </span>
                   {business.is_verified ? <em>تأیید چاکود</em> : null}
                 </span>
 
                 <span className="featuredBusinessCopy">
                   <strong>{business.name}</strong>
-                  <small>
+                  <small className="featuredBusinessAddress">
+                    <span aria-hidden="true">⌖</span>
                     {businessLocation(business) || "اطلاعات کامل در پروفایل"}
                   </small>
                   <span className="featuredBusinessTags">
@@ -352,9 +360,12 @@ function FeaturedBusinessSection({
                       <i key={tag}>{tag}</i>
                     ))}
                     {business.mobile_service ? <i>خدمات در محل</i> : null}
+                    {business.price_range_text ? (
+                      <i>{business.price_range_text}</i>
+                    ) : null}
                   </span>
                   <b>
-                    مشاهده اطلاعات کامل <span aria-hidden="true">←</span>
+                    مشاهده پروفایل <span aria-hidden="true">←</span>
                   </b>
                 </span>
               </Link>
@@ -496,31 +507,46 @@ export default function HomeFeaturedBusinesses() {
 
         .featuredBusinessSection {
           min-width: 0;
-          padding: 26px;
+          padding: 18px;
           border: 1px solid #e9e0f3;
           border-radius: 28px;
           background: linear-gradient(145deg, #ffffff, #fbf9ff);
           box-shadow: 0 17px 44px rgba(48, 30, 70, 0.065);
         }
 
-        .featuredBusinessHeader {
-          margin-bottom: 17px;
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 20px;
+        .featuredBusinessSrOnly {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
         }
 
-        .featuredBusinessHeader > div { min-width: 0; }
-        .featuredBusinessHeader span { color: #6d28d9; font-size: 9px; font-weight: 950; }
-        .featuredBusinessHeader h2 { margin: 5px 0 0; color: #21152f; font-size: clamp(21px, 2vw, 29px); line-height: 1.5; }
-        .featuredBusinessHeader p { margin: 6px 0 0; color: #81758b; font-size: 10px; line-height: 1.85; }
-        .featuredBusinessHeader p b { color: #5b21b6; font-weight: 900; }
-        .featuredBusinessHeader > a {
-          min-height: 39px;
-          padding: 0 13px;
+        .featuredBusinessToolbar {
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .featuredBusinessLocation {
+          min-width: 0;
+          overflow: hidden;
+          color: #756681;
+          font-size: 8px;
+          font-weight: 850;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .featuredBusinessToolbar > a {
+          min-height: 34px;
+          padding: 0 11px;
           border: 1px solid #decff0;
-          border-radius: 12px;
+          border-radius: 11px;
           display: inline-flex;
           align-items: center;
           gap: 7px;
@@ -569,9 +595,39 @@ export default function HomeFeaturedBusinesses() {
 
         .featuredBusinessMedia { position: relative; overflow: hidden; background: linear-gradient(145deg, #f2eaff, #fff); }
         .featuredBusinessMedia > img,
-        .featuredBusinessCoverFallback { width: 100%; height: 100%; display: grid; place-items: center; object-fit: cover; color: #6d28d9; font-size: 42px; font-weight: 950; }
+        .featuredBusinessCoverFallback { position: absolute; inset: 0; width: 100%; height: 100%; display: grid; place-items: center; object-fit: cover; color: #6d28d9; font-size: 42px; font-weight: 950; }
+        .featuredBusinessMedia > img { z-index: 1; }
+        .featuredBusinessType {
+          position: absolute;
+          z-index: 2;
+          right: 10px;
+          top: 10px;
+          max-width: 58%;
+          padding: 5px 8px;
+          overflow: hidden;
+          border-radius: 999px;
+          color: #4c1d95;
+          background: rgba(255, 255, 255, .92);
+          font-size: 7px;
+          font-weight: 950;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .featuredBusinessType--repair_shop {
+          color: #075985;
+          background: rgba(224, 242, 254, .94);
+        }
+        .featuredBusinessType--parts_store {
+          color: #9a3412;
+          background: rgba(255, 237, 213, .95);
+        }
+        .featuredBusinessType--car_service {
+          color: #047857;
+          background: rgba(209, 250, 229, .95);
+        }
         .featuredBusinessIdentity {
           position: absolute;
+          z-index: 2;
           right: 14px;
           bottom: 12px;
           width: 48px;
@@ -587,9 +643,10 @@ export default function HomeFeaturedBusinesses() {
           font-size: 16px;
           font-weight: 950;
         }
-        .featuredBusinessIdentity img { width: 100%; height: 100%; object-fit: cover; }
+        .featuredBusinessIdentity img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .featuredBusinessMedia em {
           position: absolute;
+          z-index: 2;
           top: 10px;
           left: 10px;
           padding: 5px 8px;
@@ -602,8 +659,10 @@ export default function HomeFeaturedBusinesses() {
         }
 
         .featuredBusinessCopy { min-width: 0; padding: 15px; display: flex; flex-direction: column; }
-        .featuredBusinessCopy > strong { overflow: hidden; color: #251735; font-size: 13px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
-        .featuredBusinessCopy > small { margin-top: 5px; overflow: hidden; color: #81758b; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+        .featuredBusinessCopy > strong { overflow: hidden; color: #251735; font-size: 14px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
+        .featuredBusinessCopy > small { margin-top: 6px; overflow: hidden; color: #81758b; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+        .featuredBusinessAddress { display: flex; align-items: center; gap: 5px; }
+        .featuredBusinessAddress > span { color: #6d28d9; font-size: 12px; font-weight: 950; }
         .featuredBusinessTags { min-height: 27px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
         .featuredBusinessTags i { min-height: 23px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; color: #604878; background: #f3edfa; font-size: 7px; font-style: normal; font-weight: 850; }
         .featuredBusinessCopy > b { margin-top: auto; padding-top: 13px; color: #5b21b6; font-size: 8px; font-weight: 950; }
@@ -678,10 +737,7 @@ export default function HomeFeaturedBusinesses() {
 
         @media (max-width: 620px) {
           .featuredBusinesses { width: calc(100% - 20px); gap: 18px; }
-          .featuredBusinessSection { padding: 18px 14px; border-radius: 22px; }
-          .featuredBusinessHeader { align-items: flex-start; flex-direction: row; gap: 10px; }
-          .featuredBusinessHeader > div { flex: 1 1 auto; }
-          .featuredBusinessHeader > a { margin-top: 0; }
+          .featuredBusinessSection { padding: 14px; border-radius: 22px; }
           .featuredBusinessRail { grid-auto-columns: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }

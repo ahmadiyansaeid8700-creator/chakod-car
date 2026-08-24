@@ -5,7 +5,7 @@ import { getDb } from "../../../db";
 import { marketFloorEntries, marketFloorWallets } from "../../../db/schema";
 import { authApiUrl, jsonResponse, parseJsonResponse, rejectCrossSiteMutation, requestIdentityHeaders } from "../../../lib/chakod-auth-proxy";
 import { getFinanceOwnerKey } from "../../../lib/finance-core";
-import { MARKET_FLOOR_INITIAL_CARDS, MARKET_FLOOR_MIN_SCORE, MARKET_FLOOR_PROVINCE_CAPACITY, evaluateMarketFloor, marketFloorCycle, type MarketFloorListing } from "../../../lib/market-floor";
+import { MARKET_FLOOR_INITIAL_CARDS, MARKET_FLOOR_MIN_SCORE, MARKET_FLOOR_PROVINCE_CAPACITY, ensureMarketFloorSchema, evaluateMarketFloor, marketFloorCycle, type MarketFloorListing } from "../../../lib/market-floor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +70,7 @@ function listingSnapshot(listing: JsonObject): MarketFloorListing & Record<strin
 export async function GET(request: NextRequest) {
   const ownerKey = await getFinanceOwnerKey(request);
   if (!ownerKey) return jsonResponse({ success: false, message: "برای استفاده از کف بازار وارد حساب شوید." }, 401);
+  await ensureMarketFloorSchema();
   const db = getDb();
   const wallet = await ensureCards(ownerKey);
   const entries = await db.select().from(marketFloorEntries).where(eq(marketFloorEntries.ownerKey, ownerKey)).orderBy(desc(marketFloorEntries.id)).limit(30);
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
   if (rejected) return rejected;
   const ownerKey = await getFinanceOwnerKey(request);
   if (!ownerKey) return jsonResponse({ success: false, message: "برای شرکت در کف بازار وارد حساب شوید." }, 401);
+  await ensureMarketFloorSchema();
   const input = await request.json().catch(() => ({})) as JsonObject;
   const listingId = number(input.listing_id);
   const reserveNext = bool(input.reserve_next_cycle);

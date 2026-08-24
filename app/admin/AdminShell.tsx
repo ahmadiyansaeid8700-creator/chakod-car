@@ -42,6 +42,7 @@ const navigation: NavGroup[] = [
     items: [
       { href: "/admin/articles", label: "مقالات", icon: "article", permissions: ["content.view", "content.manage", "articles.manage"] },
       { href: "/admin/stories", label: "استوری‌ها", icon: "story", permissions: ["content.manage", "stories.manage"] },
+      { href: "/admin/market-floor", label: "کف بازار", icon: "star", permissions: ["listings.manage", "placements.manage"] },
       { href: "/admin/advertising", label: "تبلیغات", icon: "megaphone", permissions: ["banners.view", "banners.manage", "advertising.manage"] },
       { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب", icon: "star", permissions: ["businesses.manage", "placements.manage"] },
       { href: "/admin/placements", label: "جایگاه‌ها", icon: "pin", permissions: ["placements.view", "placements.manage"] },

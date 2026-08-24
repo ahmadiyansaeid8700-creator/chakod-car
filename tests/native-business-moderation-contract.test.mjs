@@ -22,6 +22,12 @@ test("admin approval activates native businesses for public discovery", () => {
   assert.match(publicResume, /activity\.status !== "active"/);
 });
 
+test("keeps native repair shops out of the dealership directory", () => {
+  assert.match(publicApi, /requestedType/);
+  assert.match(publicApi, /row\.activityType !== requestedType/);
+  assert.match(publicApi, /row\.activityType === "dealer"/);
+});
+
 test("uses the first album image as the public poster", () => {
   assert.match(publicApi, /cover_url: gallery\[0\]\?\.url/);
   assert.match(resumeEditor, /تصویر اول آلبوم به‌عنوان پوستر اصلی/);

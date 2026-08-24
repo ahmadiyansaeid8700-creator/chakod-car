@@ -9,6 +9,8 @@ type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
 
 type AdminBusiness = {
   id: number;
+  activity_id?: number;
+  source?: "native" | "external";
   auth_user_id: number | null;
   owner_mobile?: string;
   owner_name?: string;
@@ -92,15 +94,29 @@ export default function BusinessesAdminClient() {
   async function load() {
     setLoading(true); setError("");
     try {
-      const response = await fetch(`/api/admin/businesses?${search}`, { cache: "no-store", credentials: "include", headers: { Accept: "application/json", ...authHeaders() } });
-      const result = await readJson<ReadResponse>(response);
+      const options = { cache: "no-store" as const, credentials: "include" as const, headers: { Accept: "application/json", ...authHeaders() } };
+      const [response, nativeResponse] = await Promise.all([
+        fetch(`/api/admin/businesses?${search}`, options),
+        fetch("/api/admin/account-activities", options),
+      ]);
+      const [result, nativeResult] = await Promise.all([readJson<ReadResponse>(response), readJson<ReadResponse>(nativeResponse)]);
       if (!response.ok || !result.success) throw new Error(result.message || "دریافت کسب‌وکارها انجام نشد.");
-      setItems(Array.isArray(result.items) ? result.items : []);
+      const externalItems = (Array.isArray(result.items) ? result.items : []).map((item) => ({ ...item, source: "external" as const }));
+      const nativeItems = nativeResponse.ok && nativeResult.success && Array.isArray(nativeResult.items)
+        ? nativeResult.items.filter((item) => {
+            if (status && item.moderation_status !== status) return false;
+            if (type && item.business_type !== type) return false;
+            const needle = query.trim().toLocaleLowerCase("fa");
+            return !needle || [item.name, item.phone, item.city, item.province, String(item.activity_id || "")]
+              .some((value) => String(value || "").toLocaleLowerCase("fa").includes(needle));
+          })
+        : [];
+      setItems([...nativeItems, ...externalItems]);
       setStats({
-        total: Number(result.stats?.total || 0), pending: Number(result.stats?.pending || 0), approved: Number(result.stats?.approved || 0),
-        rejected: Number(result.stats?.rejected || 0), suspended: Number(result.stats?.suspended || 0), featured: Number(result.stats?.featured || 0),
+        total: Number(result.stats?.total || 0) + nativeItems.length, pending: Number(result.stats?.pending || 0) + nativeItems.filter((item) => item.moderation_status === "pending").length, approved: Number(result.stats?.approved || 0) + nativeItems.filter((item) => item.moderation_status === "approved").length,
+        rejected: Number(result.stats?.rejected || 0) + nativeItems.filter((item) => item.moderation_status === "rejected").length, suspended: Number(result.stats?.suspended || 0) + nativeItems.filter((item) => item.moderation_status === "suspended").length, featured: Number(result.stats?.featured || 0),
       });
-      setCanManage(Boolean(result.can_manage));
+      setCanManage(Boolean(result.can_manage || nativeResult.can_manage));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "دریافت کسب‌وکارها انجام نشد.");
     } finally { setLoading(false); }
@@ -112,10 +128,10 @@ export default function BusinessesAdminClient() {
     if (!canManage || savingId !== null) return;
     setSavingId(item.id); setError(""); setMessage("");
     try {
-      const response = await fetch("/api/admin/businesses", {
+      const response = await fetch(item.source === "native" ? "/api/admin/account-activities" : "/api/admin/businesses", {
         method: "PATCH", credentials: "include", cache: "no-store",
         headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ dealer_id: item.id, ...body }),
+        body: JSON.stringify(item.source === "native" ? { activity_id: item.activity_id, ...body } : { dealer_id: item.id, ...body }),
       });
       const result = await readJson<PatchResponse>(response);
       if (!response.ok || !result.success || !result.item) throw new Error(result.message || "ذخیره وضعیت انجام نشد.");
@@ -171,7 +187,7 @@ export default function BusinessesAdminClient() {
               <button className={styles.reject} disabled={!canManage || savingId === item.id} onClick={() => void patch(item,{ action:"set_status",status:"rejected",note:notes[item.id] || "" })}>رد</button>
               <button className={styles.suspend} disabled={!canManage || savingId === item.id} onClick={() => void patch(item,{ action:"set_status",status:"suspended",note:notes[item.id] || "" })}>تعلیق</button>
               <button className={styles.feature} disabled={!canManage || savingId === item.id || item.moderation_status !== "approved"} onClick={() => void patch(item,{ action:"set_featured",featured:!item.home_featured,sort_order:0 })}>{item.home_featured ? "حذف از صفحه اصلی" : "ویژه صفحه اصلی"}</button>
-              {item.public_slug && <a href={`/businesses/${item.public_slug}`} target="_blank">نمایش عمومی</a>}
+              {item.source === "native" && item.activity_id ? <a href={`/businesses/activity/${item.activity_id}`} target="_blank">نمایش عمومی</a> : item.public_slug && <a href={`/businesses/${item.public_slug}`} target="_blank">نمایش عمومی</a>}
             </div>
           </article>
         )) : <div className={styles.state}>کسب‌وکاری با این فیلتر پیدا نشد.</div>}

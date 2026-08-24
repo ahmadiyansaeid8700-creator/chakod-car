@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - agent/launch-3-local-baseline
   workflow_dispatch:
 
 permissions:

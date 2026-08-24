@@ -357,6 +357,30 @@ push:
 
 ## قالب اجباری پایان هر جلسه
 
+```text
+Date: 2026-08-24
+Requested change: ایجاد نسخه پایه حرفه‌ای پنل مدیریت با حفظ همه مسیرها و امکانات فعلی
+Affected routes/files: تمام مسیرهای /admin از طریق app/admin/layout.tsx، پوسته جدید AdminShell و تست قراردادی آن
+Tests actually run: admin-shell-contract، route-access و public-business-contract موفق؛ TypeScript و Build به‌علت خرابی نصب npm در محیط محلی هنوز باید در GitHub Actions اجرا شوند
+PR and merge commit: شاخه codex/staging-admin-ux-baseline؛ PR در حال آماده‌سازی و هنوز ادغام نشده
+Deployment result: منتشر نشده
+Online verification: انجام نشده
+Open issue: جریان ثبت کسب‌وکار جدید هنوز باید از D1 حساب به صف تأیید مدیریت، رسانه و API عمومی یکپارچه شود
+Exact next action: اجرای CI روی PR، سپس یکپارچه‌سازی صف تأیید کسب‌وکار و آلبوم/پوستر در مرحله بعد همین نسخه پایه
+```
+
+```text
+Date: 2026-08-24
+Requested change: رفع گم‌شدن تعمیرکار ثبت‌شده و اتصال آلبوم/پوستر به انتشار عمومی
+Affected routes/files: /admin/businesses، /api/admin/account-activities، /api/businesses، /api/business-resumes/[id] و ویرایشگر رزومه کسب‌وکار
+Tests actually run: 11/11 تست admin-shell، native-business-moderation، route-access و public-business موفق؛ git diff --check موفق
+PR and merge commit: ادامه PR #65؛ هنوز ادغام نشده
+Deployment result: منتشر نشده
+Online verification: انجام نشده
+Open issue: TypeScript و Build باید در CI مخزن اجرا شوند؛ نصب npm محیط محلی خراب بود
+Exact next action: ارسال Commit به PR #65، بررسی CI و رفع هر خطای Workflow پیش از درخواست ادغام
+```
+
 قبل از پایان کار، همین فایل با اطلاعات زیر به‌روزرسانی شود:
 
 ```text

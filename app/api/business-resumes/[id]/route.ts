@@ -44,7 +44,7 @@ export async function GET(
       .where(eq(accountActivities.id, activityId))
       .limit(1);
 
-    if (!activity || activity.type === "dealer" || activity.status === "disabled") {
+    if (!activity || activity.type === "dealer" || activity.status !== "active") {
       return jsonResponse({ success: false, message: "صفحه این کسب‌وکار در دسترس نیست." }, 404);
     }
 

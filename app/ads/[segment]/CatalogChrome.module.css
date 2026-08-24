@@ -83,10 +83,14 @@
   background: #fff;
 }
 
-.savedLink span,
-.submitLink span {
-  font-size: 16px;
-  line-height: 1;
+.savedLink svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .savedLink b,
@@ -366,8 +370,12 @@
   }
 
   .savedLink {
-    width: 40px;
+    width: 42px;
+    min-height: 40px;
     padding: 0;
+    border-color: #ded0ed;
+    border-radius: 12px;
+    background: #fbf8ff;
   }
 
   .savedLink b {

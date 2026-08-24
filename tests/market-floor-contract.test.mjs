@@ -52,10 +52,15 @@ test("presents the public market floor as a live responsive marketplace", async 
   assert.match(page, /MobileBottomNav/);
   assert.doesNotMatch(page, /selectedProvince/);
   assert.match(page, /از اینجا به بعد؛ فرصت‌های سراسر ایران/);
+  assert.match(page, /شرکت در کف بازار/);
+  assert.doesNotMatch(page, /انتخاب روز هوش چاکود/);
+  assert.doesNotMatch(page, /مشاهده فرصت‌های امروز/);
+  assert.doesNotMatch(page, /درخواست بررسی آگهی/);
+  assert.doesNotMatch(page, /فرصت‌های نزدیک شما/);
   assert.match(page, /ویترین امروز در حال چیده‌شدن است/);
   assert.match(styles, /\.heroVisual/);
-  assert.match(styles, /\.locationSummary/);
   assert.match(styles, /\.backButton/);
+  assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(styles, /\.nationwideSeparator/);
   assert.match(styles, /\.emptyCriteria/);
   assert.doesNotMatch(page + styles, /marketSign|carShape|awning|بزن بریم/);

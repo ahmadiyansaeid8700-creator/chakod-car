@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AdminPage, AdminPanel, StatusPill } from "../../components/AdminPage";
+import styles from "../../components/AdminForms.module.css";
 
 const API_BASE = "https://api.chakod.com";
 
@@ -18,124 +20,75 @@ export default function PricingManagementPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    void loadSettings();
-  }, []);
-
   async function loadSettings() {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/admin/pricing-settings.php`,
-        {
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-        }
-      );
-
-      if (response.ok) {
-        setSettings(await response.json());
-      }
+      const response = await fetch(`${API_BASE}/api/admin/pricing-settings.php`, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (response.ok) setSettings(await response.json());
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => {
+    void loadSettings();
+  }, []);
+
   async function saveSettings() {
     setSaving(true);
     setMessage("");
-
     try {
-      const response = await fetch(
-        `${API_BASE}/api/admin/pricing-settings.php`,
-        {
-          method: "PUT",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(settings),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("ذخیره تنظیمات انجام نشد");
-      }
-
+      const response = await fetch(`${API_BASE}/api/admin/pricing-settings.php`, {
+        method: "PUT",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (!response.ok) throw new Error("ذخیره تنظیمات انجام نشد");
       setMessage("تنظیمات با موفقیت ذخیره شد");
       await loadSettings();
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "خطا در ذخیره اطلاعات"
-      );
+      setMessage(error instanceof Error ? error.message : "خطا در ذخیره اطلاعات");
     } finally {
       setSaving(false);
     }
   }
 
   function updateField(key: keyof PricingSettings, value: string) {
-    setSettings((current) => ({
-      ...current,
-      [key]: Number(value),
-    }));
-  }
-
-  if (loading) {
-    return <main dir="rtl">در حال دریافت تنظیمات...</main>;
+    setSettings((current) => ({ ...current, [key]: Number(value) }));
   }
 
   return (
-    <main dir="rtl" style={{ padding: 24 }}>
-      <h1>مدیریت قیمت‌گذاری مرکزی</h1>
-
-      <p>
-        تمام قیمت‌ها، تخفیف خریدار و پورسانت معرف باید از این مرکز کنترل شوند.
-      </p>
-
-      <section>
-        <label>
-          قیمت ثبت آگهی
-          <input
-            value={settings.adPrice ?? ""}
-            onChange={(e) => updateField("adPrice", e.target.value)}
-          />
-        </label>
-
-        <label>
-          قیمت خدمات ویژه
-          <input
-            value={settings.featuredPrice ?? ""}
-            onChange={(e) => updateField("featuredPrice", e.target.value)}
-          />
-        </label>
-
-        <label>
-          درصد تخفیف خریدار
-          <input
-            value={settings.buyerDiscountPercent ?? ""}
-            onChange={(e) =>
-              updateField("buyerDiscountPercent", e.target.value)
-            }
-          />
-        </label>
-
-        <label>
-          درصد پورسانت معرف
-          <input
-            value={settings.referralCommissionPercent ?? ""}
-            onChange={(e) =>
-              updateField("referralCommissionPercent", e.target.value)
-            }
-          />
-        </label>
-
-        <button type="button" disabled={saving} onClick={saveSettings}>
-          {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
-        </button>
-      </section>
-
-      <p>{message}</p>
-
-      <p>آخرین تغییر: {settings.updatedAt ?? "—"}</p>
-    </main>
+    <AdminPage
+      eyebrow="تجارت و درآمد"
+      title="قیمت‌گذاری مرکزی"
+      description="قیمت خدمات، تخفیف خریدار و پورسانت معرف را از یک منبع مرکزی مدیریت کنید."
+      actions={<StatusPill>{loading ? "در حال همگام‌سازی" : "اطلاعات همگام است"}</StatusPill>}
+    >
+      <AdminPanel title="قوانین قیمت و سهم‌ها" description="تغییرات پس از ذخیره در مسیرهای خرید و ثبت آگهی استفاده می‌شوند.">
+        {message ? <p className={message.includes("موفقیت") ? styles.success : styles.error}>{message}</p> : null}
+        <div className={styles.formGrid}>
+          <label className={styles.field}>قیمت ثبت آگهی (تومان)
+            <input inputMode="numeric" value={settings.adPrice ?? ""} onChange={(event) => updateField("adPrice", event.target.value)} />
+          </label>
+          <label className={styles.field}>قیمت خدمات ویژه (تومان)
+            <input inputMode="numeric" value={settings.featuredPrice ?? ""} onChange={(event) => updateField("featuredPrice", event.target.value)} />
+          </label>
+          <label className={styles.field}>درصد تخفیف خریدار
+            <input inputMode="decimal" value={settings.buyerDiscountPercent ?? ""} onChange={(event) => updateField("buyerDiscountPercent", event.target.value)} />
+          </label>
+          <label className={styles.field}>درصد پورسانت معرف
+            <input inputMode="decimal" value={settings.referralCommissionPercent ?? ""} onChange={(event) => updateField("referralCommissionPercent", event.target.value)} />
+          </label>
+        </div>
+        <div className={styles.toolbar}>
+          <p className={styles.meta}>آخرین تغییر: {settings.updatedAt ?? "—"}</p>
+          <button className={styles.primaryButton} type="button" disabled={saving || loading} onClick={saveSettings}>
+            {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
+          </button>
+        </div>
+      </AdminPanel>
+    </AdminPage>
   );
 }

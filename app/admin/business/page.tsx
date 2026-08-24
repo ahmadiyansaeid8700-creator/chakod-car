@@ -1,77 +1,36 @@
-import Link from "next/link";
+import {
+  AdminPage,
+  AdminPanel,
+  FeatureGrid,
+  StatusPill,
+} from "../components/AdminPage";
 
-const sections = [
-  {
-    title: "قیمت‌گذاری",
-    description: "مدیریت قوانین قیمت، آگهی‌ها و تعرفه‌ها",
-    items: [
-      { title: "قیمت‌گذاری مرکزی", href: "/admin/business/pricing" },
-      { title: "پکیج‌ها و خدمات", href: "/admin/business/packages" },
-    ],
-  },
-  {
-    title: "تخفیف و معرف",
-    description: "مدیریت تخفیف‌ها و پورسانت معرف‌ها",
-    items: [
-      { title: "پورسانت معرف", href: "/admin/business/commissions" },
-    ],
-  },
-  {
-    title: "عملیات مالی",
-    description: "سفارش‌ها، پرداخت‌ها و برگشت وجه",
-    items: [
-      { title: "سفارش‌ها", href: "/admin/business/orders" },
-      { title: "پرداخت‌ها", href: "/admin/business/payments" },
-      { title: "Refund", href: "/admin/business/refunds" },
-    ],
-  },
+const commercialItems = [
+  { title: "قیمت‌گذاری مرکزی", description: "تعرفه آگهی، خدمات ویژه، تخفیف و پورسانت", href: "/admin/business/pricing", icon: "٪" },
+  { title: "پکیج‌ها و خدمات", description: "پکیج‌های شخصی، نمایشگاهی و جایگاه‌های ویژه", href: "/admin/business/packages", icon: "□" },
+  { title: "معرف‌ها و پورسانت", description: "قوانین معرفی، سهم معرف و گزارش عملکرد", href: "/admin/business/commissions", icon: "◉" },
+];
+
+const financeItems = [
+  { title: "سفارش‌ها", description: "چرخه سفارش و وضعیت ارائه خدمات", href: "/admin/business/orders", icon: "≡" },
+  { title: "پرداخت‌ها", description: "تراکنش‌ها، پرداخت‌های موفق و ناموفق", href: "/admin/business/payments", icon: "▤" },
+  { title: "بازگشت وجه", description: "درخواست‌ها و تاریخچه استرداد وجه", href: "/admin/business/refunds", icon: "↶" },
 ];
 
 export default function BusinessAdminPage() {
   return (
-    <main dir="rtl" style={{ padding: 24 }}>
-      <h1>مرکز مدیریت تجارت چاکود</h1>
-      <p>کنترل قیمت‌گذاری، درآمد، پرداخت و بازاریابی در یک پنل مرکزی.</p>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 20,
-          marginTop: 24,
-        }}
-      >
-        {sections.map((section) => (
-          <div
-            key={section.title}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: 16,
-              padding: 20,
-            }}
-          >
-            <h2>{section.title}</h2>
-            <p>{section.description}</p>
-            <div style={{ display: "grid", gap: 10 }}>
-              {section.items.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    border: "1px solid #eee",
-                    textDecoration: "none",
-                    color: "inherit",
-                  }}
-                >
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
-    </main>
+    <AdminPage
+      eyebrow="تجارت و درآمد"
+      title="مرکز مدیریت تجارت چاکود"
+      description="قیمت‌گذاری، درآمد، پرداخت‌ها و بازاریابی را از یک فضای کاری منظم کنترل کنید."
+      actions={<StatusPill>قوانین مرکزی فعال</StatusPill>}
+    >
+      <AdminPanel title="محصولات و درآمد" description="تنظیمات تجاری که مستقیماً بر خرید و فروش خدمات اثر می‌گذارند.">
+        <FeatureGrid items={commercialItems} />
+      </AdminPanel>
+      <AdminPanel title="عملیات مالی" description="پیگیری سفارش، پرداخت و بازگشت وجه در مسیرهای مشخص و مستقل.">
+        <FeatureGrid items={financeItems} />
+      </AdminPanel>
+    </AdminPage>
   );
 }

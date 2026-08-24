@@ -519,45 +519,6 @@ export default function AdminListingsPage() {
       className="adminListingsPage"
       dir="rtl"
     >
-      <aside className="adminSidebar">
-        <Link
-          className="brand"
-          href="/admin"
-        >
-          <span>چ</span>
-
-          <div>
-            <strong>چاکود</strong>
-            <small>اتاق فرمان</small>
-          </div>
-        </Link>
-
-        <nav>
-          <Link href="/admin">
-            داشبورد
-          </Link>
-
-          <Link
-            className="active"
-            href="/admin/listings"
-          >
-            تأیید آگهی‌ها
-          </Link>
-
-          <span className="disabledLink">
-            پرداخت‌ها — به‌زودی
-          </span>
-
-          <span className="disabledLink">
-            گزارش‌ها — به‌زودی
-          </span>
-
-          <Link href="/">
-            بازگشت به سایت
-          </Link>
-        </nav>
-      </aside>
-
       <section className="content">
         <header className="topHeader">
           <div>
@@ -1129,24 +1090,6 @@ export default function AdminListingsPage() {
         </section>
       </section>
 
-      <nav
-        className="mobileNav"
-        aria-label="منوی مدیریت"
-      >
-        <Link href="/admin">
-          داشبورد
-        </Link>
-
-        <Link
-          className="active"
-          href="/admin/listings"
-        >
-          آگهی‌ها
-        </Link>
-
-        <Link href="/">سایت</Link>
-      </nav>
-
       <style>{styles}</style>
     </main>
   );
@@ -1159,9 +1102,7 @@ const styles = `
 
   .adminListingsPage {
     min-height: 100vh;
-    display: grid;
-    grid-template-columns:
-      250px minmax(0, 1fr);
+    display: block;
     color: #211335;
     font-family:
       Tahoma,
@@ -1756,14 +1697,6 @@ const styles = `
   }
 
   @media (max-width: 1080px) {
-    .adminListingsPage {
-      grid-template-columns: 1fr;
-    }
-
-    .adminSidebar {
-      display: none;
-    }
-
     .content {
       padding:
         16px 16px 95px;

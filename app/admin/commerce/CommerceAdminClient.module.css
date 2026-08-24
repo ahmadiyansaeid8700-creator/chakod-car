@@ -108,3 +108,16 @@
 @media(max-width:1200px){.serviceEditorRow{grid-template-columns:minmax(180px,1.2fr) 140px 85px 100px 90px}.serviceEditorRow>.tableButton{grid-column:1/-1;justify-self:start}}
 @media(max-width:900px){.serviceEditorRow{grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}.serviceIdentity{grid-column:1/-1}.headerFilters{align-items:stretch}.headerFilters .search,.headerFilters select{width:100%}.sectionHeader{align-items:stretch;flex-direction:column}.discountSteps{grid-template-columns:1fr}.discountSteps button{justify-content:flex-start}.geoModeRow,.optionCards{grid-template-columns:1fr}}
 @media(max-width:620px){.serviceEditorRow{grid-template-columns:1fr}.serviceEditorRow>.tableButton{width:100%}.provinceSelectionToolbar{grid-template-columns:1fr}.selectedProvinceChips{max-height:120px;overflow:auto}}
+
+/* Admin shell owns navigation; keep the commerce landing page focused and calm. */
+.page{min-height:calc(100vh - 76px);padding:24px 22px 72px}
+.header{min-height:104px;padding:18px 24px;border-radius:21px}
+.header h1{font-size:clamp(25px,3vw,33px);margin:0 0 6px}
+.header p{max-width:680px;font-size:12px}
+.toolPicker{display:grid;gap:5px}.toolPicker span{color:rgba(255,255,255,.72);font-size:9px;font-weight:800}.toolPicker select{min-width:180px;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:10px 12px;background:#fff;color:#4e206f;font:inherit;font-size:11px;font-weight:850;outline:none}
+.adminLayout{display:block;margin-top:15px}
+.summaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.summaryCard{min-height:100px}
+.insightGrid{display:none}
+@media(max-width:980px){.summaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.page{padding:14px 10px 64px}.header{min-height:auto;align-items:stretch;flex-direction:column}.headerActions{align-items:stretch}.toolPicker{flex:1}.toolPicker select{width:100%}.summaryGrid{grid-template-columns:1fr 1fr}.summaryCard{padding:13px;min-height:94px}}

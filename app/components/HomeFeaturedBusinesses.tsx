@@ -390,6 +390,7 @@ function FeaturedBusinessSection({
             {hasNationwideItems ? (
               <span className="featuredBusinessNationwideDivider">
                 <span aria-hidden="true" />
+                <i aria-hidden="true">⌖</i>
                 <b>از اینجا به بعد</b>
                 <small>پیشنهادهای سراسر ایران</small>
                 <span aria-hidden="true" />
@@ -581,24 +582,34 @@ export default function HomeFeaturedBusinesses() {
           gap: 12px;
         }
         .featuredBusinessCategory {
+          position: relative;
           min-height: 34px;
-          padding: 0 13px;
-          border-radius: 11px;
+          padding: 0 15px;
+          border: 1px solid rgba(255, 255, 255, .75);
+          border-radius: 12px;
           display: inline-flex;
           align-items: center;
+          transform: translateY(-1px);
           font-size: 11px;
           font-weight: 950;
+          text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, .9),
+            inset 0 -3px 6px rgba(23, 12, 38, .08),
+            0 7px 0 rgba(38, 24, 52, .07),
+            0 12px 22px rgba(38, 24, 52, .12);
         }
-        .featuredBusinessCategory--repair_shop { color: #075985; background: #e0f2fe; }
-        .featuredBusinessCategory--parts_store { color: #9a3412; background: #ffedd5; }
-        .featuredBusinessCategory--car_service { color: #047857; background: #d1fae5; }
+        .featuredBusinessCategory--repair_shop { color: #075985; background: linear-gradient(145deg, #f0f9ff, #bae6fd); }
+        .featuredBusinessCategory--parts_store { color: #9a3412; background: linear-gradient(145deg, #fff7ed, #fed7aa); }
+        .featuredBusinessCategory--car_service { color: #047857; background: linear-gradient(145deg, #ecfdf5, #a7f3d0); }
         .featuredBusinessCategory::before {
           content: "";
-          width: 7px;
-          height: 7px;
+          width: 9px;
+          height: 9px;
           margin-left: 7px;
           border-radius: 99px;
           background: currentColor;
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, .62), 0 3px 7px currentColor;
         }
         .featuredBusinessToolbar > a {
           min-height: 34px;
@@ -737,20 +748,57 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessCopy > b { min-height: 34px; margin-top: auto; padding: 0 11px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: color-mix(in srgb, var(--card-color, #6d28d9) 8%, #fff); font-size: 8px; font-weight: 950; }
 
         .featuredBusinessNationwideDivider {
-          flex: 0 0 132px;
+          position: relative;
+          flex: 0 0 150px;
           min-height: 292px;
+          margin: 0 4px;
+          overflow: hidden;
+          border: 1px solid #e1d6eb;
+          border-radius: 22px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 7px;
-          color: #81758b;
+          gap: 8px;
+          color: #74627f;
+          background:
+            radial-gradient(circle at 50% 12%, rgba(139, 92, 246, .18), transparent 34%),
+            linear-gradient(160deg, #fff, #f7f2fc);
+          box-shadow:
+            inset 0 1px 0 #fff,
+            0 12px 30px rgba(55, 35, 72, .09);
           text-align: center;
           scroll-snap-align: center;
         }
-        .featuredBusinessNationwideDivider > span { width: 1px; height: 62px; background: linear-gradient(transparent, #d7cce2, transparent); }
-        .featuredBusinessNationwideDivider b { color: #4b3d54; font-size: 9px; }
-        .featuredBusinessNationwideDivider small { max-width: 105px; font-size: 8px; line-height: 1.7; }
+        .featuredBusinessNationwideDivider::before,
+        .featuredBusinessNationwideDivider::after {
+          content: "";
+          position: absolute;
+          width: 54px;
+          height: 54px;
+          border: 1px solid rgba(109, 40, 217, .08);
+          border-radius: 18px;
+          transform: rotate(24deg);
+        }
+        .featuredBusinessNationwideDivider::before { top: -28px; right: -24px; }
+        .featuredBusinessNationwideDivider::after { bottom: -30px; left: -24px; }
+        .featuredBusinessNationwideDivider > span { width: 44px; height: 1px; background: linear-gradient(90deg, transparent, #c9b7da, transparent); }
+        .featuredBusinessNationwideDivider > i {
+          width: 42px;
+          height: 42px;
+          border: 1px solid rgba(109, 40, 217, .16);
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          background: linear-gradient(145deg, #8b5cf6, #5b21b6);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 7px 0 #45138e, 0 13px 22px rgba(76,29,149,.24);
+          font-size: 18px;
+          font-style: normal;
+          font-weight: 950;
+        }
+        .featuredBusinessNationwideDivider b { margin-top: 6px; color: #3f3048; font-size: 10px; }
+        .featuredBusinessNationwideDivider small { max-width: 112px; color: #82718c; font-size: 8px; line-height: 1.8; }
 
         .featuredBusinessEmpty {
           min-height: 74px;
@@ -825,7 +873,8 @@ export default function HomeFeaturedBusinesses() {
           .featuredBusinessSection { padding: 14px; border-radius: 22px; }
           .featuredBusinessCard { flex-basis: min(285px, 82vw); min-width: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
-          .featuredBusinessNationwideDivider { flex-basis: 104px; min-height: 276px; }
+          .featuredBusinessCategory { min-height: 32px; padding: 0 12px; font-size: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 5px rgba(23,12,38,.07), 0 5px 0 rgba(38,24,52,.06), 0 9px 16px rgba(38,24,52,.1); }
+          .featuredBusinessNationwideDivider { flex-basis: 126px; min-height: 276px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
           .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
           .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }

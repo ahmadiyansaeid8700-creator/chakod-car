@@ -415,8 +415,8 @@ function FeaturedBusinessSection({
                     <path d="M19 12H5m5-5-5 5 5 5" />
                   </svg>
                 </i>
-                <b>از اینجا به بعد</b>
-                <small>پیشنهادهای سراسر ایران</small>
+                <b>پایان محدوده</b>
+                <small>ادامه سراسری</small>
                 <span aria-hidden="true" />
               </span>
             ) : null}
@@ -802,7 +802,7 @@ export default function HomeFeaturedBusinesses() {
 
         .featuredBusinessNationwideDivider {
           position: relative;
-          flex: 0 0 88px;
+          flex: 0 0 78px;
           min-height: 410px;
           margin: 0 2px;
           overflow: hidden;
@@ -858,8 +858,8 @@ export default function HomeFeaturedBusinesses() {
           stroke-linecap: round;
           stroke-linejoin: round;
         }
-        .featuredBusinessNationwideDivider b { margin-top: 6px; color: #3f3048; font-size: 10px; }
-        .featuredBusinessNationwideDivider small { max-width: 72px; color: #82718c; font-size: 7px; line-height: 1.8; }
+        .featuredBusinessNationwideDivider b { margin-top: 6px; color: #3f3048; font-size: 8px; line-height: 1.7; }
+        .featuredBusinessNationwideDivider small { max-width: 66px; color: #6d28d9; font-size: 7px; font-weight: 900; line-height: 1.7; }
 
         .featuredBusinessEmpty {
           min-height: 74px;

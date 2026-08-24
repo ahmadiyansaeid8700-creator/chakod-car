@@ -110,6 +110,18 @@ test("keeps stories, showrooms and vehicle rails connected to the shared locatio
   );
 });
 
+test("keeps homepage stories Instagram-like: grouped, unseen first, persistent seen state and continuous playback", () => {
+  const stories = read("app/components/HomeStories.tsx");
+
+  assert.match(stories, /STORY_SEEN_STORAGE_KEY/);
+  assert.match(stories, /localStorage\.setItem/);
+  assert.match(stories, /aHasUnseen/);
+  assert.match(stories, /storyItemSeen/);
+  assert.match(stories, /firstUnseenIndex/);
+  assert.match(stories, /nextGroupIndex/);
+  assert.match(stories, /STORY_DURATION_MS = 6500/);
+});
+
 test("keeps show-all catalog pages on their multi-row grid", () => {
   const catalog = read("app/components/CatalogListingsClient.tsx");
   const css = read("app/ads/[segment]/CatalogPage.module.css");

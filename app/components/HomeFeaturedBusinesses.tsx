@@ -327,7 +327,9 @@ function FeaturedBusinessSection({
                       }}
                     />
                   ) : null}
-                  <span className="featuredBusinessType">
+                  <span
+                    className={`featuredBusinessType featuredBusinessType--${business.business_type}`}
+                  >
                     {business.business_type_title || config.kicker}
                   </span>
                   <span className="featuredBusinessIdentity">
@@ -610,6 +612,18 @@ export default function HomeFeaturedBusinesses() {
           font-weight: 950;
           text-overflow: ellipsis;
           white-space: nowrap;
+        }
+        .featuredBusinessType--repair_shop {
+          color: #075985;
+          background: rgba(224, 242, 254, .94);
+        }
+        .featuredBusinessType--parts_store {
+          color: #9a3412;
+          background: rgba(255, 237, 213, .95);
+        }
+        .featuredBusinessType--car_service {
+          color: #047857;
+          background: rgba(209, 250, 229, .95);
         }
         .featuredBusinessIdentity {
           position: absolute;

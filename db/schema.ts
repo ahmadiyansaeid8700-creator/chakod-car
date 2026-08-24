@@ -63,6 +63,51 @@ export const commerceOrders = sqliteTable("commerce_orders", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const marketFloorWallets = sqliteTable("market_floor_wallets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerKey: text("owner_key").notNull().unique(),
+  availableCards: integer("available_cards").notNull().default(3),
+  consumedCards: integer("consumed_cards").notNull().default(0),
+  refundedCards: integer("refunded_cards").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const marketFloorEntries = sqliteTable(
+  "market_floor_entries",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    ownerKey: text("owner_key").notNull(),
+    listingId: integer("listing_id").notNull(),
+    province: text("province").notNull(),
+    requestedScope: text("requested_scope").notNull().default("province"),
+    cycleKey: text("cycle_key").notNull(),
+    cycleStartsAt: text("cycle_starts_at").notNull(),
+    cycleEndsAt: text("cycle_ends_at").notNull(),
+    status: text("status").notNull().default("pending_ai"),
+    score: integer("score").notNull().default(0),
+    grade: text("grade").notNull().default("rejected"),
+    decision: text("decision").notNull().default("human_review"),
+    reason: text("reason").notNull().default(""),
+    scoreJson: text("score_json").notNull().default("{}"),
+    listingSnapshotJson: text("listing_snapshot_json").notNull().default("{}"),
+    cardState: text("card_state").notNull().default("reserved"),
+    reservationForNextCycle: integer("reservation_for_next_cycle", { mode: "boolean" }).notNull().default(false),
+    reviewedBy: text("reviewed_by").notNull().default("ai"),
+    reviewedAt: text("reviewed_at"),
+    activatedAt: text("activated_at"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    ownerListingCycleUnique: uniqueIndex("market_floor_owner_listing_cycle_unique").on(
+      table.ownerKey,
+      table.listingId,
+      table.cycleKey,
+    ),
+  }),
+);
+
 export const paymentAttempts = sqliteTable("payment_attempts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   orderId: integer("order_id").notNull(),

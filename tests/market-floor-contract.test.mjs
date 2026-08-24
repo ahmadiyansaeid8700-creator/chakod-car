@@ -37,3 +37,18 @@ test("removes the old daily-card implementation and exposes market floor to user
   assert.match(legacy, /redirect\("\/account\/market-floor"\)/);
   assert.doesNotMatch(home + mobile + legacy, /کارت روز|daily-card|DailyCard/);
 });
+
+test("presents the public market floor as a live responsive marketplace", async () => {
+  const page = await read("app/market-floor/page.tsx");
+  const styles = await read("app/market-floor/page.module.css");
+
+  assert.match(page, /بزن بریم کف بازار/);
+  assert.match(page, /راسته‌های امروز/);
+  assert.match(page, /remainingTime/);
+  assert.match(page, /selectedProvince/);
+  assert.match(page, /ویترین امروز در حال چیده‌شدن است/);
+  assert.match(styles, /\.marketScene/);
+  assert.match(styles, /\.emptyStalls/);
+  assert.match(styles, /@media\(max-width:620px\)/);
+  assert.match(styles, /scroll-snap-type:x mandatory/);
+});

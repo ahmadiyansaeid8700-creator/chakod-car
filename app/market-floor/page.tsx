@@ -68,10 +68,9 @@ export default function MarketFloorPage() {
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
       </button>
       <div className={styles.heroCopy}>
-        <span className={styles.eyebrow}><i /> انتخاب روز هوش چاکود</span>
         <h1>کف بازار چاکود</h1>
         <p>ویترین محدود خودروهایی که قیمت، شرایط و کیفیت آگهی آن‌ها بررسی شده است؛ بدون تکمیل اجباری ظرفیت و بدون ادعای تخفیف نمایشی.</p>
-        <div className={styles.heroActions}><a href="#today-market" className={styles.primaryAction}>مشاهده فرصت‌های امروز <span>↓</span></a><Link href="/account/market-floor" className={styles.secondaryAction}>درخواست بررسی آگهی</Link></div>
+        <div className={styles.heroActions}><Link href="/account/market-floor" className={styles.primaryAction}>شرکت در کف بازار <span>←</span></Link></div>
       </div>
       <div className={styles.heroVisual}>
         {items[0]?.listing.coverUrl ? <img src={items[0].listing.coverUrl} alt="" /> : <div className={styles.visualFallback}><img src="/brand/chakod-symbol.png" alt="" /><span>CHAKOD</span><strong>MARKET FLOOR</strong></div>}
@@ -83,10 +82,6 @@ export default function MarketFloorPage() {
         <div><small>سقف هر استان</small><strong>۱۰ خودرو</strong></div>
         <div><small>مانده تا پایان چرخه</small><strong key={clock}>{remainingTime(cycle?.endsAt)}</strong></div>
       </div>
-    </section>
-
-    <section className={styles.locationSummary} aria-label="محدوده فرصت‌های کف بازار">
-      <span>⌖</span><div><small>فرصت‌های نزدیک شما</small><strong>{location.label}</strong></div><p>محدوده از انتخاب اصلی سایت خوانده شده است.</p>
     </section>
 
     <section id="today-market" className={styles.marketBody}>

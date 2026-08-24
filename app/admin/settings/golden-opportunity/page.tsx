@@ -12,6 +12,12 @@ import {
   type GoldenOpportunitySettings,
 } from "./types";
 import { canManageGoldenOpportunity } from "./permission";
+import {
+  AdminPage,
+  AdminPanel,
+  StatusPill,
+} from "../../components/AdminPage";
+import styles from "../../components/AdminForms.module.css";
 
 function getToken() {
   if (typeof window === "undefined") return "";
@@ -192,70 +198,68 @@ export default function GoldenOpportunitySettingsPage() {
 
   if (checkingAccess) {
     return (
-      <main dir="rtl" style={{ padding: 24, fontFamily: "Tahoma" }}>
-        در حال بررسی دسترسی مدیریت...
-      </main>
+      <AdminPage eyebrow="تنظیمات سیستم" title="فرصت طلایی" description="در حال بررسی سطح دسترسی مدیریت...">
+        <AdminPanel title="بررسی دسترسی"><p className={styles.meta}>لطفاً چند لحظه صبر کنید.</p></AdminPanel>
+      </AdminPage>
     );
   }
 
   if (!accessAllowed) {
     return (
-      <main dir="rtl" style={{ padding: 24, fontFamily: "Tahoma" }}>
-        <h1>تنظیمات فرصت طلایی</h1>
-        <p>{error || "دسترسی مدیریت قیمت‌ها برای این بخش فعال نیست."}</p>
-      </main>
+      <AdminPage eyebrow="تنظیمات سیستم" title="فرصت طلایی" description="مدیریت این بخش فقط برای حساب‌های دارای مجوز قیمت‌گذاری فعال است.">
+        <p className={styles.error}>{error || "دسترسی مدیریت قیمت‌ها برای این بخش فعال نیست."}</p>
+      </AdminPage>
     );
   }
 
   return (
-    <main dir="rtl" style={{ padding: 24, fontFamily: "Tahoma" }}>
-      <h1>تنظیمات فرصت طلایی</h1>
-      <p>مدیریت قیمت، ظرفیت، قوانین AI و بازگشت وجه.</p>
+    <AdminPage
+      eyebrow="تنظیمات سیستم"
+      title="تنظیمات فرصت طلایی"
+      description="قیمت بررسی، ظرفیت استانی، قوانین هوشمند و بازگشت وجه را از این مرکز مدیریت کنید."
+      actions={<StatusPill>{settings.enabled ? "سرویس فعال" : "سرویس غیرفعال"}</StatusPill>}
+    >
+      {loadingSettings && <p className={styles.meta}>در حال دریافت تنظیمات...</p>}
+      {error && <p className={styles.error}>{error}</p>}
+      {message && <p className={styles.success}>{message}</p>}
 
-      {loadingSettings && <p>در حال دریافت تنظیمات...</p>}
-      {error && <p style={{ color: "#b42318" }}>{error}</p>}
-      {message && <p style={{ color: "#067647" }}>{message}</p>}
-
-      <section>
-        <label>فعال بودن فرصت طلایی</label>
+      <AdminPanel title="قوانین نمایش و بررسی" description="این مقادیر پس از ذخیره به‌عنوان تنظیمات مرکزی فرصت طلایی استفاده می‌شوند.">
+      <div className={styles.formGrid}>
+      <label className={styles.field}>فعال بودن فرصت طلایی
         <input
           type="checkbox"
           checked={settings.enabled}
           onChange={(e) => update("enabled", e.target.checked)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>هزینه بررسی فرصت طلایی</label>
+      <label className={styles.field}>هزینه بررسی فرصت طلایی (تومان)
         <input
           type="number"
           min={0}
           value={settings.reviewPrice}
           onChange={(e) => update("reviewPrice", e.target.value)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>ظرفیت هر استان</label>
+      <label className={styles.field}>ظرفیت هر استان
         <input
           type="number"
           min={1}
           value={settings.provinceCapacity}
           onChange={(e) => update("provinceCapacity", e.target.value)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>ساعت شروع چرخه روزانه</label>
+      <label className={styles.field}>ساعت شروع چرخه روزانه
         <input
           type="time"
           value={settings.cycleStart}
           onChange={(e) => update("cycleStart", e.target.value)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>حداقل امتیاز AI</label>
+      <label className={styles.field}>حداقل امتیاز AI
         <input
           type="number"
           min={0}
@@ -263,30 +267,32 @@ export default function GoldenOpportunitySettingsPage() {
           value={settings.minimumAiScore}
           onChange={(e) => update("minimumAiScore", e.target.value)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>مدت نمایش (ساعت)</label>
+      <label className={styles.field}>مدت نمایش (ساعت)
         <input
           type="number"
           min={1}
           value={settings.displayHours}
           onChange={(e) => update("displayHours", e.target.value)}
         />
-      </section>
+      </label>
 
-      <section>
-        <label>بازگشت وجه در صورت رد</label>
+      <label className={styles.field}>بازگشت وجه در صورت رد
         <input
           type="checkbox"
           checked={settings.refundEnabled}
           onChange={(e) => update("refundEnabled", e.target.checked)}
         />
-      </section>
-
-      <button disabled={saving || loadingSettings} onClick={() => void save()}>
+      </label>
+      </div>
+      <div className={styles.toolbar}>
+      <p className={styles.meta}>تنها مدیر دارای مجوز قیمت‌گذاری می‌تواند تغییرات را ذخیره کند.</p>
+      <button className={styles.primaryButton} type="button" disabled={saving || loadingSettings} onClick={() => void save()}>
         {saving ? "در حال ذخیره..." : "ذخیره تنظیمات"}
       </button>
-    </main>
+      </div>
+      </AdminPanel>
+    </AdminPage>
   );
 }

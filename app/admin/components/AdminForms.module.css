@@ -1,0 +1,72 @@
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  color: #5f4d72;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #211335;
+  font-family: inherit;
+  border: 1px solid #ded2eb;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.11);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee7f4;
+}
+
+.primaryButton {
+  min-height: 42px;
+  padding: 10px 16px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  box-shadow: 0 8px 20px rgba(109, 40, 217, 0.2);
+  cursor: pointer;
+}
+
+.primaryButton:disabled { opacity: .55; cursor: not-allowed; }
+.meta { margin: 0; color: #806f93; font-size: 10px; }
+.success { margin: 0 0 14px; padding: 11px 13px; color: #087457; font-size: 11px; font-weight: 900; border: 1px solid #c9f0e2; border-radius: 12px; background: #ecfdf7; }
+.error { margin: 0 0 14px; padding: 11px 13px; color: #b42318; font-size: 11px; font-weight: 900; border: 1px solid #fecaca; border-radius: 12px; background: #fef2f2; }
+
+.list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.listItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px; border: 1px solid #eee5f6; border-radius: 14px; background: #fdfcff; }
+.listItem strong { font-size: 12px; }
+.listItem span { color: #806f93; font-size: 10px; }
+
+@media (max-width: 700px) {
+  .formGrid { grid-template-columns: 1fr; }
+  .toolbar, .listItem { align-items: stretch; flex-direction: column; }
+  .primaryButton { width: 100%; }
+}

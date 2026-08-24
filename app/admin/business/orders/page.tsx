@@ -1,21 +1,17 @@
+import { AdminPage, AdminPanel, FeatureGrid, StatusPill } from "../../components/AdminPage";
+
 export default function OrdersManagementPage() {
   return (
-    <main dir="rtl" style={{ padding: 24 }}>
-      <h1>مدیریت سفارش‌ها</h1>
-      <p>
-        این بخش برای مدیریت چرخه سفارش‌های تجاری چاکود ایجاد شده است.
-      </p>
-
-      <section>
-        <h2>موارد قابل مدیریت</h2>
-        <ul>
-          <li>سفارش‌های ثبت آگهی</li>
-          <li>خرید پکیج‌های نمایشگاه</li>
-          <li>خدمات ویژه و جایگاه‌ها</li>
-          <li>وضعیت پرداخت سفارش</li>
-          <li>سوابق تغییر وضعیت</li>
-        </ul>
-      </section>
-    </main>
+    <AdminPage eyebrow="عملیات مالی" title="مدیریت سفارش‌ها" description="چرخه سفارش‌های تجاری و وضعیت ارائه هر خدمت را از یک نمای واحد پیگیری کنید." actions={<StatusPill>بخش عملیاتی</StatusPill>}>
+      <AdminPanel title="چرخه سفارش" description="دسته‌بندی‌های اصلی سفارش در چاکود">
+        <FeatureGrid items={[
+          { title: "ثبت آگهی", description: "سفارش‌های ثبت و تمدید آگهی", icon: "☷" },
+          { title: "پکیج نمایشگاه", description: "خرید و تمدید پکیج نمایشگاه‌ها", icon: "□" },
+          { title: "خدمات ویژه", description: "جایگاه‌ها و امکانات تبلیغاتی", icon: "★" },
+          { title: "وضعیت پرداخت", description: "تطبیق سفارش با تراکنش مالی", icon: "▤" },
+          { title: "تاریخچه تغییرات", description: "رویدادهای ثبت‌شده برای هر سفارش", icon: "⌁" },
+        ]} />
+      </AdminPanel>
+    </AdminPage>
   );
 }

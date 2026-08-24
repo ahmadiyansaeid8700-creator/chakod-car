@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import styles from "./page.module.css";
 
 type Entry = { id: number; status: string; score: number; reason: string };
 type Listing = { id: number; title?: string; brand?: string; model?: string; province?: string; city?: string };
@@ -42,11 +43,44 @@ export default function MarketFloorAccountPage() {
     setBusy(false); await load();
   }
 
-  return <main dir="rtl" style={{ width: "min(1120px,calc(100% - 24px))", margin: "28px auto 90px", display: "grid", gap: 18 }}>
-    <header style={{ padding: "30px clamp(18px,5vw,52px)", borderRadius: 28, color: "#fff", background: "radial-gradient(circle at 15% 0,#f59e0b55,transparent 35%),linear-gradient(135deg,#21102f,#6d28d9)" }}><span style={{ color: "#fde68a", fontWeight: 900 }}>از دل بازار، برای خرید بهتر</span><h1 style={{ margin: "9px 0", fontSize: "clamp(28px,5vw,48px)" }}>کف بازار</h1><p style={{ maxWidth: 680, lineHeight: 2, opacity: .82 }}>کارت فقط درخواست بررسی است؛ چاکود قیمت، وضعیت، کارکرد و کیفیت آگهی را می‌سنجد.</p></header>
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>{[["کارت باقی‌مانده", data?.wallet?.availableCards ?? "…"],["ظرفیت هر استان", "۱۰"],["شروع چرخه", "۸ صبح"]].map(([label,value]) => <div key={label} style={{ padding: 17, border: "1px solid #e9e1ef", borderRadius: 17, background: "#fff" }}><small>{label}</small><strong style={{ display: "block", marginTop: 7, fontSize: 22 }}>{value}</strong></div>)}</section>
-    {error ? <section style={{ padding: 16, border: "1px solid #fecaca", borderRadius: 16, color: "#991b1b", background: "#fff1f2" }}><strong>اتصال کف بازار کامل نشد</strong><p style={{ marginBottom: 0 }}>{error}</p></section> : null}
-    {listingId ? <section style={{ padding: 22, border: "1px solid #e9e1ef", borderRadius: 22, background: "#fff" }}>{data?.listing ? <><small>آگهی انتخاب‌شده</small><h2>{data.listing.title}</h2><p>{[data.listing.city, data.listing.province].filter(Boolean).join("، ")}</p><div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}><button disabled={busy} onClick={() => void submit(false)} style={{ padding: "12px 18px", border: 0, borderRadius: 12, color: "#fff", background: "#6d28d9" }}>بررسی چرخه فعلی</button><button disabled={busy} onClick={() => void submit(true)} style={{ padding: "12px 18px", border: "1px solid #6d28d9", borderRadius: 12, color: "#6d28d9", background: "#fff" }}>رزرو فردا</button></div>{message ? <p style={{ padding: 12, borderRadius: 12, background: "#f5f0fa" }}>{message}</p> : null}</> : <p>در حال دریافت آگهی…</p>}</section> : <section style={{ padding: 22, borderRadius: 22, background: "#fff" }}><h2>یک آگهی فعال انتخاب کن</h2><p>آگهی‌های خودت را همین‌جا انتخاب و برای بررسی ارسال کن.</p>{listings.length ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>{listings.map((listing) => <button key={listing.id} type="button" onClick={() => window.location.assign(`/account/market-floor?listing_id=${listing.id}`)} style={{ padding: 15, border: "1px solid #e6ddef", borderRadius: 15, textAlign: "right", color: "#281637", background: "#fff", cursor: "pointer" }}><strong>{listing.title || [listing.brand, listing.model].filter(Boolean).join(" ") || `آگهی ${listing.id}`}</strong><small style={{ display: "block", marginTop: 6, color: "#7b6d84" }}>{[listing.city, listing.province].filter(Boolean).join("، ") || "انتخاب آگهی"}</small></button>)}</div> : <Link href="/account/listings">رفتن به آگهی‌های من</Link>}</section>}
-    {(data?.entries?.length || 0) > 0 ? <section><h2>درخواست‌های من</h2><div style={{ display: "grid", gap: 9 }}>{data?.entries?.map((entry) => <article key={entry.id} style={{ padding: 16, border: "1px solid #e9e1ef", borderRadius: 16, background: "#fff" }}><strong>{labels[entry.status] || entry.status} · امتیاز {entry.score}</strong><p style={{ marginBottom: 0 }}>{entry.reason}</p></article>)}</div></section> : null}
+  const cards = data?.wallet?.availableCards;
+  return <main className={styles.page} dir="rtl">
+    <section className={styles.hero}>
+      <div className={styles.heroGlow} />
+      <div className={styles.marketSeal}><span>٪</span><small>فرصت واقعی</small></div>
+      <span className={styles.eyebrow}><i /> انتخاب هوشمند چاکود</span>
+      <h1>کف بازار</h1>
+      <p>فرصت‌های خرید واقعی، نه تخفیف‌های ظاهری</p>
+      <div className={styles.heroRule}><span>بررسی قیمت</span><b>•</b><span>شرایط خودرو</span><b>•</b><span>کیفیت آگهی</span></div>
+    </section>
+
+    <section className={styles.ticketPanel} aria-label="کارت‌های کف بازار">
+      <div className={styles.ticketCopy}><small>سهمیه رایگان شما</small><strong>{cards ?? "…"} کارت کف بازار</strong><span>هر کارت، یک درخواست بررسی هوشمند</span></div>
+      <div className={styles.cardStack} aria-hidden="true">{[0,1,2].map((index) => <i key={index} className={cards !== undefined && index < cards ? styles.cardActive : styles.cardUsed}>✦</i>)}</div>
+    </section>
+
+    <section className={styles.quickFacts}>
+      <div><span>۱۰</span><small>فرصت در هر استان</small></div>
+      <div><span>۸ صبح</span><small>شروع چرخه روزانه</small></div>
+      <div><span>۲۴ ساعت</span><small>مدت نمایش</small></div>
+    </section>
+
+    {error ? <section className={styles.error}><strong>اتصال کف بازار کامل نشد</strong><p>{error}</p></section> : null}
+
+    {listingId ? <section className={styles.actionPanel}>{data?.listing ? <>
+      <span className={styles.sectionKicker}>آگهی انتخاب‌شده</span>
+      <h2>{data.listing.title}</h2>
+      <p className={styles.location}>⌖ {[data.listing.city, data.listing.province].filter(Boolean).join("، ")}</p>
+      <div className={styles.reviewSteps}><span><b>۱</b> تحلیل بازار</span><span><b>۲</b> امتیاز فرصت</span><span><b>۳</b> ورود برترین‌ها</span></div>
+      <button className={styles.primaryButton} disabled={busy} onClick={() => void submit(false)}>{busy ? "در حال بررسی…" : "شروع بررسی هوشمند"}<span>←</span></button>
+      <button className={styles.secondaryButton} disabled={busy} onClick={() => void submit(true)}>رزرو برای چرخه فردا</button>
+      <small className={styles.assurance}>در صورت رد شدن، کارت شما برمی‌گردد.</small>
+      {message ? <p className={styles.message}>{message}</p> : null}
+    </> : <div className={styles.loading}>در حال آماده‌سازی آگهی…</div>}</section> : <section className={styles.selector}>
+      <span className={styles.sectionKicker}>شروع کن</span><h2>کدام خودرو فرصت خوبی است؟</h2><p>یکی از آگهی‌های فعال خودت را برای بررسی انتخاب کن.</p>
+      {listings.length ? <div className={styles.listingGrid}>{listings.map((listing) => <button key={listing.id} type="button" onClick={() => window.location.assign(`/account/market-floor?listing_id=${listing.id}`)}><span className={styles.carIcon}>◇</span><span><strong>{listing.title || [listing.brand, listing.model].filter(Boolean).join(" ") || `آگهی ${listing.id}`}</strong><small>{[listing.city, listing.province].filter(Boolean).join("، ") || "آگهی فعال"}</small></span><b>←</b></button>)}</div> : <Link className={styles.primaryLink} href="/account/listings">مشاهده آگهی‌های من</Link>}
+    </section>}
+
+    {(data?.entries?.length || 0) > 0 ? <section className={styles.history}><span className={styles.sectionKicker}>پیگیری</span><h2>درخواست‌های من</h2><div>{data?.entries?.map((entry) => <article key={entry.id}><span className={styles.score}>{entry.score}</span><div><strong>{labels[entry.status] || entry.status}</strong><p>{entry.reason}</p></div></article>)}</div></section> : null}
   </main>;
 }

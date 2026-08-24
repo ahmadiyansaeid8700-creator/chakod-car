@@ -4,6 +4,7 @@ import { getDb } from "../../../../db";
 import { marketFloorEntries, marketFloorWallets } from "../../../../db/schema";
 import { jsonResponse, rejectCrossSiteMutation } from "../../../../lib/chakod-auth-proxy";
 import { readServerIdentity } from "../../../../lib/server-route-access";
+import { ensureMarketFloorSchema } from "../../../../lib/market-floor";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ async function adminAccess() {
 
 export async function GET() {
   if (!await adminAccess()) return jsonResponse({ success: false, message: "دسترسی مدیریت لازم است." }, 403);
+  await ensureMarketFloorSchema();
   const rows = await getDb().select().from(marketFloorEntries).orderBy(desc(marketFloorEntries.id)).limit(300);
   return jsonResponse({ success: true, data: rows.map((row) => ({ ...row, listing: JSON.parse(row.listingSnapshotJson), score_parts: JSON.parse(row.scoreJson) })) });
 }
@@ -23,6 +25,7 @@ export async function PATCH(request: NextRequest) {
   if (rejected) return rejected;
   const admin = await adminAccess();
   if (!admin) return jsonResponse({ success: false, message: "دسترسی مدیریت لازم است." }, 403);
+  await ensureMarketFloorSchema();
   const input = await request.json().catch(() => ({})) as Record<string, unknown>;
   const id = Math.round(Number(input.id || 0));
   const action = String(input.action || "");

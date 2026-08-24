@@ -2,10 +2,11 @@ import { and, desc, eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { getDb } from "../../../../db";
 import { marketFloorEntries } from "../../../../db/schema";
-import { marketFloorCycle } from "../../../../lib/market-floor";
+import { ensureMarketFloorSchema, marketFloorCycle } from "../../../../lib/market-floor";
 
 export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
+  await ensureMarketFloorSchema();
   const province = String(request.nextUrl.searchParams.get("province") || "").trim();
   const cycle = marketFloorCycle();
   const where = province

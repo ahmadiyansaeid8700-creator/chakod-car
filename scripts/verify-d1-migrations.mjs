@@ -25,6 +25,7 @@ const migrations = [
   "drizzle/0006_account_activity_members.sql",
   "drizzle/0007_instagram_story_queue.sql",
   "drizzle/0008_listing_attributions.sql",
+  "drizzle/0009_market_floor.sql",
 ];
 
 const expectedTables = [

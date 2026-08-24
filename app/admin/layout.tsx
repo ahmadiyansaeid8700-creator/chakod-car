@@ -19,10 +19,12 @@ export default async function AdminLayout({
     const admin = (rawAdmin && typeof rawAdmin === "object" && !Array.isArray(rawAdmin)
       ? rawAdmin
       : {}) as Record<string, unknown>;
-    const permissions = Array.isArray(admin.permissions) ? admin.permissions.map(String) : [];
+    const permissions = Array.isArray(identity.permissions)
+      ? identity.permissions.map(String)
+      : [];
     return (
       <AdminShell access={{
-        role: String(admin.role || admin.role_key || ""),
+        role: String(identity.primary_role || admin.role || admin.role_key || ""),
         permissions,
         isSiteOwner: identity.is_site_owner === true,
       }}>

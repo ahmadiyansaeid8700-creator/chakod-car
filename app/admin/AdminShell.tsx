@@ -164,7 +164,9 @@ export default function AdminShell({ children, access }: { children: React.React
           </button>
           <div className={styles.topbarTitle}><strong>مرکز مدیریت چاکود</strong><span>کنترل یکپارچه پلتفرم</span></div>
           <div className={styles.topbarActions}>
-            <Link href="/admin/support" aria-label="درخواست‌های پشتیبانی"><Glyph name="support" /></Link>
+            {canSee({ href: "/admin/support", label: "پشتیبانی", icon: "support", permissions: ["support.view", "support.manage"] }, access) && (
+              <Link href="/admin/support" aria-label="درخواست‌های پشتیبانی"><Glyph name="support" /></Link>
+            )}
             <Link className={styles.siteButton} href="/">مشاهده سایت</Link>
           </div>
         </header>

@@ -137,6 +137,10 @@ test("offline intent detection recognizes core user tasks", () => {
     detectOfflineIntent("تا دو میلیارد چه ماشینی بخرم؟", "user"),
     "vehicle_search",
   );
+  assert.equal(
+    detectOfflineIntent("چطور تعمیرگاهم را ثبت کنم؟", "user"),
+    "business_setup",
+  );
 });
 
 test("offline vehicle search only returns canonical actions and real cards", () => {
@@ -169,6 +173,20 @@ test("offline selling help leads to the canonical account listing flow", () => {
     reply.actions.map((action) => action.href),
     ["/account/listings/new", "/account/listings"],
   );
+});
+
+test("offline business setup leads to the native business workflow", () => {
+  const reply = buildOfflineAssistantReply(
+    [{ role: "user", content: "چطور فروشگاه قطعاتم را ثبت کنم؟" }],
+    publicKnowledge,
+  );
+
+  assert.equal(reply.intent, "business_setup");
+  assert.deepEqual(
+    reply.actions.map((action) => action.href),
+    ["/account/business/new", "/account/business", "/businesses"],
+  );
+  assert.match(reply.reply, /بررسی مدیریت/);
 });
 
 test("offline admin summary uses supplied data and never exposes automatic actions", () => {

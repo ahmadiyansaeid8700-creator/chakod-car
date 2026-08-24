@@ -264,7 +264,7 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(businesses, /featuredBusinessNationwideDivider[\s\S]*?linear-gradient/);
   assert.match(businesses, /پایان محدوده/);
   assert.match(businesses, /ادامه سراسری/);
-  assert.match(businesses, /flex: 0 0 78px/);
+  assert.match(businesses, /flex: 0 0 42px/);
   assert.doesNotMatch(businesses, /locationLabel=\{resolved\.label\}/);
   assert.match(businesses, /resolveBusinessesForLocation\(items, config\.type, location, selected\)/);
   assert.match(vehicles, /resolveListingsForLocation/);
@@ -277,6 +277,16 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
   assert.match(showrooms, /resolveDealersForLocation/);
   assert.match(showrooms, /resolvedDealers\.label/);
+});
+
+test("keeps nationwide separators genuinely slim across vehicle and business rails", () => {
+  const css = read("app/home.css");
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+
+  assert.match(css, /\.homeLocationBoundary \{[\s\S]*?min-width: 42px !important/);
+  assert.match(css, /\.homeLocationBoundary::before,[\s\S]*?\.homeLocationBoundary::after/);
+  assert.match(css, /\.homeRailShell--freezone \.homeLocationBoundary \{[\s\S]*?flex: 0 0 42px/);
+  assert.match(businesses, /\.featuredBusinessNationwideDivider \{[\s\S]*?flex: 0 0 42px/);
 });
 
 test("keeps homepage vehicle and showroom cards aligned with the approved mobile treatment", () => {

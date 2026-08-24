@@ -302,12 +302,8 @@ function ShowcaseSection({
                 <path d="M19 12H5m5-5-5 5 5 5" />
               </svg>
             </i>
-            <strong>
-              {showEmptyState
-                ? "بدون آگهی محلی"
-                : "پایان محدوده"}
-            </strong>
-            {hasNationwideFallback ? <span>ادامه سراسری</span> : null}
+            <strong>پایان محدوده</strong>
+            <span>ادامه سراسری</span>
           </aside>
         ) : null}
         {nationwideListings.map((listing) => (

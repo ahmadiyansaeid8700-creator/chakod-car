@@ -70,6 +70,8 @@ const HOME_BUSINESS_POLICY: { visibility: HomeBusinessVisibilityMode } = {
   visibility: "all",
 };
 
+const HOME_BUSINESS_ROW_SIZE = 3;
+
 const SECTIONS: SectionConfig[] = [
   {
     type: "car_service",
@@ -81,7 +83,7 @@ const SECTIONS: SectionConfig[] = [
   },
   {
     type: "parts_store",
-    kicker: "قطعات و لوازم",
+    kicker: "لوازم یدکی",
     title: "فروشگاه‌های لوازم یدکی برتر",
     description: "قطعات یدکی، لاستیک، باتری و لوازم جانبی از فروشندگان منتخب.",
     allHref: "/parts-stores",
@@ -89,7 +91,7 @@ const SECTIONS: SectionConfig[] = [
   },
   {
     type: "repair_shop",
-    kicker: "تعمیر و نگهداری",
+    kicker: "تعمیرکاران",
     title: "تعمیرکاران برتر",
     description: "مکانیکی، برق خودرو، سرویس دوره‌ای و تعمیرگاه‌های منتخب چاکود.",
     allHref: "/workshops",
@@ -190,26 +192,20 @@ function resolveBusinessesForLocation(
         selectedOrder.has(normalizeText(item.name))),
   );
 
-  if (location.mode === "all") return { items: typeItems, label: "سراسر ایران" };
-
-  const exactItems = typeItems.filter((item) => businessMatchesLocation(item, location));
-  if (exactItems.length > 0) return { items: exactItems, label: location.label };
-
-  const scopes = getHomeLocationScopes(location);
-  const selectedProvinces = new Set(scopes.map((scope) => normalizeText(scope.province)));
-  const provinceItems = typeItems.filter((item) =>
-    selectedProvinces.has(normalizeText(item.province)),
-  );
-  if (provinceItems.length > 0) {
-    return {
-      items: provinceItems,
-      label: scopes.length === 1
-        ? `پیشنهادهای استان ${scopes[0].province}`
-        : "پیشنهادهای همان استان‌ها",
-    };
+  if (location.mode === "all") {
+    return { localItems: typeItems, nationwideItems: [] };
   }
 
-  return { items: typeItems, label: "پیشنهادهای سراسر ایران" };
+  const exactItems = typeItems.filter((item) => businessMatchesLocation(item, location));
+  const exactIds = new Set(exactItems.map((item) => item.id));
+
+  return {
+    localItems: exactItems,
+    nationwideItems:
+      exactItems.length < HOME_BUSINESS_ROW_SIZE
+        ? typeItems.filter((item) => !exactIds.has(item.id))
+        : [],
+  };
 }
 
 function ServiceIcon({ type }: { type: "wash" | "detail" | "shield" }) {
@@ -241,18 +237,85 @@ function ServiceIcon({ type }: { type: "wash" | "detail" | "shield" }) {
   );
 }
 
+function BusinessCardContent({
+  business,
+  config,
+}: {
+  business: PublicBusiness;
+  config: SectionConfig;
+}) {
+  return (
+    <>
+      <span className="featuredBusinessMedia">
+        <span className="featuredBusinessCoverFallback" aria-hidden="true">
+          {business.name.slice(0, 1)}
+        </span>
+        {business.cover_url ? (
+          <img
+            src={business.cover_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
+        <span
+          className={`featuredBusinessType featuredBusinessType--${business.business_type}`}
+        >
+          {config.kicker}
+        </span>
+        <span className="featuredBusinessIdentity">
+          <b>{business.name.slice(0, 1)}</b>
+          {business.logo_url ? (
+            <img
+              src={business.logo_url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          ) : null}
+        </span>
+        {business.is_verified ? <em>تأیید چاکود</em> : null}
+      </span>
+
+      <span className="featuredBusinessCopy">
+        <strong>{business.name}</strong>
+        <small className="featuredBusinessAddress">
+          <span aria-hidden="true">⌖</span>
+          {businessLocation(business) || "اطلاعات کامل در پروفایل"}
+        </small>
+        <span className="featuredBusinessTags">
+          {businessTags(business).map((tag) => (
+            <i key={tag}>{tag}</i>
+          ))}
+          {business.mobile_service ? <i>خدمات در محل</i> : null}
+          {business.price_range_text ? <i>{business.price_range_text}</i> : null}
+        </span>
+        <b>
+          مشاهده پروفایل <span aria-hidden="true">←</span>
+        </b>
+      </span>
+    </>
+  );
+}
+
 function FeaturedBusinessSection({
   config,
   items,
   selected,
   status,
-  locationLabel,
+  nationwideItems,
 }: {
   config: SectionConfig;
   items: PublicBusiness[];
   selected: SelectedPlacement[];
   status: "loading" | "ready" | "error";
-  locationLabel: string;
+  nationwideItems: PublicBusiness[];
 }) {
   const selectedOrder = selectedBusinessOrder(selected, config.type);
   const sectionItems = items
@@ -271,24 +334,35 @@ function FeaturedBusinessSection({
       );
     })
     .slice(0, 8);
-  const hasItems = status === "ready" && sectionItems.length > 0;
+  const localItemIds = new Set(sectionItems.map((item) => item.id));
+  const rankedNationwideItems = nationwideItems
+    .filter((item) => item.business_type === config.type && !localItemIds.has(item.id))
+    .sort((a, b) => Number(b.is_verified) - Number(a.is_verified))
+    .slice(0, Math.max(0, 8 - sectionItems.length));
+  const hasLocalItems = status === "ready" && sectionItems.length > 0;
+  const hasNationwideItems = status === "ready" && rankedNationwideItems.length > 0;
+  const hasItems = hasLocalItems || hasNationwideItems;
   const fallbackItems = config.fallbackItems ?? config.fallbackLabels.map((label) => ({
     label,
-    description: `مشاهده فهرست کامل ${locationLabel}`,
+    description: "مشاهده فهرست کامل",
     href: config.allHref,
     icon: "detail" as const,
   }));
 
   return (
     <section
-      className="featuredBusinessSection"
+      className={`featuredBusinessSection featuredBusinessSection--${config.type}`}
       aria-labelledby={`featured-${config.type}`}
     >
       <h2 className="featuredBusinessSrOnly" id={`featured-${config.type}`}>
         {config.title}
       </h2>
       <div className="featuredBusinessToolbar">
-        <span className="featuredBusinessLocation">{locationLabel}</span>
+        <span
+          className={`featuredBusinessCategory featuredBusinessCategory--${config.type}`}
+        >
+          {config.kicker}
+        </span>
         <Link href={config.allHref}>
           مشاهده همه
           <span aria-hidden="true">←</span>
@@ -303,73 +377,34 @@ function FeaturedBusinessSection({
       ) : (
       <div className="featuredBusinessRail">
         {hasItems
-          ? sectionItems.map((business) => (
+          ? <>
+            {sectionItems.map((business) => (
               <Link
-                className="featuredBusinessCard"
+                className={`featuredBusinessCard featuredBusinessCard--${business.business_type}`}
                 href={`/businesses/${business.slug}`}
                 key={business.id}
               >
-                <span className="featuredBusinessMedia">
-                  <span
-                    className="featuredBusinessCoverFallback"
-                    aria-hidden="true"
-                  >
-                    {business.name.slice(0, 1)}
-                  </span>
-                  {business.cover_url ? (
-                    <img
-                      src={business.cover_url}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : null}
-                  <span
-                    className={`featuredBusinessType featuredBusinessType--${business.business_type}`}
-                  >
-                    {business.business_type_title || config.kicker}
-                  </span>
-                  <span className="featuredBusinessIdentity">
-                    <b>{business.name.slice(0, 1)}</b>
-                    {business.logo_url ? (
-                      <img
-                        src={business.logo_url}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : null}
-                  </span>
-                  {business.is_verified ? <em>تأیید چاکود</em> : null}
-                </span>
-
-                <span className="featuredBusinessCopy">
-                  <strong>{business.name}</strong>
-                  <small className="featuredBusinessAddress">
-                    <span aria-hidden="true">⌖</span>
-                    {businessLocation(business) || "اطلاعات کامل در پروفایل"}
-                  </small>
-                  <span className="featuredBusinessTags">
-                    {businessTags(business).map((tag) => (
-                      <i key={tag}>{tag}</i>
-                    ))}
-                    {business.mobile_service ? <i>خدمات در محل</i> : null}
-                    {business.price_range_text ? (
-                      <i>{business.price_range_text}</i>
-                    ) : null}
-                  </span>
-                  <b>
-                    مشاهده پروفایل <span aria-hidden="true">←</span>
-                  </b>
-                </span>
+                <BusinessCardContent business={business} config={config} />
               </Link>
-            ))
+            ))}
+            {hasNationwideItems ? (
+              <span className="featuredBusinessNationwideDivider">
+                <span aria-hidden="true" />
+                <b>از اینجا به بعد</b>
+                <small>پیشنهادهای سراسر ایران</small>
+                <span aria-hidden="true" />
+              </span>
+            ) : null}
+            {rankedNationwideItems.map((business) => (
+              <Link
+                className={`featuredBusinessCard featuredBusinessCard--${business.business_type}`}
+                href={`/businesses/${business.slug}`}
+                key={`nationwide-${business.id}`}
+              >
+                <BusinessCardContent business={business} config={config} />
+              </Link>
+            ))}
+          </>
           : fallbackItems.map((item) => (
               <Link
                 className="featuredBusinessCard featuredBusinessFallback"
@@ -386,7 +421,7 @@ function FeaturedBusinessSection({
                   <strong>{item.label}</strong>
                   <small>
                     {status === "loading"
-                      ? `در حال دریافت گزینه‌های ${locationLabel}`
+                      ? "در حال دریافت گزینه‌ها"
                       : item.description}
                   </small>
                   <b>
@@ -487,10 +522,10 @@ export default function HomeFeaturedBusinesses() {
         return (
           <FeaturedBusinessSection
             config={config}
-            items={resolved.items}
+            items={resolved.localItems}
+            nationwideItems={resolved.nationwideItems}
             selected={selected}
             status={status}
-            locationLabel={resolved.label}
             key={config.type}
           />
         );
@@ -506,13 +541,25 @@ export default function HomeFeaturedBusinesses() {
         }
 
         .featuredBusinessSection {
+          position: relative;
           min-width: 0;
           padding: 18px;
-          border: 1px solid #e9e0f3;
-          border-radius: 28px;
-          background: linear-gradient(145deg, #ffffff, #fbf9ff);
-          box-shadow: 0 17px 44px rgba(48, 30, 70, 0.065);
+          overflow: hidden;
+          border: 1px solid #ebe7f0;
+          border-radius: 26px;
+          background: rgba(255, 255, 255, .94);
+          box-shadow: 0 20px 55px rgba(38, 24, 52, .07);
         }
+        .featuredBusinessSection::before {
+          content: "";
+          position: absolute;
+          inset: 0 0 auto;
+          height: 4px;
+          background: var(--business-accent);
+        }
+        .featuredBusinessSection--repair_shop { --business-accent: linear-gradient(90deg, #0284c7, #38bdf8); }
+        .featuredBusinessSection--parts_store { --business-accent: linear-gradient(90deg, #ea580c, #fb923c); }
+        .featuredBusinessSection--car_service { --business-accent: linear-gradient(90deg, #059669, #34d399); }
 
         .featuredBusinessSrOnly {
           position: absolute;
@@ -533,14 +580,25 @@ export default function HomeFeaturedBusinesses() {
           justify-content: space-between;
           gap: 12px;
         }
-        .featuredBusinessLocation {
-          min-width: 0;
-          overflow: hidden;
-          color: #756681;
-          font-size: 8px;
-          font-weight: 850;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .featuredBusinessCategory {
+          min-height: 34px;
+          padding: 0 13px;
+          border-radius: 11px;
+          display: inline-flex;
+          align-items: center;
+          font-size: 11px;
+          font-weight: 950;
+        }
+        .featuredBusinessCategory--repair_shop { color: #075985; background: #e0f2fe; }
+        .featuredBusinessCategory--parts_store { color: #9a3412; background: #ffedd5; }
+        .featuredBusinessCategory--car_service { color: #047857; background: #d1fae5; }
+        .featuredBusinessCategory::before {
+          content: "";
+          width: 7px;
+          height: 7px;
+          margin-left: 7px;
+          border-radius: 99px;
+          background: currentColor;
         }
         .featuredBusinessToolbar > a {
           min-height: 34px;
@@ -560,9 +618,7 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessRail {
           direction: rtl;
           min-width: 0;
-          display: grid;
-          grid-auto-flow: column;
-          grid-auto-columns: minmax(280px, calc((100% - 24px) / 3));
+          display: flex;
           gap: 12px;
           overflow-x: auto;
           overflow-y: hidden;
@@ -573,27 +629,40 @@ export default function HomeFeaturedBusinesses() {
         }
 
         .featuredBusinessCard {
-          min-width: 0;
-          min-height: 300px;
+          position: relative;
+          flex: 0 0 calc((100% - 24px) / 3);
+          min-width: 280px;
+          min-height: 292px;
           overflow: hidden;
-          border: 1px solid #e7ddf0;
-          border-radius: 20px;
+          border: 1px solid #ebe7f0;
+          border-radius: 22px;
           display: grid;
-          grid-template-rows: 142px minmax(0, 1fr);
+          grid-template-rows: 136px minmax(0, 1fr);
           color: #251735;
           background: #fff;
-          box-shadow: 0 11px 28px rgba(48, 30, 70, 0.05);
+          box-shadow: 0 12px 32px rgba(31, 20, 43, .07);
           scroll-snap-align: start;
           transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
         }
 
         .featuredBusinessCard:hover {
-          transform: translateY(-3px);
-          border-color: #d0bae8;
-          box-shadow: 0 18px 38px rgba(48, 30, 70, 0.095);
+          transform: translateY(-4px);
+          border-color: color-mix(in srgb, var(--card-color) 35%, #e7e0ed);
+          box-shadow: 0 20px 42px rgba(31, 20, 43, .12);
+        }
+        .featuredBusinessCard--repair_shop { --card-color: #0284c7; }
+        .featuredBusinessCard--parts_store { --card-color: #ea580c; }
+        .featuredBusinessCard--car_service { --card-color: #059669; }
+        .featuredBusinessCard::after {
+          content: "";
+          position: absolute;
+          inset: 0 0 auto;
+          z-index: 3;
+          height: 3px;
+          background: var(--card-color, #6d28d9);
         }
 
-        .featuredBusinessMedia { position: relative; overflow: hidden; background: linear-gradient(145deg, #f2eaff, #fff); }
+        .featuredBusinessMedia { position: relative; overflow: hidden; background: linear-gradient(145deg, color-mix(in srgb, var(--card-color, #6d28d9) 10%, #fff), #fff); }
         .featuredBusinessMedia > img,
         .featuredBusinessCoverFallback { position: absolute; inset: 0; width: 100%; height: 100%; display: grid; place-items: center; object-fit: cover; color: #6d28d9; font-size: 42px; font-weight: 950; }
         .featuredBusinessMedia > img { z-index: 1; }
@@ -658,14 +727,30 @@ export default function HomeFeaturedBusinesses() {
           font-weight: 950;
         }
 
-        .featuredBusinessCopy { min-width: 0; padding: 15px; display: flex; flex-direction: column; }
+        .featuredBusinessCopy { min-width: 0; padding: 17px; display: flex; flex-direction: column; }
         .featuredBusinessCopy > strong { overflow: hidden; color: #251735; font-size: 14px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessCopy > small { margin-top: 6px; overflow: hidden; color: #81758b; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessAddress { display: flex; align-items: center; gap: 5px; }
         .featuredBusinessAddress > span { color: #6d28d9; font-size: 12px; font-weight: 950; }
         .featuredBusinessTags { min-height: 27px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
-        .featuredBusinessTags i { min-height: 23px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; color: #604878; background: #f3edfa; font-size: 7px; font-style: normal; font-weight: 850; }
-        .featuredBusinessCopy > b { margin-top: auto; padding-top: 13px; color: #5b21b6; font-size: 8px; font-weight: 950; }
+        .featuredBusinessTags i { min-height: 23px; padding: 0 8px; border: 1px solid #eee8f3; border-radius: 999px; display: inline-flex; align-items: center; color: #665570; background: #faf8fc; font-size: 7px; font-style: normal; font-weight: 850; }
+        .featuredBusinessCopy > b { min-height: 34px; margin-top: auto; padding: 0 11px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: color-mix(in srgb, var(--card-color, #6d28d9) 8%, #fff); font-size: 8px; font-weight: 950; }
+
+        .featuredBusinessNationwideDivider {
+          flex: 0 0 132px;
+          min-height: 292px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          color: #81758b;
+          text-align: center;
+          scroll-snap-align: center;
+        }
+        .featuredBusinessNationwideDivider > span { width: 1px; height: 62px; background: linear-gradient(transparent, #d7cce2, transparent); }
+        .featuredBusinessNationwideDivider b { color: #4b3d54; font-size: 9px; }
+        .featuredBusinessNationwideDivider small { max-width: 105px; font-size: 8px; line-height: 1.7; }
 
         .featuredBusinessEmpty {
           min-height: 74px;
@@ -732,14 +817,15 @@ export default function HomeFeaturedBusinesses() {
         }
 
         @media (max-width: 900px) {
-          .featuredBusinessRail { grid-auto-columns: min(330px, 78vw); }
+          .featuredBusinessCard { flex-basis: min(330px, 78vw); }
         }
 
         @media (max-width: 620px) {
           .featuredBusinesses { width: calc(100% - 20px); gap: 18px; }
           .featuredBusinessSection { padding: 14px; border-radius: 22px; }
-          .featuredBusinessRail { grid-auto-columns: min(285px, 82vw); }
+          .featuredBusinessCard { flex-basis: min(285px, 82vw); min-width: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
+          .featuredBusinessNationwideDivider { flex-basis: 104px; min-height: 276px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
           .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
           .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }

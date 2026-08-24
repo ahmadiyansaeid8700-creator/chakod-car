@@ -87,6 +87,13 @@ const types: Array<{ key: "" | BusinessType; label: string }> = [
   { key: "parts_store", label: "فروشگاه قطعات و لوازم خودرو" },
 ];
 
+const serviceMarketTypes: Array<{ key: "" | BusinessType; label: string }> = [
+  { key: "", label: "همه خدمات" },
+  { key: "repair_shop", label: "تعمیرکاران" },
+  { key: "car_service", label: "خدمات خودرویی" },
+  { key: "parts_store", label: "لوازم یدکی" },
+];
+
 const serviceCategories: Array<{ key: string; label: string; type: "" | BusinessType }> = [
   { key: "", label: "همه خدمات", type: "" },
   { key: "car_wash", label: "کارواش", type: "car_service" },
@@ -386,7 +393,7 @@ export default function BusinessesPage({
     return () => controller.abort();
   }, [basePath, city, dealerDirectory, marketMode, query, search]);
 
-  const mobileTitle = dealerDirectory ? "نمایشگاه‌ها" : "کسب‌وکارها";
+  const mobileTitle = dealerDirectory ? "نمایشگاه‌ها" : marketMode ? "بازار خدمات" : "کسب‌وکارها";
   const resultNoun = dealerDirectory ? "نمایشگاه" : "کسب‌وکار";
 
   return (
@@ -419,16 +426,11 @@ export default function BusinessesPage({
             <span>{kicker}</span>
             <h1>{title}</h1>
             <p>{description}</p>
-            {marketMode ? <div className={styles.serviceHighlights} aria-label="دسته‌های بازار خدمات">
-              <button type="button" onClick={() => { setType("repair_shop"); setCategory(""); }}><i>⌁</i><b>تعمیرکاران و تعمیرگاه‌ها</b><small>مکانیکی، برق، صافکاری و سرویس</small></button>
-              <button type="button" onClick={() => { setType("car_service"); setCategory(""); }}><i>✦</i><b>خدمات خودرویی</b><small>کارواش، دیتیلینگ، کاور و خدمات در محل</small></button>
-              <button type="button" onClick={() => { setType("parts_store"); setCategory(""); }}><i>▦</i><b>لوازم یدکی و قطعات</b><small>فروشگاه قطعه، تجهیزات و مصرفی خودرو</small></button>
-            </div> : null}
           </section>
 
-          <section className={styles.filters} aria-label="فیلتر کسب‌وکارها">
+          <section className={`${styles.filters} ${marketMode ? styles.marketFilters : ""}`} aria-label="فیلتر کسب‌وکارها">
             <div className={styles.typeTabs}>
-              {types.filter((item) => !marketMode || item.key !== "dealer").map((item) => (
+              {(marketMode ? serviceMarketTypes : types).map((item) => (
                 <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
                   {item.label}
                 </button>

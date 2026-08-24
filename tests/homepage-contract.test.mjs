@@ -146,6 +146,7 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   const catalogPage = read("app/ads/[segment]/page.tsx");
   const servicePage = read("app/services/page.tsx");
   const businesses = read("app/businesses/page.tsx");
+  const businessStyles = read("app/businesses/page.module.css");
   const marketSwitch = read("app/components/MarketModeSwitch.tsx");
   const marketSwitchStyles = read("app/components/MarketModeSwitch.module.css");
 
@@ -154,6 +155,14 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(servicePage, /basePath="\/services"/);
   assert.match(businesses, /<MarketModeSwitch active="services"/);
   assert.match(businesses, /business_type !== "dealer"/);
+  assert.match(businesses, /serviceMarketTypes/);
+  assert.match(businesses, /تعمیرکاران/);
+  assert.match(businesses, /خدمات خودرویی/);
+  assert.match(businesses, /لوازم یدکی/);
+  assert.match(businesses, /styles\.marketFilters/);
+  assert.doesNotMatch(businesses, /serviceHighlights/);
+  assert.match(businessStyles, /\.marketFilters \+ \.results \.grid/);
+  assert.match(businessStyles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(marketSwitch, /بازار خودرو چاکود/);
   assert.match(marketSwitch, /بازار خدمات چاکود/);
   assert.match(marketSwitchStyles, /grid-template-columns:repeat\(2/);

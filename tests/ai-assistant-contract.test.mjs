@@ -20,6 +20,16 @@ test("keeps offline AI fallback when cloud key is unavailable", async () => {
   assert.match(route, /cloud_unavailable/);
 });
 
+test("keeps Chakod AI automotive-first, conversational and uncertainty-aware", async () => {
+  const openai = await source("lib/ai-assistant/openai.ts");
+  const client = await source("app/components/ChakodAiAssistant.tsx");
+
+  assert.match(openai, /Handle greetings, thanks, brief small talk/);
+  assert.match(openai, /Never invent a specification/);
+  assert.match(openai, /stop driving when appropriate/);
+  assert.match(client, /کارشناس هوشمند خودرو/);
+});
+
 test("keeps assistant request limits and no-store response", async () => {
   const route = await source("app/api/ai/assistant/route.ts");
   assert.match(route, /MAX_REQUEST_BYTES/);

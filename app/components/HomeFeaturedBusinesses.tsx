@@ -417,7 +417,7 @@ function FeaturedBusinessSection({
                     <path d="M19 12H5m5-5-5 5 5 5" />
                   </svg>
                 </i>
-                <strong>پایان محدوده</strong>
+                <strong>بدون آگهی محلی</strong>
                 <span>ادامه سراسری</span>
               </aside>
             ) : null}
@@ -802,8 +802,8 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessCopy > b { min-height: 39px; margin-top: 8px; padding: 0 12px; border: 1px solid var(--card-color, #6d28d9); border-radius: 11px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: #fff; font-size: 9px; font-weight: 950; }
 
         .featuredBusinessNationwideDivider {
-          flex: 0 0 78px;
-          min-width: 78px !important;
+          flex: 0 0 42px;
+          min-width: 42px !important;
           min-height: 330px;
         }
         .featuredBusinessNationwideDivider strong,
@@ -882,7 +882,7 @@ export default function HomeFeaturedBusinesses() {
           .featuredBusinessSection { padding: 14px; border-radius: 22px; }
           .featuredBusinessCard { flex-basis: min(86vw, 300px); min-width: min(86vw, 300px); min-height: 320px; grid-template-rows: 112px minmax(0, 1fr); }
           .featuredBusinessCategory { min-height: 32px; padding: 0 12px; font-size: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 5px rgba(23,12,38,.07), 0 5px 0 rgba(38,24,52,.06), 0 9px 16px rgba(38,24,52,.1); }
-          .featuredBusinessNationwideDivider { flex-basis: 78px; min-height: 320px; }
+          .featuredBusinessNationwideDivider { flex-basis: 42px; min-height: 320px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
           .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
           .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }

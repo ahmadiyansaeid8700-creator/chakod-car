@@ -293,13 +293,21 @@ function ShowcaseSection({
               />
             ))}
         {showEmptyState || hasNationwideFallback ? (
-          <aside className="homeLocationBoundary" aria-label="مرز آگهی‌های محدوده و سراسر ایران">
+          <aside
+            className={`homeLocationBoundary homeLocationBoundary--${tone}`}
+            aria-label="مرز آگهی‌های محدوده و سراسر ایران"
+          >
+            <i aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M19 12H5m5-5-5 5 5 5" />
+              </svg>
+            </i>
             <strong>
               {showEmptyState
-                ? "در محدوده انتخابی شما آگهی وجود ندارد"
-                : "آگهی‌های این محدوده تا همین‌جا بود"}
+                ? "بدون آگهی محلی"
+                : "پایان محدوده"}
             </strong>
-            {hasNationwideFallback ? <span>از اینجا به بعد، آگهی‌های سراسر ایران نمایش داده می‌شوند.</span> : null}
+            {hasNationwideFallback ? <span>ادامه سراسری</span> : null}
           </aside>
         ) : null}
         {nationwideListings.map((listing) => (

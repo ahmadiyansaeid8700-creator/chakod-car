@@ -165,7 +165,11 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(businessStyles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(marketSwitch, /بازار خودرو چاکود/);
   assert.match(marketSwitch, /بازار خدمات چاکود/);
+  assert.match(marketSwitch, /active === "cars" \? "↓" : "←"/);
+  assert.match(marketSwitch, /active === "services" \? "↓" : "→"/);
+  assert.match(marketSwitch, /styles\.swapHint/);
   assert.match(marketSwitchStyles, /grid-template-columns:repeat\(2/);
+  assert.match(marketSwitchStyles, /\.swapHint/);
 });
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {

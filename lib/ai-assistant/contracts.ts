@@ -1,6 +1,9 @@
 export type AssistantMode = "user" | "admin";
 
 export type AssistantIntent =
+  | "social_greeting"
+  | "vehicle_maintenance"
+  | "vehicle_diagnostics"
   | "vehicle_search"
   | "listing_comparison"
   | "price_analysis"
@@ -209,6 +212,9 @@ export const ASSISTANT_REPLY_SCHEMA = {
     intent: {
       type: "string",
       enum: [
+        "social_greeting",
+        "vehicle_maintenance",
+        "vehicle_diagnostics",
         "vehicle_search",
         "listing_comparison",
         "price_analysis",

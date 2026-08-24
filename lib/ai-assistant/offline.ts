@@ -18,6 +18,12 @@ const SENSITIVE_INPUT_PATTERN =
   /(رمز(?:\s*عبور)?|پسورد|کد\s*(?:پیامکی|تأیید|ورود)|otp|توکن|token|cvv2|شماره\s*کارت|اطلاعات\s*کارت)/i;
 
 const COMPARISON_PATTERN = /(مقایسه|فرق|تفاوت|کدام\s*بهتر)/;
+const GREETING_PATTERN =
+  /^(?:(?:سلام|درود|سلامتی|صبح\s*بخیر|ظهر\s*بخیر|عصر\s*بخیر|شب\s*بخیر|خوبی|چطوری|چه\s*خبر|مرسی|ممنون|خداحافظ|فعلا|فعلاً)[!؟?.،\s]*){1,3}$/;
+const MAINTENANCE_PATTERN =
+  /(روغن|واسکازین|ضدیخ|مایع\s*ترمز|لاستیک|تایر|رینگ|باتری|شمع|فیلتر|تسمه|سرویس|تعویض|سایز|گرید|گرانروی|ویسکوزیته)/;
+const DIAGNOSTIC_PATTERN =
+  /(چراغ\s*(?:چک|اخطار|روغن|ترمز)|روشن\s*نمی|استارت|صدا|لرزش|ریپ|دود|نشتی|داغ|جوش|خاموش|کپ|مصرف\s*بالا|کم\s*میاره|خراب|ایراد|مشکل)/;
 const PRICE_PATTERN =
   /(قیمت|ارزش|منصفانه|گران|ارزان|میانه|بازار|بودجه)/;
 const SELLING_PATTERN =
@@ -63,6 +69,9 @@ export function detectOfflineIntent(
     return "general";
   }
 
+  if (GREETING_PATTERN.test(normalized)) return "social_greeting";
+  if (DIAGNOSTIC_PATTERN.test(normalized)) return "vehicle_diagnostics";
+  if (MAINTENANCE_PATTERN.test(normalized)) return "vehicle_maintenance";
   if (COMPARISON_PATTERN.test(normalized)) return "listing_comparison";
   if (LISTING_STATUS_PATTERN.test(normalized)) return "listing_review";
   if (BUSINESS_SETUP_PATTERN.test(normalized)) return "business_setup";
@@ -80,6 +89,60 @@ function buildUserReply(
   reason: OfflineFallbackReason,
 ): AssistantReply {
   const dataState = userDataState(knowledge);
+
+  if (intent === "social_greeting") {
+    return baseReply({
+      mode: "user",
+      intent,
+      confidence: "high",
+      dataStatus: dataState.status,
+      dataNotice: offlineNotice(reason, dataState.notice),
+      reply:
+        "سلام، خوش اومدی رفیق 👋 من هوش خودرویی چاکودم. حالت چطوره؟ برای خرید و مقایسه ماشین، عیب‌یابی اولیه، روغن و لاستیک یا پیدا کردن خدمات خودرویی کنارت هستم.",
+      suggestions: [
+        "ماشینم ایراد پیدا کرده",
+        "چه روغنی برای ماشینم مناسبه؟",
+        "برای خرید خودرو راهنمایی می‌خوام",
+      ],
+      actions: [],
+    });
+  }
+
+  if (intent === "vehicle_maintenance") {
+    return baseReply({
+      mode: "user",
+      intent,
+      confidence: "low",
+      dataStatus: dataState.status,
+      dataNotice: offlineNotice(reason, dataState.notice),
+      reply:
+        "حتماً راهنمایی‌ات می‌کنم. برای اینکه روغن، لاستیک، باتری یا قطعه اشتباه پیشنهاد ندهم، نام خودرو، مدل، سال ساخت و تیپ یا نوع موتور را بگو؛ اگر دفترچه یا کد موتور را داری، دقیق‌تر هم می‌شود.",
+      suggestions: [
+        "نام و مدل خودرو را می‌فرستم",
+        "برای انتخاب روغن راهنمایی کن",
+        "سایز تایر را می‌خواهم",
+      ],
+      actions: [{ label: "خدمات خودرویی چاکود", href: "/businesses" }],
+    });
+  }
+
+  if (intent === "vehicle_diagnostics") {
+    return baseReply({
+      mode: "user",
+      intent,
+      confidence: "low",
+      dataStatus: dataState.status,
+      dataNotice: offlineNotice(reason, dataState.notice),
+      reply:
+        "با چند سؤال می‌توانیم علت‌های محتمل را محدود کنیم، ولی تشخیص قطعی به بازدید خودرو نیاز دارد. نام خودرو، مدل و سال، زمان شروع مشکل، چراغ‌های روشن‌شده و اینکه صدا، بو، دود یا نشتی هم دیده‌ای را بگو. اگر چراغ روغن یا ترمز روشن است، خودرو داغ کرده، بوی بنزین می‌آید یا فرمان و ترمز عادی نیست، فعلاً رانندگی نکن.",
+      suggestions: [
+        "مشخصات خودرو را می‌فرستم",
+        "چراغ اخطار روشن شده",
+        "ماشین صدا یا لرزش دارد",
+      ],
+      actions: [{ label: "پیدا کردن تعمیرکار", href: "/businesses" }],
+    });
+  }
 
   if (intent === "business_setup") {
     return baseReply({
@@ -232,11 +295,11 @@ function buildUserReply(
     dataStatus: dataState.status,
     dataNotice: offlineNotice(reason, dataState.notice),
     reply:
-      "در حالت مستقل می‌توانم تو را به جست‌وجوی خودرو، ثبت و مدیریت آگهی، کسب‌وکارهای خودرویی و پشتیبانی هدایت کنم. برای پاسخ دقیق‌تر، موضوع را کوتاه و مشخص بنویس؛ مثلاً بودجه و شهر یا مشکلی که هنگام ثبت آگهی داری.",
+      "من هوش خودرویی چاکودم و تخصصم ماشین است. درباره خرید و فروش، مقایسه، ایراد فنی، روغن، لاستیک، قطعه، سرویس یا پیدا کردن تعمیرکار کمکت می‌کنم. اگر موضوعت خودرویی است، مدل ماشین و سؤال اصلی‌ات را بگو.",
     suggestions: [
       "تا ۲ میلیارد چه خودرویی پیدا می‌شود؟",
-      "برای ثبت آگهی راهنمایی‌ام کن",
-      "وضعیت آگهی‌ام را کجا ببینم؟",
+      "ماشینم ایراد پیدا کرده",
+      "چه روغن یا تایری مناسب است؟",
     ],
     actions: [
       { label: "بازار خودرو", href: "/cars" },

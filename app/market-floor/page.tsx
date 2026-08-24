@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -10,6 +11,7 @@ import {
   loadHomeLocation,
   type HomeLocationSelection,
 } from "../components/home-location";
+import MobileBottomNav from "../components/MobileBottomNav";
 import styles from "./page.module.css";
 
 type Item = { id: number; score: number; province: string; reason: string; listing: { id: number; title: string; brand: string; model: string; year: number; mileageKm?: number; priceToman: number; coverUrl?: string; publicUrl: string } };
@@ -29,6 +31,7 @@ function remainingTime(endsAt?: string) {
 function normalizeText(value: string) { return String(value || "").trim().replace(/[يى]/g, "ی").replace(/ك/g, "ک").replace(/[\s‌]+/g, "").toLocaleLowerCase("fa"); }
 
 export default function MarketFloorPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [cycle, setCycle] = useState<Cycle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +64,9 @@ export default function MarketFloorPage() {
 
   return <main dir="rtl" className={styles.page}>
     <section className={styles.hero}>
+      <button type="button" className={styles.backButton} aria-label="بازگشت به صفحه قبل" title="بازگشت" onClick={() => window.history.length > 1 ? router.back() : router.push("/")}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+      </button>
       <div className={styles.heroCopy}>
         <span className={styles.eyebrow}><i /> انتخاب روز هوش چاکود</span>
         <h1>کف بازار چاکود</h1>
@@ -99,5 +105,6 @@ export default function MarketFloorPage() {
       <div><span>۲</span><strong>هوش چاکود امتیاز می‌دهد</strong><small>بدون تأیید صرفاً به‌خاطر قیمت پایین</small></div><i />
       <div><span>۳</span><strong>بهترین‌ها وارد ویترین می‌شوند</strong><small>حداکثر ۱۰ فرصت واقعی از هر استان</small></div>
     </section>
+    <MobileBottomNav />
   </main>;
 }

@@ -142,9 +142,11 @@
   .hero span { font-size: 10px; }
   .hero h1 { margin: 7px 0 8px; font-size: clamp(25px, 8vw, 34px); line-height: 1.45; }
   .hero p { font-size: 11px; line-height: 1.95; }
-  .marketHero { min-height: auto; padding: 27px 18px; background: radial-gradient(circle at 0 0,rgba(255,210,95,.25),transparent 28%),linear-gradient(145deg,#15313a,#087260 60%,#12a184); }
-  .marketHero h1 { font-size: 31px; }
-  .marketHero p { font-size: 11px; }
+  .marketHero { min-height: auto; margin-top: 8px; padding: 16px 18px; border: 1px solid #e7dcf2; border-radius: 18px; color: #17111f; background: radial-gradient(circle at 100% 0,rgba(124,58,237,.075),transparent 16rem),#fff; box-shadow: 0 10px 28px rgba(47,28,72,.055); }
+  .marketHero:before { display: none; }
+  .marketHero > span { color: #6d28d9; opacity: 1; }
+  .marketHero h1 { margin: 3px 0 2px; font-size: 23px; line-height: 1.4; }
+  .marketHero p { color: #786f82; font-size: 9px; line-height: 1.7; opacity: 1; }
   .serviceHighlights { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 20px; }
   .serviceHighlights button { min-height: 92px; padding: 11px; border-radius: 15px; }
   .serviceHighlights i { width: 27px; height: 27px; }.serviceHighlights b { font-size: 10px; }
@@ -158,7 +160,24 @@
   .typeTabs { overflow-x: auto; flex-wrap: nowrap; margin: -2px -2px 10px; padding: 2px 2px 5px; scrollbar-width: none; }
   .typeTabs::-webkit-scrollbar { display: none; }
   .typeTabs button { flex: 0 0 auto; min-height: 40px; font-size: 10px; }
+  .marketFilters { padding: 8px; }
+  .marketFilters .typeTabs { margin: -1px -1px 8px; padding-bottom: 2px; }
+  .marketFilters .typeTabs button { min-height: 36px; flex: 1 0 auto; padding: 0 11px; border-radius: 10px; }
+  .marketFilters .filterGrid { grid-template-columns: 1fr 92px; gap: 7px; }
+  .marketFilters .filterGrid label:first-child { grid-column: 1; }
+  .marketFilters .filterGrid label:first-child span { display: none; }
+  .marketFilters .filterGrid label:nth-child(2),
+  .marketFilters .filterGrid label:nth-child(3) { grid-column: 1 / -1; }
+  .marketFilters .filterGrid > button { grid-column: 2; grid-row: 1; min-height: 50px; color: #fff; background: linear-gradient(135deg,#4c1d95,#7c3aed); box-shadow: 0 8px 18px rgba(76,29,149,.18); }
   .grid { grid-template-columns: 1fr; }
+  .marketFilters + .results .grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .marketFilters + .results .media { height: 128px; }
+  .marketFilters + .results .body { gap: 5px; padding: 9px; }
+  .marketFilters + .results .body h3 { font-size: 12px; }
+  .marketFilters + .results .body p { min-height: 28px; font-size: 8px; line-height: 1.7; }
+  .marketFilters + .results .logo,
+  .marketFilters + .results .media > b { width: 42px; height: 42px; right: 9px; bottom: 8px; border-radius: 12px; font-size: 17px; }
+  .marketFilters + .results .view { min-height: 34px; font-size: 9px; }
   .resultHeader { align-items: stretch; flex-direction: column; gap: 10px; }
   .resultHeader h2 { font-size: 19px; }
   .resultHeader > a { min-height: 42px; display: flex; align-items: center; justify-content: center; text-align: center; }

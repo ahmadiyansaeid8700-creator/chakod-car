@@ -59,14 +59,14 @@ test("keeps retired homepage banner routes out of the launch product", async () 
   assert.doesNotMatch(legacyUserApi, /demo_paid/);
 });
 
-test("hydrates an empty paid showroom card and resolves its selected listing details", async () => {
+test("keeps paid showroom cards fast while resolving selected listing details", async () => {
   const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
 
-  assert.match(homepage, /hydrateOwnedEmptyPlacements/);
-  assert.match(homepage, /\/api\/selected\/showroom\?dealer_id=/);
-  assert.match(homepage, /method:\s*"PUT"/);
   assert.match(homepage, /listing-detail\.php\?id=/);
   assert.match(homepage, /buildSelectedListingUrls\(nextPlacements\)/);
+  assert.match(homepage, /const baseListingsPromise = fetchListings/);
+  assert.match(homepage, /baseListingsPromise,[\s\S]*selectedListingResponses/);
+  assert.doesNotMatch(homepage, /hydrateOwnedEmptyPlacements/);
 });
 
 test("keeps every paid selected showroom visible in request order", async () => {

@@ -20,12 +20,26 @@ function typeTitle(type: string) {
 async function nativeBusinesses(request: NextRequest) {
   const slug = request.nextUrl.searchParams.get("slug") || "";
   const activityMatch = slug.match(/^activity-(\d+)$/);
+  const requestedType = request.nextUrl.searchParams.get("type")?.trim() || "";
+  const query = request.nextUrl.searchParams.get("q")?.trim().toLocaleLowerCase("fa") || "";
+  const province = request.nextUrl.searchParams.get("province")?.trim().toLocaleLowerCase("fa") || "";
+  const city = request.nextUrl.searchParams.get("city")?.trim().toLocaleLowerCase("fa") || "";
   const rows = activityMatch
     ? await getDb().select().from(accountActivities).where(eq(accountActivities.id, Number(activityMatch[1]))).limit(1)
     : await getDb().select().from(accountActivities).where(eq(accountActivities.status, "active"));
 
   const items = await Promise.all(rows
-    .filter((row) => row.activityType !== "dealer" && row.status === "active")
+    .filter((row) => {
+      if (row.activityType === "dealer" || row.status !== "active") return false;
+      if (activityMatch) return true;
+      if (requestedType && row.activityType !== requestedType) return false;
+
+      const searchable = `${row.name} ${row.province} ${row.city} ${row.neighborhood}`.toLocaleLowerCase("fa");
+      if (query && !searchable.includes(query)) return false;
+      if (province && !String(row.province || "").toLocaleLowerCase("fa").includes(province)) return false;
+      if (city && !String(row.city || "").toLocaleLowerCase("fa").includes(city)) return false;
+      return true;
+    })
     .map(async (row) => {
       const resume = await readBusinessResume(row.id);
       const gallery = resume?.published ? resume.gallery : [];

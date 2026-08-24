@@ -17,6 +17,8 @@ import {
 
 const API_BASE = "https://api.chakod.com";
 const STORY_DURATION_MS = 6500;
+const STORY_SEEN_STORAGE_KEY = "chakod:seen-stories:v1";
+const STORY_SEEN_TTL_MS = 48 * 60 * 60 * 1000;
 const MAX_STORIES_PER_OWNER = 10;
 const MAX_OWNER_BUBBLES = 12;
 
@@ -52,6 +54,7 @@ type HomeStoryItem = {
   user_id?: number | null;
   account_id?: number | null;
   publisher_id?: number | null;
+  expires_at?: string | null;
 };
 
 type HomeStoriesResponse = {
@@ -161,7 +164,39 @@ function storyOwnerLabel(item: HomeStoryItem) {
   return "فروشنده شخصی";
 }
 
-function groupStories(items: HomeStoryItem[]) {
+function loadSeenStories() {
+  const seen = new Set<number>();
+  if (typeof window === "undefined") return seen;
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(STORY_SEEN_STORAGE_KEY) || "{}") as Record<string, number>;
+    const cutoff = Date.now() - STORY_SEEN_TTL_MS;
+    const freshEntries = Object.entries(stored).filter(([, seenAt]) => Number(seenAt) >= cutoff);
+    freshEntries.forEach(([storyId]) => seen.add(Number(storyId)));
+    window.localStorage.setItem(STORY_SEEN_STORAGE_KEY, JSON.stringify(Object.fromEntries(freshEntries)));
+  } catch {
+    // محدودیت ذخیره‌سازی مرورگر نباید مانع نمایش استوری شود.
+  }
+
+  return seen;
+}
+
+function saveSeenStory(storyId: number) {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(STORY_SEEN_STORAGE_KEY) || "{}") as Record<string, number>;
+    const cutoff = Date.now() - STORY_SEEN_TTL_MS;
+    const freshEntries = Object.entries(stored).filter(([, seenAt]) => Number(seenAt) >= cutoff);
+    window.localStorage.setItem(
+      STORY_SEEN_STORAGE_KEY,
+      JSON.stringify({ ...Object.fromEntries(freshEntries), [storyId]: Date.now() }),
+    );
+  } catch {
+    // حالت خصوصی مرورگر ممکن است localStorage را غیرفعال کرده باشد.
+  }
+}
+
+function groupStories(items: HomeStoryItem[], seenStories: Set<number>) {
   const groups = new Map<string, StoryGroup>();
 
   items.forEach((item) => {
@@ -180,19 +215,26 @@ function groupStories(items: HomeStoryItem[]) {
     });
   });
 
-  return Array.from(groups.values()).slice(0, MAX_OWNER_BUBBLES);
+  return Array.from(groups.values())
+    .sort((a, b) => {
+      const aHasUnseen = a.items.some((item) => !seenStories.has(item.story_id));
+      const bHasUnseen = b.items.some((item) => !seenStories.has(item.story_id));
+      return Number(bHasUnseen) - Number(aHasUnseen);
+    })
+    .slice(0, MAX_OWNER_BUBBLES);
 }
 
 export default function HomeStories() {
   const [loading, setLoading] = useState(true);
   const [stories, setStories] = useState<HomeStoryItem[]>([]);
+  const [seenStories, setSeenStories] = useState<Set<number>>(() => new Set());
   const [location, setLocation] =
     useState<HomeLocationSelection>(DEFAULT_HOME_LOCATION);
   const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const touchStartX = useRef<number | null>(null);
 
-  const storyGroups = useMemo(() => groupStories(stories), [stories]);
+  const storyGroups = useMemo(() => groupStories(stories, seenStories), [seenStories, stories]);
   const activeGroup = useMemo(
     () =>
       activeGroupIndex === null ? null : storyGroups[activeGroupIndex] || null,
@@ -207,6 +249,7 @@ export default function HomeStories() {
   );
 
   useEffect(() => {
+    setSeenStories(loadSeenStories());
     setLocation(loadHomeLocation());
 
     const handleLocationChange = (event: Event) => {
@@ -302,15 +345,23 @@ export default function HomeStories() {
   const closeStory = useCallback(() => {
     setActiveGroupIndex(null);
     setActiveItemIndex(null);
+    setSeenStories(loadSeenStories());
+  }, []);
+
+  const markStorySeen = useCallback((item: HomeStoryItem) => {
+    saveSeenStory(item.story_id);
   }, []);
 
   function openGroup(groupIndex: number) {
     const group = storyGroups[groupIndex];
-    const firstStory = group?.items[0];
+    const firstUnseenIndex = group?.items.findIndex((item) => !seenStories.has(item.story_id)) ?? -1;
+    const firstIndex = firstUnseenIndex >= 0 ? firstUnseenIndex : 0;
+    const firstStory = group?.items[firstIndex];
     if (!group || !firstStory) return;
 
     setActiveGroupIndex(groupIndex);
-    setActiveItemIndex(0);
+    setActiveItemIndex(firstIndex);
+    markStorySeen(firstStory);
     trackClick(firstStory);
   }
 
@@ -319,21 +370,34 @@ export default function HomeStories() {
     const nextIndex = Math.max(0, activeItemIndex - 1);
     if (nextIndex === activeItemIndex) return;
     setActiveItemIndex(nextIndex);
+    markStorySeen(activeGroup.items[nextIndex]);
     trackClick(activeGroup.items[nextIndex]);
-  }, [activeGroup, activeItemIndex, trackClick]);
+  }, [activeGroup, activeItemIndex, markStorySeen, trackClick]);
 
   const showNext = useCallback(() => {
     if (!activeGroup || activeItemIndex === null) return;
     const nextIndex = activeItemIndex + 1;
 
     if (nextIndex >= activeGroup.items.length) {
-      closeStory();
+      const nextGroupIndex = activeGroupIndex === null ? -1 : activeGroupIndex + 1;
+      const nextGroup = storyGroups[nextGroupIndex];
+      if (!nextGroup?.items[0]) {
+        closeStory();
+        return;
+      }
+      const nextUnseenIndex = nextGroup.items.findIndex((item) => !seenStories.has(item.story_id));
+      const nextStoryIndex = nextUnseenIndex >= 0 ? nextUnseenIndex : 0;
+      setActiveGroupIndex(nextGroupIndex);
+      setActiveItemIndex(nextStoryIndex);
+      markStorySeen(nextGroup.items[nextStoryIndex]);
+      trackClick(nextGroup.items[nextStoryIndex]);
       return;
     }
 
     setActiveItemIndex(nextIndex);
+    markStorySeen(activeGroup.items[nextIndex]);
     trackClick(activeGroup.items[nextIndex]);
-  }, [activeGroup, activeItemIndex, closeStory, trackClick]);
+  }, [activeGroup, activeGroupIndex, activeItemIndex, closeStory, markStorySeen, seenStories, storyGroups, trackClick]);
 
   useEffect(() => {
     if (!activeStory) return;
@@ -413,7 +477,7 @@ export default function HomeStories() {
               return (
                 <button
                   type="button"
-                  className="storyItem"
+                  className={`storyItem ${group.items.every((item) => seenStories.has(item.story_id)) ? "storyItemSeen" : "storyItemUnseen"}`}
                   key={group.key}
                   onClick={() => openGroup(groupIndex)}
                   title={group.label}
@@ -622,6 +686,13 @@ export default function HomeStories() {
           background: radial-gradient(circle, rgba(139, 92, 246, 0.18), transparent 68%);
           pointer-events: none;
         }
+
+        .storyItemSeen .storyRing {
+          background: #c9c3d2;
+          box-shadow: 0 7px 18px rgba(58, 47, 70, 0.12);
+        }
+
+        .storyItemSeen .storyRing::after { opacity: 0; }
 
         .storyItem:hover .storyRing {
           transform: translateY(-3px) scale(1.035);

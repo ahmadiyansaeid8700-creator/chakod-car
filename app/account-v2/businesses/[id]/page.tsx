@@ -294,9 +294,9 @@ export default function BusinessActivityPage() {
                 </section>
 
                 <section className={dealerStyles.actionCard}>
-                  <Link href="/account/showcase" className={dealerStyles.primaryAction}>
+                  <Link href="/account/market-floor" className={dealerStyles.primaryAction}>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                    <span>مدیریت کارت روز</span>
+                    <span>مدیریت کف بازار</span>
                   </Link>
                 </section>
 

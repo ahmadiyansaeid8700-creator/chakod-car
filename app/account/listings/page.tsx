@@ -429,6 +429,7 @@ export default function AccountListingsPage() {
                     ]
                 : [
                     { href: `/account/listings/${listing.id}`, label: "مدیریت", tone: "primary" as const },
+                    ...(canStory ? [{ href: `/account/market-floor?listing_id=${listing.id}`, label: "شرکت در کف بازار", tone: "story" as const }] : []),
                     { href: `/cars/${listing.id}`, label: "نمایش", tone: "secondary" as const },
                   ];
 

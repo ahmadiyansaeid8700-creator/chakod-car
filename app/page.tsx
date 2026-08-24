@@ -59,12 +59,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </Link>
 
             <Link
-              className="masterSavedLink masterDailyCardDesktop"
-              href="/account/showcase"
-              aria-label="کارت روز"
+              className="masterSavedLink masterMarketFloorDesktop"
+              href="/market-floor"
+              aria-label="کف بازار"
             >
               <span aria-hidden="true">✦</span>
-              <b>کارت روز</b>
+              <b>کف بازار</b>
             </Link>
 
             <AuthStatus />
@@ -138,17 +138,17 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </footer>
 
       <style>{`
-        .masterDailyCardDesktop {
+        .masterMarketFloorDesktop {
           color: #6d28d9;
           border-color: #ddd0f4;
           background: linear-gradient(145deg, #ffffff, #f6f1ff);
         }
-        .masterDailyCardDesktop:hover {
+        .masterMarketFloorDesktop:hover {
           border-color: #a78bfa;
           background: #f7f2ff;
         }
         @media (max-width: 760px) {
-          .masterDailyCardDesktop { display: none !important; }
+          .masterMarketFloorDesktop { display: none !important; }
         }
       `}</style>
 

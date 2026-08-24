@@ -43,7 +43,7 @@ function MarketIcon() {
 function SubmitIcon() {
   return <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>;
 }
-function DailyCardIcon() {
+function MarketFloorIcon() {
   return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M8 3.8v3.4M16 3.8v3.4M4 9.4h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M12 12.1l.8 1.7 1.9.2-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.2.8-1.7Z" stroke="currentColor" strokeWidth="1.45" strokeLinejoin="round"/></svg>;
 }
 function AccountIcon() {
@@ -112,7 +112,7 @@ export default function MobileBottomNav() {
         p.startsWith("/advertising/stories") ||
         p.startsWith("/advertising/selected"),
     },
-    { id: "daily-card", title: "کارت روز", href: "/account/showcase", icon: <DailyCardIcon />, isActive: (p) => p === "/account/showcase" || p.startsWith("/account/showcase/") },
+    { id: "market-floor", title: "کف بازار", href: "/market-floor", icon: <MarketFloorIcon />, isActive: (p) => p === "/market-floor" || p.startsWith("/market-floor/") },
     {
       id: "account",
       title: accountDestination.title,
@@ -121,7 +121,7 @@ export default function MobileBottomNav() {
       isActive: (p) => {
         if (accountDestination.href === "/admin") return p.startsWith("/admin");
         if (accountDestination.href === "/login") return p.startsWith("/login");
-        if (p === "/account/showcase" || p.startsWith("/account/showcase/")) return false;
+        if (p === "/market-floor" || p.startsWith("/market-floor/")) return false;
         return p === "/account" || p.startsWith("/account/") || p.startsWith("/account-v2/");
       },
     },

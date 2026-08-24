@@ -157,7 +157,13 @@ function readSessionToken(request: Request) {
   const bearer = authorization.startsWith("Bearer ")
     ? authorization.slice(7)
     : "";
-  const token = bearer || request.headers.get("x-session-token") || "";
+  const cookieToken = request.headers
+    .get("cookie")
+    ?.split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith("chakod_session="))
+    ?.slice("chakod_session=".length) || "";
+  const token = bearer || request.headers.get("x-session-token") || cookieToken;
 
   return token.trim().slice(0, 4_096);
 }

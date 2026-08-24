@@ -36,3 +36,13 @@ test("does not send an admin session token in public assistant mode", async () =
   assert.match(client, /chakod_session_token/);
   assert.match(client, /\/api\/ai\/assistant/);
 });
+
+test("supports cookie-backed admin mode and effective admin permissions", async () => {
+  const route = await source("app/api/ai/assistant/route.ts");
+  const context = await source("lib/ai-assistant/context.ts");
+  const client = await source("app/components/ChakodAiAssistant.tsx");
+
+  assert.match(route, /chakod_session=/);
+  assert.match(context, /Array\.isArray\(me\.permissions\)/);
+  assert.match(client, /path\.startsWith\("\/admin"\) \? "admin" : "user"/);
+});

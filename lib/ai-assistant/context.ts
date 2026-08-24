@@ -51,6 +51,7 @@ type PublicCatalogResponse = {
 type AdminMeResponse = {
   success?: boolean;
   is_admin?: boolean;
+  permissions?: string[];
   admin?: {
     role?: string | null;
     display_name?: string | null;
@@ -195,8 +196,10 @@ export async function buildAdminKnowledge(
     return null;
   }
 
-  const permissions = Array.isArray(me.admin?.permissions)
-    ? me.admin.permissions.filter((item) => typeof item === "string").slice(0, 30)
+  const permissions = Array.isArray(me.permissions)
+    ? me.permissions.filter((item) => typeof item === "string").slice(0, 30)
+    : Array.isArray(me.admin?.permissions)
+      ? me.admin.permissions.filter((item) => typeof item === "string").slice(0, 30)
     : [];
   const canView =
     permissions.includes("*") ||

@@ -24,6 +24,8 @@ const SELLING_PATTERN =
   /(ثبت\s*آگهی|فروش\s*خودرو|آگهی\s*جدید|عنوان\s*آگهی|عکس\s*آگهی|توضیحات\s*آگهی|ویرایش\s*آگهی)/;
 const LISTING_STATUS_PATTERN =
   /(وضعیت\s*آگهی|رد\s*شد|ردشده|منقضی|نیازمند\s*اصلاح|در\s*انتظار\s*بررسی|گزارش\s*آگهی)/;
+const BUSINESS_SETUP_PATTERN =
+  /(ثبت|ساخت|اضافه|ویرایش|تکمیل|مدیریت).{0,24}(کسب.?وکار|تعمیرگاه|تعمیرکار|مرکز\s*خدمات|فروشگاه\s*(?:قطعات|لوازم\s*یدکی)|نمایشگاه|پروفایل\s*(?:تجاری|حرفه.?ای))|(?:کسب.?وکار|تعمیرگاه|تعمیرکار|مرکز\s*خدمات|فروشگاه\s*(?:قطعات|لوازم\s*یدکی)|نمایشگاه|پروفایل\s*(?:تجاری|حرفه.?ای)).{0,24}(ثبت|ساخت|اضافه|ویرایش|تکمیل|مدیریت)/;
 const VEHICLE_SEARCH_PATTERN =
   /(خودرو|ماشین|اتومبیل|بخرم|خرید|پیشنهاد|مدل|کارکرد|اتومات|دنده|هیبرید|برقی|بنزینی|میلیارد|میلیون)/;
 const ADMIN_QUEUE_PATTERN =
@@ -63,6 +65,7 @@ export function detectOfflineIntent(
 
   if (COMPARISON_PATTERN.test(normalized)) return "listing_comparison";
   if (LISTING_STATUS_PATTERN.test(normalized)) return "listing_review";
+  if (BUSINESS_SETUP_PATTERN.test(normalized)) return "business_setup";
   if (SELLING_PATTERN.test(normalized)) return "selling_help";
   if (PRICE_PATTERN.test(normalized) && VEHICLE_SEARCH_PATTERN.test(normalized)) {
     return "price_analysis";
@@ -77,6 +80,28 @@ function buildUserReply(
   reason: OfflineFallbackReason,
 ): AssistantReply {
   const dataState = userDataState(knowledge);
+
+  if (intent === "business_setup") {
+    return baseReply({
+      mode: "user",
+      intent,
+      confidence: "high",
+      dataStatus: dataState.status,
+      dataNotice: offlineNotice(reason, dataState.notice),
+      reply:
+        "برای ثبت نمایشگاه، تعمیرگاه، مرکز خدمات یا فروشگاه قطعات، وارد فرم ثبت کسب‌وکار شو و نوع فعالیت، نام، محدوده خدمت و اطلاعات تماس را کامل کن. سپس لوگو یا تصویر اصلی و نمونه‌کارها را در پروفایل حرفه‌ای اضافه کن. اطلاعات بعد از ثبت برای بررسی مدیریت ارسال می‌شود و فقط مورد تأییدشده در سایت نمایش داده خواهد شد.",
+      suggestions: [
+        "چه عکس‌هایی برای پروفایل لازم است؟",
+        "چطور نمونه‌کارها را اضافه کنم؟",
+        "وضعیت تأیید کسب‌وکار را کجا ببینم؟",
+      ],
+      actions: [
+        { label: "ثبت کسب‌وکار جدید", href: "/account/business/new" },
+        { label: "مدیریت کسب‌وکارها", href: "/account/business" },
+        { label: "مشاهده کسب‌وکارها", href: "/businesses" },
+      ],
+    });
+  }
 
   if (intent === "selling_help") {
     return baseReply({
@@ -496,6 +521,7 @@ function isSafeInternalHref(href: string) {
   return (
     /^\/cars(?:\/[^?#]+)?(?:[/?#]|$)/.test(href) ||
     /^\/account\/listings(?:[/?#]|$)/.test(href) ||
+    /^\/account\/business(?:[/?#]|$)/.test(href) ||
     /^\/businesses(?:[/?#]|$)/.test(href) ||
     /^\/support(?:[/?#]|$)/.test(href) ||
     /^\/login(?:[/?#]|$)/.test(href) ||

@@ -6,6 +6,7 @@ export type AssistantIntent =
   | "price_analysis"
   | "listing_review"
   | "selling_help"
+  | "business_setup"
   | "site_operations"
   | "moderation_queue"
   | "growth_analysis"
@@ -213,6 +214,7 @@ export const ASSISTANT_REPLY_SCHEMA = {
         "price_analysis",
         "listing_review",
         "selling_help",
+        "business_setup",
         "site_operations",
         "moderation_queue",
         "growth_analysis",

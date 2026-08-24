@@ -67,8 +67,8 @@ type AssistantResponse =
 const USER_SUGGESTIONS = [
   "تا ۲ میلیارد در گیلان چه خودرویی پیشنهاد می‌کنی؟",
   "دو آگهی را برایم مقایسه کن",
-  "چطور قیمت یک آگهی را ارزیابی کنم؟",
   "برای ثبت آگهی بهتر راهنمایی‌ام کن",
+  "چطور تعمیرگاه یا فروشگاه قطعاتم را ثبت کنم؟",
 ];
 
 const ADMIN_SUGGESTIONS = [
@@ -131,11 +131,8 @@ export default function ChakodAiAssistant() {
   useEffect(() => {
     const syncMode = () => {
       const path = window.location.pathname;
-      const hasSession = Boolean(
-        window.localStorage.getItem("chakod_session_token"),
-      );
       const nextMode: AssistantMode =
-        path.startsWith("/admin") && hasSession ? "admin" : "user";
+        path.startsWith("/admin") ? "admin" : "user";
 
       if (initializedRef.current && modeRef.current === nextMode) return;
       initializedRef.current = true;
@@ -224,10 +221,7 @@ export default function ChakodAiAssistant() {
     try {
       const path = window.location.pathname;
       const currentMode: AssistantMode =
-        path.startsWith("/admin") &&
-        Boolean(window.localStorage.getItem("chakod_session_token"))
-          ? "admin"
-          : "user";
+        path.startsWith("/admin") ? "admin" : "user";
       const location = loadHomeLocation() || DEFAULT_HOME_LOCATION;
       const sessionToken =
         currentMode === "admin"
@@ -351,11 +345,8 @@ export default function ChakodAiAssistant() {
 
   function toggleAssistant() {
     const path = window.location.pathname;
-    const hasSession = Boolean(
-      window.localStorage.getItem("chakod_session_token"),
-    );
     const nextMode: AssistantMode =
-      path.startsWith("/admin") && hasSession ? "admin" : "user";
+      path.startsWith("/admin") ? "admin" : "user";
 
     if (modeRef.current !== nextMode) {
       restoreMode(nextMode);

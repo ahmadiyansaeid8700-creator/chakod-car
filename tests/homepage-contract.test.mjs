@@ -262,7 +262,7 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(businesses, /grid-template-rows: 126px minmax\(0, 1fr\)/);
   assert.match(businesses, /featuredBusinessCategory[\s\S]*?box-shadow:/);
   assert.match(businesses, /featuredBusinessNationwideDivider[\s\S]*?linear-gradient/);
-  assert.match(businesses, /پایان محدوده/);
+  assert.match(businesses, /بدون آگهی محلی/);
   assert.match(businesses, /ادامه سراسری/);
   assert.match(businesses, /flex: 0 0 42px/);
   assert.doesNotMatch(businesses, /locationLabel=\{resolved\.label\}/);
@@ -270,9 +270,9 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(vehicles, /resolveListingsForLocation/);
   assert.match(vehicles, /localItems/);
   assert.match(vehicles, /nationwideItems/);
-  assert.match(vehicles, /پایان محدوده/);
+  assert.match(vehicles, /بدون آگهی محلی/);
   assert.match(vehicles, /ادامه سراسری/);
-  assert.doesNotMatch(vehicles, /بدون آگهی محلی/);
+  assert.doesNotMatch(vehicles, /پایان محدوده/);
   assert.match(vehicles, /homeLocationBoundary--\$\{tone\}/);
   assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
   assert.match(showrooms, /resolveDealersForLocation/);

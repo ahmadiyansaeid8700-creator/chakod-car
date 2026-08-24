@@ -696,26 +696,72 @@
 }
 
 .homeLocationBoundary {
+  min-width: 78px !important;
   min-height: 180px;
-  padding: 22px;
-  border: 1px dashed color-mix(in srgb, var(--purple) 36%, #ded7e6);
-  border-radius: 22px;
-  display: grid;
-  place-content: center;
-  gap: 7px;
+  padding: 12px 7px;
+  border: 1px solid color-mix(in srgb, var(--boundary-color, var(--purple)) 22%, #e4ddea);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   color: #655a6d;
-  background: rgba(255, 255, 255, 0.84);
+  background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--boundary-color, var(--purple)) 6%, #fff));
+  box-shadow: inset 0 1px 0 #fff, 0 10px 24px rgba(43, 28, 55, .07);
+}
+
+.homeLocationBoundary--luxury { --boundary-color: #6d28d9; }
+.homeLocationBoundary--freezone { --boundary-color: #0f766e; }
+
+.homeLocationBoundary i {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--boundary-color, var(--purple));
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--boundary-color, var(--purple)) 72%, #201329), 0 9px 16px color-mix(in srgb, var(--boundary-color, var(--purple)) 22%, transparent);
+}
+
+.homeLocationBoundary i svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .homeLocationBoundary strong {
   color: #2b2131;
-  font-size: 13px;
+  font-size: 8px;
+  line-height: 1.7;
 }
 
 .homeLocationBoundary span {
-  font-size: 9px;
-  line-height: 1.9;
+  color: var(--boundary-color, var(--purple));
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1.7;
+}
+
+.homeRailShell--luxury .homeRailTrack,
+.homeRailShell--freezone .homeRailTrack {
+  display: flex;
+}
+
+.homeRailShell--luxury .homeRailTrack > *:not(.homeLocationBoundary),
+.homeRailShell--freezone .homeRailTrack > *:not(.homeLocationBoundary) {
+  flex: 0 0 clamp(292px, 28vw, 342px);
+}
+
+.homeRailShell--luxury .homeLocationBoundary,
+.homeRailShell--freezone .homeLocationBoundary {
+  flex: 0 0 78px;
 }
 
 .homeRailControls {

@@ -249,8 +249,10 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(vehicles, /resolveListingsForLocation/);
   assert.match(vehicles, /localItems/);
   assert.match(vehicles, /nationwideItems/);
-  assert.match(vehicles, /در محدوده انتخابی شما آگهی وجود ندارد/);
-  assert.match(vehicles, /از اینجا به بعد، آگهی‌های سراسر ایران نمایش داده می‌شوند/);
+  assert.match(vehicles, /بدون آگهی محلی/);
+  assert.match(vehicles, /پایان محدوده/);
+  assert.match(vehicles, /ادامه سراسری/);
+  assert.match(vehicles, /homeLocationBoundary--\$\{tone\}/);
   assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
   assert.match(showrooms, /resolveDealersForLocation/);
   assert.match(showrooms, /resolvedDealers\.label/);

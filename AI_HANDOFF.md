@@ -369,6 +369,18 @@ Open issue: جریان ثبت کسب‌وکار جدید هنوز باید از 
 Exact next action: اجرای CI روی PR، سپس یکپارچه‌سازی صف تأیید کسب‌وکار و آلبوم/پوستر در مرحله بعد همین نسخه پایه
 ```
 
+```text
+Date: 2026-08-24
+Requested change: رفع گم‌شدن تعمیرکار ثبت‌شده و اتصال آلبوم/پوستر به انتشار عمومی
+Affected routes/files: /admin/businesses، /api/admin/account-activities، /api/businesses، /api/business-resumes/[id] و ویرایشگر رزومه کسب‌وکار
+Tests actually run: 11/11 تست admin-shell، native-business-moderation، route-access و public-business موفق؛ git diff --check موفق
+PR and merge commit: ادامه PR #65؛ هنوز ادغام نشده
+Deployment result: منتشر نشده
+Online verification: انجام نشده
+Open issue: TypeScript و Build باید در CI مخزن اجرا شوند؛ نصب npm محیط محلی خراب بود
+Exact next action: ارسال Commit به PR #65، بررسی CI و رفع هر خطای Workflow پیش از درخواست ادغام
+```
+
 قبل از پایان کار، همین فایل با اطلاعات زیر به‌روزرسانی شود:
 
 ```text

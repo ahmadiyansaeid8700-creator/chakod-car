@@ -257,7 +257,7 @@ export default function BusinessResumeEditor({ activityId, activityName }: { act
         <div>
           <span>رزومه کسب‌وکار</span>
           <h2>ویترین و آلبوم {activityName}</h2>
-          <p>این محتوا صفحه عمومی مجموعه را می‌سازد؛ همان صفحه‌ای که می‌توانی برای مشتری‌ها بفرستی و بعد تبلیغش کنی.</p>
+          <p>این محتوا صفحه عمومی مجموعه را می‌سازد؛ تصویر اول آلبوم به‌عنوان پوستر اصلی مجموعه استفاده می‌شود.</p>
         </div>
         {resume.updated_at ? <a href={publicUrl} target="_blank" rel="noreferrer">مشاهده صفحه عمومی</a> : null}
       </div>

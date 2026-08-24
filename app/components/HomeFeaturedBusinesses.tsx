@@ -417,7 +417,7 @@ function FeaturedBusinessSection({
                     <path d="M19 12H5m5-5-5 5 5 5" />
                   </svg>
                 </i>
-                <strong>پایان محدوده</strong>
+                <strong>بدون آگهی محلی</strong>
                 <span>ادامه سراسری</span>
               </aside>
             ) : null}

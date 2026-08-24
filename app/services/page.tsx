@@ -11,8 +11,8 @@ export default function ServicesMarketPage() {
   return <BusinessesPage
     basePath="/services"
     marketMode
-    kicker="بازار تخصص و مهارت‌های خودرویی"
+    kicker="بازار خدمات"
     title="بازار خدمات خودرو چاکود"
-    description="از تعمیر موتور و برق خودرو تا قطعه، تعویض روغن، کارواش و دیتیلینگ؛ متخصص مناسب را نزدیک خودت پیدا کن و مستقیم وارد پروفایلش شو."
+    description="تعمیرکار، خدمات خودرویی و فروشگاه لوازم یدکی را بر اساس تخصص، موقعیت و خدمات پیدا کن."
   />;
 }

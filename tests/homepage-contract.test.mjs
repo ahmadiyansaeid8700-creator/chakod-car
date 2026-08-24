@@ -247,8 +247,9 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(businesses, /featuredBusinessNationwideDivider/);
   assert.match(businesses, /featuredBusinessCategory[\s\S]*?box-shadow:/);
   assert.match(businesses, /featuredBusinessNationwideDivider[\s\S]*?linear-gradient/);
-  assert.match(businesses, /از اینجا به بعد/);
-  assert.match(businesses, /پیشنهادهای سراسر ایران/);
+  assert.match(businesses, /پایان محدوده/);
+  assert.match(businesses, /ادامه سراسری/);
+  assert.match(businesses, /flex: 0 0 78px/);
   assert.doesNotMatch(businesses, /locationLabel=\{resolved\.label\}/);
   assert.match(businesses, /resolveBusinessesForLocation\(items, config\.type, location, selected\)/);
   assert.match(vehicles, /resolveListingsForLocation/);

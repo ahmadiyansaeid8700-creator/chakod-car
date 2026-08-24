@@ -228,18 +228,6 @@ const capabilityLabels: Record<keyof Capabilities, string> = {
   audit_view: "مشاهده گزارش تغییرات",
 };
 
-const tabIcons: Record<Tab, string> = {
-  overview: "⌂",
-  pricing: "₮",
-  provinces: "⌖",
-  discounts: "%",
-  orders: "▣",
-  subscriptions: "◫",
-  banners: "▧",
-  admins: "♙",
-  audit: "≡",
-};
-
 const serviceGroupDefinitions = [
   { key: "listing", title: "آگهی خودرو", description: "انتشار، تمدید و بالابر آگهی‌ها", match: (key: string) => key.startsWith("listing_personal") || key.startsWith("listing_dealer") || key === "listing_bump" },
   { key: "professional", title: "پروفایل حرفه‌ای", description: "اشتراک نمایشگاه، تعمیرگاه و فروشگاه یدکی", match: (key: string) => key.startsWith("professional_profile") },
@@ -514,17 +502,17 @@ export default function CommerceAdminClient() {
   }, [activeTab, loadedSections, loading]);
 
   const caps = data?.capabilities;
-  const tabs = useMemo(() => {
-    const items: { key: Tab; label: string }[] = [{ key: "overview", label: "نمای کلی" }];
-    if (caps?.pricing_view) items.push({ key: "pricing", label: "تعرفه خدمات" }, { key: "provinces", label: "قیمت استان‌ها" });
+  const toolTabs = useMemo(() => {
+    const items: { key: Tab; label: string }[] = [{ key: "overview", label: "نمای کلی مالی" }];
+    if (caps?.pricing_view) items.push({ key: "pricing", label: "تعرفه خدمات" }, { key: "provinces", label: "تنظیمات استان‌ها" });
     if (caps?.discounts_view) items.push({ key: "discounts", label: "کدهای تخفیف" });
-    if (caps?.orders_view) items.push({ key: "orders", label: "سفارش‌ها" });
+    if (caps?.orders_view) items.push({ key: "orders", label: "سفارش‌های تجاری" });
     if (caps?.subscriptions_view) items.push({ key: "subscriptions", label: "اشتراک‌ها" });
+    if (caps?.banners_view) items.push({ key: "banners", label: "رزروهای تبلیغاتی" });
     if (caps?.admins_view) items.push({ key: "admins", label: "مدیران و دسترسی" });
     if (caps?.audit_view) items.push({ key: "audit", label: "گزارش تغییرات" });
     return items;
   }, [caps]);
-
   const filteredProvinces = useMemo(() => {
     const search = provinceSearch.trim();
     return (data?.provinces || []).filter((item) => {
@@ -740,12 +728,16 @@ export default function CommerceAdminClient() {
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.headerText}>
-            <Link href="/admin" className={styles.back}>مدیریت سایت / مدیریت تجاری</Link>
-            <span className={styles.eyebrow}>کنترل مرکزی چاکود</span>
             <h1>مدیریت مالی و تجاری</h1>
-            <p>تعرفه‌ها، پرداخت‌ها، تبلیغات و سطح دسترسی مدیران را بدون ویرایش کد کنترل کنید.</p>
+            <p>خلاصه وضعیت مالی و کارهای ضروری؛ جزئیات هر بخش از منوی اصلی مدیریت در دسترس است.</p>
           </div>
           <div className={styles.headerActions}>
+            <label className={styles.toolPicker}>
+              <span>ابزار مالی</span>
+              <select value={activeTab} onChange={(event) => setActiveTab(event.target.value as Tab)}>
+                {toolTabs.map((tab) => <option key={tab.key} value={tab.key}>{tab.label}</option>)}
+              </select>
+            </label>
             <button
               type="button"
               className={styles.refreshButton}
@@ -754,37 +746,10 @@ export default function CommerceAdminClient() {
             >
               {sectionLoading ? "در حال به‌روزرسانی..." : "به‌روزرسانی اطلاعات"}
             </button>
-            {caps?.admins_view && (
-              <button type="button" className={styles.secretButton} onClick={() => setActiveTab("admins")}>
-                تنظیمات دسترسی
-              </button>
-            )}
           </div>
         </header>
 
         <div className={styles.adminLayout}>
-          <aside className={styles.sidebar}>
-            <nav className={styles.tabs} aria-label="بخش‌های مدیریت تجاری">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  className={activeTab === tab.key ? styles.activeTab : ""}
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  <span className={styles.tabIcon} aria-hidden="true">{tabIcons[tab.key]}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-            <div className={styles.accessCard}>
-              <span>سطح دسترسی شما</span>
-              <strong>{hasFullAccess ? "مالک سیستم" : "مدیر محدود"}</strong>
-              <small>{hasFullAccess ? "دسترسی کامل به تنظیمات تجاری" : `${formatNumber(enabledCapabilities.length)} مجوز فعال`}</small>
-            </div>
-            <Link href="/account" className={styles.accountLink}>بازگشت به حساب کاربری</Link>
-          </aside>
-
           <section className={styles.content}>
             {error && activeTab !== "overview" && !loadedSections.includes(activeTab) && <div className={styles.error}>{error}</div>}
             {error && activeTab !== "overview" && loadedSections.includes(activeTab) && <div className={styles.syncNote}><span>اطلاعات ذخیره‌شده نمایش داده می‌شود؛ همگام‌سازی دوباره کامل نشد.</span><button type="button" onClick={()=>void load(activeTab)}>تلاش دوباره</button></div>}
@@ -823,12 +788,6 @@ export default function CommerceAdminClient() {
                     <article className={styles.summaryCard}>
                       <div className={styles.summaryIcon}>…</div>
                       <div><span>پرداخت‌های در انتظار</span><strong>{formatNumber(data.summary?.pending_orders)}</strong><small>پیش‌فاکتورهای باز</small></div>
-                    </article>
-                  )}
-                  {data.summary?.pending_banners !== null && (
-                    <article className={styles.summaryCard}>
-                      <div className={styles.summaryIcon}>▧</div>
-                      <div><span>بنرهای نیازمند بررسی</span><strong>{formatNumber(data.summary?.pending_banners)}</strong><small>در صف تأیید مدیریت</small></div>
                     </article>
                   )}
                   {data.summary?.active_subscriptions !== null && (

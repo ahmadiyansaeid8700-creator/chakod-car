@@ -7,7 +7,8 @@ const layout = await readFile(new URL("../app/admin/layout.tsx", import.meta.url
 const css = await readFile(new URL("../app/admin/AdminShell.module.css", import.meta.url), "utf8");
 
 test("wraps every protected admin route in the unified shell", () => {
-  assert.match(layout, /<AdminShell>\{children\}<\/AdminShell>/);
+  assert.match(layout, /<AdminShell access=/);
+  assert.match(layout, /\{children\}[\s\S]*<\/AdminShell>/);
   assert.doesNotMatch(layout, /AdminSectionNav/);
 });
 
@@ -35,4 +36,11 @@ test("provides active-route, compact desktop and mobile drawer states", () => {
   assert.match(css, /@media\(max-width:1050px\)/);
   assert.match(css, /\.sidebarOpen/);
   assert.match(css, /prefers-reduced-motion/);
+});
+
+test("hides unauthorized navigation and replaces direct page access", () => {
+  assert.match(shell, /permissions\?: string\[\]/);
+  assert.match(shell, /function canSee/);
+  assert.match(shell, /routeAllowed \? children/);
+  assert.match(shell, /این بخش برای نقش شما فعال نیست/);
 });

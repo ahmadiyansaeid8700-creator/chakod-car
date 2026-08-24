@@ -14,7 +14,17 @@ export default async function AdminLayout({
   const adminIdentity = await readServerIdentity("/api/admin-me.php");
 
   if (adminIdentity?.success === true && adminIdentity.is_admin === true) {
-    return <AdminShell>{children}</AdminShell>;
+    const admin = (adminIdentity.admin && typeof adminIdentity.admin === "object" ? adminIdentity.admin : {}) as Record<string, unknown>;
+    const permissions = Array.isArray(admin.permissions) ? admin.permissions.map(String) : [];
+    return (
+      <AdminShell access={{
+        role: String(admin.role || admin.role_key || ""),
+        permissions,
+        isSiteOwner: adminIdentity.is_site_owner === true,
+      }}>
+        {children}
+      </AdminShell>
+    );
   }
 
   const userIdentity = await readServerIdentity("/api/me.php");
@@ -23,5 +33,5 @@ export default async function AdminLayout({
   if (resolution === "login") redirect("/login?returnTo=%2Fadmin");
   if (resolution === "home") redirect("/");
 
-  return <AdminShell>{children}</AdminShell>;
+  redirect("/login?returnTo=%2Fadmin");
 }

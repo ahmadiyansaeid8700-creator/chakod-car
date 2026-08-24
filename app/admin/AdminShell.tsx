@@ -11,6 +11,13 @@ type NavItem = {
   label: string;
   icon: string;
   exact?: boolean;
+  permissions?: string[];
+};
+
+export type AdminShellAccess = {
+  role: string;
+  permissions: string[];
+  isSiteOwner: boolean;
 };
 
 type NavGroup = {
@@ -23,46 +30,46 @@ const navigation: NavGroup[] = [
     label: "مرکز مدیریت",
     items: [
       { href: "/admin", label: "نمای کلی", icon: "grid", exact: true },
-      { href: "/admin/listings", label: "آگهی‌ها", icon: "car" },
-      { href: "/admin/businesses", label: "کسب‌وکارها", icon: "store" },
-      { href: "/admin/business-verifications", label: "تأیید مدارک", icon: "verify" },
-      { href: "/admin/users", label: "کاربران", icon: "users" },
-      { href: "/admin/support", label: "پشتیبانی", icon: "support" },
+      { href: "/admin/listings", label: "آگهی‌ها", icon: "car", permissions: ["listings.view", "listings.manage"] },
+      { href: "/admin/businesses", label: "کسب‌وکارها", icon: "store", permissions: ["businesses.view", "businesses.manage"] },
+      { href: "/admin/business-verifications", label: "تأیید مدارک", icon: "verify", permissions: ["businesses.manage", "verifications.manage"] },
+      { href: "/admin/users", label: "کاربران", icon: "users", permissions: ["users.view", "users.manage"] },
+      { href: "/admin/support", label: "پشتیبانی", icon: "support", permissions: ["support.view", "support.manage"] },
     ],
   },
   {
     label: "محتوا و رشد",
     items: [
-      { href: "/admin/articles", label: "مقالات", icon: "article" },
-      { href: "/admin/stories", label: "استوری‌ها", icon: "story" },
-      { href: "/admin/advertising", label: "تبلیغات", icon: "megaphone" },
-      { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب", icon: "star" },
-      { href: "/admin/placements", label: "جایگاه‌ها", icon: "pin" },
-      { href: "/admin/ambassadors", label: "سفیران", icon: "ambassador" },
-      { href: "/admin/affiliate", label: "همکاری در فروش", icon: "affiliate" },
+      { href: "/admin/articles", label: "مقالات", icon: "article", permissions: ["content.view", "content.manage", "articles.manage"] },
+      { href: "/admin/stories", label: "استوری‌ها", icon: "story", permissions: ["content.manage", "stories.manage"] },
+      { href: "/admin/advertising", label: "تبلیغات", icon: "megaphone", permissions: ["banners.view", "banners.manage", "advertising.manage"] },
+      { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب", icon: "star", permissions: ["businesses.manage", "placements.manage"] },
+      { href: "/admin/placements", label: "جایگاه‌ها", icon: "pin", permissions: ["placements.view", "placements.manage"] },
+      { href: "/admin/ambassadors", label: "سفیران", icon: "ambassador", permissions: ["ambassadors.view", "ambassadors.manage"] },
+      { href: "/admin/affiliate", label: "همکاری در فروش", icon: "affiliate", permissions: ["affiliate.view", "affiliate.manage"] },
     ],
   },
   {
     label: "مالی و تجاری",
     items: [
-      { href: "/admin/commerce", label: "مرکز مالی", icon: "wallet" },
-      { href: "/admin/orders", label: "سفارش‌ها", icon: "orders" },
-      { href: "/admin/payments", label: "پرداخت‌ها", icon: "payment" },
-      { href: "/admin/invoices", label: "فاکتورها", icon: "invoice" },
-      { href: "/admin/refunds", label: "بازپرداخت‌ها", icon: "refund" },
-      { href: "/admin/subscriptions", label: "اشتراک‌ها", icon: "subscription" },
-      { href: "/admin/pricing", label: "تعرفه‌ها", icon: "pricing" },
+      { href: "/admin/commerce", label: "مرکز مالی", icon: "wallet", permissions: ["pricing.view", "orders.view", "payments.view", "subscriptions.view"] },
+      { href: "/admin/orders", label: "سفارش‌ها", icon: "orders", permissions: ["orders.view", "orders.manage"] },
+      { href: "/admin/payments", label: "پرداخت‌ها", icon: "payment", permissions: ["payments.view", "payments.manage"] },
+      { href: "/admin/invoices", label: "فاکتورها", icon: "invoice", permissions: ["payments.view", "invoices.view"] },
+      { href: "/admin/refunds", label: "بازپرداخت‌ها", icon: "refund", permissions: ["payments.view", "refunds.manage"] },
+      { href: "/admin/subscriptions", label: "اشتراک‌ها", icon: "subscription", permissions: ["subscriptions.view", "subscriptions.manage"] },
+      { href: "/admin/pricing", label: "تعرفه‌ها", icon: "pricing", permissions: ["pricing.view", "pricing.manage"] },
     ],
   },
   {
     label: "تنظیمات سامانه",
     items: [
-      { href: "/admin/rules", label: "قوانین و قیمت‌ها", icon: "rules" },
-      { href: "/admin/locations", label: "موقعیت‌ها", icon: "location" },
-      { href: "/admin/admins", label: "مدیران", icon: "admin" },
-      { href: "/admin/roles", label: "نقش‌ها", icon: "roles" },
-      { href: "/admin/audit-logs", label: "گزارش تغییرات", icon: "audit" },
-      { href: "/admin/settings", label: "تنظیمات", icon: "settings" },
+      { href: "/admin/rules", label: "قوانین و قیمت‌ها", icon: "rules", permissions: ["settings.manage", "pricing.manage"] },
+      { href: "/admin/locations", label: "موقعیت‌ها", icon: "location", permissions: ["settings.manage", "locations.manage"] },
+      { href: "/admin/admins", label: "مدیران", icon: "admin", permissions: ["admins.view", "admins.manage"] },
+      { href: "/admin/roles", label: "نقش‌ها", icon: "roles", permissions: ["admins.manage", "roles.manage"] },
+      { href: "/admin/audit-logs", label: "گزارش تغییرات", icon: "audit", permissions: ["audit.view"] },
+      { href: "/admin/settings", label: "تنظیمات", icon: "settings", permissions: ["settings.manage"] },
     ],
   },
 ];
@@ -91,12 +98,25 @@ function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+function canSee(item: NavItem, access: AdminShellAccess) {
+  if (item.href === "/admin") return true;
+  if (access.isSiteOwner || ["site_owner", "super_admin"].includes(access.role)) return true;
+  if (access.permissions.includes("*")) return true;
+  return (item.permissions || []).some((permission) => access.permissions.includes(permission));
+}
+
+export default function AdminShell({ children, access }: { children: React.ReactNode; access: AdminShellAccess }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [compact, setCompact] = useState(false);
 
   useEffect(() => setOpen(false), [pathname]);
+
+  const visibleNavigation = navigation
+    .map((group) => ({ ...group, items: group.items.filter((item) => canSee(item, access)) }))
+    .filter((group) => group.items.length > 0);
+  const currentItem = navigation.flatMap((group) => group.items).find((item) => isActive(pathname, item));
+  const routeAllowed = !currentItem || canSee(currentItem, access);
 
   return (
     <div className={`${styles.shell} ${compact ? styles.compact : ""}`} dir="rtl">
@@ -113,7 +133,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
 
         <nav className={styles.nav} aria-label="منوی اصلی مدیریت">
-          {navigation.map((group) => (
+          {visibleNavigation.map((group) => (
             <section key={group.label} className={styles.navGroup}>
               <h2>{group.label}</h2>
               {group.items.map((item) => {
@@ -148,7 +168,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <Link className={styles.siteButton} href="/">مشاهده سایت</Link>
           </div>
         </header>
-        <div className={styles.content}>{children}</div>
+        <div className={styles.content}>{routeAllowed ? children : (
+          <main className={styles.denied}>
+            <span>دسترسی محدود</span>
+            <h1>این بخش برای نقش شما فعال نیست</h1>
+            <p>اطلاعات حساس این صفحه نمایش داده نشد. مدیر کل می‌تواند مجوز لازم را از بخش مدیران تنظیم کند.</p>
+            <Link href="/admin">بازگشت به نمای کلی</Link>
+          </main>
+        )}</div>
       </div>
     </div>
   );

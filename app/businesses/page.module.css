@@ -9,6 +9,16 @@
 .hero span { font-size: 12px; font-weight: 800; opacity: .85; }
 .hero h1 { max-width: 740px; margin: 8px 0; font-size: clamp(28px, 4vw, 48px); line-height: 1.35; }
 .hero p { max-width: 690px; margin: 0; line-height: 2; opacity: .85; }
+.marketHero { position: relative; min-height: 390px; overflow: hidden; padding: 48px; background: radial-gradient(circle at 8% 0, rgba(255,210,95,.35), transparent 28%), radial-gradient(circle at 90% 100%, rgba(34,197,154,.34), transparent 30%), linear-gradient(135deg,#162b34,#075e55 52%,#119b7f); box-shadow: 0 28px 65px rgba(9,91,76,.19); }
+.marketHero:before { content: ""; position: absolute; inset: 0; opacity: .08; background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 22px 22px; }
+.marketHero > span,.marketHero > h1,.marketHero > p,.serviceHighlights { position: relative; z-index: 1; }
+.marketHero h1 { font-size: clamp(36px,5vw,62px); letter-spacing: -1px; }
+.marketHero p { max-width: 760px; font-size: 14px; }
+.serviceHighlights { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-top: 28px; }
+.serviceHighlights button { min-height: 112px; display: grid; justify-items: start; align-content: center; gap: 4px; padding: 15px; border: 1px solid rgba(255,255,255,.22); border-radius: 18px; color: #fff; background: rgba(255,255,255,.1); backdrop-filter: blur(12px); font: inherit; text-align: right; cursor: pointer; transition: .2s ease; }
+.serviceHighlights button:hover { transform: translateY(-3px); border-color: rgba(255,224,134,.8); background: rgba(255,255,255,.17); }
+.serviceHighlights i { width: 32px; height: 32px; display: grid; place-items: center; margin-bottom: 5px; border-radius: 10px; color: #17443c; background: #ffe18b; font-style: normal; font-weight: 900; }
+.serviceHighlights b { font-size: 12px; }.serviceHighlights small { color: #d7efe9; font-size: 8px; }
 .filters,
 .results { width: min(1180px, calc(100% - 32px)); margin: 18px auto; padding: 20px; border: 1px solid #e7dfeb; border-radius: 22px; background: #fff; }
 .dealerSearch { width: min(1180px, calc(100% - 32px)); margin: 10px auto 0; }
@@ -132,6 +142,12 @@
   .hero span { font-size: 10px; }
   .hero h1 { margin: 7px 0 8px; font-size: clamp(25px, 8vw, 34px); line-height: 1.45; }
   .hero p { font-size: 11px; line-height: 1.95; }
+  .marketHero { min-height: auto; padding: 27px 18px; background: radial-gradient(circle at 0 0,rgba(255,210,95,.25),transparent 28%),linear-gradient(145deg,#15313a,#087260 60%,#12a184); }
+  .marketHero h1 { font-size: 31px; }
+  .marketHero p { font-size: 11px; }
+  .serviceHighlights { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 20px; }
+  .serviceHighlights button { min-height: 92px; padding: 11px; border-radius: 15px; }
+  .serviceHighlights i { width: 27px; height: 27px; }.serviceHighlights b { font-size: 10px; }
   .filters,
   .results { width: calc(100% - 20px); margin: 12px auto; padding: 13px; border-radius: 20px; }
   .filterGrid { grid-template-columns: 1fr; gap: 10px; margin-top: 0; }

@@ -357,6 +357,18 @@ push:
 
 ## قالب اجباری پایان هر جلسه
 
+```text
+Date: 2026-08-24
+Requested change: ایجاد نسخه پایه حرفه‌ای پنل مدیریت با حفظ همه مسیرها و امکانات فعلی
+Affected routes/files: تمام مسیرهای /admin از طریق app/admin/layout.tsx، پوسته جدید AdminShell و تست قراردادی آن
+Tests actually run: admin-shell-contract، route-access و public-business-contract موفق؛ TypeScript و Build به‌علت خرابی نصب npm در محیط محلی هنوز باید در GitHub Actions اجرا شوند
+PR and merge commit: شاخه codex/staging-admin-ux-baseline؛ PR در حال آماده‌سازی و هنوز ادغام نشده
+Deployment result: منتشر نشده
+Online verification: انجام نشده
+Open issue: جریان ثبت کسب‌وکار جدید هنوز باید از D1 حساب به صف تأیید مدیریت، رسانه و API عمومی یکپارچه شود
+Exact next action: اجرای CI روی PR، سپس یکپارچه‌سازی صف تأیید کسب‌وکار و آلبوم/پوستر در مرحله بعد همین نسخه پایه
+```
+
 قبل از پایان کار، همین فایل با اطلاعات زیر به‌روزرسانی شود:
 
 ```text

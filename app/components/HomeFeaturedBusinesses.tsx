@@ -287,7 +287,7 @@ function BusinessCardContent({
         <strong>{business.name}</strong>
         <small className="featuredBusinessAddress">
           <span aria-hidden="true">⌖</span>
-          {businessLocation(business) || "اطلاعات کامل در پروفایل"}
+          {businessLocation(business) || "موقعیت ثبت نشده"}
         </small>
         <span className="featuredBusinessTags">
           {businessTags(business).map((tag) => (
@@ -390,7 +390,11 @@ function FeaturedBusinessSection({
             {hasNationwideItems ? (
               <span className="featuredBusinessNationwideDivider">
                 <span aria-hidden="true" />
-                <i aria-hidden="true">⌖</i>
+                <i aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M19 12H5m5-5-5 5 5 5" />
+                  </svg>
+                </i>
                 <b>از اینجا به بعد</b>
                 <small>پیشنهادهای سراسر ایران</small>
                 <span aria-hidden="true" />
@@ -740,18 +744,39 @@ export default function HomeFeaturedBusinesses() {
 
         .featuredBusinessCopy { min-width: 0; padding: 17px; display: flex; flex-direction: column; }
         .featuredBusinessCopy > strong { overflow: hidden; color: #251735; font-size: 14px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
-        .featuredBusinessCopy > small { margin-top: 6px; overflow: hidden; color: #81758b; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-        .featuredBusinessAddress { display: flex; align-items: center; gap: 5px; }
-        .featuredBusinessAddress > span { color: #6d28d9; font-size: 12px; font-weight: 950; }
+        .featuredBusinessCopy > small { margin-top: 8px; overflow: hidden; color: #6b5d74; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+        .featuredBusinessAddress {
+          min-height: 31px;
+          padding: 0 9px;
+          border: 1px solid color-mix(in srgb, var(--card-color, #6d28d9) 16%, #ece7f0);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          background: color-mix(in srgb, var(--card-color, #6d28d9) 5%, #fff);
+        }
+        .featuredBusinessAddress > span {
+          width: 20px;
+          height: 20px;
+          border-radius: 7px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          color: var(--card-color, #6d28d9);
+          background: #fff;
+          box-shadow: 0 3px 8px rgba(40, 25, 54, .08);
+          font-size: 12px;
+          font-weight: 950;
+        }
         .featuredBusinessTags { min-height: 27px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
         .featuredBusinessTags i { min-height: 23px; padding: 0 8px; border: 1px solid #eee8f3; border-radius: 999px; display: inline-flex; align-items: center; color: #665570; background: #faf8fc; font-size: 7px; font-style: normal; font-weight: 850; }
         .featuredBusinessCopy > b { min-height: 34px; margin-top: auto; padding: 0 11px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: color-mix(in srgb, var(--card-color, #6d28d9) 8%, #fff); font-size: 8px; font-weight: 950; }
 
         .featuredBusinessNationwideDivider {
           position: relative;
-          flex: 0 0 150px;
+          flex: 0 0 88px;
           min-height: 292px;
-          margin: 0 4px;
+          margin: 0 2px;
           overflow: hidden;
           border: 1px solid #e1d6eb;
           border-radius: 22px;
@@ -759,7 +784,7 @@ export default function HomeFeaturedBusinesses() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 7px;
           color: #74627f;
           background:
             radial-gradient(circle at 50% 12%, rgba(139, 92, 246, .18), transparent 34%),
@@ -782,10 +807,10 @@ export default function HomeFeaturedBusinesses() {
         }
         .featuredBusinessNationwideDivider::before { top: -28px; right: -24px; }
         .featuredBusinessNationwideDivider::after { bottom: -30px; left: -24px; }
-        .featuredBusinessNationwideDivider > span { width: 44px; height: 1px; background: linear-gradient(90deg, transparent, #c9b7da, transparent); }
+        .featuredBusinessNationwideDivider > span { width: 30px; height: 1px; background: linear-gradient(90deg, transparent, #c9b7da, transparent); }
         .featuredBusinessNationwideDivider > i {
-          width: 42px;
-          height: 42px;
+          width: 36px;
+          height: 36px;
           border: 1px solid rgba(109, 40, 217, .16);
           border-radius: 14px;
           display: grid;
@@ -793,12 +818,20 @@ export default function HomeFeaturedBusinesses() {
           color: #fff;
           background: linear-gradient(145deg, #8b5cf6, #5b21b6);
           box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 7px 0 #45138e, 0 13px 22px rgba(76,29,149,.24);
-          font-size: 18px;
           font-style: normal;
           font-weight: 950;
         }
+        .featuredBusinessNationwideDivider > i svg {
+          width: 20px;
+          height: 20px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
         .featuredBusinessNationwideDivider b { margin-top: 6px; color: #3f3048; font-size: 10px; }
-        .featuredBusinessNationwideDivider small { max-width: 112px; color: #82718c; font-size: 8px; line-height: 1.8; }
+        .featuredBusinessNationwideDivider small { max-width: 72px; color: #82718c; font-size: 7px; line-height: 1.8; }
 
         .featuredBusinessEmpty {
           min-height: 74px;
@@ -874,7 +907,7 @@ export default function HomeFeaturedBusinesses() {
           .featuredBusinessCard { flex-basis: min(285px, 82vw); min-width: min(285px, 82vw); }
           .featuredBusinessCard { min-height: 276px; }
           .featuredBusinessCategory { min-height: 32px; padding: 0 12px; font-size: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 5px rgba(23,12,38,.07), 0 5px 0 rgba(38,24,52,.06), 0 9px 16px rgba(38,24,52,.1); }
-          .featuredBusinessNationwideDivider { flex-basis: 126px; min-height: 276px; }
+          .featuredBusinessNationwideDivider { flex-basis: 78px; min-height: 276px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
           .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
           .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }

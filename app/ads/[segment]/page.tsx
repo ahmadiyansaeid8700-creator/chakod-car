@@ -262,16 +262,14 @@ export default async function SegmentCatalogPage({
 
           <div className={chrome.actions}>
             <Link className={chrome.savedLink} href="/account/saved">
-              <span aria-hidden="true">♡</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7.25 4.75A1.75 1.75 0 0 1 9 3h6a1.75 1.75 0 0 1 1.75 1.75v15L12 16.6l-4.75 3.15v-15Z" />
+              </svg>
               <b>نشان</b>
             </Link>
             <div className={chrome.accountStatus}>
               <AuthStatus />
             </div>
-            <Link className={chrome.submitLink} href="/account/listings/new">
-              <span aria-hidden="true">＋</span>
-              <b>ثبت آگهی</b>
-            </Link>
           </div>
         </div>
       </header>

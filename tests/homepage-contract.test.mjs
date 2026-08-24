@@ -132,6 +132,16 @@ test("keeps show-all catalog pages on their multi-row grid", () => {
   assert.ok(css.includes("grid-template-columns: repeat(3, minmax(0, 1fr))"));
 });
 
+test("keeps the mobile catalog header focused on saved listings", () => {
+  const catalogPage = read("app/ads/[segment]/page.tsx");
+  const chrome = read("app/ads/[segment]/CatalogChrome.module.css");
+
+  assert.match(catalogPage, /className=\{chrome\.savedLink\}/);
+  assert.match(catalogPage, /M7\.25 4\.75/);
+  assert.doesNotMatch(catalogPage, /className=\{chrome\.submitLink\}/);
+  assert.match(chrome, /\.savedLink svg/);
+});
+
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const css = read("app/home.css");
   const rail = read("app/components/HomeHorizontalRail.tsx");

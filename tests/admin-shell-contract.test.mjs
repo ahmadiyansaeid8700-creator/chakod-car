@@ -44,3 +44,9 @@ test("hides unauthorized navigation and replaces direct page access", () => {
   assert.match(shell, /routeAllowed \? children/);
   assert.match(shell, /این بخش برای نقش شما فعال نیست/);
 });
+
+test("reads effective admin permissions from the identity response", () => {
+  assert.match(layout, /Array\.isArray\(identity\.permissions\)/);
+  assert.match(layout, /identity\.primary_role/);
+  assert.doesNotMatch(layout, /Array\.isArray\(admin\.permissions\)/);
+});

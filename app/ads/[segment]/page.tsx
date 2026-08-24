@@ -6,6 +6,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import AuthStatus from "../../components/AuthStatus";
 import CatalogListingsClient from "../../components/CatalogListingsClient";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import MarketModeSwitch from "../../components/MarketModeSwitch";
 import { carMarketPath, legacyAdsRedirect } from "../../../lib/car-routes";
 import type {
   CatalogFilters,
@@ -273,6 +274,8 @@ export default async function SegmentCatalogPage({
           </div>
         </div>
       </header>
+
+      <MarketModeSwitch active="cars" />
 
       <section className={chrome.hero}>
         <span className={chrome.kicker}>{config.kicker}</span>

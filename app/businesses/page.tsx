@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
 import MobileBackButton from "../components/MobileBackButton";
+import MarketModeSwitch from "../components/MarketModeSwitch";
 import styles from "./page.module.css";
 
 type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
@@ -15,6 +16,7 @@ type BusinessesPageProps = {
   kicker?: string;
   title?: string;
   description?: string;
+  marketMode?: boolean;
 };
 
 type PublicBusiness = {
@@ -297,6 +299,7 @@ export default function BusinessesPage({
   kicker = "راهنمای خدمات خودرویی چاکود",
   title = "کسب‌وکارهای خودرو را نزدیک خودتان پیدا کنید",
   description = "نمایشگاه، تعمیرگاه، کارواش، دیتیلینگ، شیشه دودی، فروشگاه قطعات و سایر خدمات خودرو.",
+  marketMode = false,
 }: BusinessesPageProps = {}) {
   const [type, setType] = useState<"" | BusinessType>(() => {
     const requestedType = initialParam("type") as "" | BusinessType;
@@ -341,10 +344,13 @@ export default function BusinessesPage({
           throw new Error(result.message || "دریافت فهرست انجام نشد.");
         }
 
-        const baseItems = Array.isArray(result.items) ? result.items : [];
+        const receivedItems = Array.isArray(result.items) ? result.items : [];
+        const baseItems = marketMode
+          ? receivedItems.filter((item) => item.business_type !== "dealer")
+          : receivedItems;
         if (!dealerDirectory) {
           setItems(baseItems);
-          setTotal(Number(result.total || 0));
+          setTotal(marketMode ? baseItems.length : Number(result.total || 0));
           return;
         }
 
@@ -378,7 +384,7 @@ export default function BusinessesPage({
 
     void load();
     return () => controller.abort();
-  }, [basePath, city, dealerDirectory, query, search]);
+  }, [basePath, city, dealerDirectory, marketMode, query, search]);
 
   const mobileTitle = dealerDirectory ? "نمایشگاه‌ها" : "کسب‌وکارها";
   const resultNoun = dealerDirectory ? "نمایشگاه" : "کسب‌وکار";
@@ -396,6 +402,8 @@ export default function BusinessesPage({
         <a href="/" aria-label="صفحه اصلی چاکود"><img src="/brand/chakod-symbol.png" alt="" aria-hidden="true" /></a>
       </header>
 
+      {marketMode ? <MarketModeSwitch active="services" /> : null}
+
       {dealerDirectory ? (
         <section className={styles.dealerSearch} aria-label="جستجوی نمایشگاه‌ها">
           <input
@@ -407,15 +415,20 @@ export default function BusinessesPage({
         </section>
       ) : (
         <>
-          <section className={styles.hero}>
+          <section className={`${styles.hero} ${marketMode ? styles.marketHero : ""}`}>
             <span>{kicker}</span>
             <h1>{title}</h1>
             <p>{description}</p>
+            {marketMode ? <div className={styles.serviceHighlights} aria-label="دسته‌های بازار خدمات">
+              <button type="button" onClick={() => { setType("repair_shop"); setCategory(""); }}><i>⌁</i><b>تعمیرکاران و تعمیرگاه‌ها</b><small>مکانیکی، برق، صافکاری و سرویس</small></button>
+              <button type="button" onClick={() => { setType("car_service"); setCategory(""); }}><i>✦</i><b>خدمات خودرویی</b><small>کارواش، دیتیلینگ، کاور و خدمات در محل</small></button>
+              <button type="button" onClick={() => { setType("parts_store"); setCategory(""); }}><i>▦</i><b>لوازم یدکی و قطعات</b><small>فروشگاه قطعه، تجهیزات و مصرفی خودرو</small></button>
+            </div> : null}
           </section>
 
           <section className={styles.filters} aria-label="فیلتر کسب‌وکارها">
             <div className={styles.typeTabs}>
-              {types.map((item) => (
+              {types.filter((item) => !marketMode || item.key !== "dealer").map((item) => (
                 <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
                   {item.label}
                 </button>

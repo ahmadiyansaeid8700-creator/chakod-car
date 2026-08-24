@@ -142,6 +142,23 @@ test("keeps the mobile catalog header focused on saved listings", () => {
   assert.match(chrome, /\.savedLink svg/);
 });
 
+test("connects the vehicle and service markets with a shared premium switch", () => {
+  const catalogPage = read("app/ads/[segment]/page.tsx");
+  const servicePage = read("app/services/page.tsx");
+  const businesses = read("app/businesses/page.tsx");
+  const marketSwitch = read("app/components/MarketModeSwitch.tsx");
+  const marketSwitchStyles = read("app/components/MarketModeSwitch.module.css");
+
+  assert.match(catalogPage, /<MarketModeSwitch active="cars"/);
+  assert.match(servicePage, /marketMode/);
+  assert.match(servicePage, /basePath="\/services"/);
+  assert.match(businesses, /<MarketModeSwitch active="services"/);
+  assert.match(businesses, /business_type !== "dealer"/);
+  assert.match(marketSwitch, /بازار خودرو چاکود/);
+  assert.match(marketSwitch, /بازار خدمات چاکود/);
+  assert.match(marketSwitchStyles, /grid-template-columns:repeat\(2/);
+});
+
 test("keeps homepage rails horizontal and responsive on small screens", () => {
   const css = read("app/home.css");
   const rail = read("app/components/HomeHorizontalRail.tsx");

@@ -125,6 +125,15 @@ const adminKnowledge = {
 };
 
 test("offline intent detection recognizes core user tasks", () => {
+  assert.equal(detectOfflineIntent("سلام خوبی؟", "user"), "social_greeting");
+  assert.equal(
+    detectOfflineIntent("چه روغنی برای ماشینم بریزم؟", "user"),
+    "vehicle_maintenance",
+  );
+  assert.equal(
+    detectOfflineIntent("ماشین موقع استارت لرزش دارد", "user"),
+    "vehicle_diagnostics",
+  );
   assert.equal(
     detectOfflineIntent("برای ثبت آگهی راهنمایی‌ام کن", "user"),
     "selling_help",
@@ -141,6 +150,35 @@ test("offline intent detection recognizes core user tasks", () => {
     detectOfflineIntent("چطور تعمیرگاهم را ثبت کنم؟", "user"),
     "business_setup",
   );
+});
+
+test("offline automotive expert greets naturally and asks before guessing specs", () => {
+  const greeting = buildOfflineAssistantReply(
+    [{ role: "user", content: "سلام خوبی؟" }],
+    publicKnowledge,
+  );
+  const maintenance = buildOfflineAssistantReply(
+    [{ role: "user", content: "چه روغنی برای ماشینم خوبه؟" }],
+    publicKnowledge,
+  );
+
+  assert.equal(greeting.intent, "social_greeting");
+  assert.match(greeting.reply, /خوش اومدی|حالت چطوره/);
+  assert.equal(maintenance.intent, "vehicle_maintenance");
+  assert.match(maintenance.reply, /مدل/);
+  assert.match(maintenance.reply, /سال/);
+  assert.match(maintenance.reply, /تیپ|موتور/);
+});
+
+test("offline diagnostics highlights urgent automotive safety risks", () => {
+  const reply = buildOfflineAssistantReply(
+    [{ role: "user", content: "چراغ روغن روشن شده و ماشین داغ می‌کند" }],
+    publicKnowledge,
+  );
+
+  assert.equal(reply.intent, "vehicle_diagnostics");
+  assert.match(reply.reply, /رانندگی نکن/);
+  assert.ok(reply.actions.some((action) => action.href === "/businesses"));
 });
 
 test("offline vehicle search only returns canonical actions and real cards", () => {

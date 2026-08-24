@@ -193,6 +193,11 @@ test("shows all active businesses on home while premium placements rank first", 
   assert.match(businesses, /featuredBusinessType--car_service/);
   assert.match(businesses, /business\.price_range_text/);
   assert.match(businesses, /featuredBusinessAddress/);
+  assert.match(businesses, /businessCardSpecs/);
+  assert.match(businesses, /featuredBusinessSpecs/);
+  assert.match(businesses, /تخصص اصلی/);
+  assert.match(businesses, /نوع قطعات/);
+  assert.match(businesses, /محدوده قیمت/);
   assert.match(businesses, /موقعیت ثبت نشده/);
   assert.doesNotMatch(businesses, /اطلاعات کامل در پروفایل/);
   assert.match(businesses, /onError=\{\(event\) =>/);

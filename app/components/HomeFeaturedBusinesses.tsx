@@ -408,17 +408,18 @@ function FeaturedBusinessSection({
               </Link>
             ))}
             {hasNationwideItems ? (
-              <span className="featuredBusinessNationwideDivider">
-                <span aria-hidden="true" />
+              <aside
+                className="homeLocationBoundary featuredBusinessNationwideDivider"
+                aria-label="مرز کسب‌وکارهای محدوده و سراسر ایران"
+              >
                 <i aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <path d="M19 12H5m5-5-5 5 5 5" />
                   </svg>
                 </i>
-                <b>پایان محدوده</b>
-                <small>ادامه سراسری</small>
-                <span aria-hidden="true" />
-              </span>
+                <strong>پایان محدوده</strong>
+                <span>ادامه سراسری</span>
+              </aside>
             ) : null}
             {rankedNationwideItems.map((business) => (
               <Link
@@ -665,14 +666,14 @@ export default function HomeFeaturedBusinesses() {
 
         .featuredBusinessCard {
           position: relative;
-          flex: 0 0 calc((100% - 24px) / 3);
-          min-width: 280px;
-          min-height: 410px;
+          flex: 0 0 clamp(292px, 28vw, 342px);
+          min-width: 292px;
+          min-height: 330px;
           overflow: visible;
           border: 1px solid #ebe7f0;
           border-radius: 22px;
           display: grid;
-          grid-template-rows: 165px minmax(0, 1fr);
+          grid-template-rows: 126px minmax(0, 1fr);
           color: #251735;
           background: #fff;
           box-shadow: 0 12px 32px rgba(31, 20, 43, .07);
@@ -732,8 +733,8 @@ export default function HomeFeaturedBusinesses() {
         .featuredBusinessIdentity {
           position: relative;
           z-index: 4;
-          width: 54px;
-          height: 54px;
+          width: 52px;
+          height: 52px;
           flex: 0 0 auto;
           overflow: hidden;
           border: 4px solid #fff;
@@ -743,7 +744,7 @@ export default function HomeFeaturedBusinesses() {
           color: #fff;
           background: linear-gradient(145deg, var(--card-color, #6d28d9), color-mix(in srgb, var(--card-color, #6d28d9) 68%, #271032));
           box-shadow: 0 13px 30px rgba(42, 26, 68, .18), 0 0 0 1px color-mix(in srgb, var(--card-color, #6d28d9) 12%, transparent);
-          transform: translateY(-27px);
+          transform: translateY(-26px);
           font-size: 16px;
           font-weight: 950;
         }
@@ -762,14 +763,14 @@ export default function HomeFeaturedBusinesses() {
           font-weight: 950;
         }
 
-        .featuredBusinessCopy { min-width: 0; padding: 0 18px 18px; display: flex; flex-direction: column; }
-        .featuredBusinessHeading { min-width: 0; min-height: 58px; display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: start; gap: 11px; }
-        .featuredBusinessHeading > span:last-child { min-width: 0; padding-top: 8px; }
-        .featuredBusinessHeading strong { overflow: hidden; display: block; color: #251735; font-size: 15px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
+        .featuredBusinessCopy { min-width: 0; padding: 0 14px 14px; display: flex; flex-direction: column; }
+        .featuredBusinessHeading { min-width: 0; min-height: 48px; display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: start; gap: 10px; }
+        .featuredBusinessHeading > span:last-child { min-width: 0; padding-top: 6px; }
+        .featuredBusinessHeading strong { overflow: hidden; display: block; color: #251735; font-size: 14px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessHeading small { margin-top: 3px; overflow: hidden; display: block; color: #81758b; font-size: 8px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessCopy > small { margin-top: 8px; overflow: hidden; color: #6b5d74; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessAddress {
-          min-height: 31px;
+          min-height: 35px;
           padding: 0 9px;
           border: 1px solid color-mix(in srgb, var(--card-color, #6d28d9) 16%, #ece7f0);
           border-radius: 10px;
@@ -793,73 +794,20 @@ export default function HomeFeaturedBusinesses() {
         }
         .featuredBusinessTags { min-height: 27px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
         .featuredBusinessTags i { min-height: 23px; padding: 0 8px; border: 1px solid #eee8f3; border-radius: 999px; display: inline-flex; align-items: center; color: #665570; background: #faf8fc; font-size: 7px; font-style: normal; font-weight: 850; }
-        .featuredBusinessSpecs { min-width: 0; margin-top: 13px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-        .featuredBusinessSpecs > span { min-width: 0; min-height: 62px; padding: 9px 5px; border: 1px solid #e9e4ed; border-radius: 12px; display: grid; place-items: center; align-content: center; gap: 5px; text-align: center; background: radial-gradient(circle at 80% 18%, color-mix(in srgb, var(--card-color, #6d28d9) 9%, transparent), transparent 48%), #faf9fb; }
+        .featuredBusinessSpecs { min-width: 0; margin-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .featuredBusinessSpecs > span { min-width: 0; min-height: 56px; padding: 7px 5px; border: 1px solid #e9e4ed; border-radius: 12px; display: grid; place-items: center; align-content: center; gap: 4px; text-align: center; background: radial-gradient(circle at 80% 18%, color-mix(in srgb, var(--card-color, #6d28d9) 9%, transparent), transparent 48%), #faf9fb; }
         .featuredBusinessSpecs small, .featuredBusinessSpecs strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .featuredBusinessSpecs small { color: #918798; font-size: 7px; font-weight: 800; }
         .featuredBusinessSpecs strong { color: #44364d; font-size: 8px; font-weight: 950; }
-        .featuredBusinessCopy > b { min-height: 42px; margin-top: auto; padding: 0 13px; border: 1px solid var(--card-color, #6d28d9); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: #fff; font-size: 9px; font-weight: 950; }
+        .featuredBusinessCopy > b { min-height: 39px; margin-top: 8px; padding: 0 12px; border: 1px solid var(--card-color, #6d28d9); border-radius: 11px; display: flex; align-items: center; justify-content: space-between; color: var(--card-color, #5b21b6); background: #fff; font-size: 9px; font-weight: 950; }
 
         .featuredBusinessNationwideDivider {
-          position: relative;
           flex: 0 0 78px;
-          min-height: 410px;
-          margin: 0 2px;
-          overflow: hidden;
-          border: 1px solid #e1d6eb;
-          border-radius: 22px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          color: #74627f;
-          background:
-            radial-gradient(circle at 50% 12%, rgba(139, 92, 246, .18), transparent 34%),
-            linear-gradient(160deg, #fff, #f7f2fc);
-          box-shadow:
-            inset 0 1px 0 #fff,
-            0 12px 30px rgba(55, 35, 72, .09);
-          text-align: center;
-          scroll-snap-align: center;
+          min-width: 78px !important;
+          min-height: 330px;
         }
-        .featuredBusinessNationwideDivider::before,
-        .featuredBusinessNationwideDivider::after {
-          content: "";
-          position: absolute;
-          width: 54px;
-          height: 54px;
-          border: 1px solid rgba(109, 40, 217, .08);
-          border-radius: 18px;
-          transform: rotate(24deg);
-        }
-        .featuredBusinessNationwideDivider::before { top: -28px; right: -24px; }
-        .featuredBusinessNationwideDivider::after { bottom: -30px; left: -24px; }
-        .featuredBusinessNationwideDivider > span { width: 30px; height: 1px; background: linear-gradient(90deg, transparent, #c9b7da, transparent); }
-        .featuredBusinessNationwideDivider > i {
-          width: 36px;
-          height: 36px;
-          border: 1px solid rgba(109, 40, 217, .16);
-          border-radius: 14px;
-          display: grid;
-          place-items: center;
-          color: #fff;
-          background: linear-gradient(145deg, #8b5cf6, #5b21b6);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 7px 0 #45138e, 0 13px 22px rgba(76,29,149,.24);
-          font-style: normal;
-          font-weight: 950;
-        }
-        .featuredBusinessNationwideDivider > i svg {
-          width: 20px;
-          height: 20px;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 2;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-        .featuredBusinessNationwideDivider b { margin-top: 6px; color: #3f3048; font-size: 8px; line-height: 1.7; }
-        .featuredBusinessNationwideDivider small { max-width: 66px; color: #6d28d9; font-size: 7px; font-weight: 900; line-height: 1.7; }
+        .featuredBusinessNationwideDivider strong,
+        .featuredBusinessNationwideDivider span { margin: 0; }
 
         .featuredBusinessEmpty {
           min-height: 74px;
@@ -926,16 +874,15 @@ export default function HomeFeaturedBusinesses() {
         }
 
         @media (max-width: 900px) {
-          .featuredBusinessCard { flex-basis: min(330px, 78vw); }
+          .featuredBusinessCard { flex-basis: min(83vw, 318px); }
         }
 
         @media (max-width: 620px) {
           .featuredBusinesses { width: calc(100% - 20px); gap: 18px; }
           .featuredBusinessSection { padding: 14px; border-radius: 22px; }
-          .featuredBusinessCard { flex-basis: min(285px, 82vw); min-width: min(285px, 82vw); }
-          .featuredBusinessCard { min-height: 398px; grid-template-rows: 150px minmax(0, 1fr); }
+          .featuredBusinessCard { flex-basis: min(86vw, 300px); min-width: min(86vw, 300px); min-height: 320px; grid-template-rows: 112px minmax(0, 1fr); }
           .featuredBusinessCategory { min-height: 32px; padding: 0 12px; font-size: 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 5px rgba(23,12,38,.07), 0 5px 0 rgba(38,24,52,.06), 0 9px 16px rgba(38,24,52,.1); }
-          .featuredBusinessNationwideDivider { flex-basis: 78px; min-height: 398px; }
+          .featuredBusinessNationwideDivider { flex-basis: 78px; min-height: 320px; }
           .featuredBusinessFallback { min-height: 226px; grid-template-rows: 98px minmax(0, 1fr); }
           .featuredBusinessServiceIcon { width: 52px; height: 52px; border-radius: 16px; }
           .featuredBusinessServiceIcon svg { width: 34px; height: 34px; }

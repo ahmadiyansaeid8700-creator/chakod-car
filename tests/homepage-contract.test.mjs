@@ -245,6 +245,9 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(businesses, /HOME_BUSINESS_ROW_SIZE = 3/);
   assert.match(businesses, /exactItems\.length < HOME_BUSINESS_ROW_SIZE/);
   assert.match(businesses, /featuredBusinessNationwideDivider/);
+  assert.match(businesses, /homeLocationBoundary featuredBusinessNationwideDivider/);
+  assert.match(businesses, /flex: 0 0 clamp\(292px, 28vw, 342px\)/);
+  assert.match(businesses, /grid-template-rows: 126px minmax\(0, 1fr\)/);
   assert.match(businesses, /featuredBusinessCategory[\s\S]*?box-shadow:/);
   assert.match(businesses, /featuredBusinessNationwideDivider[\s\S]*?linear-gradient/);
   assert.match(businesses, /پایان محدوده/);

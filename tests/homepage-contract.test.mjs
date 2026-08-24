@@ -186,7 +186,7 @@ test("shows all active businesses on home while premium placements rank first", 
   assert.match(businesses, /featuredBusinessEmpty/);
   assert.match(businesses, /featuredBusinessSrOnly/);
   assert.doesNotMatch(businesses, /<div className="featuredBusinessHeader">/);
-  assert.match(businesses, /business\.business_type_title/);
+  assert.match(businesses, /\{config\.kicker\}/);
   assert.match(businesses, /featuredBusinessType--\$\{business\.business_type\}/);
   assert.match(businesses, /featuredBusinessType--repair_shop/);
   assert.match(businesses, /featuredBusinessType--parts_store/);
@@ -235,7 +235,12 @@ test("separates localized inventory from nationwide fallback inventory", () => {
 
   assert.match(businesses, /const nationwideQuery = new URLSearchParams\(\{ limit: "100" \}\)/);
   assert.match(businesses, /const exactItems = typeItems\.filter\(\(item\) => businessMatchesLocation\(item, location\)\)/);
-  assert.match(businesses, /label: "پیشنهادهای سراسر ایران"/);
+  assert.match(businesses, /HOME_BUSINESS_ROW_SIZE = 3/);
+  assert.match(businesses, /exactItems\.length < HOME_BUSINESS_ROW_SIZE/);
+  assert.match(businesses, /featuredBusinessNationwideDivider/);
+  assert.match(businesses, /از اینجا به بعد/);
+  assert.match(businesses, /پیشنهادهای سراسر ایران/);
+  assert.doesNotMatch(businesses, /locationLabel=\{resolved\.label\}/);
   assert.match(businesses, /resolveBusinessesForLocation\(items, config\.type, location, selected\)/);
   assert.match(vehicles, /resolveListingsForLocation/);
   assert.match(vehicles, /localItems/);

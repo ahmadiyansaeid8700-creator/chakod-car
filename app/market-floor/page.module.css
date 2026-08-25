@@ -20,4 +20,42 @@
 @media(max-width:370px){.hero h1{font-size:38px}.heroCopy p{font-size:12px}.heroStats strong{font-size:9px}.carCard,.skeleton{min-width:92%}}
 @media(max-width:620px){.hero{padding-top:68px}.backButton{top:14px;right:14px;width:40px;height:40px;border-radius:12px}}
 @media(max-width:620px){.cardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible;margin:0;padding:0}.carCard,.skeleton{min-width:0}.cardMedia{height:128px}.rankBadge{top:7px;right:7px;padding:4px 6px;font-size:7px}.scoreBadge{left:7px;bottom:7px;width:38px;height:38px;border-radius:11px}.scoreBadge b{font-size:13px}.scoreBadge small{font-size:6px}.cardContent{padding:9px}.location{padding:4px 6px;font-size:7px}.cardContent h3{min-height:34px;margin:7px 0;font-size:11px;line-height:1.55}.facts{gap:4px}.facts span{padding:6px}.facts small{font-size:6px}.facts b{font-size:7px}.reason{min-height:31px;margin:7px 0;font-size:7px;line-height:1.6}.cardContent footer{display:grid;gap:5px;padding-top:8px}.cardContent footer strong{font-size:10px}.cardContent footer span{font-size:8px}.nationwideSeparator{grid-column:1/-1}}
+
+/* Compact premium banner and a real-time 24-hour cycle clock. */
+.hero{min-height:390px;gap:34px;padding:38px clamp(30px,5vw,64px) 88px}
+.heroVisual{height:235px}
+.hero h1{margin:12px 0 8px;font-size:clamp(38px,4.4vw,58px)}
+.heroCopy p{font-size:12px;line-height:1.9}
+.heroActions{margin-top:15px}
+.heroCountdown{width:max-content;display:grid;grid-template-columns:auto 12px auto 12px auto auto;align-items:end;gap:7px;margin-top:16px;padding:10px 13px;border:1px solid #d4b46a55;border-radius:13px;color:#fff;background:#08070988;box-shadow:0 12px 30px #0005;backdrop-filter:blur(12px)}
+.heroCountdown span{display:grid;grid-template-rows:auto auto;justify-items:center;min-width:48px}
+.heroCountdown small{color:#9d949b;font-size:7px;font-weight:800}
+.heroCountdown strong{margin-top:1px;color:#f5e4ae;font-size:27px;line-height:1;font-variant-numeric:tabular-nums}
+.heroCountdown i{align-self:end;padding-bottom:2px;color:#d4b46a;font-size:22px;font-style:normal;font-weight:900}
+.heroCountdown b{align-self:center;margin-right:8px;color:#bdb5bb;font-size:8px;white-space:nowrap}
+.heroStats{grid-template-columns:repeat(2,1fr)}
+
+/* The daily inventory sits inside one restrained black showroom frame. */
+.marketBody{position:relative;overflow:hidden;border-color:#342b35;color:#f8f5f7;background:radial-gradient(circle at 95% 0,#3a1e352f,transparent 25rem),linear-gradient(145deg,#0d0c0f,#181319);box-shadow:0 24px 60px #140d1628}
+.marketBody:before{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid #ffffff0b;border-radius:inherit}
+.sectionHeader{position:relative;z-index:1;padding-bottom:17px;border-bottom:1px solid #ffffff16}
+.sectionHeader span{color:#d4b46a}.sectionHeader h2{color:#fff}.sectionHeader p{color:#aaa1a8}.sectionHeader p i{background:#d4b46a;box-shadow:0 0 0 5px #d4b46a18}
+.cardGrid,.nationwideSeparator,.emptyMarket{position:relative;z-index:1}
+.nationwideSeparator>i{background:linear-gradient(90deg,transparent,#6c5d6b)}.nationwideSeparator>i:last-child{background:linear-gradient(90deg,#6c5d6b,transparent)}.nationwideSeparator small{color:#988e97}.nationwideSeparator strong{color:#e8e1e6}
+
+@media(max-width:620px){
+  .hero{min-height:auto;padding:64px 16px 80px}
+  .hero h1{font-size:34px}
+  .heroCopy p{font-size:10px}
+  .heroVisual{height:145px;margin-top:16px}
+  .heroCountdown{width:100%;grid-template-columns:auto 8px auto 8px auto;margin-top:13px;padding:9px 8px;gap:3px}
+  .heroCountdown span{min-width:0}
+  .heroCountdown strong{font-size:22px}
+  .heroCountdown i{font-size:17px}
+  .heroCountdown b{grid-column:1/-1;margin:4px 0 0;text-align:center}
+  .heroActions{margin-top:11px}
+  .heroStats{bottom:8px}
+  .marketBody{padding:14px 10px;border-radius:22px}
+  .sectionHeader{padding:0 4px 13px;margin-bottom:14px}
+}
 @media(prefers-reduced-motion:reduce){.carCard,.cardMedia img,.skeleton i,.skeleton span,.skeleton b{animation:none;transition:none}}

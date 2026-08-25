@@ -28,6 +28,7 @@
 .heroCopy p{font-size:12px;line-height:1.9}
 .heroActions{margin-top:15px}
 .heroCountdown{width:max-content;display:grid;grid-template-columns:auto 12px auto 12px auto auto;align-items:end;gap:7px;margin-top:16px;padding:10px 13px;border:1px solid #d4b46a55;border-radius:13px;color:#fff;background:#08070988;box-shadow:0 12px 30px #0005;backdrop-filter:blur(12px)}
+.heroCountdown{direction:ltr}
 .heroCountdown span{display:grid;grid-template-rows:auto auto;justify-items:center;min-width:48px}
 .heroCountdown small{color:#9d949b;font-size:7px;font-weight:800}
 .heroCountdown strong{margin-top:1px;color:#f5e4ae;font-size:27px;line-height:1;font-variant-numeric:tabular-nums}
@@ -43,6 +44,19 @@
 .cardGrid,.nationwideSeparator,.emptyMarket{position:relative;z-index:1}
 .nationwideSeparator>i{background:linear-gradient(90deg,transparent,#6c5d6b)}.nationwideSeparator>i:last-child{background:linear-gradient(90deg,#6c5d6b,transparent)}.nationwideSeparator small{color:#988e97}.nationwideSeparator strong{color:#e8e1e6}
 
+.noLocalNotice{position:relative;z-index:1;display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:11px 13px;border:1px solid #d4b46a3d;border-radius:13px;color:#e8e1e6;background:#d4b46a0b}
+.noLocalNotice>i{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:#151217;background:#d4b46a;font-style:normal;font-weight:950}
+.noLocalNotice span{display:grid;gap:3px}.noLocalNotice strong{font-size:10px}.noLocalNotice small{color:#9f969d;font-size:8px;line-height:1.7}
+.showcaseBoard{position:relative;z-index:1;overflow:hidden;border:1px solid #ddd6df;border-radius:20px;background:#fff}
+.showcaseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:#e6dfe8}
+.showcaseGrid>.carCard,.showcaseGrid>.skeleton,.emptySlot{min-width:0;margin:0;border:0;border-left:1px solid #e6dfe8;border-bottom:1px solid #e6dfe8;border-radius:0;box-shadow:none;background:#fff}
+.showcaseGrid>.carCard:nth-child(3n){border-left:0}
+.showcaseGrid>.carCard:hover{z-index:2;transform:none;box-shadow:inset 0 0 0 2px #d4b46a}
+.showcaseGrid .cardMedia{height:190px;border-radius:0}
+.emptySlot{min-height:340px;display:block;background:linear-gradient(145deg,#fff,#fbf9fc)}
+.showcaseGrid>.nationwideSeparator{grid-column:1/-1;min-height:58px;margin:0;padding:0 20px;background:#151217;border-bottom:1px solid #3b323a}
+.showcaseGrid>.nationwideSeparator strong{color:#f1e7c7;font-size:10px}.showcaseGrid>.nationwideSeparator small{color:#9c929a}
+
 @media(max-width:620px){
   .hero{min-height:auto;padding:64px 16px 80px}
   .hero h1{font-size:34px}
@@ -57,5 +71,13 @@
   .heroStats{bottom:8px}
   .marketBody{padding:14px 10px;border-radius:22px}
   .sectionHeader{padding:0 4px 13px;margin-bottom:14px}
+  .noLocalNotice{margin-bottom:10px;padding:9px}.noLocalNotice strong{font-size:9px}.noLocalNotice small{font-size:7px}
+  .showcaseBoard{border-radius:15px}
+  .showcaseGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .showcaseGrid>.carCard:nth-child(3n){border-left:1px solid #e6dfe8}
+  .showcaseGrid>.carCard:nth-child(2n){border-left:0}
+  .showcaseGrid .cardMedia{height:122px}
+  .emptySlot{min-height:250px}
+  .showcaseGrid>.nationwideSeparator{min-height:50px;padding:0 8px}
 }
 @media(prefers-reduced-motion:reduce){.carCard,.cardMedia img,.skeleton i,.skeleton span,.skeleton b{animation:none;transition:none}}

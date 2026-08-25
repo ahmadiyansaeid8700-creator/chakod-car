@@ -95,13 +95,15 @@ export default function MarketFloorPage() {
 
     <section id="today-market" className={styles.marketBody}>
       <header className={styles.sectionHeader}><div><span>ویترین چرخه امروز</span><h2>{location.mode === "all" ? "فرصت‌های کف بازار" : `فرصت‌های ${location.label}`}</h2></div><p><i /> هر کارت پس از ارزیابی قیمت و کیفیت نمایش داده می‌شود.</p></header>
-      {loading ? <div className={styles.cardGrid} aria-label="در حال بارگذاری">{[1, 2, 3].map((item) => <div className={styles.skeleton} key={item}><i /><span /><b /></div>)}</div> : localItems.length || showNationwide ? <>
-        {localItems.length ? <div className={styles.cardGrid}>{cards(localItems)}</div> : null}
-        {showNationwide ? <><div className={styles.nationwideSeparator}><i /><span><small>{localItems.length ? "ادامه فرصت‌ها" : "بدون فرصت محلی"}</small><strong>از اینجا به بعد؛ فرصت‌های سراسر ایران</strong></span><i /></div><div className={styles.cardGrid}>{cards(nationwideItems, localItems.length)}</div></> : null}
-      </> : <div className={styles.emptyMarket}>
-        <div className={styles.emptyCriteria} aria-hidden="true"><span>معیار ورود به ویترین</span>{["قیمت رقابتی نسبت به نمونه‌های مشابه", "شرایط فنی و بدنه قابل‌قبول", "اطلاعات و تصاویر کامل آگهی"].map((label, index) => <div key={label}><b>۰{toFa(index + 1)}</b><strong>{label}</strong><i>✓</i></div>)}</div>
-        <div className={styles.emptyCopy}><span>ویترین امروز در حال چیده‌شدن است</span><h2>هنوز خودرویی از فیلتر کف بازار عبور نکرده</h2><p>برای شلوغ نشان‌دادن بازار، آگهی ضعیف وارد نمی‌کنیم. به‌محض تأیید یک فرصت واقعی، همین‌جا در ویترین قرار می‌گیرد.</p><div><Link href="/cars">گشتن در بازار خودرو</Link><Link href="/account/market-floor">بررسی آگهی من</Link></div></div>
-      </div>}
+      {!loading && location.mode !== "all" && localItems.length === 0 ? <div className={styles.noLocalNotice}><i>!</i><span><strong>در {location.label} فعلاً پیشنهاد تأییدشده‌ای نیست</strong><small>آگهی‌های این محدوده هنوز حداقل امتیاز قیمت، شرایط و کیفیت کف بازار را نگرفته‌اند.</small></span></div> : null}
+      <div className={styles.showcaseBoard} aria-label="ویترین آگهی‌های کف بازار">
+        {loading ? <div className={styles.showcaseGrid} aria-label="در حال بارگذاری">{[1, 2, 3, 4, 5, 6].map((item) => <div className={styles.skeleton} key={item}><i /><span /><b /></div>)}</div> : <div className={styles.showcaseGrid}>
+          {cards(localItems)}
+          {showNationwide ? <div className={styles.nationwideSeparator}><i /><span><small>{localItems.length ? "ادامه ویترین" : "خارج از محدوده انتخابی"}</small><strong>پیشنهادهای سراسر ایران</strong></span><i /></div> : null}
+          {showNationwide ? cards(nationwideItems, localItems.length) : null}
+          {!localItems.length && !showNationwide ? [1, 2, 3, 4, 5, 6].map((slot) => <span className={styles.emptySlot} aria-hidden="true" key={slot} />) : null}
+        </div>}
+      </div>
     </section>
 
     <section className={styles.marketRules}>

@@ -426,7 +426,6 @@ export default function BusinessesPage({
             <nav className={chrome.primaryNav} aria-label="ناوبری اصلی چاکود">
               <a href="/cars">خودروها</a>
               <a href="/dealerships">نمایشگاه‌ها</a>
-              <a href="/businesses">کسب‌وکارها</a>
               <a className={chrome.activeNav} href="/services">بازار خدمات</a>
             </nav>
             <div className={chrome.actions}>

@@ -660,6 +660,57 @@
   .storyButton::after { border-radius: 17px; }
 }
 
+@media (max-width: 640px) {
+  .identityPanel {
+    margin-top: 7px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+  .categoryBanner {
+    min-height: 52px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 7px;
+    margin: -1px -1px 8px;
+    padding: 7px 8px;
+    border-radius: 14px;
+  }
+  .categoryIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .categoryIcon svg { width: 18px; height: 18px; }
+  .categoryBanner > div > span,
+  .categoryBanner > div > small { display: none; }
+  .categoryBanner > div > strong { margin: 0; font-size: 9.5px; }
+  .categoryBanner > b {
+    grid-column: auto;
+    justify-self: auto;
+    max-width: 82px;
+    margin: 0;
+    padding: 4px 6px;
+    font-size: 6.5px;
+  }
+  .identityHeader { margin-bottom: 6px; }
+  .identityHeader strong { font-size: 9.5px; }
+  .identityHeader span { font-size: 7px; }
+  .identityRow { gap: 6px; padding-bottom: 3px; }
+  .identityButton {
+    min-width: 82px;
+    max-width: 112px;
+    min-height: 42px;
+    padding: 5px 8px;
+    border-radius: 12px;
+  }
+  .identityButton strong { font-size: 8.5px; }
+  .identityButton small { margin-top: 1px; font-size: 6.5px; }
+  .searchRow { gap: 6px; margin-top: 5px; grid-template-columns: minmax(0, 1fr) 58px; }
+  .searchRow input,
+  .searchRow button { min-height: 36px; border-radius: 10px; }
+  .searchRow input { padding-inline: 10px; font-size: 8.5px; }
+  .searchRow button { min-width: 58px; padding: 0 6px; font-size: 8px; }
+}
+
 @media (max-width: 350px) {
   .identityHeader { align-items: flex-start; flex-direction: column; gap: 3px; }
   .searchRow { grid-template-columns: 1fr; }

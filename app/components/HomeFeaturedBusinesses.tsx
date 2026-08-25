@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import FeaturedBusinessCard from "./FeaturedBusinessCard";
 import {
   DEFAULT_HOME_LOCATION,
   HOME_LOCATION_EVENT,
@@ -399,13 +400,11 @@ function FeaturedBusinessSection({
         {hasItems
           ? <>
             {sectionItems.map((business) => (
-              <Link
-                className={`featuredBusinessCard featuredBusinessCard--${business.business_type}`}
+              <FeaturedBusinessCard
                 href={`/businesses/${business.slug}`}
                 key={business.id}
-              >
-                <BusinessCardContent business={business} config={config} />
-              </Link>
+                business={{id:business.id,name:business.name,businessType:business.business_type,businessTypeTitle:config.kicker,province:business.province,city:business.city,neighborhood:business.neighborhood,logoUrl:business.logo_url,coverUrl:business.cover_url,categoryLabels:business.category_labels,services:business.services,mobileService:business.mobile_service,priceRangeText:business.price_range_text,verified:business.is_verified}}
+              />
             ))}
             {hasNationwideItems ? (
               <aside
@@ -422,13 +421,11 @@ function FeaturedBusinessSection({
               </aside>
             ) : null}
             {rankedNationwideItems.map((business) => (
-              <Link
-                className={`featuredBusinessCard featuredBusinessCard--${business.business_type}`}
+              <FeaturedBusinessCard
                 href={`/businesses/${business.slug}`}
                 key={`nationwide-${business.id}`}
-              >
-                <BusinessCardContent business={business} config={config} />
-              </Link>
+                business={{id:business.id,name:business.name,businessType:business.business_type,businessTypeTitle:config.kicker,province:business.province,city:business.city,neighborhood:business.neighborhood,logoUrl:business.logo_url,coverUrl:business.cover_url,categoryLabels:business.category_labels,services:business.services,mobileService:business.mobile_service,priceRangeText:business.price_range_text,verified:business.is_verified}}
+              />
             ))}
           </>
           : fallbackItems.map((item) => (

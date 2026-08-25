@@ -301,3 +301,25 @@
   .selectedCar { padding: 4px; }
   .selectedCar strong { font-size: 9px; }
 }
+
+@media (max-width: 900px) {
+  .marketMobileToolbar { width: calc(100% - 24px); margin: 0 auto 10px; }
+}
+
+@media (max-width: 650px) {
+  .marketBusinessGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+  .marketBusinessGrid .card { min-width: 0; border-radius: 15px; }
+  .marketBusinessGrid .media { height: 112px !important; border-radius: 14px 14px 0 0; }
+  .marketBusinessGrid .media em { top: 7px; left: 7px; max-width: calc(100% - 14px); padding: 4px 6px; font-size: 6px; }
+  .marketBusinessGrid .logo,
+  .marketBusinessGrid .media > b { width: 38px; height: 38px; right: 7px; bottom: 7px; border-width: 2px; border-radius: 10px; font-size: 15px; }
+  .marketBusinessGrid .body { gap: 5px; padding: 8px; }
+  .marketBusinessGrid .body > small { max-width: 100%; padding: 4px 6px; overflow: hidden; font-size: 6px; white-space: nowrap; text-overflow: ellipsis; }
+  .marketBusinessGrid .body h3 { overflow: hidden; font-size: 11px; line-height: 1.5; white-space: nowrap; text-overflow: ellipsis; }
+  .marketBusinessGrid .body p { min-height: 25px; font-size: 7px; line-height: 1.65; }
+  .marketBusinessGrid .tags { min-height: 20px; gap: 3px; }
+  .marketBusinessGrid .tags span { padding: 3px 5px; font-size: 6px; }
+  .marketBusinessGrid .tags span:nth-child(n+3) { display: none; }
+  .marketBusinessGrid .price { font-size: 7px; }
+  .marketBusinessGrid .view { min-height: 32px; padding: 0 4px; font-size: 8px; }
+}

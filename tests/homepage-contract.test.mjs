@@ -175,6 +175,11 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(businesses, /className=\{catalogStyles\.marketGrid\}/);
   assert.match(businesses, /className=\{catalogStyles\.desktopFilters\}/);
   assert.match(businesses, /className=\{catalogStyles\.grid\}/);
+  assert.match(businesses, /marketMobileToolbar/);
+  assert.match(businesses, /mobileFilterButton/);
+  assert.match(businesses, /mobileLayerOpen/);
+  assert.match(businesses, /marketBusinessGrid/);
+  assert.match(businessStyles, /\.marketBusinessGrid \{ grid-template-columns: repeat\(2/);
   assert.doesNotMatch(businesses, /serviceHighlights/);
   assert.match(businessStyles, /\.marketFilters \+ \.results \.grid/);
   assert.match(businessStyles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);

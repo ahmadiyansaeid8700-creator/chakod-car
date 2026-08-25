@@ -21,19 +21,12 @@
 @media(max-width:620px){.hero{padding-top:68px}.backButton{top:14px;right:14px;width:40px;height:40px;border-radius:12px}}
 @media(max-width:620px){.cardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible;margin:0;padding:0}.carCard,.skeleton{min-width:0}.cardMedia{height:128px}.rankBadge{top:7px;right:7px;padding:4px 6px;font-size:7px}.scoreBadge{left:7px;bottom:7px;width:38px;height:38px;border-radius:11px}.scoreBadge b{font-size:13px}.scoreBadge small{font-size:6px}.cardContent{padding:9px}.location{padding:4px 6px;font-size:7px}.cardContent h3{min-height:34px;margin:7px 0;font-size:11px;line-height:1.55}.facts{gap:4px}.facts span{padding:6px}.facts small{font-size:6px}.facts b{font-size:7px}.reason{min-height:31px;margin:7px 0;font-size:7px;line-height:1.6}.cardContent footer{display:grid;gap:5px;padding-top:8px}.cardContent footer strong{font-size:10px}.cardContent footer span{font-size:8px}.nationwideSeparator{grid-column:1/-1}}
 
-/* Compact premium banner and a real-time 24-hour cycle clock. */
-.hero{min-height:390px;gap:34px;padding:38px clamp(30px,5vw,64px) 88px}
+/* Compact premium banner; each listing owns its own rolling display clock. */
+.hero{min-height:350px;gap:34px;padding:34px clamp(30px,5vw,64px) 84px}
 .heroVisual{height:235px}
 .hero h1{margin:12px 0 8px;font-size:clamp(38px,4.4vw,58px)}
 .heroCopy p{font-size:12px;line-height:1.9}
 .heroActions{margin-top:15px}
-.heroCountdown{width:max-content;display:grid;grid-template-columns:auto 12px auto 12px auto auto;align-items:end;gap:7px;margin-top:16px;padding:10px 13px;border:1px solid #d4b46a55;border-radius:13px;color:#fff;background:#08070988;box-shadow:0 12px 30px #0005;backdrop-filter:blur(12px)}
-.heroCountdown{direction:ltr}
-.heroCountdown span{display:grid;grid-template-rows:auto auto;justify-items:center;min-width:48px}
-.heroCountdown small{color:#9d949b;font-size:7px;font-weight:800}
-.heroCountdown strong{margin-top:1px;color:#f5e4ae;font-size:27px;line-height:1;font-variant-numeric:tabular-nums}
-.heroCountdown i{align-self:end;padding-bottom:2px;color:#d4b46a;font-size:22px;font-style:normal;font-weight:900}
-.heroCountdown b{align-self:center;margin-right:8px;color:#bdb5bb;font-size:8px;white-space:nowrap}
 .heroStats{grid-template-columns:repeat(2,1fr)}
 
 /* The daily inventory sits inside one restrained black showroom frame. */
@@ -48,11 +41,13 @@
 .noLocalNotice>i{width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;border-radius:9px;color:#151217;background:#d4b46a;font-style:normal;font-weight:950}
 .noLocalNotice span{display:grid;gap:3px}.noLocalNotice strong{font-size:10px}.noLocalNotice small{color:#9f969d;font-size:8px;line-height:1.7}
 .showcaseBoard{position:relative;z-index:1;overflow:hidden;border:1px solid #ddd6df;border-radius:20px;background:#fff}
-.showcaseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:#e6dfe8}
+.showcaseGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;background:#e6dfe8}
 .showcaseGrid>.carCard,.showcaseGrid>.skeleton,.emptySlot{min-width:0;margin:0;border:0;border-left:1px solid #e6dfe8;border-bottom:1px solid #e6dfe8;border-radius:0;box-shadow:none;background:#fff}
-.showcaseGrid>.carCard:nth-child(3n){border-left:0}
+.showcaseGrid>.carCard:nth-child(2n){border-left:0}
 .showcaseGrid>.carCard:hover{z-index:2;transform:none;box-shadow:inset 0 0 0 2px #d4b46a}
 .showcaseGrid .cardMedia{height:190px;border-radius:0}
+.cardTimer{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid #e7ce8355;border-radius:9px;color:#f7e8b8;background:#151217d9;box-shadow:0 8px 18px #0005;backdrop-filter:blur(8px);font-variant-numeric:tabular-nums}
+.cardTimer small{color:#b8adb5;font-size:7px;font-weight:800}.cardTimer b{font-size:10px;letter-spacing:.4px}
 .emptySlot{min-height:340px;display:block;background:linear-gradient(145deg,#fff,#fbf9fc)}
 .showcaseGrid>.nationwideSeparator{grid-column:1/-1;min-height:58px;margin:0;padding:0 20px;background:#151217;border-bottom:1px solid #3b323a}
 .showcaseGrid>.nationwideSeparator strong{color:#f1e7c7;font-size:10px}.showcaseGrid>.nationwideSeparator small{color:#9c929a}
@@ -62,11 +57,6 @@
   .hero h1{font-size:34px}
   .heroCopy p{font-size:10px}
   .heroVisual{height:145px;margin-top:16px}
-  .heroCountdown{width:100%;grid-template-columns:auto 8px auto 8px auto;margin-top:13px;padding:9px 8px;gap:3px}
-  .heroCountdown span{min-width:0}
-  .heroCountdown strong{font-size:22px}
-  .heroCountdown i{font-size:17px}
-  .heroCountdown b{grid-column:1/-1;margin:4px 0 0;text-align:center}
   .heroActions{margin-top:11px}
   .heroStats{bottom:8px}
   .marketBody{padding:14px 10px;border-radius:22px}
@@ -74,9 +64,9 @@
   .noLocalNotice{margin-bottom:10px;padding:9px}.noLocalNotice strong{font-size:9px}.noLocalNotice small{font-size:7px}
   .showcaseBoard{border-radius:15px}
   .showcaseGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .showcaseGrid>.carCard:nth-child(3n){border-left:1px solid #e6dfe8}
   .showcaseGrid>.carCard:nth-child(2n){border-left:0}
   .showcaseGrid .cardMedia{height:122px}
+  .cardTimer{top:6px;left:6px;gap:3px;padding:4px 5px;border-radius:7px}.cardTimer small{font-size:5px}.cardTimer b{font-size:7px}
   .emptySlot{min-height:250px}
   .showcaseGrid>.nationwideSeparator{min-height:50px;padding:0 8px}
 }

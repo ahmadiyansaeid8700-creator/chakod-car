@@ -47,6 +47,9 @@ test("presents the public market floor as a live responsive marketplace", async 
   assert.match(page, /HOME_LOCATION_EVENT/);
   assert.match(page, /getHomeLocationScopes/);
   assert.match(page, /remainingTime/);
+  assert.match(page, /heroCountdown/);
+  assert.match(page, /تا پایان چرخه ۲۴ ساعته/);
+  assert.match(page, /1_000/);
   assert.match(page, /aria-label="بازگشت به صفحه قبل"/);
   assert.match(page, /router\.back\(\)/);
   assert.match(page, /MobileBottomNav/);
@@ -59,6 +62,9 @@ test("presents the public market floor as a live responsive marketplace", async 
   assert.doesNotMatch(page, /فرصت‌های نزدیک شما/);
   assert.match(page, /ویترین امروز در حال چیده‌شدن است/);
   assert.match(styles, /\.heroVisual/);
+  assert.match(styles, /\.heroCountdown/);
+  assert.match(styles, /\.marketBody:before/);
+  assert.match(styles, /linear-gradient\(145deg,#0d0c0f,#181319\)/);
   assert.match(styles, /\.backButton/);
   assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(styles, /\.nationwideSeparator/);

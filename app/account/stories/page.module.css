@@ -117,6 +117,43 @@
   background: rgba(255, 255, 255, .95);
   box-shadow: 0 10px 28px rgba(66, 31, 99, .04);
 }
+.categoryBanner {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin: -4px -4px 13px;
+  padding: 11px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 17px;
+  color: #fff;
+  background: radial-gradient(circle at 12% 10%, rgba(202, 166, 255, .36), transparent 9rem), linear-gradient(135deg, #371255 0%, #6422a9 54%, #7c3aed 100%);
+  box-shadow: 0 13px 29px rgba(85, 29, 139, .18);
+}
+.categoryBanner::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 130px;
+  height: 130px;
+  left: -34px;
+  bottom: -88px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(255, 255, 255, .035);
+}
+.categoryIcon { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, .18); border-radius: 14px; background: rgba(255, 255, 255, .12); box-shadow: inset 0 1px rgba(255, 255, 255, .15); backdrop-filter: blur(8px); }
+.categoryIcon svg { width: 23px; height: 23px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.categoryBanner > div { min-width: 0; }
+.categoryBanner > div > span { display: block; color: #dbc5fa; font-size: 7.5px; font-weight: 900; }
+.categoryBanner > div > strong { display: block; margin-top: 2px; overflow: hidden; font-size: 11.5px; font-weight: 950; white-space: nowrap; text-overflow: ellipsis; }
+.categoryBanner > div > small { display: block; margin-top: 3px; overflow: hidden; color: rgba(255, 255, 255, .67); font-size: 7.5px; white-space: nowrap; text-overflow: ellipsis; }
+.categoryBanner > b { max-width: 130px; padding: 6px 9px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px; color: #fff; background: rgba(255, 255, 255, .12); font-size: 7.5px; white-space: nowrap; text-overflow: ellipsis; backdrop-filter: blur(8px); }
 .identityHeader {
   min-width: 0;
   display: flex;
@@ -477,6 +514,8 @@
   .hero h1 { font-size: 30px; }
   .hero p { font-size: 11px; }
   .identityPanel { padding: 15px; }
+  .categoryBanner { min-height: 82px; margin: -5px -5px 15px; padding: 13px 15px; }
+  .categoryBanner > div > strong { font-size: 13px; }
   .identityRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); overflow: visible; }
   .identityButton { width: 100%; max-width: none; min-width: 0; }
   .searchRow { grid-template-columns: minmax(0, 1fr) 92px; }
@@ -499,6 +538,12 @@
   .hero h1 { font-size: 21px; }
   .hero p { font-size: 9.5px; }
   .identityPanel { padding: 11px; }
+  .categoryBanner { grid-template-columns: 40px minmax(0, 1fr); min-height: 70px; margin: -3px -3px 11px; padding: 9px 10px; }
+  .categoryIcon { width: 40px; height: 40px; border-radius: 12px; }
+  .categoryIcon svg { width: 21px; height: 21px; }
+  .categoryBanner > div > strong { font-size: 10.5px; }
+  .categoryBanner > div > small { font-size: 6.8px; }
+  .categoryBanner > b { grid-column: 2; justify-self: start; max-width: 100%; margin-top: -1px; padding: 4px 7px; font-size: 6.5px; }
   .identityButton { min-width: 96px; }
   .searchRow { grid-template-columns: minmax(0, 1fr) 66px; }
   .searchRow button { min-width: 66px; padding: 0 8px; }

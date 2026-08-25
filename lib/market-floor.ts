@@ -3,6 +3,7 @@ import { getRuntimeEnv } from "./runtime-env";
 export const MARKET_FLOOR_PROVINCE_CAPACITY = 10;
 export const MARKET_FLOOR_INITIAL_CARDS = 3;
 export const MARKET_FLOOR_MIN_SCORE = 80;
+export const MARKET_FLOOR_DURATION_HOURS = 24;
 
 let schemaReady: Promise<void> | null = null;
 
@@ -60,17 +61,11 @@ export type MarketFloorScore = {
   discountPercent: number;
 };
 
-export function marketFloorCycle(now = new Date(), next = false) {
-  const tehranMs = now.getTime() + 3.5 * 60 * 60 * 1000;
-  const local = new Date(tehranMs);
-  const startLocal = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), 8, 0, 0);
-  let startsAtMs = startLocal - 3.5 * 60 * 60 * 1000;
-  if (tehranMs < startLocal) startsAtMs -= 24 * 60 * 60 * 1000;
-  if (next) startsAtMs += 24 * 60 * 60 * 1000;
-  const startsAt = new Date(startsAtMs);
-  const endsAt = new Date(startsAtMs + 24 * 60 * 60 * 1000);
+export function marketFloorWindow(now = new Date()) {
+  const startsAt = new Date(now);
+  const endsAt = new Date(startsAt.getTime() + MARKET_FLOOR_DURATION_HOURS * 60 * 60 * 1000);
   return {
-    key: startsAt.toISOString().slice(0, 10),
+    key: `rolling-${startsAt.getTime()}`,
     startsAt: startsAt.toISOString(),
     endsAt: endsAt.toISOString(),
   };

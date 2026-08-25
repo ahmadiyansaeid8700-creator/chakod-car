@@ -1,11 +1,11 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 import { getDb } from "../../../db";
 import { marketFloorEntries, marketFloorWallets } from "../../../db/schema";
 import { authApiUrl, jsonResponse, parseJsonResponse, rejectCrossSiteMutation, requestIdentityHeaders } from "../../../lib/chakod-auth-proxy";
 import { getFinanceOwnerKey } from "../../../lib/finance-core";
-import { MARKET_FLOOR_INITIAL_CARDS, MARKET_FLOOR_MIN_SCORE, MARKET_FLOOR_PROVINCE_CAPACITY, ensureMarketFloorSchema, evaluateMarketFloor, marketFloorCycle, type MarketFloorListing } from "../../../lib/market-floor";
+import { MARKET_FLOOR_DURATION_HOURS, MARKET_FLOOR_INITIAL_CARDS, MARKET_FLOOR_MIN_SCORE, MARKET_FLOOR_PROVINCE_CAPACITY, ensureMarketFloorSchema, evaluateMarketFloor, marketFloorWindow, type MarketFloorListing } from "../../../lib/market-floor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
   const entries = await db.select().from(marketFloorEntries).where(eq(marketFloorEntries.ownerKey, ownerKey)).orderBy(desc(marketFloorEntries.id)).limit(30);
   const listingId = number(request.nextUrl.searchParams.get("listing_id"));
   const listing = listingId ? await loadOwnedListing(request, listingId) : null;
-  return jsonResponse({ success: true, wallet, entries, listing: listing ? listingSnapshot(listing) : null, rules: { initial_cards: MARKET_FLOOR_INITIAL_CARDS, province_capacity: MARKET_FLOOR_PROVINCE_CAPACITY, minimum_score: MARKET_FLOOR_MIN_SCORE, cycle_hour: 8 } });
+  return jsonResponse({ success: true, wallet, entries, listing: listing ? listingSnapshot(listing) : null, rules: { initial_cards: MARKET_FLOOR_INITIAL_CARDS, province_capacity: MARKET_FLOOR_PROVINCE_CAPACITY, minimum_score: MARKET_FLOOR_MIN_SCORE, duration_hours: MARKET_FLOOR_DURATION_HOURS, rolling_entry: true } });
 }
 
 export async function POST(request: NextRequest) {
@@ -87,23 +87,23 @@ export async function POST(request: NextRequest) {
   await ensureMarketFloorSchema();
   const input = await request.json().catch(() => ({})) as JsonObject;
   const listingId = number(input.listing_id);
-  const reserveNext = bool(input.reserve_next_cycle);
   const requestedScope = input.scope === "nationwide" ? "nationwide" : "province";
   if (!listingId) return jsonResponse({ success: false, message: "آگهی معتبر نیست." }, 400);
   const listing = await loadOwnedListing(request, listingId);
   if (!listing) return jsonResponse({ success: false, message: "فقط آگهی فعال و متعلق به این حساب قابل بررسی است." }, 404);
   const snapshot = listingSnapshot(listing);
   if (!snapshot.province) return jsonResponse({ success: false, message: "استان آگهی باید کامل شود." }, 409);
-  const cycle = marketFloorCycle(new Date(), reserveNext);
+  const window = marketFloorWindow();
+  const now = window.startsAt;
   const db = getDb();
   const wallet = await ensureCards(ownerKey);
   if (!wallet || wallet.availableCards <= 0) return jsonResponse({ success: false, message: "کارت کف بازار کافی ندارید." }, 409);
-  const [duplicate] = await db.select().from(marketFloorEntries).where(and(eq(marketFloorEntries.ownerKey, ownerKey), eq(marketFloorEntries.listingId, listingId), eq(marketFloorEntries.cycleKey, cycle.key))).limit(1);
-  if (duplicate) return jsonResponse({ success: false, message: "این آگهی برای چرخه انتخاب‌شده قبلاً ارسال شده است.", entry: duplicate }, 409);
+  const [duplicate] = await db.select().from(marketFloorEntries).where(and(eq(marketFloorEntries.ownerKey, ownerKey), eq(marketFloorEntries.listingId, listingId), inArray(marketFloorEntries.status, ["active", "pending_admin", "qualified", "waitlisted"]), gt(marketFloorEntries.cycleEndsAt, now))).limit(1);
+  if (duplicate) return jsonResponse({ success: false, message: "این آگهی هنوز درخواست فعال در کف بازار دارد.", entry: duplicate }, 409);
 
   const result = evaluateMarketFloor(snapshot);
   let status = result.decision === "approved" ? "qualified" : result.decision === "rejected" ? "rejected" : "pending_admin";
-  const active = await db.select().from(marketFloorEntries).where(and(eq(marketFloorEntries.province, snapshot.province), eq(marketFloorEntries.cycleKey, cycle.key), eq(marketFloorEntries.status, "active"))).orderBy(desc(marketFloorEntries.score));
+  const active = await db.select().from(marketFloorEntries).where(and(eq(marketFloorEntries.province, snapshot.province), eq(marketFloorEntries.status, "active"), gt(marketFloorEntries.cycleEndsAt, now))).orderBy(desc(marketFloorEntries.score));
   let displacedEntryId = 0;
   if (status === "qualified") {
     if (active.length < MARKET_FLOOR_PROVINCE_CAPACITY) {
@@ -118,18 +118,17 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-  const now = new Date().toISOString();
   const cardReturned = status === "rejected";
   const [entry] = await db.insert(marketFloorEntries).values({
-    ownerKey, listingId, province: snapshot.province, requestedScope, cycleKey: cycle.key,
-    cycleStartsAt: cycle.startsAt, cycleEndsAt: cycle.endsAt, status, score: result.score,
+    ownerKey, listingId, province: snapshot.province, requestedScope, cycleKey: window.key,
+    cycleStartsAt: window.startsAt, cycleEndsAt: window.endsAt, status, score: result.score,
     grade: result.grade, decision: result.decision, reason: result.reason,
     scoreJson: JSON.stringify({ ...result.components, discount_percent: result.discountPercent }),
     listingSnapshotJson: JSON.stringify(snapshot), cardState: cardReturned ? "refunded" : "consumed",
-    reservationForNextCycle: reserveNext, reviewedAt: now, activatedAt: status === "active" ? now : null, updatedAt: now,
+    reservationForNextCycle: false, reviewedAt: now, activatedAt: status === "active" ? now : null, updatedAt: now,
   }).returning();
   if (displacedEntryId) {
-    await db.update(marketFloorEntries).set({ status: "waitlisted", reason: "آگهی با امتیاز بالاتر وارد ظرفیت استان شد؛ این درخواست در صف چرخه باقی ماند.", updatedAt: now }).where(eq(marketFloorEntries.id, displacedEntryId));
+    await db.update(marketFloorEntries).set({ status: "waitlisted", reason: "آگهی با امتیاز بالاتر وارد ظرفیت استان شد؛ این درخواست در صف باقی ماند.", updatedAt: now }).where(eq(marketFloorEntries.id, displacedEntryId));
   }
   await db.update(marketFloorWallets).set({
     availableCards: wallet.availableCards - (cardReturned ? 0 : 1),

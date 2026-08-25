@@ -34,10 +34,10 @@ export default function MarketFloorAccountPage() {
 
   useEffect(() => { void load(); }, [listingId]);
 
-  async function submit(reserveNext: boolean) {
+  async function submit() {
     if (!listingId) return;
     setBusy(true); setMessage("");
-    const response = await fetch("/api/market-floor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ listing_id: listingId, scope: "province", reserve_next_cycle: reserveNext }) });
+    const response = await fetch("/api/market-floor", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ listing_id: listingId, scope: "province" }) });
     const body = await response.json().catch(() => null);
     setMessage(body?.message || "درخواست ثبت نشد؛ دوباره تلاش کنید.");
     setBusy(false); await load();
@@ -61,8 +61,8 @@ export default function MarketFloorAccountPage() {
 
     <section className={styles.quickFacts}>
       <div><span>۱۰</span><small>فرصت در هر استان</small></div>
-      <div><span>۸ صبح</span><small>شروع چرخه روزانه</small></div>
-      <div><span>۲۴ ساعت</span><small>مدت نمایش</small></div>
+      <div><span>همین حالا</span><small>ورود پس از تأیید</small></div>
+      <div><span>۲۴ ساعت</span><small>نمایش مستقل هر خودرو</small></div>
     </section>
 
     {error ? <section className={styles.error}><strong>اتصال کف بازار کامل نشد</strong><p>{error}</p></section> : null}
@@ -72,8 +72,7 @@ export default function MarketFloorAccountPage() {
       <h2>{data.listing.title}</h2>
       <p className={styles.location}>⌖ {[data.listing.city, data.listing.province].filter(Boolean).join("، ")}</p>
       <div className={styles.reviewSteps}><span><b>۱</b> تحلیل بازار</span><span><b>۲</b> امتیاز فرصت</span><span><b>۳</b> ورود برترین‌ها</span></div>
-      <button className={styles.primaryButton} disabled={busy} onClick={() => void submit(false)}>{busy ? "در حال بررسی…" : "شروع بررسی هوشمند"}<span>←</span></button>
-      <button className={styles.secondaryButton} disabled={busy} onClick={() => void submit(true)}>رزرو برای چرخه فردا</button>
+      <button className={styles.primaryButton} disabled={busy} onClick={() => void submit()}>{busy ? "در حال بررسی…" : "شروع بررسی هوشمند"}<span>←</span></button>
       <small className={styles.assurance}>در صورت رد شدن، کارت شما برمی‌گردد.</small>
       {message ? <p className={styles.message}>{message}</p> : null}
     </> : <div className={styles.loading}>در حال آماده‌سازی آگهی…</div>}</section> : <section className={styles.selector}>

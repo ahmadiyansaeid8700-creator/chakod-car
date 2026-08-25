@@ -164,6 +164,15 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(businesses, /styles\.marketPage/);
   assert.match(businesses, /data-market-type/);
   assert.match(businesses, /data-business-type/);
+  assert.match(businesses, /CatalogChrome\.module\.css/);
+  assert.match(businesses, /CatalogPage\.module\.css/);
+  assert.match(businesses, /className=\{chrome\.header\}/);
+  assert.match(businesses, /className=\{chrome\.hero\}/);
+  assert.match(businesses, /className=\{chrome\.segmentNav\}/);
+  assert.match(businesses, /className=\{chrome\.browser\}/);
+  assert.match(businesses, /className=\{catalogStyles\.marketGrid\}/);
+  assert.match(businesses, /className=\{catalogStyles\.desktopFilters\}/);
+  assert.match(businesses, /className=\{catalogStyles\.grid\}/);
   assert.doesNotMatch(businesses, /serviceHighlights/);
   assert.match(businessStyles, /\.marketFilters \+ \.results \.grid/);
   assert.match(businessStyles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);

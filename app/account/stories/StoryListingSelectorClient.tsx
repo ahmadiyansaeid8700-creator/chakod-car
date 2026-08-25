@@ -549,23 +549,29 @@ export default function StoryListingSelectorClient() {
         ) : null}
 
         {selectedIdentity.kind === "business" && businessActivity ? (
-          <section className={styles.businessStoryCard} aria-label={`دبل استوری ${businessActivity.name}`}>
-            <div className={styles.businessStoryIcon} aria-hidden="true">▣</div>
-            <div className={styles.businessStoryCopy}>
-              <span>{activityTypeLabel(businessActivity.type)}</span>
-              <h2>{businessActivity.name}</h2>
-              {(businessActivity.city || businessActivity.province) ? (
-                <p>{[businessActivity.city, businessActivity.province].filter(Boolean).join("، ")}</p>
-              ) : (
-                <p>محتوا از اطلاعات واقعی پروفایل همین کسب‌وکار ساخته می‌شود.</p>
-              )}
+          <section className={styles.businessStoryGrid} aria-label={`دبل استوری ${businessActivity.name}`}>
+            <article className={`${styles.businessStoryCard} ${styles[`businessStoryCard_${businessActivity.type}`] || ""}`}>
+              <div className={styles.businessStoryMedia}>
+                <span className={styles.businessStoryType}>{activityTypeLabel(businessActivity.type)}</span>
+                <div className={styles.businessStoryMark} aria-hidden="true">
+                  {businessActivity.name.trim().slice(0, 1)}
+                </div>
+              </div>
+              <div className={styles.businessStoryCopy}>
+                <span>{activityTypeLabel(businessActivity.type)}</span>
+                <h2>{businessActivity.name}</h2>
+                <p className={styles.businessStoryLocation}>
+                  <span aria-hidden="true">⌖</span>
+                  {[businessActivity.city, businessActivity.province].filter(Boolean).join("، ") || "موقعیت در پروفایل ثبت نشده"}
+                </p>
               <Link
                 href={`/account/selected?intent=story&activity_id=${businessActivity.id}`}
                 className={styles.storyButton}
               >
                 ساخت دبل استوری کسب‌وکار
               </Link>
-            </div>
+              </div>
+            </article>
           </section>
         ) : loading ? (
           <section className={styles.state}>

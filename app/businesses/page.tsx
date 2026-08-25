@@ -1,11 +1,15 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+import AuthStatus from "../components/AuthStatus";
 import MobileBottomNav from "../components/MobileBottomNav";
 import MobileBackButton from "../components/MobileBackButton";
 import MarketModeSwitch from "../components/MarketModeSwitch";
 import styles from "./page.module.css";
+import catalogStyles from "../ads/[segment]/CatalogPage.module.css";
+import chrome from "../ads/[segment]/CatalogChrome.module.css";
 
 type BusinessType = "dealer" | "repair_shop" | "car_service" | "parts_store";
 
@@ -93,6 +97,13 @@ const serviceMarketTypes: Array<{ key: "" | BusinessType; label: string }> = [
   { key: "parts_store", label: "لوازم یدکی" },
   { key: "repair_shop", label: "تعمیرکاران" },
 ];
+
+const serviceMarketTone: Record<"all" | "car_service" | "parts_store" | "repair_shop", { accent: string; dark: string; soft: string }> = {
+  all: { accent: "#6d28d9", dark: "#35134f", soft: "#f4effd" },
+  car_service: { accent: "#0f8f83", dark: "#07554f", soft: "#e9fbf8" },
+  parts_store: { accent: "#d97706", dark: "#7a3d04", soft: "#fff5dc" },
+  repair_shop: { accent: "#1683c7", dark: "#0b4f7b", soft: "#e8f6ff" },
+};
 
 const serviceCategories: Array<{ key: string; label: string; type: "" | BusinessType }> = [
   { key: "", label: "همه خدمات", type: "" },
@@ -395,6 +406,158 @@ export default function BusinessesPage({
 
   const mobileTitle = dealerDirectory ? "نمایشگاه‌ها" : marketMode ? "بازار خدمات" : "کسب‌وکارها";
   const resultNoun = dealerDirectory ? "نمایشگاه" : "کسب‌وکار";
+
+  if (marketMode) {
+    const toneKey = (type || "all") as keyof typeof serviceMarketTone;
+    const tone = serviceMarketTone[toneKey] || serviceMarketTone.all;
+    const cssVars = {
+      "--accent": tone.accent,
+      "--accent-dark": tone.dark,
+      "--soft": tone.soft,
+    } as CSSProperties;
+
+    return (
+      <main className={`${catalogStyles.page} ${styles.marketPage}`} dir="rtl" style={cssVars}>
+        <header className={chrome.header}>
+          <div className={chrome.headerInner}>
+            <a className={chrome.brand} href="/" aria-label="صفحه اصلی چاکود">
+              <img className={chrome.logo} src="/brand/chakod-logo-horizontal.png" alt="چاکود" />
+            </a>
+            <nav className={chrome.primaryNav} aria-label="ناوبری اصلی چاکود">
+              <a href="/cars">خودروها</a>
+              <a href="/dealerships">نمایشگاه‌ها</a>
+              <a href="/businesses">کسب‌وکارها</a>
+              <a className={chrome.activeNav} href="/services">بازار خدمات</a>
+            </nav>
+            <div className={chrome.actions}>
+              <a className={chrome.savedLink} href="/account/saved">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.25 4.75A1.75 1.75 0 0 1 9 3h6a1.75 1.75 0 0 1 1.75 1.75v15L12 16.6l-4.75 3.15v-15Z" /></svg>
+                <b>نشان</b>
+              </a>
+              <div className={chrome.accountStatus}><AuthStatus /></div>
+            </div>
+          </div>
+        </header>
+
+        <MarketModeSwitch active="services" />
+
+        <section className={chrome.hero}>
+          <span className={chrome.kicker}>{kicker}</span>
+          <h1>{title}</h1>
+          <p>{description}</p>
+        </section>
+
+        <nav className={chrome.segmentNav} aria-label="دسته‌های بازار خدمات">
+          {serviceMarketTypes.map((item) => (
+            <button
+              data-market-type={item.key || "all"}
+              key={item.key || "all"}
+              type="button"
+              className={type === item.key ? chrome.segmentActive : undefined}
+              onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <section className={chrome.browser} aria-label={title}>
+          <div className={catalogStyles.marketGrid}>
+            <aside className={catalogStyles.desktopFilters} aria-label="فیلتر آگهی‌ها">
+              <div className={catalogStyles.filterHeader}>
+                <div><span>نتیجه دقیق</span><strong>فیلتر خدمات</strong></div>
+                <b>⌕</b>
+              </div>
+              <form className={catalogStyles.filterForm} onSubmit={(event) => event.preventDefault()}>
+                <div className={catalogStyles.filterBody}>
+                  <section className={catalogStyles.filterSection}>
+                    <div className={catalogStyles.sectionTitle}>جست‌وجوی کسب‌وکار <small>نام یا نوع خدمت</small></div>
+                    <label className={catalogStyles.fieldWide}>
+                      <span>عبارت جست‌وجو</span>
+                      <input className={catalogStyles.input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="مثلاً صافکاری یا لوازم یدکی" />
+                    </label>
+                  </section>
+                  <section className={catalogStyles.filterSection}>
+                    <div className={catalogStyles.sectionTitle}>دسته خدمات</div>
+                    <label className={catalogStyles.fieldWide}>
+                      <span>نوع کسب‌وکار</span>
+                      <select className={catalogStyles.select} value={type} onChange={(event) => { setType(event.target.value as "" | BusinessType); setCategory(""); }}>
+                        {serviceMarketTypes.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}
+                      </select>
+                    </label>
+                    <label className={catalogStyles.fieldWide}>
+                      <span>خدمت</span>
+                      <select className={catalogStyles.select} value={category} onChange={(event) => {
+                        const nextCategory = event.target.value;
+                        const selected = serviceCategories.find((item) => item.key === nextCategory);
+                        setCategory(nextCategory);
+                        if (selected?.type) setType(selected.type);
+                      }}>
+                        {serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}
+                      </select>
+                    </label>
+                  </section>
+                  <section className={catalogStyles.filterSection}>
+                    <div className={catalogStyles.sectionTitle}>موقعیت <small>استان و شهر</small></div>
+                    <label className={catalogStyles.fieldWide}>
+                      <span>شهر</span>
+                      <input className={catalogStyles.input} value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً رشت یا تهران" />
+                    </label>
+                  </section>
+                </div>
+                <div className={catalogStyles.filterActions}>
+                  <button className={catalogStyles.applyButton} type="button">اعمال فیلترها</button>
+                  <button className={catalogStyles.clearButton} type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(""); }}>پاک‌کردن</button>
+                </div>
+              </form>
+            </aside>
+
+            <section className={catalogStyles.resultsColumn} aria-live="polite">
+              <div className={catalogStyles.resultsTop}>
+                <div className={catalogStyles.resultsCopy}>
+                  <strong>{loading ? "در حال دریافت خدمات" : `${total.toLocaleString("fa-IR")} کسب‌وکار پیدا شد`}</strong>
+                  <span>کسب‌وکارهای تأییدشده و منتخب در اولویت نمایش‌اند.</span>
+                </div>
+              </div>
+              {loading ? (
+                <div className={catalogStyles.grid} aria-label="در حال بارگذاری">
+                  {Array.from({ length: 6 }).map((_, index) => <div className={catalogStyles.skeleton} key={index}><div className={catalogStyles.skeletonMedia} /><div className={catalogStyles.skeletonBody}><span className={catalogStyles.skeletonLine} /><span className={catalogStyles.skeletonLine} /><span className={catalogStyles.skeletonLine} /></div></div>)}
+                </div>
+              ) : error ? (
+                <div className={catalogStyles.empty}><span className={catalogStyles.emptyIcon}>!</span><strong>ارتباط با بازار خدمات برقرار نشد</strong><p>{error}</p><button type="button" onClick={() => window.location.reload()}>تلاش دوباره</button></div>
+              ) : items.length ? (
+                <div className={catalogStyles.grid}>
+                  {items.map((business) => {
+                    const href = business.href || `/businesses/${encodeURIComponent(business.slug)}`;
+                    return (
+                      <article data-business-type={business.business_type} className={styles.card} key={business.id}>
+                        <a className={styles.media} href={href}>
+                          {business.cover_url ? <img src={business.cover_url} alt="" /> : <span />}
+                          {business.logo_url ? <img className={styles.logo} src={business.logo_url} alt={business.name} /> : <b>{business.name.slice(0, 1)}</b>}
+                          <em>{business.business_type_title}</em>
+                        </a>
+                        <div className={styles.body}>
+                          <small>{business.business_type_title}</small>
+                          <h3><a href={href}>{business.name}</a></h3>
+                          <p>{[business.neighborhood, business.city, business.province].filter(Boolean).join("، ") || "موقعیت ثبت نشده"}</p>
+                          <div className={styles.tags}>{[...business.category_labels, ...business.services].slice(0, 3).map((label) => <span key={label}>{label}</span>)}</div>
+                          {business.price_range_text && <div className={styles.price}>{business.price_range_text}</div>}
+                          <a className={styles.view} href={href}>مشاهده اطلاعات کامل</a>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={catalogStyles.empty}><span className={catalogStyles.emptyIcon}>⌕</span><strong>خدمتی مطابق این فیلترها پیدا نشد</strong><p>موقعیت یا دسته خدمات را تغییر بده تا گزینه‌های بیشتری ببینی.</p><a href="/services">نمایش همه خدمات</a></div>
+              )}
+            </section>
+          </div>
+        </section>
+        <MobileBottomNav />
+      </main>
+    );
+  }
 
   return (
     <main className={`${styles.page} ${marketMode ? styles.marketPage : ""}`} dir="rtl">

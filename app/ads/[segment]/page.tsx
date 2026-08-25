@@ -258,7 +258,6 @@ export default async function SegmentCatalogPage({
               خودروها
             </Link>
             <Link href="/dealerships">نمایشگاه‌ها</Link>
-            <Link href="/businesses">کسب‌وکارها</Link>
             <Link href="/services">بازار خدمات</Link>
           </nav>
 

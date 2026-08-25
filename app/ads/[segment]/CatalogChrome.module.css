@@ -225,7 +225,8 @@
   display: none;
 }
 
-.segmentNav a {
+.segmentNav a,
+.segmentNav button {
   min-height: 38px;
   min-width: 120px;
   padding: 0 14px;
@@ -239,9 +240,14 @@
   font-weight: 900;
   white-space: nowrap;
   text-decoration: none;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
 }
 
-.segmentNav a:hover {
+.segmentNav a:hover,
+.segmentNav button:hover {
   color: var(--accent);
   background: var(--soft);
 }
@@ -424,7 +430,8 @@
     border-radius: 13px;
   }
 
-  .segmentNav a {
+  .segmentNav a,
+  .segmentNav button {
     min-width: 0;
     min-height: 36px;
     padding: 0 5px;

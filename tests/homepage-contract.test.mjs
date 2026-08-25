@@ -316,7 +316,7 @@ test("separates localized inventory from nationwide fallback inventory", () => {
   assert.match(vehicles, /homeLocationBoundary--\$\{tone\}/);
   assert.match(vehicles, /luxuryLabel: luxuryResolved\.label/);
   assert.match(showrooms, /resolveDealersForLocation/);
-  assert.match(showrooms, /resolvedDealers\.label/);
+  assert.doesNotMatch(showrooms, /<p className=\{styles\.locationLabel\}>/);
 });
 
 test("keeps nationwide separators genuinely slim across vehicle and business rails", () => {

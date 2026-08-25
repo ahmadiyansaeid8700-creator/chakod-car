@@ -151,6 +151,7 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   const marketSwitchStyles = read("app/components/MarketModeSwitch.module.css");
 
   assert.match(catalogPage, /<MarketModeSwitch active="cars"/);
+  assert.match(catalogPage, /href="\/services">بازار خدمات/);
   assert.match(servicePage, /marketMode/);
   assert.match(servicePage, /basePath="\/services"/);
   assert.match(businesses, /<MarketModeSwitch active="services"/);
@@ -170,6 +171,8 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(marketSwitch, /styles\.swapHint/);
   assert.match(marketSwitchStyles, /grid-template-columns:repeat\(2/);
   assert.match(marketSwitchStyles, /\.swapHint/);
+  assert.match(marketSwitchStyles, /\.switcher\{display:none\}/);
+  assert.match(marketSwitchStyles, /@media\(max-width:700px\)\{\.switcher\{display:grid\}\}/);
 });
 
 test("keeps homepage rails horizontal and responsive on small screens", () => {

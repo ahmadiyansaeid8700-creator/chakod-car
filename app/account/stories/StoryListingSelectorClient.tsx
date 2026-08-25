@@ -435,6 +435,17 @@ export default function StoryListingSelectorClient() {
         </section>
 
         <section className={styles.identityPanel} aria-label="انتخاب هویت انتشار">
+          <div className={styles.categoryBanner}>
+            <span className={styles.categoryIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h4A1.5 1.5 0 0 1 11 5.5v4A1.5 1.5 0 0 1 9.5 11h-4A1.5 1.5 0 0 1 4 9.5v-4Zm9 0A1.5 1.5 0 0 1 14.5 4h4A1.5 1.5 0 0 1 20 5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 13 9.5v-4Zm-9 9A1.5 1.5 0 0 1 5.5 13h4a1.5 1.5 0 0 1 1.5 1.5v4A1.5 1.5 0 0 1 9.5 20h-4A1.5 1.5 0 0 1 4 18.5v-4Zm9 2.5h7m-3.5-3.5V20" /></svg>
+            </span>
+            <div>
+              <span>دسته‌بندی انتشار</span>
+              <strong>استوری را با هویت درست منتشر کن</strong>
+              <small>حساب شخصی، نمایشگاه یا کسب‌وکارت را انتخاب کن.</small>
+            </div>
+            <b>{selectedIdentity.typeLabel}</b>
+          </div>
           <div className={styles.identityHeader}>
             <strong>برای کدام حساب منتشر شود؟</strong>
             <span>

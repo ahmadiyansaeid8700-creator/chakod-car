@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import AccountVehicleCard from "../components/AccountVehicleCard";
+import Header from "../../components/layout/Header";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
@@ -350,26 +351,67 @@ export default function StoryListingSelectorClient() {
     setError("");
 
     try {
-      const params = new URLSearchParams({
-        page: String(targetPage),
-        per_page: String(PAGE_SIZE),
-        status: "active",
-        owner: selectedIdentity.owner,
-      });
-      if (selectedIdentity.dealerId) params.set("dealer_id", String(selectedIdentity.dealerId));
-      if (appliedSearch) params.set("q", appliedSearch);
+      async function requestListings(owner: "personal" | "dealer", requestPage: number, perPage: number, dealerId = 0) {
+        const params = new URLSearchParams({
+          page: String(requestPage),
+          per_page: String(perPage),
+          status: "active",
+          owner,
+        });
+        if (dealerId) params.set("dealer_id", String(dealerId));
+        if (appliedSearch) params.set("q", appliedSearch);
 
-      const response = await fetch(`/api/auth/dashboard-listings?${params.toString()}`, {
-        credentials: "include",
-        cache: "no-store",
-        headers: { Accept: "application/json", ...authHeaders() },
-      });
-      const payload = (await response.json().catch(() => null)) as ListingsResponse | null;
-
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "آگهی‌های فعال دریافت نشدند.");
+        const response = await fetch(`/api/auth/dashboard-listings?${params.toString()}`, {
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json", ...authHeaders() },
+        });
+        const payload = (await response.json().catch(() => null)) as ListingsResponse | null;
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "آگهی‌های فعال دریافت نشدند.");
+        }
+        return payload;
       }
 
+      if (selectedIdentity.kind === "all") {
+        const [personalPayload, dealerPayload] = await Promise.all([
+          requestListings("personal", 1, 100),
+          requestListings("dealer", 1, 100),
+        ]);
+        const combined = activeListings([
+          ...(personalPayload.data || []),
+          ...(dealerPayload.data || []),
+        ]);
+        const seen = new Set<number>();
+        const uniqueListings = combined.filter((item) => {
+          const id = Number(item.id || 0);
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+        const total = uniqueListings.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        const safePage = Math.min(Math.max(1, targetPage), totalPages);
+        const offset = (safePage - 1) * PAGE_SIZE;
+        setListings(uniqueListings.slice(offset, offset + PAGE_SIZE));
+        setDealers(cleanDealers([...(personalPayload.dealers || []), ...(dealerPayload.dealers || [])]));
+        setPagination({
+          page: safePage,
+          per_page: PAGE_SIZE,
+          total,
+          total_pages: totalPages,
+          has_next: safePage < totalPages,
+          has_prev: safePage > 1,
+        });
+        return;
+      }
+
+      const payload = await requestListings(
+        selectedIdentity.owner === "dealer" ? "dealer" : "personal",
+        targetPage,
+        PAGE_SIZE,
+        selectedIdentity.dealerId,
+      );
       const visibleListings = activeListings(payload.data);
       setListings(visibleListings);
       setDealers(cleanDealers(payload.dealers));
@@ -410,6 +452,9 @@ export default function StoryListingSelectorClient() {
 
   return (
     <main className={styles.page} dir="rtl">
+      <div className={styles.desktopHeader}>
+        <Header />
+      </div>
       <div className={styles.shell}>
         <header className={styles.topbar}>
           <Link href="/" className={styles.back}>بازگشت</Link>
@@ -551,26 +596,29 @@ export default function StoryListingSelectorClient() {
         {selectedIdentity.kind === "business" && businessActivity ? (
           <section className={styles.businessStoryGrid} aria-label={`دبل استوری ${businessActivity.name}`}>
             <article className={`${styles.businessStoryCard} ${styles[`businessStoryCard_${businessActivity.type}`] || ""}`}>
-              <div className={styles.businessStoryMedia}>
-                <span className={styles.businessStoryType}>{activityTypeLabel(businessActivity.type)}</span>
-                <div className={styles.businessStoryMark} aria-hidden="true">
-                  {businessActivity.name.trim().slice(0, 1)}
+              <Link className={styles.businessStoryProfile} href={`/businesses/activity/${businessActivity.id}`}>
+                <div className={styles.businessStoryMedia}>
+                  <span className={styles.businessStoryType}>{activityTypeLabel(businessActivity.type)}</span>
+                  <div className={styles.businessStoryMark} aria-hidden="true">
+                    {businessActivity.name.trim().slice(0, 1)}
+                  </div>
                 </div>
-              </div>
-              <div className={styles.businessStoryCopy}>
-                <span>{activityTypeLabel(businessActivity.type)}</span>
-                <h2>{businessActivity.name}</h2>
-                <p className={styles.businessStoryLocation}>
-                  <span aria-hidden="true">⌖</span>
-                  {[businessActivity.city, businessActivity.province].filter(Boolean).join("، ") || "موقعیت در پروفایل ثبت نشده"}
-                </p>
+                <div className={styles.businessStoryCopy}>
+                  <span>{activityTypeLabel(businessActivity.type)}</span>
+                  <h2>{businessActivity.name}</h2>
+                  <p className={styles.businessStoryLocation}>
+                    <span aria-hidden="true">⌖</span>
+                    {[businessActivity.city, businessActivity.province].filter(Boolean).join("، ") || "موقعیت در پروفایل ثبت نشده"}
+                  </p>
+                  <strong className={styles.businessStoryView}>مشاهده اطلاعات کسب‌وکار</strong>
+                </div>
+              </Link>
               <Link
                 href={`/account/selected?intent=story&activity_id=${businessActivity.id}`}
                 className={styles.storyButton}
               >
                 ساخت دبل استوری کسب‌وکار
               </Link>
-              </div>
             </article>
           </section>
         ) : loading ? (

@@ -330,6 +330,7 @@ export default function BusinessesPage({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const dealerDirectory = lockType && initialType === "dealer";
 
@@ -460,6 +461,16 @@ export default function BusinessesPage({
           ))}
         </nav>
 
+        <div className={`${catalogStyles.mobileToolbar} ${styles.marketMobileToolbar}`} aria-label="جست‌وجو و فیلتر خدمات">
+          <label className={catalogStyles.mobileSearchForm}>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="نام کسب‌وکار یا نوع خدمت" aria-label="جست‌وجوی خدمات" />
+            <button type="button" aria-label="جست‌وجو">⌕</button>
+          </label>
+          <button className={catalogStyles.mobileFilterButton} type="button" onClick={() => setMobileFiltersOpen(true)}>
+            فیلترها <b>{[type, category, city].filter(Boolean).length.toLocaleString("fa-IR")}</b>
+          </button>
+        </div>
+
         <section className={chrome.browser} aria-label={title}>
           <div className={catalogStyles.marketGrid}>
             <aside className={catalogStyles.desktopFilters} aria-label="فیلتر آگهی‌ها">
@@ -525,7 +536,7 @@ export default function BusinessesPage({
               ) : error ? (
                 <div className={catalogStyles.empty}><span className={catalogStyles.emptyIcon}>!</span><strong>ارتباط با بازار خدمات برقرار نشد</strong><p>{error}</p><button type="button" onClick={() => window.location.reload()}>تلاش دوباره</button></div>
               ) : items.length ? (
-                <div className={catalogStyles.grid}>
+                <div className={`${catalogStyles.grid} ${styles.marketBusinessGrid}`}>
                   {items.map((business) => {
                     const href = business.href || `/businesses/${encodeURIComponent(business.slug)}`;
                     return (
@@ -553,6 +564,37 @@ export default function BusinessesPage({
             </section>
           </div>
         </section>
+
+        <div className={`${catalogStyles.mobileLayer} ${mobileFiltersOpen ? catalogStyles.mobileLayerOpen : ""}`} aria-hidden={!mobileFiltersOpen}>
+          <button className={catalogStyles.backdrop} type="button" aria-label="بستن فیلترها" onClick={() => setMobileFiltersOpen(false)} />
+          <section className={catalogStyles.drawer} role="dialog" aria-modal="true" aria-label="فیلتر خدمات">
+            <header className={catalogStyles.drawerHeader}>
+              <div><span>بازار خدمات چاکود</span><strong>فیلترها</strong></div>
+              <button className={catalogStyles.drawerClose} type="button" aria-label="بستن" onClick={() => setMobileFiltersOpen(false)}>×</button>
+            </header>
+            <form className={catalogStyles.filterForm} onSubmit={(event) => { event.preventDefault(); setMobileFiltersOpen(false); }}>
+              <div className={catalogStyles.filterBody}>
+                <section className={catalogStyles.filterSection}>
+                  <div className={catalogStyles.sectionTitle}>جست‌وجوی کسب‌وکار</div>
+                  <label className={catalogStyles.fieldWide}><span>نام یا نوع خدمت</span><input className={catalogStyles.input} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="مثلاً صافکاری یا لوازم یدکی" /></label>
+                </section>
+                <section className={catalogStyles.filterSection}>
+                  <div className={catalogStyles.sectionTitle}>دسته خدمات</div>
+                  <label className={catalogStyles.fieldWide}><span>نوع کسب‌وکار</span><select className={catalogStyles.select} value={type} onChange={(event) => { setType(event.target.value as "" | BusinessType); setCategory(""); }}>{serviceMarketTypes.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
+                  <label className={catalogStyles.fieldWide}><span>خدمت</span><select className={catalogStyles.select} value={category} onChange={(event) => { const nextCategory = event.target.value; const selected = serviceCategories.find((item) => item.key === nextCategory); setCategory(nextCategory); if (selected?.type) setType(selected.type); }}>{serviceCategories.map((item) => <option value={item.key} key={item.key || "all"}>{item.label}</option>)}</select></label>
+                </section>
+                <section className={catalogStyles.filterSection}>
+                  <div className={catalogStyles.sectionTitle}>موقعیت</div>
+                  <label className={catalogStyles.fieldWide}><span>شهر</span><input className={catalogStyles.input} value={city} onChange={(event) => setCity(event.target.value)} placeholder="مثلاً رشت یا تهران" /></label>
+                </section>
+              </div>
+              <div className={catalogStyles.filterActions}>
+                <button className={catalogStyles.applyButton} type="submit">نمایش نتایج</button>
+                <button className={catalogStyles.clearButton} type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(""); }}>پاک‌کردن</button>
+              </div>
+            </form>
+          </section>
+        </div>
         <MobileBottomNav />
       </main>
     );

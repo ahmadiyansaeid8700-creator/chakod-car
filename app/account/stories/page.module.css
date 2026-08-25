@@ -300,6 +300,7 @@
   gap: 9px;
   margin-top: 10px;
 }
+.list > * { min-width: 0; }
 .card {
   position: relative;
   width: 100%;
@@ -522,7 +523,7 @@
   .businessStoryCard { grid-template-columns: 90px minmax(0, 1fr); padding: 18px; }
   .businessStoryIcon { width: 90px; height: 90px; border-radius: 24px; font-size: 34px; }
   .businessStoryCopy h2 { font-size: 20px; }
-  .list { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .card { padding: 8px; border-radius: 22px; }
   .imageWrap { border-radius: 16px; }
   .body { padding: 9px 5px 3px; }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import AccountVehicleCard from "../components/AccountVehicleCard";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
@@ -18,7 +19,12 @@ type ListingItem = {
   brand?: string;
   model?: string;
   year?: string | number | null;
+  mileage_km?: string | number | null;
   price_toman?: string | number | null;
+  city?: string | null;
+  province?: string | null;
+  neighborhood?: string | null;
+  transmission?: string | null;
   listing_owner_type?: "personal" | "dealer";
   seller_display_name?: string;
   dealer_id?: number | null;
@@ -119,18 +125,6 @@ function activityTypeLabel(type?: string) {
 function formatNumber(value: number | string | null | undefined) {
   const number = Number(value || 0);
   return Number.isFinite(number) ? new Intl.NumberFormat("fa-IR").format(number) : "۰";
-}
-
-function formatPrice(value: number | string | null | undefined) {
-  const number = Number(value || 0);
-  if (!Number.isFinite(number) || number <= 0) return "قیمت توافقی";
-  if (number >= 1_000_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(number / 1_000_000_000)} میلیارد تومان`;
-  }
-  if (number >= 1_000_000) {
-    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 0 }).format(number / 1_000_000)} میلیون تومان`;
-  }
-  return `${formatNumber(number)} تومان`;
 }
 
 function remainingLabel(expiresAt: string) {
@@ -592,85 +586,43 @@ export default function StoryListingSelectorClient() {
         ) : (
           <section className={styles.list} aria-label="انتخاب آگهی فعال برای دبل استوری">
             {orderedListings.map((listing) => {
-              const vehicle = [listing.brand, listing.model, listing.year].filter(Boolean).join(" · ");
               const ownerLabel = listing.listing_owner_type === "dealer"
                 ? (listing.seller_display_name || dealers.find((dealer) => dealer.id === Number(listing.dealer_id))?.dealer_name || "نمایشگاه")
                 : "شخصی";
               const activeStory = activeStoryByListing.get(Number(listing.id));
 
               return (
-                <article
-                  className={styles.card}
+                <AccountVehicleCard
                   key={listing.id}
-                  style={activeStory ? { borderColor: "#a7e7d0", boxShadow: "0 12px 30px rgba(8,119,90,.09)" } : undefined}
-                >
-                  <div className={styles.imageWrap}>
-                    {listing.cover_image?.image_url ? (
-                      <img
-                        src={listing.cover_image.image_url}
-                        alt={listing.title || "خودرو"}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(event) => { event.currentTarget.style.display = "none"; }}
-                      />
-                    ) : (
-                      <span className={styles.noImage}>بدون عکس</span>
-                    )}
-                    {activeStory ? (
-                      <span
-                        style={{
-                          position: "absolute",
-                          zIndex: 3,
-                          top: 6,
-                          right: 6,
-                          minHeight: 22,
-                          padding: "0 7px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          borderRadius: 999,
-                          color: "#fff",
-                          background: "rgba(8,119,90,.94)",
-                          boxShadow: "0 5px 14px rgba(8,119,90,.22)",
-                          fontSize: 7.5,
-                          fontWeight: 950,
-                        }}
-                      >
-                        ● استوری فعال
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className={styles.body}>
-                    <div className={styles.titleRow}>
-                      <strong>{listing.title || "آگهی بدون عنوان"}</strong>
-                    </div>
-                    <div className={styles.price}>{formatPrice(listing.price_toman)}</div>
-                    {vehicle ? <div className={styles.meta}>{vehicle}</div> : null}
-                    <span className={styles.owner}>{ownerLabel}</span>
-                    {activeStory ? (
-                      <small style={{ marginTop: 5, color: "#08775a", fontSize: 8, fontWeight: 900 }}>
-                        {remainingLabel(activeStory.expires_at)} در استوری چاکود
-                      </small>
-                    ) : null}
-
-                    {activeStory ? (
-                      <Link
-                        href={activeStory.share_path}
-                        className={styles.storyButton}
-                        style={{ background: "linear-gradient(135deg,#08775a,#10a477)", boxShadow: "0 9px 20px rgba(8,119,90,.16)" }}
-                      >
-                        مدیریت و اشتراک‌گذاری استوری
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`}
-                        className={styles.storyButton}
-                      >
-                        ادامه و ساخت دبل استوری
-                      </Link>
-                    )}
-                  </div>
-                </article>
+                  primaryHref={`/cars/${listing.id}`}
+                  selected={Boolean(activeStory)}
+                  data={{
+                    id: Number(listing.id),
+                    title: listing.title,
+                    brand: listing.brand,
+                    model: listing.model,
+                    year: listing.year,
+                    mileageKm: listing.mileage_km,
+                    priceToman: listing.price_toman,
+                    city: listing.city || listing.province,
+                    neighborhood: listing.neighborhood,
+                    transmission: listing.transmission,
+                    coverImageUrl: listing.cover_image?.image_url,
+                    statusCode: "active",
+                    statusLabel: activeStory ? `استوری فعال · ${remainingLabel(activeStory.expires_at)}` : "آگهی فعال",
+                    submittedByDisplayName: ownerLabel,
+                    submittedByRole: listing.listing_owner_type === "dealer" ? "sales" : "owner",
+                  }}
+                  actions={[activeStory ? {
+                    href: activeStory.share_path,
+                    label: "مدیریت و اشتراک‌گذاری استوری",
+                    tone: "story",
+                  } : {
+                    href: `/account/payments/checkout?type=promotion&service_key=listing_story&listing_id=${listing.id}`,
+                    label: "ادامه و ساخت دبل استوری",
+                    tone: "story",
+                  }]}
+                />
               );
             })}
           </section>

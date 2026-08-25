@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import AccountVehicleCard from "../components/AccountVehicleCard";
 import Header from "../../components/layout/Header";
+import FeaturedBusinessCard from "../../components/FeaturedBusinessCard";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import styles from "./page.module.css";
 
@@ -595,31 +596,26 @@ export default function StoryListingSelectorClient() {
 
         {selectedIdentity.kind === "business" && businessActivity ? (
           <section className={styles.businessStoryGrid} aria-label={`دبل استوری ${businessActivity.name}`}>
-            <article className={`${styles.businessStoryCard} ${styles[`businessStoryCard_${businessActivity.type}`] || ""}`}>
-              <Link className={styles.businessStoryProfile} href={`/businesses/activity/${businessActivity.id}`}>
-                <div className={styles.businessStoryMedia}>
-                  <span className={styles.businessStoryType}>{activityTypeLabel(businessActivity.type)}</span>
-                  <div className={styles.businessStoryMark} aria-hidden="true">
-                    {businessActivity.name.trim().slice(0, 1)}
-                  </div>
-                </div>
-                <div className={styles.businessStoryCopy}>
-                  <span>{activityTypeLabel(businessActivity.type)}</span>
-                  <h2>{businessActivity.name}</h2>
-                  <p className={styles.businessStoryLocation}>
-                    <span aria-hidden="true">⌖</span>
-                    {[businessActivity.city, businessActivity.province].filter(Boolean).join("، ") || "موقعیت در پروفایل ثبت نشده"}
-                  </p>
-                  <strong className={styles.businessStoryView}>مشاهده اطلاعات کسب‌وکار</strong>
-                </div>
-              </Link>
+            <div className={styles.businessStoryItem}>
+              <FeaturedBusinessCard
+                href={`/businesses/activity/${businessActivity.id}`}
+                business={{
+                  id: businessActivity.id,
+                  name: businessActivity.name,
+                  businessType: businessActivity.type as "car_service" | "parts_store" | "repair_shop",
+                  businessTypeTitle: activityTypeLabel(businessActivity.type),
+                  city: businessActivity.city,
+                  province: businessActivity.province,
+                  verified: businessActivity.verification_status === "verified",
+                }}
+              />
               <Link
                 href={`/account/selected?intent=story&activity_id=${businessActivity.id}`}
                 className={styles.storyButton}
               >
                 ساخت دبل استوری کسب‌وکار
               </Link>
-            </article>
+            </div>
           </section>
         ) : loading ? (
           <section className={styles.state}>

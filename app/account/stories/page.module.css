@@ -15,6 +15,7 @@
 .page *::after {
   box-sizing: border-box;
 }
+.desktopHeader { display: none; }
 
 .shell {
   width: min(920px, 100%);
@@ -269,13 +270,22 @@
   width: 100%;
   min-width: 0;
   min-height: 330px;
-  display: grid;
-  grid-template-rows: 43% minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid #e7dcf0;
   border-radius: 21px;
   background: #fff;
   box-shadow: 0 14px 34px rgba(51, 25, 72, .09);
+}
+.businessStoryProfile {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: 43% minmax(0, 1fr);
+  color: inherit;
+  text-decoration: none;
 }
 .businessStoryCard_repair_shop { --business-accent: #0284c7; --business-deep: #173d68; }
 .businessStoryCard_parts_store { --business-accent: #ea580c; --business-deep: #6f2e16; }
@@ -360,7 +370,22 @@
   text-overflow: ellipsis;
 }
 .businessStoryLocation > span { color: var(--business-accent); font-size: 13px; }
-.businessStoryCard .storyButton { background: linear-gradient(135deg, var(--business-deep), var(--business-accent)); }
+.businessStoryView {
+  margin-top: auto;
+  color: var(--business-accent);
+  font-size: 8.5px;
+  font-weight: 950;
+}
+.businessStoryCard .storyButton {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 36px;
+  margin: 0 12px 12px;
+  background: linear-gradient(135deg, var(--business-deep), var(--business-accent));
+}
+.businessStoryCard .storyButton::after { display: none; }
 
 .list {
   width: 100%;
@@ -601,6 +626,11 @@
   .price { font-size: 11.5px; }
   .storyButton { min-height: 36px; font-size: 9.5px; border-radius: 11px; }
   .storyButton::after { border-radius: 22px; }
+}
+
+@media (min-width: 1025px) {
+  .desktopHeader { display: block; position: sticky; top: 0; z-index: 100; }
+  .topbar { display: none; }
 }
 
 @media (max-width: 430px) {

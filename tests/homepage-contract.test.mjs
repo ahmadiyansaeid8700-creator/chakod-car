@@ -158,12 +158,17 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(businesses, /business_type !== "dealer"/);
   assert.match(businesses, /serviceMarketTypes/);
   assert.match(businesses, /تعمیرکاران/);
-  assert.match(businesses, /خدمات خودرویی/);
+  assert.match(businesses, /خدمات خودرو/);
   assert.match(businesses, /لوازم یدکی/);
   assert.match(businesses, /styles\.marketFilters/);
+  assert.match(businesses, /styles\.marketPage/);
+  assert.match(businesses, /data-market-type/);
+  assert.match(businesses, /data-business-type/);
   assert.doesNotMatch(businesses, /serviceHighlights/);
   assert.match(businessStyles, /\.marketFilters \+ \.results \.grid/);
   assert.match(businessStyles, /grid-template-columns: repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(businessStyles, /data-market-type="repair_shop"/);
+  assert.match(businessStyles, /data-business-type="parts_store"/);
   assert.match(marketSwitch, /بازار خودرو چاکود/);
   assert.match(marketSwitch, /بازار خدمات چاکود/);
   assert.match(marketSwitch, /active === "cars" \? "↓" : "←"/);

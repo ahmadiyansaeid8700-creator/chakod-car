@@ -76,6 +76,91 @@
 .empty { display: grid; justify-items: center; gap: 8px; }
 .empty strong { color: #4c3159; font-size: 15px; }
 .empty a { padding: 8px 13px; border-radius: 9px; color: #fff; background: #7c3aed; text-decoration: none; }
+
+/* Desktop service market follows the exact geometry of the vehicle catalog. */
+@media (min-width: 1025px) {
+.marketPage .header,
+.marketPage .marketHero,
+.marketPage .marketFilters,
+.marketPage .results { width: min(1240px, calc(100% - 32px)); }
+.marketPage .header { min-height: 64px; }
+.marketPage .marketHero {
+  min-height: 0;
+  margin: 14px auto 10px;
+  padding: 16px 20px;
+  border: 1px solid #e7dcf2;
+  border-radius: 18px;
+  color: #17111f;
+  background: radial-gradient(circle at 100% 0, rgba(124,58,237,.075), transparent 18rem), #fff;
+  box-shadow: 0 12px 34px rgba(47,28,72,.055);
+}
+.marketPage .marketHero:before { display: none; }
+.marketPage .marketHero > span { color: #6d28d9; opacity: 1; }
+.marketPage .marketHero h1 { margin: 0; font-size: clamp(23px,2.3vw,31px); line-height: 1.4; letter-spacing: 0; }
+.marketPage .marketHero p { margin: 4px 0 0; color: #786f82; font-size: 10px; line-height: 1.8; opacity: 1; }
+.marketPage .marketFilters {
+  margin: 0 auto 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.marketPage .marketFilters .typeTabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #e8dff4;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(55,31,76,.045);
+}
+.marketPage .marketFilters .typeTabs button {
+  --tab-accent: #6d28d9;
+  --tab-soft: #f4effd;
+  flex: 1 0 120px;
+  min-height: 38px;
+  border-color: transparent;
+  border-radius: 10px;
+  color: #584762;
+  background: transparent;
+  font-weight: 800;
+  transition: transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease;
+}
+.marketPage .marketFilters .typeTabs button[data-market-type="all"] { --tab-accent: #6d28d9; --tab-soft: #f4effd; }
+.marketPage .marketFilters .typeTabs button[data-market-type="car_service"] { --tab-accent: #0f8f83; --tab-soft: #e8f8f4; }
+.marketPage .marketFilters .typeTabs button[data-market-type="parts_store"] { --tab-accent: #d97706; --tab-soft: #fff4df; }
+.marketPage .marketFilters .typeTabs button[data-market-type="repair_shop"] { --tab-accent: #1683c7; --tab-soft: #e8f6ff; }
+.marketPage .marketFilters .typeTabs button:not(.activeTab):hover { color: var(--tab-accent); background: var(--tab-soft); transform: translateY(-1px); }
+.marketPage .marketFilters .typeTabs .activeTab {
+  color: #fff;
+  border-color: var(--tab-accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tab-accent) 82%, #25113e), var(--tab-accent));
+  box-shadow: 0 7px 16px color-mix(in srgb, var(--tab-accent) 23%, transparent);
+}
+.marketPage .marketFilters .filterGrid {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #e8dff4;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(55,31,76,.04);
+}
+.marketPage .results { margin: 10px auto 18px; border-radius: 18px; }
+.marketPage .card { --card-accent: #6d28d9; --card-soft: #f3e8ff; }
+.marketPage .card[data-business-type="car_service"] { --card-accent: #0f8f83; --card-soft: #e8f8f4; }
+.marketPage .card[data-business-type="parts_store"] { --card-accent: #d97706; --card-soft: #fff4df; }
+.marketPage .card[data-business-type="repair_shop"] { --card-accent: #1683c7; --card-soft: #e8f6ff; }
+.marketPage .card .body > small {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--card-accent);
+  background: var(--card-soft);
+}
+.marketPage .card .view { background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 78%, #26123d), var(--card-accent)); }
+.marketPage .card .media { border-top: 3px solid var(--card-accent); }
+}
 @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .filterGrid { grid-template-columns: 1fr 1fr; } }
 
 @media (max-width: 1024px) {
@@ -163,6 +248,11 @@
   .marketFilters { padding: 8px; }
   .marketFilters .typeTabs { margin: -1px -1px 8px; padding-bottom: 2px; }
   .marketFilters .typeTabs button { min-height: 36px; flex: 1 0 auto; padding: 0 11px; border-radius: 10px; }
+  .marketPage .typeTabs button[data-market-type="all"] { --mobile-accent: #6d28d9; --mobile-soft: #f4effd; }
+  .marketPage .typeTabs button[data-market-type="car_service"] { --mobile-accent: #0f8f83; --mobile-soft: #e8f8f4; }
+  .marketPage .typeTabs button[data-market-type="parts_store"] { --mobile-accent: #d97706; --mobile-soft: #fff4df; }
+  .marketPage .typeTabs button[data-market-type="repair_shop"] { --mobile-accent: #1683c7; --mobile-soft: #e8f6ff; }
+  .marketPage .typeTabs .activeTab { color: #fff; border-color: var(--mobile-accent); background: var(--mobile-accent); box-shadow: 0 6px 14px color-mix(in srgb,var(--mobile-accent) 22%,transparent); }
   .marketFilters .filterGrid { grid-template-columns: 1fr 92px; gap: 7px; }
   .marketFilters .filterGrid label:first-child { grid-column: 1; }
   .marketFilters .filterGrid label:first-child span { display: none; }
@@ -175,6 +265,11 @@
   .marketFilters + .results .body { gap: 5px; padding: 9px; }
   .marketFilters + .results .body h3 { font-size: 12px; }
   .marketFilters + .results .body p { min-height: 28px; font-size: 8px; line-height: 1.7; }
+  .marketPage .card[data-business-type="car_service"] { --mobile-card-accent: #0f8f83; --mobile-card-soft: #e8f8f4; }
+  .marketPage .card[data-business-type="parts_store"] { --mobile-card-accent: #d97706; --mobile-card-soft: #fff4df; }
+  .marketPage .card[data-business-type="repair_shop"] { --mobile-card-accent: #1683c7; --mobile-card-soft: #e8f6ff; }
+  .marketPage .card .body > small { width: max-content; padding: 4px 7px; border-radius: 999px; color: var(--mobile-card-accent,#6d28d9); background: var(--mobile-card-soft,#f3e8ff); }
+  .marketPage .card .view { background: var(--mobile-card-accent,#6d28d9); }
   .marketFilters + .results .logo,
   .marketFilters + .results .media > b { width: 42px; height: 42px; right: 9px; bottom: 8px; border-radius: 12px; font-size: 17px; }
   .marketFilters + .results .view { min-height: 34px; font-size: 9px; }

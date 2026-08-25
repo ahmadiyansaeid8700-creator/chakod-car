@@ -89,9 +89,9 @@ const types: Array<{ key: "" | BusinessType; label: string }> = [
 
 const serviceMarketTypes: Array<{ key: "" | BusinessType; label: string }> = [
   { key: "", label: "همه خدمات" },
-  { key: "repair_shop", label: "تعمیرکاران" },
-  { key: "car_service", label: "خدمات خودرویی" },
+  { key: "car_service", label: "خدمات خودرو" },
   { key: "parts_store", label: "لوازم یدکی" },
+  { key: "repair_shop", label: "تعمیرکاران" },
 ];
 
 const serviceCategories: Array<{ key: string; label: string; type: "" | BusinessType }> = [
@@ -397,7 +397,7 @@ export default function BusinessesPage({
   const resultNoun = dealerDirectory ? "نمایشگاه" : "کسب‌وکار";
 
   return (
-    <main className={styles.page} dir="rtl">
+    <main className={`${styles.page} ${marketMode ? styles.marketPage : ""}`} dir="rtl">
       <header className={styles.header}>
         <a href="/" className={styles.brand}><img src="/brand/chakod-logo-horizontal.png" alt="چاکود" /></a>
         <nav><button type="button" onClick={() => window.history.back()}>بازگشت</button><a href="/">صفحه اصلی</a><a href="/account/business/new">ثبت کسب‌وکار</a><a href="/account">حساب من</a></nav>
@@ -431,7 +431,7 @@ export default function BusinessesPage({
           <section className={`${styles.filters} ${marketMode ? styles.marketFilters : ""}`} aria-label="فیلتر کسب‌وکارها">
             <div className={styles.typeTabs}>
               {(marketMode ? serviceMarketTypes : types).map((item) => (
-                <button key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
+                <button data-market-type={item.key || "all"} key={item.key || "all"} type="button" className={type === item.key ? styles.activeTab : ""} onClick={() => { setType(item.key); if (item.key !== "car_service") setCategory(""); }}>
                   {item.label}
                 </button>
               ))}
@@ -458,7 +458,7 @@ export default function BusinessesPage({
             {items.map((business) => {
               const href = business.href || `/businesses/${encodeURIComponent(business.slug)}`;
               return (
-                <article className={`${styles.card} ${business.is_selected ? styles.cardSelected : ""}`} key={business.id}>
+                <article data-business-type={business.business_type} className={`${styles.card} ${business.is_selected ? styles.cardSelected : ""}`} key={business.id}>
                   <a className={styles.media} href={href}>
                     {business.cover_url ? <img src={business.cover_url} alt="" /> : <span />}
                     {business.logo_url ? <img className={styles.logo} src={business.logo_url} alt={business.name} /> : <b>{business.name.slice(0, 1)}</b>}

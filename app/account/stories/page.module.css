@@ -254,33 +254,86 @@
   display: none !important;
 }
 
-.businessStoryCard {
+.businessStoryGrid {
   width: 100%;
   min-width: 0;
   margin-top: 10px;
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
-  gap: 13px;
-  align-items: center;
-  padding: 13px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.businessStoryCard {
+  --business-accent: #7c3aed;
+  --business-deep: #35125c;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 330px;
+  display: grid;
+  grid-template-rows: 43% minmax(0, 1fr);
+  overflow: hidden;
   border: 1px solid #e7dcf0;
   border-radius: 21px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(248, 242, 255, .98));
-  box-shadow: 0 12px 32px rgba(77, 39, 108, .06);
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(51, 25, 72, .09);
 }
-.businessStoryIcon {
-  width: 70px;
-  height: 70px;
+.businessStoryCard_repair_shop { --business-accent: #0284c7; --business-deep: #173d68; }
+.businessStoryCard_parts_store { --business-accent: #ea580c; --business-deep: #6f2e16; }
+.businessStoryCard_car_service { --business-accent: #059669; --business-deep: #164e46; }
+.businessStoryCard_dealer { --business-accent: #7c3aed; --business-deep: #35125c; }
+.businessStoryMedia {
+  position: relative;
+  min-height: 0;
   display: grid;
   place-items: center;
-  border-radius: 19px;
-  color: #6d28d9;
-  background: linear-gradient(145deg, #f2eaff, #e9dcff);
-  font-size: 27px;
+  overflow: hidden;
+  color: #fff;
+  background: radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--business-accent) 72%, white), transparent 42%), linear-gradient(135deg, var(--business-deep), var(--business-accent));
+}
+.businessStoryMedia::after {
+  content: "";
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  left: -50px;
+  bottom: -105px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(255,255,255,.04);
+}
+.businessStoryType {
+  position: absolute;
+  z-index: 2;
+  top: 11px;
+  right: 11px;
+  min-height: 24px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255,255,255,.14);
+  backdrop-filter: blur(8px);
+  font-size: 8px;
   font-weight: 950;
 }
-.businessStoryCopy { min-width: 0; }
-.businessStoryCopy > span { color: #7c3aed; font-size: 8px; font-weight: 950; }
+.businessStoryMark {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 20px;
+  color: #fff;
+  background: rgba(255,255,255,.13);
+  box-shadow: 0 12px 30px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.2);
+  backdrop-filter: blur(9px);
+  font-size: 29px;
+  font-weight: 950;
+}
+.businessStoryCopy { min-width: 0; padding: 14px; display: flex; flex-direction: column; }
+.businessStoryCopy > span { color: var(--business-accent); font-size: 8px; font-weight: 950; }
 .businessStoryCopy h2 {
   margin: 3px 0 0;
   overflow: hidden;
@@ -290,7 +343,24 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.businessStoryCopy p { margin: 4px 0 0; color: #887991; font-size: 8.5px; line-height: 1.8; }
+.businessStoryLocation {
+  min-height: 30px;
+  margin: 8px 0 12px !important;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--business-accent) 18%, white);
+  border-radius: 10px;
+  color: #76677f !important;
+  background: color-mix(in srgb, var(--business-accent) 5%, white);
+  font-size: 8px !important;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.businessStoryLocation > span { color: var(--business-accent); font-size: 13px; }
+.businessStoryCard .storyButton { background: linear-gradient(135deg, var(--business-deep), var(--business-accent)); }
 
 .list {
   width: 100%;
@@ -520,9 +590,9 @@
   .identityRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); overflow: visible; }
   .identityButton { width: 100%; max-width: none; min-width: 0; }
   .searchRow { grid-template-columns: minmax(0, 1fr) 92px; }
-  .businessStoryCard { grid-template-columns: 90px minmax(0, 1fr); padding: 18px; }
-  .businessStoryIcon { width: 90px; height: 90px; border-radius: 24px; font-size: 34px; }
-  .businessStoryCopy h2 { font-size: 20px; }
+  .businessStoryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .businessStoryCard { min-height: 350px; }
+  .businessStoryCopy h2 { font-size: 17px; }
   .list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .card { padding: 8px; border-radius: 22px; }
   .imageWrap { border-radius: 16px; }

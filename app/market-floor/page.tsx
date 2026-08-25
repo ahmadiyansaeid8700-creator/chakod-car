@@ -24,9 +24,12 @@ function formatPrice(value: number) {
   return `${toFa(Math.round(value / 1_000_000).toLocaleString("fa-IR"))} میلیون تومان`;
 }
 function remainingTime(endsAt?: string) {
-  if (!endsAt) return "چرخه امروز";
-  const minutes = Math.max(0, Math.floor((new Date(endsAt).getTime() - Date.now()) / 60_000));
-  return `${toFa(Math.floor(minutes / 60))} ساعت و ${toFa(minutes % 60)} دقیقه`;
+  const totalSeconds = endsAt ? Math.max(0, Math.floor((new Date(endsAt).getTime() - Date.now()) / 1000)) : 24 * 60 * 60;
+  return {
+    hours: toFa(String(Math.floor(totalSeconds / 3600)).padStart(2, "0")),
+    minutes: toFa(String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0")),
+    seconds: toFa(String(totalSeconds % 60).padStart(2, "0")),
+  };
 }
 function normalizeText(value: string) { return String(value || "").trim().replace(/[يى]/g, "ی").replace(/ك/g, "ک").replace(/[\s‌]+/g, "").toLocaleLowerCase("fa"); }
 
@@ -44,7 +47,7 @@ export default function MarketFloorPage() {
       setCycle(data.success ? data.cycle : null);
     }).catch(() => setItems([])).finally(() => setLoading(false));
   }, []);
-  useEffect(() => { const timer = window.setInterval(() => setClock((value) => value + 1), 60_000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { const timer = window.setInterval(() => setClock((value) => value + 1), 1_000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {
     setLocation(loadHomeLocation());
     const sync = (event: Event) => setLocation((event as CustomEvent<HomeLocationSelection>).detail || loadHomeLocation());
@@ -56,6 +59,7 @@ export default function MarketFloorPage() {
   const localItems = useMemo(() => location.mode === "all" ? items : items.filter((item) => localProvinces.has(normalizeText(item.province))), [items, localProvinces, location.mode]);
   const nationwideItems = useMemo(() => location.mode === "all" ? [] : items.filter((item) => !localProvinces.has(normalizeText(item.province))), [items, localProvinces, location.mode]);
   const showNationwide = location.mode !== "all" && localItems.length < 10 && nationwideItems.length > 0;
+  const countdown = remainingTime(cycle?.endsAt);
 
   const cards = (values: Item[], offset = 0) => values.map((item, index) => <Link href={item.listing.publicUrl} key={item.id} className={styles.carCard}>
     <div className={styles.cardMedia}>{item.listing.coverUrl ? <img src={item.listing.coverUrl} alt={item.listing.title} /> : <div className={styles.noImage}><span>چاکود</span><small>تصویر خودرو</small></div>}<span className={styles.rankBadge}>انتخاب {toFa(offset + index + 1)}</span><span className={styles.scoreBadge}><b>{toFa(item.score)}</b><small>امتیاز</small></span></div>
@@ -70,6 +74,12 @@ export default function MarketFloorPage() {
       <div className={styles.heroCopy}>
         <h1>کف بازار چاکود</h1>
         <p>ویترین محدود خودروهایی که قیمت، شرایط و کیفیت آگهی آن‌ها بررسی شده است؛ بدون تکمیل اجباری ظرفیت و بدون ادعای تخفیف نمایشی.</p>
+        <div className={styles.heroCountdown} key={clock} aria-label="زمان باقی‌مانده تا پایان چرخه">
+          <span><small>ساعت</small><strong>{countdown.hours}</strong></span><i>:</i>
+          <span><small>دقیقه</small><strong>{countdown.minutes}</strong></span><i>:</i>
+          <span><small>ثانیه</small><strong>{countdown.seconds}</strong></span>
+          <b>تا پایان چرخه ۲۴ ساعته</b>
+        </div>
         <div className={styles.heroActions}><Link href="/account/market-floor" className={styles.primaryAction}>شرکت در کف بازار <span>←</span></Link></div>
       </div>
       <div className={styles.heroVisual}>
@@ -80,7 +90,6 @@ export default function MarketFloorPage() {
       <div className={styles.heroStats}>
         <div><small>فرصت‌های امروز</small><strong>{loading ? "…" : toFa(items.length)}</strong></div>
         <div><small>سقف هر استان</small><strong>۱۰ خودرو</strong></div>
-        <div><small>مانده تا پایان چرخه</small><strong key={clock}>{remainingTime(cycle?.endsAt)}</strong></div>
       </div>
     </section>
 

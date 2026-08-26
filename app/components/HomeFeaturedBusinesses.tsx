@@ -9,6 +9,7 @@ import {
   loadHomeLocation,
   type HomeLocationSelection,
 } from "./home-location";
+import { PRELAUNCH_BUSINESSES, PRELAUNCH_FIXTURES_ENABLED } from "../../lib/prelaunch-fixtures";
 
 type BusinessType = "car_service" | "parts_store" | "repair_shop";
 
@@ -528,12 +529,15 @@ export default function HomeFeaturedBusinesses() {
       .then((responses) => {
         const merged = new Map<number, PublicBusiness>();
         responses.flat().forEach((item) => merged.set(item.id, item));
+        if (PRELAUNCH_FIXTURES_ENABLED) {
+          (PRELAUNCH_BUSINESSES as unknown as PublicBusiness[]).forEach((item) => merged.set(item.id, item));
+        }
         setItems(Array.from(merged.values()));
         setStatus("ready");
       })
       .catch((error: unknown) => {
         if ((error as Error).name !== "AbortError") {
-          setItems([]);
+          setItems(PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_BUSINESSES as unknown as PublicBusiness[] : []);
           setStatus("error");
         }
       });

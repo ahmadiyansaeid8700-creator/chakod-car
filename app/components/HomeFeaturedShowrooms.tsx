@@ -14,6 +14,7 @@ import {
   loadHomeLocation,
   type HomeLocationSelection,
 } from "./home-location";
+import { PRELAUNCH_FIXTURES_ENABLED, PRELAUNCH_LISTINGS, PRELAUNCH_SHOWROOMS } from "../../lib/prelaunch-fixtures";
 
 const API_BASE_URL = "https://api.chakod.com/api/listings.php";
 
@@ -432,14 +433,19 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           .flat()
           .forEach((item) => mergedListings.set(item.id, item));
 
+        if (PRELAUNCH_FIXTURES_ENABLED) {
+          (PRELAUNCH_LISTINGS as unknown as ApiListing[]).forEach((item) => mergedListings.set(item.id, item));
+        }
         setListings(Array.from(mergedListings.values()));
-        setBusinesses(nextBusinesses);
+        setBusinesses(PRELAUNCH_FIXTURES_ENABLED
+          ? [...PRELAUNCH_SHOWROOMS as unknown as PublicBusiness[], ...nextBusinesses]
+          : nextBusinesses);
         setPlacements(nextPlacements);
         setStatus("ready");
       } catch (error: unknown) {
         if ((error as Error).name !== "AbortError") {
-          setListings([]);
-          setBusinesses([]);
+          setListings(PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_LISTINGS as unknown as ApiListing[] : []);
+          setBusinesses(PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_SHOWROOMS as unknown as PublicBusiness[] : []);
           setPlacements([]);
           setStatus("error");
         }

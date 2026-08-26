@@ -396,3 +396,15 @@ Exact next action:
 ```
 
 اگر تغییر هنوز منتشر نشده، صریحاً «فقط محلی»، «در PR» یا «ادغام‌شده ولی منتشرنشده» ثبت شود؛ این حالت‌ها نباید با «روی سایت فعال است» اشتباه شوند.
+
+```text
+Date: 2026-08-26
+Requested change: پرکردن امن بخش‌های تست افتتاح شامل استوری، آگهی خودرو، نمایشگاه، کسب‌وکار و کف بازار با تصویر کم‌حجم
+Affected routes/files: صفحه اصلی، /api/market-floor/public، lib/prelaunch-fixtures.ts، .env.example و تست قرارداد fixture
+Tests actually run: 24/24 تست homepage و prelaunch-fixtures موفق؛ git diff --check موفق؛ TypeScript/Build به‌علت خرابی دریافت بسته‌های npm در محیط محلی اجرا نشد
+PR and merge commit: شاخه codex/prelaunch-test-accounts؛ هنوز ادغام نشده
+Deployment result: منتشر نشده؛ فلگ‌ها به‌صورت پیش‌فرض خاموش هستند
+Online verification: انجام نشده
+Open issue: اجرای TypeScript و Build در GitHub Actions و فعال‌سازی موقت دو فلگ فقط روی محیط تست لازم است
+Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، بررسی CI و سپس فعال‌سازی موقت NEXT_PUBLIC_PRELAUNCH_FIXTURES و PRELAUNCH_FIXTURES روی استیجینگ با اجازه مالک
+```

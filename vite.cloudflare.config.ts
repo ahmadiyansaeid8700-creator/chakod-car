@@ -17,6 +17,14 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    define: {
+      "process.env.NEXT_PUBLIC_PRELAUNCH_FIXTURES": JSON.stringify(
+        process.env.NEXT_PUBLIC_PRELAUNCH_FIXTURES || "false",
+      ),
+      "process.env.PRELAUNCH_FIXTURES": JSON.stringify(
+        process.env.PRELAUNCH_FIXTURES || "false",
+      ),
+    },
     plugins: [
       vinext(),
       cloudflare({

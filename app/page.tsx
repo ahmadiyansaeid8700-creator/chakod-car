@@ -63,7 +63,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               href="/market-floor"
               aria-label="کف بازار"
             >
-              <span aria-hidden="true">✦</span>
+              <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+                  <path d="M4.5 5.5h7.1l7.9 7.9-6.1 6.1-7.9-7.9V5.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                  <circle cx="8.4" cy="9.2" r="1.15" fill="currentColor" />
+                  <path d="M13 10.5v5m0 0-2-2m2 2 2-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
               <b>کف بازار</b>
             </Link>
 

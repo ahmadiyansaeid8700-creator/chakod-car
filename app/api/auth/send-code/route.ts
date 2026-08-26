@@ -13,6 +13,10 @@ import {
   CURRENT_TERMS_VERSION,
   recordLoginLegalAcceptance,
 } from "../../../../lib/legal-consent";
+import {
+  isStagingDemoEnabled,
+  STAGING_DEMO_CODE,
+} from "../../../../lib/staging-demo-session";
 
 const MAX_REQUEST_BYTES = 2_000;
 
@@ -43,6 +47,22 @@ export async function POST(request: NextRequest) {
 
     if (value.accept_terms !== true) {
       return jsonResponse({ success: false, message: "پذیرش قوانین برای ورود لازم است." }, 400);
+    }
+
+    if (isStagingDemoEnabled(request.nextUrl.hostname)) {
+      return Response.json(
+        {
+          success: true,
+          staging_demo: true,
+          message: `کد ورود آزمایشی: ${STAGING_DEMO_CODE}`,
+          legal: {
+            terms_version: CURRENT_TERMS_VERSION,
+            privacy_version: CURRENT_PRIVACY_VERSION,
+            refund_version: CURRENT_REFUND_VERSION,
+          },
+        },
+        { status: 200, headers: secureJsonHeaders() },
+      );
     }
 
     const headers: Record<string, string> = {

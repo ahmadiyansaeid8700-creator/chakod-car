@@ -44,7 +44,7 @@ function SubmitIcon() {
   return <svg viewBox="0 0 24 24" width="27" height="27" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>;
 }
 function MarketFloorIcon() {
-  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="3" stroke="currentColor" strokeWidth="1.8"/><path d="M8 3.8v3.4M16 3.8v3.4M4 9.4h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M12 12.1l.8 1.7 1.9.2-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.2.8-1.7Z" stroke="currentColor" strokeWidth="1.45" strokeLinejoin="round"/></svg>;
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><path d="M4.5 5.5h7.1l7.9 7.9-6.1 6.1-7.9-7.9V5.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/><circle cx="8.4" cy="9.2" r="1.15" fill="currentColor"/><path d="M13 10.5v5m0 0-2-2m2 2 2-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 function AccountIcon() {
   return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8"/><path d="M5 20c.6-4 3.1-6 7-6s6.4 2 7 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;

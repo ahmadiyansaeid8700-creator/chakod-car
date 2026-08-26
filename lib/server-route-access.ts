@@ -9,6 +9,7 @@ import {
   resolveLocalDevelopmentIdentity,
   type ServerIdentityEndpoint,
 } from "./local-development-session";
+import { resolveStagingDemoIdentity } from "./staging-demo-session";
 
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -32,14 +33,18 @@ export async function readServerIdentity(endpoint: ServerIdentityEndpoint) {
   const headerStore = await headers();
   const cookieToken = cookieStore.get(CHAKOD_SESSION_COOKIE)?.value?.trim() || "";
   const token = TOKEN_PATTERN.test(cookieToken) ? cookieToken : headerToken(headerStore);
+  const hostname = headerStore.get("host") || "";
 
   const localDevelopmentIdentity = resolveLocalDevelopmentIdentity({
     nodeEnv: process.env.NODE_ENV,
-    hostname: headerStore.get("host") || "",
+    hostname,
     token,
     endpoint,
   });
   if (localDevelopmentIdentity) return localDevelopmentIdentity;
+
+  const stagingDemoIdentity = resolveStagingDemoIdentity({ hostname, token, endpoint });
+  if (stagingDemoIdentity) return stagingDemoIdentity;
 
   if (!TOKEN_PATTERN.test(token)) return null;
 

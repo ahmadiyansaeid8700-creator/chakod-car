@@ -10,6 +10,9 @@ import {
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
 import { ensureListingAttributionTable } from "../../../../lib/listing-attribution-store";
+import { PRELAUNCH_LISTINGS } from "../../../../lib/prelaunch-fixtures";
+import { readServerIdentity } from "../../../../lib/server-route-access";
+import { isStagingDemoEnabled } from "../../../../lib/staging-demo-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,6 +58,49 @@ function upstreamSubmitterUserId(item: JsonRecord) {
     item.author_user_id ||
     item.member_user_id,
   );
+}
+
+async function stagingDemoPayload(request: NextRequest) {
+  if (!isStagingDemoEnabled(request.nextUrl.hostname)) return null;
+  const identity = await readServerIdentity("/api/me.php");
+  if (!isRecord(identity) || identity.staging_demo !== true || !isRecord(identity.user)) return null;
+
+  const owner = request.nextUrl.searchParams.get("owner")?.trim() || "";
+  const dealerId = positiveId(request.nextUrl.searchParams.get("dealer_id"));
+  const perPage = Math.min(24, Math.max(1, positiveId(request.nextUrl.searchParams.get("per_page")) || 6));
+  const userName = text(identity.user.display_name) || text(identity.user.full_name) || "کاربر چاکود";
+  const accountType = text(identity.user.account_type) || "personal";
+  const fixtures = PRELAUNCH_LISTINGS as unknown as JsonRecord[];
+
+  let selected = fixtures;
+  if (dealerId) {
+    selected = fixtures.filter((item) => positiveId(item.dealer_id) === dealerId);
+  } else if (owner === "personal" || accountType === "personal") {
+    selected = fixtures.filter((item) => positiveId(item.dealer_id) === 0);
+  } else if (owner === "dealer" || accountType === "dealer") {
+    selected = fixtures.filter((item) => positiveId(item.dealer_id) > 0);
+  }
+
+  const data = selected.slice(0, perPage).map((item, index) => ({
+    ...item,
+    year: item.production_year,
+    status: { code: "active", title: "فعال" },
+    cover_image: item.cover_image
+      ? { image_id: 9_800_000 + index, image_url: item.cover_image }
+      : null,
+    submitted_by_display_name: userName,
+    submitted_by_role: accountType,
+    submitted_by_user_id: positiveId(identity.user.id) || null,
+  }));
+  const total = selected.length;
+
+  return {
+    success: true,
+    staging_demo: true,
+    summary: { total, active: total, pending: 0, rejected: 0, inactive: 0, sold: 0 },
+    pagination: { page: 1, per_page: perPage, total },
+    data,
+  };
 }
 
 async function resolveDealerMembers(request: NextRequest, dealerIds: number[]) {
@@ -145,8 +191,8 @@ async function enrichAttributions(request: NextRequest, payload: JsonRecord): Pr
       const listingId = positiveId(item.id);
       const attribution = listingId ? local.get(listingId) : undefined;
       const userId = attribution?.userId || upstreamSubmitterUserId(item);
-      const dealerId = positiveId(item.dealer_id);
-      const member = dealerId && userId ? memberNames.get(`${dealerId}:${userId}`) : undefined;
+      const dealerIdValue = positiveId(item.dealer_id);
+      const member = dealerIdValue && userId ? memberNames.get(`${dealerIdValue}:${userId}`) : undefined;
       const displayName = attribution?.displayName || upstreamSubmitterName(item) || member?.displayName || "";
       const role = attribution?.role || upstreamSubmitterRole(item) || member?.role || "";
 
@@ -164,6 +210,9 @@ async function enrichAttributions(request: NextRequest, payload: JsonRecord): Pr
 }
 
 export async function GET(request: NextRequest) {
+  const demoPayload = await stagingDemoPayload(request);
+  if (demoPayload) return jsonResponse(demoPayload);
+
   const upstream = new URL(authApiUrl("/api/dashboard-listings.php"));
 
   for (const key of ALLOWED_QUERY_KEYS) {

@@ -15,6 +15,7 @@ import HomeVehicleCard, {
   HomeVehicleCardFallback,
 } from "./HomeVehicleCard";
 import ListingCard, { type ListingCardData } from "./ListingCard";
+import { PRELAUNCH_FIXTURES_ENABLED, PRELAUNCH_LISTINGS } from "../../lib/prelaunch-fixtures";
 
 const API_BASE_URL = "https://api.chakod.com/api/listings.php";
 
@@ -375,15 +376,17 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
           }
         }
 
-        setListings(mergeListings(payloads));
-        setLuxuryListings(mergeListings(luxuryPayloads));
-        setFreezoneListings(mergeListings(freezonePayloads));
+        const fixtures = PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_LISTINGS as unknown as Listing[] : [];
+        setListings([...fixtures, ...mergeListings(payloads)]);
+        setLuxuryListings([...fixtures.filter((item) => item.market_segment === "luxury"), ...mergeListings(luxuryPayloads)]);
+        setFreezoneListings([...fixtures.filter((item) => item.market_segment === "freezone"), ...mergeListings(freezonePayloads)]);
         setStatus("ready");
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
-          setListings([]);
-          setLuxuryListings([]);
-          setFreezoneListings([]);
+          const fixtures = PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_LISTINGS as unknown as Listing[] : [];
+          setListings(fixtures);
+          setLuxuryListings(fixtures.filter((item) => item.market_segment === "luxury"));
+          setFreezoneListings(fixtures.filter((item) => item.market_segment === "freezone"));
           setSelected([]);
           setStatus("error");
         }

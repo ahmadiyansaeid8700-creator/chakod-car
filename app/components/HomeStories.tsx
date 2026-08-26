@@ -14,6 +14,7 @@ import {
   loadHomeLocation,
   type HomeLocationSelection,
 } from "./home-location";
+import { PRELAUNCH_FIXTURES_ENABLED, PRELAUNCH_STORIES } from "../../lib/prelaunch-fixtures";
 
 const API_BASE = "https://api.chakod.com";
 const STORY_DURATION_MS = 6500;
@@ -303,10 +304,13 @@ export default function HomeStories() {
         if (!ignore) {
           const merged = new Map<number, HomeStoryItem>();
           responses.flat().forEach((item) => merged.set(item.story_id, item));
+          if (PRELAUNCH_FIXTURES_ENABLED) {
+            (PRELAUNCH_STORIES as unknown as HomeStoryItem[]).forEach((item) => merged.set(item.story_id, item));
+          }
           setStories(Array.from(merged.values()));
         }
       } catch {
-        if (!ignore) setStories([]);
+        if (!ignore) setStories(PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_STORIES as unknown as HomeStoryItem[] : []);
       } finally {
         if (!ignore) setLoading(false);
       }

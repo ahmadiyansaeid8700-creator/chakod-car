@@ -1,0 +1,24 @@
+{
+  "batch": "prelaunch_2026",
+  "enabled": false,
+  "safety": {
+    "name_prefix": "TEST_",
+    "require_non_production_otp": true,
+    "allow_seed_on_production": false,
+    "cleanup_requires_batch_match": true
+  },
+  "accounts": [
+    { "key": "personal_01", "account_type": "personal", "full_name": "TEST_کاربر شخصی ۱", "avatar": "/test-avatars/personal.webp" },
+    { "key": "personal_02", "account_type": "personal", "full_name": "TEST_کاربر شخصی ۲", "avatar": "/test-avatars/personal.webp" },
+    { "key": "dealer_01", "account_type": "dealer", "full_name": "TEST_مدیر نمایشگاه ۱", "avatar": "/test-avatars/dealer.webp" },
+    { "key": "dealer_02", "account_type": "dealer", "full_name": "TEST_مدیر نمایشگاه ۲", "avatar": "/test-avatars/dealer.webp" },
+    { "key": "parts_store_01", "account_type": "parts_store", "full_name": "TEST_فروشگاه قطعات ۱", "avatar": "/test-avatars/parts-store.webp" },
+    { "key": "parts_store_02", "account_type": "parts_store", "full_name": "TEST_فروشگاه قطعات ۲", "avatar": "/test-avatars/parts-store.webp" },
+    { "key": "repair_shop_01", "account_type": "repair_shop", "full_name": "TEST_تعمیرگاه ۱", "avatar": "/test-avatars/repair-shop.webp" },
+    { "key": "repair_shop_02", "account_type": "repair_shop", "full_name": "TEST_تعمیرگاه ۲", "avatar": "/test-avatars/repair-shop.webp" },
+    { "key": "car_service_01", "account_type": "business", "full_name": "TEST_خدمات خودرو ۱", "avatar": "/test-avatars/car-service.webp" },
+    { "key": "admin_01", "account_type": "personal", "admin_role": "admin", "full_name": "TEST_مدیر محدود", "avatar": "/test-avatars/admin.webp" },
+    { "key": "support_01", "account_type": "personal", "admin_role": "support", "full_name": "TEST_پشتیبان", "avatar": "/test-avatars/admin.webp" },
+    { "key": "moderator_01", "account_type": "personal", "admin_role": "moderator", "full_name": "TEST_ناظر محتوا", "avatar": "/test-avatars/admin.webp" }
+  ]
+}

@@ -10,7 +10,8 @@
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
 Regression branch: ci/admin-ai-regression-2026-08-27
-Regression PR: #112 → backup-latest-2026-08-03
+Regression PR: #112 — merged into backup-latest-2026-08-03
+Merged cleanup commit: 2d1de98d64a7c10a603bef45ea5bd81586f72ec2
 Main branch: مبنای توسعه جاری نیست
 
 ادغام با main فقط با تأیید صریح مالک انجام شود.
@@ -29,6 +30,7 @@ Main branch: مبنای توسعه جاری نیست
 - [x] `/dealers*` و `/showrooms*` فقط Redirect سازگار هستند.
 - [x] داشبورد canonical کاربر `/account` است و `/dashboard*` فقط Redirect است.
 - [x] اسناد MASTER-SITEMAP، PROJECT-CHECKLIST و INITIAL-LAUNCH-CHECKLIST مطابق محصول جاری بازنویسی شده‌اند.
+- [x] Cleanup و AI/Admin regression از PR #112 به working backup branch منتقل شده است.
 
 ### Chakod AI Manager
 - [x] Feature Flag و Provider contract روی `disabled | openai | local`.
@@ -38,8 +40,9 @@ Main branch: مبنای توسعه جاری نیست
 - [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
-### Quality Gate — PR #112 / Run #30
+### Quality Gate — PR #112 / Run #34
 - [x] `npm ci`
+- [x] Dependency audit reporting
 - [x] TypeScript Check
 - [x] Core route tests: 14/14 Pass
 - [x] AI Manager + Listing Moderation tests: 16/16 Pass
@@ -49,15 +52,27 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Smoke Redirectهای legacy شامل `/ads*`, `/dashboard`, `/dealers`, `/showrooms/*`, `/listing/*`
 - [x] محافظت بدون Session برای `/admin` و `/admin/ai`
 
-### Dependency note
-آخرین `npm ci` تعداد 18 vulnerability گزارش کرد: 2 Low و 16 High. این موارد باید با `npm audit` جداگانه بررسی شوند و نباید با `npm audit fix --force` کور اصلاح شوند. `qrcode` نیز پس از حذف QR قدیمی مصرف کدی پیدا نکرده و در Dependency Audit باید همراه با lockfile به‌صورت اتمیک بررسی/حذف شود.
+### Dependency / Security audit
+آخرین Audit تعداد 18 vulnerability گزارش می‌کند: 2 Low و 16 High؛ Critical وجود ندارد.
+
+Direct dependencyهای نیازمند بررسی/ارتقا:
+- `@cloudflare/vite-plugin` 1.37.1 → Audit پیشنهاد 1.54.1 بدون SemVer major.
+- `next` 16.2.6 → Audit پیشنهاد 16.3.3 بدون SemVer major.
+- `react-server-dom-webpack` 19.2.6 → Audit پیشنهاد 19.2.8 بدون SemVer major.
+- `vite` 8.0.13 → Audit پیشنهاد 8.2.2 بدون SemVer major.
+- `wrangler` 4.92.0 در بازه آسیب‌پذیر تا 4.113.0 قرار دارد.
+- `vinext` 0.0.50 برای رفع کامل Audit نیازمند 1.0.0-beta.8 است که تغییر major/beta محسوب می‌شود و باید جداگانه Regression شود.
+
+`qrcode` و `@types/qrcode` حذف نمی‌شوند: تست حذف واقعی نشان داد `BusinessCardActions.tsx` و `ListingCardActions.tsx` به `qrcode` وابسته‌اند و حذف آن TypeScript را می‌شکند.
+
+هیچ `npm audit fix --force` کور اجرا نشود. Dependency hardening باید در پچ/Branch مستقل و با Full Regression انجام شود.
 
 ## اولویت‌های بعدی
-Priority 1: Dependency/Security audit بدون breaking update کور
+Priority 1: Dependency/Security hardening در Branch مستقل، ابتدا updateهای non-major و سپس تصمیم جدا برای Vinext major/beta
 Priority 2: تکمیل Backend/API واقعی و Auth روی هاست
 Priority 3: End-to-end OTP / Session / `/api/auth/me` / Profile / Listing / Upload
 Priority 4: Staging smoke واقعی
-Priority 5: تصمیم درباره انتقال PR #112 به working branch و سپس main فقط با تأیید مالک
+Priority 5: main فقط بعد از Build/Regression و تأیید صریح مالک
 
 ## فناوری‌های اصلی
 - Next.js 16 / App Router

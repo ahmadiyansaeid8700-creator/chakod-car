@@ -45,6 +45,38 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Report dependency audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit --json > /tmp/chakod-audit.json || true
+          node --input-type=module - /tmp/chakod-audit.json <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const text = await readFile(process.argv[2], "utf8");
+          let report;
+          try {
+            report = JSON.parse(text);
+          } catch {
+            console.log(text);
+            process.exit(0);
+          }
+
+          console.log("audit-summary", JSON.stringify(report.metadata?.vulnerabilities || {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
+            console.log(
+              `${name}\tseverity=${item.severity}\tdirect=${Boolean(item.isDirect)}\trange=${item.range}\tfix=${JSON.stringify(item.fixAvailable)}`,
+            );
+            for (const via of item.via || []) {
+              if (via && typeof via === "object") {
+                console.log(
+                  `  via=${via.name || name}\tseverity=${via.severity}\ttitle=${via.title}\turl=${via.url}`,
+                );
+              }
+            }
+          }
+          NODE
+
       - name: TypeScript check
         run: npx tsc --noEmit -p tsconfig.launch.json
 

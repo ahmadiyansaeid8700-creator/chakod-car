@@ -3,7 +3,7 @@
 ## وضعیت جاری
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: Dependency/Security hardening بعد از پایان Cleanup
+Current focus: Backend/API/Auth recovery + بررسی جداگانه Vinext migration
 
 ## انجام‌شده
 - [x] حذف Assistant/Starter/Backup/Assetهای legacy اثبات‌شده
@@ -20,23 +20,34 @@ Current focus: Dependency/Security hardening بعد از پایان Cleanup
 - [x] حفظ ai-moderation و Chakod AI Manager read-only
 - [x] بازنویسی اسناد اصلی مطابق محصول فعلی
 - [x] Full Regression نهایی روی PR #112: npm ci، TypeScript، 14/14 route tests، 16/16 AI/moderation، Lint، Build و Smoke همگی Pass
-- [x] Merge PR #112 به `backup-latest-2026-08-03` در commit `2d1de98d64a7c10a603bef45ea5bd81586f72ec2`
+- [x] Merge PR #112 به `backup-latest-2026-08-03`
 - [x] افزودن گزارش دائمی `npm audit` به Regression CI
 - [x] بررسی حذف `qrcode` با lockfile واقعی؛ حذف رد شد چون `BusinessCardActions` و `ListingCardActions` به آن وابسته‌اند
+- [x] ساخت Branch مستقل `security/dependency-hardening-2026-08-27`
+- [x] ارتقای `@cloudflare/vite-plugin` به 1.54.1
+- [x] ارتقای `next` به 16.3.3
+- [x] ارتقای `react` و `react-dom` و `react-server-dom-webpack` به 19.2.8
+- [x] ارتقای `vite` به 8.2.2
+- [x] ارتقای `wrangler` به 4.127.0
+- [x] اجرای `npm audit fix` بدون `--force` و بررسی diff
+- [x] Full Regression امنیتی: npm ci، TypeScript، 14/14 route tests، 16/16 AI/moderation، Lint، Build و Smoke همگی Pass
+- [x] کاهش Audit از 18 vulnerability به 2 High
+- [x] Merge PR #113 به `backup-latest-2026-08-03` در commit `0dfdf3cee693dd8a1875ef8e8e0adcff46a7a188`
 
 ## اقدام‌های باز فوری
 
-### Dependency / Security hardening
-- [ ] ساخت Branch مستقل برای hardening dependencyها
-- [ ] تست ارتقای `@cloudflare/vite-plugin` از 1.37.1 به نسخه امن پیشنهادی 1.54.1
-- [ ] تست ارتقای `next` از 16.2.6 به 16.3.3
-- [ ] تست ارتقای `react-server-dom-webpack` از 19.2.6 به 19.2.8
-- [ ] تست ارتقای `vite` از 8.0.13 به 8.2.2
-- [ ] ارتقای امن `wrangler` خارج از بازه آسیب‌پذیر `<=4.113.0`
-- [ ] اجرای `npm audit fix` فقط بدون `--force` و فقط در Branch امنیتی، سپس بررسی diff
-- [ ] Full Regression بعد از updateهای non-major
-- [ ] بررسی جداگانه migration `vinext` 0.0.50 → 1.0.0-beta.8؛ بدون ادغام با پچ non-major
-- [ ] هدف: کاهش 18 vulnerability فعلی بدون breaking update کور
+### Backend / Hosting
+- [ ] ساخت/بازیابی امن `chakod-private/secrets.php`
+- [ ] تکمیل DB و Kavenegar secrets خارج از Git
+- [ ] تست اتصال DB و OTP
+- [ ] بازیابی/استقرار endpointهای PHP لازم در `api.chakod.com/api/`
+- [ ] Smoke ورود، Session، `/api/auth/me`، پروفایل، آگهی و Upload
+
+### Dependency / Security — باقی‌مانده
+- [ ] بررسی جداگانه migration `vinext` 0.0.50 → 1.0.0-beta.8 در Branch مستقل
+- [ ] Full Regression کامل قبل و بعد از Vinext migration
+- [ ] Merge فقط اگر Build/Smoke و رفتار runtime بدون regression باشد
+- [ ] دو High فعلی مربوط به `vinext` / `image-size` هستند؛ هیچ `npm audit fix --force` کور اجرا نشود
 
 ### Referral / دعوت
 - [x] حفظ `/r/[code]` برای ثبت انتساب دعوت
@@ -44,14 +55,9 @@ Current focus: Dependency/Security hardening بعد از پایان Cleanup
 - [ ] تغییر نام فنی `affiliate_code` فقط با migration امن در آینده
 - [ ] در صورت نیاز، UI ساده «دعوت‌های من / پورسانت من» داخل حساب فعلی؛ بدون عضویت جدا
 
-### Backend / Hosting
-- [ ] ساخت/بازیابی امن `chakod-private/secrets.php`
-- [ ] تکمیل DB و Kavenegar secrets خارج از Git
-- [ ] تست اتصال DB و OTP
-- [ ] استقرار endpointهای لازم و Smoke ورود/پروفایل/آگهی/آپلود
-
-### Release
-- [ ] Build واقعی Cloudflare پس از Dependency hardening
+### Release / Staging
+- [ ] Build واقعی Cloudflare
+- [ ] Staging smoke روی دامنه واقعی
 - [ ] بررسی دامنه‌ها و مسیرهای اصلی
 - [ ] main فقط با تأیید صریح مالک تغییر کند
 

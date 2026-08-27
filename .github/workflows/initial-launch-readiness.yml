@@ -53,12 +53,10 @@ jobs:
           tests/route-access.test.mjs
           tests/car-routes.test.mjs
           tests/listing-routes.test.mjs
-          tests/ai-assistant-offline.test.mjs
 
-      - name: Run TypeScript AI tests
+      - name: Run listing moderation policy test
         run: >-
           node --experimental-strip-types --test
-          tests/ai-assistant-intelligence.test.ts
           tests/ai-moderation-policy.test.ts
 
       - name: Lint launch patch

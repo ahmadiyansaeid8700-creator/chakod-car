@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import ChakodAiAssistant from "./components/ChakodAiAssistant";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,10 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body>
-        {children}
-        <ChakodAiAssistant />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -12,17 +12,16 @@
 ```text
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
-Latest known commit: 0da39d12692461c35d4d30504a15989a2bef4619
 Main branch: مبنای توسعه جاری نیست
 ```
 
-تا پیش از تأیید Build تولید، شاخه کاری با `main` ادغام نشود.
+تا پیش از تأیید صریح مالک و Build تولید، شاخه کاری با `main` ادغام نشود.
 
 ## وضعیت عملیاتی فعلی
 
 ### مرحله ۲ — پچ‌های پس از ممیزی
 
-- [x] ممیزی کامل مسیرها، صفحات، لینک‌ها و دکمه‌ها انجام شد.
+- [x] ممیزی مسیرها، صفحات، لینک‌ها و دکمه‌های اصلی انجام شد.
 - [x] بازگشت امن ورود با `returnTo` اصلاح شد.
 - [x] مسیرهای مدیریت برای کاربر عادی محافظت و پنهان شدند.
 - [x] مسیرهای عمومی خودرو روی `/cars/*` تثبیت شدند.
@@ -30,27 +29,30 @@ Main branch: مبنای توسعه جاری نیست
 - [x] مسیرهای قدیمی خودرو و آگهی به مسیرهای اصلی Redirect می‌شوند.
 - [x] صفحه 404 استاندارد و مسیر عمومی `/dealerships` وجود دارند.
 
-### AI-1 — هسته مستقل دستیار
+### AI — وضعیت فعلی پس از پاک‌سازی Legacy Assistant
 
-- [x] هسته Rule-based مستقل در `lib/ai-assistant/offline.ts` اضافه شد.
-- [x] نبود کلید، Timeout یا خرابی مدل ابری به fallback مستقل منتهی می‌شود.
-- [x] پاسخ داده‌محور فقط از داده رسمی چاکود ساخته می‌شود.
-- [x] اطلاعات ورود، Token و داده کارت در گفتگو رد می‌شوند.
-- [x] پنج تست AI مستقل، ESLint و TypeScript اختصاصی هسته موفق شدند.
-- [x] Pull Request شماره ۲ با Commit `dc3174352d5c1cae46c085dc65bbd5956a9a2e63` ادغام شد.
+- [x] دستیار گفتگویی سراسری قدیمی از `RootLayout` و Runtime پروژه حذف شد.
+- [x] Route قدیمی `/api/ai/assistant` و هسته `lib/ai-assistant/*` حذف شدند.
+- [x] تست‌ها، Workflow و مستندات اختصاصی همان دستیار قدیمی حذف شدند.
+- [x] متغیرهای محیطی اختصاصی Assistant از `.env.example` حذف شدند.
+- [x] سیستم مستقل Moderation آگهی در `app/api/ai/moderate-listing` و `lib/ai-moderation/*` حفظ شد.
+- [x] Moderation در خطا به بررسی انسانی برمی‌گردد و نباید به‌صورت خودکار تصمیم حساس اجرا کند.
+- [ ] Chakod AI Manager جدید فقط پس از ممیزی معماری و در پچ مستقل طراحی شود.
 
 ### Launch-1 — استارت اولیه محلی
 
 - [x] `tsconfig.launch.json` برای محدوده استارت اولیه اضافه شد.
 - [x] نوع‌های حداقلی Cloudflare Runtime اضافه شدند.
-- [x] نصب قفل‌شده با `npm ci` موفق شد.
-- [x] TypeScript اولیه بدون خطا اجرا شد.
-- [x] ۲۷ تست مسیرها، ورود، دسترسی، AI و Moderation موفق شدند.
-- [x] ESLint فایل‌های پچ موفق شد.
-- [x] سرور با `npm run dev` بالا آمد.
-- [x] مسیرهای `/`، `/cars` و `/login` پاسخ HTTP موفق دادند.
-- [x] Pull Request شماره ۳ با Commit `375deff98d4d73f11cf630778a0d384b61d4b5a8` ادغام شد.
-- [x] چک‌لیست نهایی Launch-1 در `docs/INITIAL-LAUNCH-CHECKLIST-FA.md` ثبت شد.
+- [x] نصب قفل‌شده با `npm ci` موفق شده است.
+- [x] تست‌های مسیرها، ورود و دسترسی در نسخه مبنا ثبت شده‌اند.
+- [x] سرور محلی و مسیرهای `/`، `/cars` و `/login` قبلاً Smoke Test شده‌اند.
+
+### Launch-2 — Affiliate TypeScript
+
+- [x] خطاهای `HeadersInit` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.
+- [x] هر دو تابع `tokenHeaders` اکنون فقط `Record<string, string>` برمی‌گردانند.
+- [x] TypeScript اختصاصی Affiliate بدون خطا اجرا شد.
+- [x] PR شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` ادغام شد.
 
 ## وضعیت Build و موانع باز
 
@@ -63,20 +65,18 @@ build/sites-vite-plugin
 
 این فایل‌ها محلی و Git-ignored هستند و نباید برای رفع CI به مخزن Commit شوند.
 
-- TypeScript بخش‌های Affiliate هنوز در پچ جداگانه نیازمند اصلاح است.
-- گزارش `npm ci` شامل ۱۸ آسیب‌پذیری بود: ۱ کم، ۴ متوسط و ۱۳ بالا.
-- هیچ `npm audit fix --force` اجرا نشده و نباید بدون تحلیل اثرات اجرا شود.
+- گزارش قبلی `npm ci` شامل ۱۸ آسیب‌پذیری بود: ۱ کم، ۴ متوسط و ۱۳ بالا.
+- هیچ `npm audit fix --force` نباید بدون تحلیل اثرات اجرا شود.
 
-## اقدام بعدی
+## اقدام‌های بعدی
 
 ```text
-Phase: Launch-2
-Priority 1: اصلاح TypeScript بخش‌های Affiliate بدون کاهش strictness
-Priority 2: تحلیل npm audit و رفع امن آسیب‌پذیری‌های قابل اصلاح
-Priority 3: فراهم‌کردن پیش‌نیازهای محیط Cloudflare و تأیید Build تولید
+Priority 1: تکمیل و تثبیت Backend/API واقعی چاکود و Auth
+Priority 2: اجرای تست‌های Regression پس از حذف Legacy Assistant
+Priority 3: تحلیل امن وابستگی‌ها و آسیب‌پذیری‌ها
+Priority 4: تأیید Build تولید در محیط واقعی Cloudflare
+Priority 5: طراحی Chakod AI Manager جدید پس از ممیزی داده، API و پنل مدیریت
 ```
-
-هر کدام باید پچ، تست، PR و نقطه بازگشت مستقل داشته باشند.
 
 ## فناوری‌های مخزن
 
@@ -87,20 +87,19 @@ Priority 3: فراهم‌کردن پیش‌نیازهای محیط Cloudflare و
 - npm
 - Cloudflare Workers / Pages و Wrangler
 - Drizzle و D1
-- CSS Modules و CSS عمومی
+- PHP/MySQL backend در `api.chakod.com` برای بخش‌هایی از سیستم واقعی
 
 ## اسناد مرجع و ترتیب اعتبار
 
 1. `docs/MASTER-SITEMAP-FA.md`
 2. `docs/PROJECT-CHECKLIST-FA.md`
 3. `docs/INITIAL-LAUNCH-CHECKLIST-FA.md`
-4. `docs/AI-ASSISTANT-CHECKLIST-FA.md`
-5. `PROJECT_CONTEXT.md`
-6. `TODO.md`
-7. `README.md`
-8. `AGENTS.md`
-9. `CLAUDE.md`
-10. `package.json`
+4. `PROJECT_CONTEXT.md`
+5. `TODO.md`
+6. `README.md`
+7. `AGENTS.md`
+8. `CLAUDE.md`
+9. `package.json`
 
 در تعارض مسیرها، `docs/MASTER-SITEMAP-FA.md` مبنای محصول است.
 
@@ -110,7 +109,7 @@ Priority 3: فراهم‌کردن پیش‌نیازهای محیط Cloudflare و
 2. هر پچ کوچک، مستقل و قابل بازگشت باشد.
 3. فرانت‌اند، بک‌اند و دیتابیس بی‌دلیل هم‌زمان تغییر نکنند.
 4. نتیجه تست یا Build بدون اجرای موفق اعلام نشود.
-5. هر مورد تکمیل‌شده همان لحظه در چک‌لیست مرتبط با `[x]` ثبت شود.
+5. هر مورد تکمیل‌شده همان لحظه در چک‌لیست مرتبط ثبت شود.
 6. موارد در حال بررسی با `[~]` و موارد مسدود با `[!]` ثبت شوند.
 7. مسیر موازی، داده ساختگی و قابلیت نیمه‌کاره وارد نسخه نهایی نشود.
 8. پس از هر پچ، تست مرتبط، `PROJECT_CONTEXT.md` و `TODO.md` به‌روز شوند.
@@ -135,33 +134,4 @@ app/api/config.php
 app/api/config.php.secure
 ```
 
-همچنین API Key، Token، Password، Secret، کلید خصوصی و اطلاعات اتصال واقعی دیتابیس نباید Commit شوند.
-
-## قالب معرفی هر پچ
-
-```text
-Phase:
-Patch title:
-Purpose:
-Affected routes:
-Affected files:
-Database impact:
-Environment impact:
-Rollback point:
-Tests:
-Result:
-```
-
-
-## Launch-2 — Affiliate TypeScript (تکمیل‌شده)
-
-- خطاهای `HeadersInit` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.
-- هر دو تابع `tokenHeaders` اکنون فقط `Record<string, string>` برمی‌گردانند.
-- TypeScript اختصاصی Affiliate بدون خطا اجرا شد و TypeScript سراسری دیگر هیچ خطای Affiliate گزارش نمی‌کند.
-- ۲۷ تست Regression موفق شدند.
-- مسیر `/account/affiliate` پاسخ HTTP `200` و مسیر `/admin/affiliate` برای مهمان Redirect امن `307` داد.
-- Pull Request شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` در `backup-latest-2026-08-03` ادغام شد.
-- GitHub Actions Run شماره `31047552740` موفق شد.
-- چهار خطای غیر Affiliate باقی مانده‌اند: دو import تست با پسوند `.ts` و دو وابستگی محیط Build در `vite.config.ts`.
-- پنج هشدار قدیمی ESLint در Effectها و متغیر استفاده‌نشده برای پچ جداگانه ثبت شده‌اند.
-- اقدام بعدی باید در پچ مستقل انتخاب شود؛ امنیت وابستگی‌ها، بدهی ESLint یا TypeScript سراسری نباید با هم ترکیب شوند.
+API Key، Token، Password، Secret، کلید خصوصی و اطلاعات اتصال واقعی دیتابیس نباید Commit شوند.

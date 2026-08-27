@@ -28,7 +28,7 @@ jobs:
   validate:
     name: Validate initial local launch
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -68,6 +68,9 @@ jobs:
           lib/runtime-env.ts
           types/cloudflare-runtime.d.ts
 
+      - name: Build verified application artifact
+        run: npm run build
+
       - name: Start local server and smoke-test routes
         shell: bash
         run: |
@@ -103,3 +106,15 @@ jobs:
           test -s /tmp/chakod-home.html
           test -s /tmp/chakod-cars.html
           test -s /tmp/chakod-login.html
+
+          admin_status="$(curl --silent --output /tmp/chakod-admin.html --write-out '%{http_code}' http://127.0.0.1:5173/admin)"
+          ai_status="$(curl --silent --output /tmp/chakod-admin-ai.html --write-out '%{http_code}' http://127.0.0.1:5173/admin/ai)"
+          case "$admin_status" in 301|302|303|307|308) ;; *) echo "Expected protected /admin redirect, got $admin_status"; cat /tmp/chakod-admin.html; exit 1 ;; esac
+          case "$ai_status" in 301|302|303|307|308) ;; *) echo "Expected protected /admin/ai redirect, got $ai_status"; cat /tmp/chakod-admin-ai.html; exit 1 ;; esac
+
+          status_api="$(curl --silent --output /tmp/chakod-ai-status.json --write-out '%{http_code}' http://127.0.0.1:5173/api/ai/manager/status)"
+          tool_api="$(curl --silent --output /tmp/chakod-ai-tool.json --write-out '%{http_code}' http://127.0.0.1:5173/api/ai/manager/tools/manager_status)"
+          suggest_api="$(curl --silent --output /tmp/chakod-ai-suggest.json --write-out '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"question":"وضعیت سایت چیست؟"}' http://127.0.0.1:5173/api/ai/manager/suggest)"
+          test "$status_api" = "404"
+          test "$tool_api" = "404"
+          test "$suggest_api" = "404"

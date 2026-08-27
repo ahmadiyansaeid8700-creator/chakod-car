@@ -9,6 +9,7 @@ import {
   getChakodAiToolCatalog,
   getChakodAiToolSummary,
 } from "../../../lib/chakod-ai-manager/tools";
+import AiSuggestionConsole from "./AiSuggestionConsole";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,8 @@ export default function AdminAiPage() {
             <p>Human approval اجباری</p>
           </article>
         </section>
+
+        <AiSuggestionConsole enabled={manager.ready} />
 
         <section className={styles.contentGrid}>
           <div className={styles.toolsPanel}>

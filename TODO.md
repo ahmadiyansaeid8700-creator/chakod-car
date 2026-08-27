@@ -4,79 +4,70 @@
 
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Manager بدون وابسته‌کردن هسته سایت به AI
+Current focus: تثبیت Backend و تکمیل Chakod AI Manager در حالت Read-only
 
 ## انجام‌شده
 
-### مسیرها و دسترسی
-
-- [x] اصلاح امن returnTo ورود
-- [x] محافظت مسیرهای /admin/* و /dealers/*
-- [x] تثبیت مسیرهای عمومی خودرو روی /cars/*
-- [x] تثبیت ثبت و مدیریت آگهی روی /account/listings/*
-- [x] Redirect مسیرهای قدیمی خودرو و آگهی
-- [x] صفحه استاندارد 404
-
 ### Legacy cleanup
 
-- [x] حذف Assistant و ChatGPT starter قدیمی
-- [x] حذف AI_HANDOFF قدیمی، examples/d1 و فایل‌های backup داخل app
-- [x] حذف راهنماها و Assetهای Starter بلااستفاده
+- [x] حذف Assistant، ChatGPT starter، AI_HANDOFF قدیمی و Scaffoldهای بلااستفاده
+- [x] حذف Backupهای داخل app و Assetهای Starter بلااستفاده
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
 
-- [x] Foundation و قرارداد Provider
-- [x] Feature Flag با حالت پیش‌فرض غیرفعال
-- [x] Mode فعلی read_suggest
+- [x] Feature Flag و Provider contract
+- [x] Mode `read_suggest`
 - [x] ممنوعیت Auto-write
 - [x] Provider Adapter برای OpenAI و Local با Timeout و fail-closed
-- [x] Local endpoint محدود به Loopback
-- [x] Read-only Tool Registry با وضعیت available / registered / planned
-- [x] Status API بدون افشای Secret
-- [x] بازطراحی کامل /admin به‌عنوان Command Center
-- [x] ساخت صفحه اختصاصی /admin/ai
-- [x] نمایش Provider، Runtime، Registry، Guardrail و Human Approval در UI
-- [~] Regression/CI برای این مرحله هنوز عمداً اجرا نشده است
+- [x] Read-only Tool Registry
+- [x] Read-only Tool Executor
+- [x] Sanitization برای Listings / Businesses / Commerce
+- [x] Tool API روی `/api/ai/manager/tools/[toolId]`
+- [x] Suggestion API روی `/api/ai/manager/suggest`
+- [x] بازطراحی `/admin` به Command Center
+- [x] ساخت `/admin/ai`
+- [x] ساخت کنسول پیشنهاد مدیریتی Read-only
+- [~] Regression/CI هنوز طبق تصمیم مالک اجرا نشده است
 
 ## اقدام‌های باز فوری
 
 ### Backend / Hosting
 
-- [ ] ساخت یا بازیابی امن chakod-private/secrets.php خارج از Document Root
-- [ ] تکمیل تنظیمات دیتابیس بدون ثبت در Git
-- [ ] تکمیل Kavenegar API Key و Verify Template بدون ثبت در Git
+- [ ] ساخت یا بازیابی امن `chakod-private/secrets.php`
+- [ ] تکمیل DB و Kavenegar secrets خارج از Git
 - [ ] تست اتصال دیتابیس
-- [ ] تست OTP ورود
-- [ ] استقرار تمام PHP endpointهای موردنیاز نسخه فعلی
-- [ ] Smoke Test ورود، پروفایل، آگهی و آپلود تصویر
+- [ ] تست OTP
+- [ ] استقرار PHP endpointهای موردنیاز
+- [ ] Smoke Test ورود، پروفایل، آگهی و آپلود
 
-### AI Manager — مرحله بعد
+### AI Manager — قبل از فعال‌سازی
 
-- [ ] اجرای Regression Test برای Cleanup + Provider + Registry + Admin UI
-- [ ] ساخت Executor برای Toolهای registered فقط روی APIهای Read-only تأییدشده
-- [ ] اتصال listings_review_overview به Admin listings API
-- [ ] اتصال businesses_overview به Admin businesses API
-- [ ] اتصال commerce_health فقط به داده‌های غیرتغییردهنده
-- [ ] تعریف Audit event بدون Secret/Token
-- [ ] ساخت Suggestion endpoint پس از آماده‌شدن حداقل یک Tool واقعی
-- [ ] تعریف Human Approval مستقل پیش از هر Write Action آینده
+- [ ] اجرای Regression Test برای Provider + Registry + Executor + UI
+- [ ] بررسی واقعی پاسخ `admin-listings.php` روی هاست
+- [ ] بررسی واقعی پاسخ `admin-businesses.php` روی هاست
+- [ ] بررسی واقعی پاسخ `admin-commerce.php` روی هاست
+- [ ] تست Safe Off وقتی Provider غیرفعال است
+- [ ] تست Suggestion endpoint با Provider معتبر
+- [ ] ثبت Audit event برای درخواست‌های AI بدون ذخیره Prompt حساس یا Token
 
-### امنیت وابستگی‌ها
+### فاز Write آینده
 
-- [ ] اجرای npm audit --json در محیط کنترل‌شده
-- [ ] تفکیک آسیب‌پذیری مستقیم و انتقالی
-- [ ] رفع موارد بدون Breaking Change
-- [ ] ممنوعیت npm audit fix --force بدون بررسی دستی
+- [ ] هیچ Write Tool قبل از طراحی Permission مستقل ساخته نشود
+- [ ] Human Approval اجباری
+- [ ] Audit مستقل برای هر اقدام
+- [ ] امکان Cancel/Revert در صورت ماهیت اقدام
 
-### Build تولید Cloudflare
+### Build / Release
 
-- [ ] اجرای npm run build در محیط واقعی Cloudflare پس از فراهم‌شدن پیش‌نیازها
-- [ ] بررسی دامنه و مسیرهای اصلی پس از استقرار
+- [ ] npm audit کنترل‌شده
+- [ ] Build واقعی Cloudflare
+- [ ] بررسی دامنه‌ها و مسیرهای اصلی
+- [ ] main فقط با تأیید صریح مالک تغییر کند
 
-## قواعد روزانه
+## قواعد ثابت
 
-- [ ] Secret، فایل محیطی واقعی یا داده واقعی کاربر Commit نشود
-- [ ] main تا تأیید صریح مالک تغییر نکند
-- [ ] هیچ فایل تاریخی به‌عنوان Backup داخل app نگهداری نشود؛ Git تاریخچه است
-- [ ] نتیجه تست یا Build فقط بعد از اجرای واقعی موفق اعلام شود
+- Secret، Token، Password و داده واقعی کاربر وارد Git نشود.
+- AI نباید هسته سایت را برای کارکرد عادی وابسته کند.
+- نتیجه تست فقط بعد از اجرای واقعی موفق اعلام شود.
+- Git تاریخچه است؛ Backup تاریخی داخل app نگهداری نشود.

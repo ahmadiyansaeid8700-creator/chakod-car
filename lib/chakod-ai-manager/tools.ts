@@ -13,7 +13,7 @@ const TOOL_CATALOG: readonly ChakodAiToolDescriptor[] = [
   {
     id: "manager_status",
     title: "وضعیت مدیر هوش مصنوعی",
-    description: "خواندن وضعیت Feature Flag، Provider، Mode و آمادگی Runtime بدون نمایش Secret.",
+    description: "خواندن Feature Flag، Provider، Mode و آمادگی Runtime بدون نمایش Secret.",
     scope: "read_only",
     stage: "available",
     dataSource: "Chakod AI Manager runtime",
@@ -29,7 +29,7 @@ const TOOL_CATALOG: readonly ChakodAiToolDescriptor[] = [
   {
     id: "listings_review_overview",
     title: "نمای کلی صف آگهی‌ها",
-    description: "خلاصه Read-only از وضعیت صف بررسی آگهی‌ها برای تحلیل مدیریتی.",
+    description: "Executor فقط Stats و Pagination خلاصه صف آگهی‌ها را می‌خواند؛ آیتم خام به Provider ارسال نمی‌شود.",
     scope: "read_only",
     stage: "registered",
     dataSource: "Admin listings API",
@@ -37,7 +37,7 @@ const TOOL_CATALOG: readonly ChakodAiToolDescriptor[] = [
   {
     id: "businesses_overview",
     title: "نمای کلی کسب‌وکارها",
-    description: "خلاصه Read-only از کسب‌وکارها، نمایشگاه‌ها و وضعیت بررسی آن‌ها.",
+    description: "Executor فقط Total و Stats کسب‌وکارها را می‌خواند و داده هویتی مالک را حذف می‌کند.",
     scope: "read_only",
     stage: "registered",
     dataSource: "Admin businesses API",
@@ -45,7 +45,7 @@ const TOOL_CATALOG: readonly ChakodAiToolDescriptor[] = [
   {
     id: "commerce_health",
     title: "سلامت بخش مالی و تجاری",
-    description: "گزارش Read-only از وضعیت ماژول‌های تجاری بدون اجرای تغییر مالی.",
+    description: "Executor فقط Summary، Warning و Capabilityهای غیرمحرمانه را برمی‌گرداند؛ سفارش خام و اطلاعات کاربر حذف می‌شود.",
     scope: "read_only",
     stage: "registered",
     dataSource: "Admin commerce API",
@@ -53,9 +53,9 @@ const TOOL_CATALOG: readonly ChakodAiToolDescriptor[] = [
   {
     id: "site_operations_summary",
     title: "خلاصه عملیات سایت",
-    description: "تجمیع Read-only سیگنال‌های مدیریتی برای پیشنهاد و اولویت‌بندی اقدام‌ها.",
+    description: "Snapshot تجمیعی Sanitized از آگهی، کسب‌وکار، تجارت و وضعیت AI برای موتور پیشنهاد مدیریتی.",
     scope: "read_only",
-    stage: "planned",
+    stage: "registered",
     dataSource: "Approved admin APIs",
   },
 ];

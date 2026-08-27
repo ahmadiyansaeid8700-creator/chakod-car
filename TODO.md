@@ -16,6 +16,8 @@ Current focus: Cleanup-first و Full Regression
 - [x] حفظ Referral واقعی: `/r/[code]` + انتقال کد دعوت به Commerce
 - [x] حذف Homeهای یتیم و قدیمی: AutoBusinesses، BusinessDirectory، QuickServices، ServiceCategories، BusinessBanners، DealerAdBanner، ShowroomBanner، PaidBanner و ExperienceOverrides
 - [x] حفظ `HomeBannerSlot` و مدیریت فعلی بنر صفحه اصلی
+- [x] تعیین ساختار canonical نمایشگاه: `/dealerships` عمومی، `/businesses/[slug]` پروفایل، `/account/business` مدیریت
+- [x] حذف پیاده‌سازی سنگین legacy در `/dealers` و `/showrooms/[dealer]` و نگه‌داشتن Redirect سبک برای لینک‌های قدیمی
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
@@ -29,23 +31,22 @@ Current focus: Cleanup-first و Full Regression
 ## اقدام‌های باز فوری
 
 ### Cleanup audit
-- [~] تعیین مسیر canonical نمایشگاه بین `/showrooms`، `/dealerships` و `/dealers`
-- [ ] حذف مسیرهای redirect/duplicate نمایشگاه بعد از تعیین canonical
+- [ ] اصلاح لینک‌های قدیمی `/dealers` داخل Dashboard به `/account/business`
+- [ ] بررسی مسیرهای قدیمی `/dashboard/listings` در برابر `/account/listings`
 - [ ] بررسی CSSهای قدیمی Home پس از حذف کامپوننت‌های یتیم
+- [ ] بررسی `DealerQrCard` و Assetهای نمایشگاهی قدیمی پس از اثبات بلااستفاده بودن
 - [ ] بررسی Assetهای قدیمی و حجیم فقط پس از اثبات بلااستفاده بودن
 - [ ] بازنویسی `MASTER-SITEMAP-FA.md` مطابق محصول واقعی؛ سند فعلی هنوز قابلیت‌های حذف‌شده دارد
 - [ ] اصلاح متن اسناد: «دعوت کاربر و پورسانت» به‌جای Affiliate
 
 ### Regression / Build
 - [~] GitHub Actions PR #112 برای Full Regression
-- [x] `npm ci` پاس شده
-- [x] TypeScript Check پاس شده
-- [x] 14 تست Core Routes پاس شده
-- [!] تست Tool Executor در Node مستقیم به import boundary مربوط به `next/server` گیر کرده
-- [ ] اصلاح import boundary
-- [ ] اجرای مجدد AI + moderation tests در CI
+- [x] `npm ci` در Run قبلی پاس شده
+- [x] TypeScript Check در Run قبلی پاس شده
+- [x] تست‌های Core Routes در Run قبلی پاس شده‌اند
+- [ ] اجرای مجدد AI + moderation tests بعد از Cleanupهای جدید
 - [ ] `npm run build`
-- [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`
+- [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`, `/dealerships`, `/account/business`
 
 ### Referral / دعوت
 - [x] حفظ `/r/[code]` برای ثبت انتساب دعوت

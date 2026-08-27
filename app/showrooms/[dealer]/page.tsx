@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-import DealerPublicClient from "./DealerPublicClient";
+import { permanentRedirect } from "next/navigation";
 
 function decodeDealer(value: string) {
   try {
@@ -9,25 +8,12 @@ function decodeDealer(value: string) {
   }
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ dealer: string }>;
-}): Promise<Metadata> {
-  const { dealer } = await params;
-  const dealerName = decodeDealer(dealer);
-
-  return {
-    title: `نمایشگاه ${dealerName}`,
-    description: `مشاهده خودروهای فعال ${dealerName} در چاکود.`,
-  };
-}
-
-export default async function DealerPublicPage({
+export default async function LegacyDealerPublicPage({
   params,
 }: {
   params: Promise<{ dealer: string }>;
 }) {
   const { dealer } = await params;
-  return <DealerPublicClient rawDealer={dealer} />;
+  const query = new URLSearchParams({ q: decodeDealer(dealer) });
+  permanentRedirect(`/dealerships?${query.toString()}`);
 }

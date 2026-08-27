@@ -24,6 +24,9 @@ Main branch: مبنای توسعه جاری نیست
 - [x] هسته Referral حفظ شده است: `/r/[code]` انتساب دعوت را ثبت می‌کند و Commerce کد دعوت را برای خرید واجد شرایط ارسال می‌کند.
 - [x] Homeهای یتیم و مربوط به ساختارهای قبلی حذف شده‌اند: `HomeAutoBusinesses`، `HomeBusinessDirectory`، `HomeQuickServices`، `HomeServiceCategories`، `HomeBusinessBanners`، `HomeDealerAdBanner`، `HomeShowroomBanner`، `HomePaidBanner` و `HomeExperienceOverrides`.
 - [x] مدیریت فعلی بنر صفحه اصلی با `HomeBannerSlot` و `/api/home-banners.php` حفظ شده است.
+- [x] مسیر عمومی canonical نمایشگاه‌ها `/dealerships` است و پروفایل نهایی هر مجموعه از `/businesses/[slug]` استفاده می‌کند.
+- [x] مدیریت canonical نمایشگاه/کسب‌وکار زیر `/account/business` است.
+- [x] کد سنگین legacy در `/dealers` و `/showrooms/[dealer]` حذف شده و فقط Redirect سازگار برای لینک‌های قدیمی باقی مانده است.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -33,10 +36,10 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Snapshotهای Listings / Businesses / Commerce قبل از Provider Sanitized می‌شوند.
 - [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
 - [x] تست‌های هدفمند AI + moderation قبلاً 16/16 Pass شده‌اند.
-- [~] Full Regression روی GitHub Actions ادامه دارد؛ `npm ci`، TypeScript و 14 تست Core پاس شده‌اند. تست Tool Executor نیازمند اصلاح import boundary برای اجرای مستقیم Node است.
+- [~] Full Regression روی GitHub Actions ادامه دارد؛ نتیجه نهایی Build/Smoke هنوز باید دوباره گرفته شود.
 
 ## اولویت‌های بعدی
-Priority 1: Cleanup-first؛ بررسی مسیرهای تکراری نمایشگاه (`/showrooms`، `/dealerships`، `/dealers`)
+Priority 1: Cleanup-first؛ بررسی routeهای قدیمی Dashboard/Listings و CSS/Assetهای یتیم
 Priority 2: ادامه Full Regression تا Build و Smoke
 Priority 3: تکمیل Backend/API واقعی و Auth روی هاست
 Priority 4: بازنویسی اسناد قدیمی مطابق محصول واقعی

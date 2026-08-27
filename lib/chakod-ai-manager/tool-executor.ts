@@ -18,6 +18,30 @@ type FetchLike = (
 ) => Promise<Response>;
 
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
+const BUSINESS_STAT_KEYS = [
+  "total",
+  "pending",
+  "approved",
+  "rejected",
+  "suspended",
+  "featured",
+] as const;
+const COMMERCE_SUMMARY_KEYS = [
+  "pending_orders",
+  "paid_orders_30d",
+  "revenue_30d",
+  "pending_banners",
+  "active_subscriptions",
+] as const;
+const SAFE_CAPABILITY_KEYS = [
+  "pricing_view",
+  "orders_view",
+  "banners_view",
+  "subscriptions_view",
+  "discounts_view",
+  "financial_reports",
+  "audit_view",
+] as const;
 
 export class ChakodAiToolError extends Error {
   constructor(
@@ -94,16 +118,15 @@ async function listingsOverview(sessionToken: string, fetchImpl: FetchLike) {
     sessionToken,
     fetchImpl,
   );
-
   const pagination = recordField(payload, "pagination");
 
   return {
     tool: "listings_review_overview",
     generatedAt: new Date().toISOString(),
     data: {
-      stats: numericRecord(payload.stats),
-      total: numericField(pagination, "total"),
-      pages: numericField(pagination, "pages"),
+      stats: safeNumericStats(payload.stats),
+      total: finiteNumber(pagination.total),
+      pages: finiteNumber(pagination.pages),
     },
   };
 }
@@ -114,13 +137,16 @@ async function businessesOverview(sessionToken: string, fetchImpl: FetchLike) {
     sessionToken,
     fetchImpl,
   );
+  const stats = recordField(payload, "stats");
 
   return {
     tool: "businesses_overview",
     generatedAt: new Date().toISOString(),
     data: {
-      total: numericField(payload, "total"),
-      stats: numericRecord(payload.stats),
+      total: finiteNumber(payload.total),
+      stats: Object.fromEntries(
+        BUSINESS_STAT_KEYS.map((key) => [key, finiteNumber(stats[key])]),
+      ),
       canManage: payload.can_manage === true,
     },
   };
@@ -133,36 +159,23 @@ async function commerceHealth(sessionToken: string, fetchImpl: FetchLike) {
     fetchImpl,
     14_000,
   );
-
   const capabilities = recordField(payload, "capabilities");
-  const safeCapabilityKeys = [
-    "pricing_view",
-    "orders_view",
-    "banners_view",
-    "subscriptions_view",
-    "discounts_view",
-    "financial_reports",
-    "audit_view",
-  ];
-
-  const safeCapabilities = Object.fromEntries(
-    safeCapabilityKeys.map((key) => [key, capabilities[key] === true]),
-  );
-
-  const warnings = Array.isArray(payload.warnings)
-    ? payload.warnings
-        .filter((value): value is string => typeof value === "string")
-        .slice(0, 8)
-        .map((value) => value.slice(0, 240))
-    : [];
+  const summary = recordField(payload, "summary");
 
   return {
     tool: "commerce_health",
     generatedAt: new Date().toISOString(),
     data: {
-      summary: nullableNumericRecord(payload.summary),
-      capabilities: safeCapabilities,
-      warnings,
+      summary: Object.fromEntries(
+        COMMERCE_SUMMARY_KEYS.map((key) => [
+          key,
+          summary[key] === null ? null : finiteNumber(summary[key]),
+        ]),
+      ),
+      capabilities: Object.fromEntries(
+        SAFE_CAPABILITY_KEYS.map((key) => [key, capabilities[key] === true]),
+      ),
+      warningsCount: Array.isArray(payload.warnings) ? payload.warnings.length : 0,
     },
   };
 }
@@ -242,33 +255,18 @@ function recordField(value: unknown, key: string): Record<string, unknown> {
   return isRecord(nested) ? nested : {};
 }
 
-function numericField(value: unknown, key: string) {
-  if (!isRecord(value)) return 0;
-  return toFiniteNumber(value[key]);
-}
-
-function numericRecord(value: unknown) {
+function safeNumericStats(value: unknown) {
   if (!isRecord(value)) return {};
 
   return Object.fromEntries(
     Object.entries(value)
-      .map(([key, entry]) => [key, toFiniteNumber(entry)] as const)
-      .filter(([, entry]) => Number.isFinite(entry)),
+      .filter(([key]) => /^[a-z0-9_]{1,48}$/i.test(key))
+      .filter(([, entry]) => typeof entry === "number" || typeof entry === "string")
+      .map(([key, entry]) => [key, finiteNumber(entry)]),
   );
 }
 
-function nullableNumericRecord(value: unknown) {
-  if (!isRecord(value)) return {};
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [
-      key,
-      entry === null ? null : toFiniteNumber(entry),
-    ]),
-  );
-}
-
-function toFiniteNumber(value: unknown) {
+function finiteNumber(value: unknown) {
   const number = Number(value ?? 0);
   return Number.isFinite(number) ? number : 0;
 }

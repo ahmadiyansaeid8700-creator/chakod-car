@@ -31,9 +31,11 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Assetهای Starter بلااستفاده حذف شده‌اند.
 - [x] زنجیره قدیمی Banner Reservation مبتنی بر ChatGPT/email auth، D1 و `demo_paid` حذف شده است.
 - [x] قابلیت رزرو بنر توسط کاربر به‌طور کامل از رابط و مسیرهای برنامه حذف شده است.
-- [x] D1 schema/migration و helperهای `admin-access`/`banner-booking` که فقط به رزرو آزمایشی قدیمی وابسته بودند حذف شده‌اند.
-- [x] دستورهای عامل‌های قدیمی `AGENTS.md` و `CLAUDE.md` حذف شده‌اند تا روی توسعه بعدی اثر نگذارند.
+- [x] دستورهای عامل‌های قدیمی `AGENTS.md` و `CLAUDE.md` حذف شده‌اند.
 - [x] متادیتای آزمایشی `codex-preview` از Root Layout حذف شده است.
+- [x] برنامه مستقل Affiliate/Ambassador حذف شده است: عضویت جدا، KYC جدا، پنل کاربر، پنل ادمین و APIهای اختصاصی آن‌ها دیگر جزو محصول نیستند.
+- [x] هسته دعوت کاربر و پورسانت حفظ شده است: هر User می‌تواند کد دعوت داشته باشد، `/r/[code]` انتساب را ثبت می‌کند و Commerce کد دعوت را هنگام خرید واجد شرایط ارسال می‌کند.
+- [x] نام‌های فنی legacy مانند `affiliate_code` و `chakod_affiliate_ref` فعلاً فقط برای سازگاری Backend حفظ شده‌اند و به معنی وجود برنامه Affiliate در محصول نیستند.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -48,14 +50,13 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Status API اطلاعات Runtime و Registry را بدون Secret گزارش می‌دهد.
 - [x] Suggestion API فقط Snapshot خلاصه را به Provider می‌دهد و Write Action اجرا نمی‌کند.
 - [x] صفحه اختصاصی `/admin/ai` برای Provider، Tool Registry، Guardrail و Human Approval ساخته شده است.
-- [x] ناسازگاری Node strip-types در Provider/Tool Error رفع شده است.
 - [x] تست‌های هدفمند Config + Provider + Tool Executor + Moderation قبلاً در محیط Node 22 اجرا شدند: 16/16 Pass.
-- [~] Full Regression روی GitHub Actions ادامه دارد: `npm ci`، TypeScript و 14 تست Core پاس شده‌اند؛ تست Tool Executor به‌دلیل import شدن `next/server` از یک helper مشترک در اجرای مستقیم Node متوقف شده و باید با جداسازی helper خالص از وابستگی Next اصلاح شود.
+- [~] Full Regression روی GitHub Actions ادامه دارد: `npm ci`، TypeScript و 14 تست Core پاس شده‌اند؛ تست Tool Executor به‌دلیل import زنجیره‌ای `next/server` در اجرای مستقیم Node متوقف شده و باید boundary آن اصلاح شود.
 
 ## اولویت‌های بعدی
 
 Priority 1: Cleanup-first؛ حذف خوشه‌های واقعاً یتیم و قدیمی براساس import/route usage فعلی
-Priority 2: اصلاح جداسازی helperهای AI از `next/server` و ادامه Full Regression تا Build و Smoke
+Priority 2: اصلاح boundary تست AI و ادامه Full Regression تا Build و Smoke
 Priority 3: تکمیل Backend/API واقعی چاکود و Auth روی هاست
 Priority 4: بررسی واقعی پاسخ APIهای Read-only روی هاست
 Priority 5: Build تولید و سپس تصمیم درباره main
@@ -74,7 +75,7 @@ Priority 5: Build تولید و سپس تصمیم درباره main
 1. PROJECT_CONTEXT.md
 2. TODO.md
 3. docs/CHAKOD-AI-MANAGER-FA.md
-4. docs/MASTER-SITEMAP-FA.md — تا پایان ممیزی باید با ساختار واقعی سایت بازنویسی شود
+4. docs/MASTER-SITEMAP-FA.md — قدیمی است و باید با ساختار واقعی سایت بازنویسی شود
 5. docs/PROJECT-CHECKLIST-FA.md
 6. README.md
 7. package.json

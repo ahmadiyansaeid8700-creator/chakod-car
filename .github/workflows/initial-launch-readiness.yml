@@ -54,9 +54,10 @@ jobs:
           tests/car-routes.test.mjs
           tests/listing-routes.test.mjs
 
-      - name: Run listing moderation policy test
+      - name: Run AI manager and listing moderation tests
         run: >-
           node --experimental-strip-types --test
+          tests/chakod-ai-manager-config.test.ts
           tests/ai-moderation-policy.test.ts
 
       - name: Lint launch patch

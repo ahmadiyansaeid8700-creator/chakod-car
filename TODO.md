@@ -5,7 +5,7 @@
 ```text
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: تثبیت Backend و پاک‌سازی Legacy AI قبل از طراحی Chakod AI Manager جدید
+Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Manager جدید بدون وابسته‌کردن هسته سایت به AI
 ```
 
 ## انجام‌شده
@@ -36,7 +36,20 @@ Current focus: تثبیت Backend و پاک‌سازی Legacy AI قبل از ط�
 - [x] حذف مستندات اختصاصی نسخه قدیمی Assistant.
 - [x] حذف تنظیمات محیطی اختصاصی Assistant از `.env.example`.
 - [x] حفظ `ai-moderation` و تست Policy آن برای بررسی آگهی.
-- [x] اصلاح Workflow اولیه تا فقط تست Moderation باقی بماند.
+
+### Chakod AI Manager — Foundation v0.1
+
+- [x] تعریف قرارداد Provider روی `disabled | openai | local`.
+- [x] Feature Flag با حالت پیش‌فرض غیرفعال اضافه شد.
+- [x] Mode فاز اول روی `read_suggest` قفل شد.
+- [x] Write Action خودکار در Contract ممنوع شد.
+- [x] Status غیرمحرمانه Manager پیاده‌سازی شد.
+- [x] `GET /api/ai/manager/status` فقط برای نشست معتبر ادمین قابل مشاهده است.
+- [x] وضعیت Moderation موجود بدون افشای Secret گزارش می‌شود.
+- [x] تست Config و fail-closed behavior اضافه شد.
+- [x] Workflow اولیه برای اجرای تست AI Manager به‌روز شد.
+- [x] سند `docs/CHAKOD-AI-MANAGER-FA.md` اضافه شد.
+- [~] اجرای واقعی Regression/CI این Foundation هنوز باید تأیید شود.
 
 ## اقدام‌های باز فوری
 
@@ -52,11 +65,14 @@ Current focus: تثبیت Backend و پاک‌سازی Legacy AI قبل از ط�
 
 ### AI Manager جدید
 
-- [ ] قبل از هر پیاده‌سازی، موجودی داده‌ها، APIها، Auth، Moderation، Admin و گزارش‌ها ممیزی شود.
-- [ ] سیستم جدید از هسته سایت جدا و Provider-agnostic طراحی شود.
-- [ ] در فاز اول فقط Read/Suggest و عملیات حساس با تأیید مدیر باشد.
-- [ ] Moderation موجود فقط پس از تست و در صورت سازگاری reuse شود.
-- [ ] قابلیت Chatbot سراسری بدون نیاز واقعی دوباره ساخته نشود.
+- [ ] اجرای تست Foundation و تأیید عدم Regression.
+- [ ] ساخت Provider Adapter مشترک با Timeout و Failure isolation.
+- [ ] ساخت Tool Registry فقط برای APIهای Read-only تأییدشده چاکود.
+- [ ] تعریف Audit event برای درخواست‌های مدیریتی بدون Secret/Token.
+- [ ] اضافه‌کردن `/admin/ai` فقط بعد از آماده‌شدن APIهای پایه و تست دسترسی.
+- [ ] تعریف سیاست Human Approval برای هر Write Action احتمالی آینده.
+- [ ] Moderation موجود فقط در همان مرز مستقل فعلی حفظ شود مگر ادغام آن واقعاً لازم شود.
+- [ ] Chatbot سراسری بدون نیاز محصول دوباره ساخته نشود.
 
 ### امنیت وابستگی‌ها
 

@@ -29,15 +29,20 @@ Main branch: مبنای توسعه جاری نیست
 - [x] مسیرهای قدیمی خودرو و آگهی به مسیرهای اصلی Redirect می‌شوند.
 - [x] صفحه 404 استاندارد و مسیر عمومی `/dealerships` وجود دارند.
 
-### AI — وضعیت فعلی پس از پاک‌سازی Legacy Assistant
+### AI — پاک‌سازی Legacy Assistant و Foundation جدید
 
 - [x] دستیار گفتگویی سراسری قدیمی از `RootLayout` و Runtime پروژه حذف شد.
 - [x] Route قدیمی `/api/ai/assistant` و هسته `lib/ai-assistant/*` حذف شدند.
 - [x] تست‌ها، Workflow و مستندات اختصاصی همان دستیار قدیمی حذف شدند.
-- [x] متغیرهای محیطی اختصاصی Assistant از `.env.example` حذف شدند.
+- [x] متغیرهای محیطی اختصاصی Assistant قدیمی از `.env.example` حذف شدند.
 - [x] سیستم مستقل Moderation آگهی در `app/api/ai/moderate-listing` و `lib/ai-moderation/*` حفظ شد.
-- [x] Moderation در خطا به بررسی انسانی برمی‌گردد و نباید به‌صورت خودکار تصمیم حساس اجرا کند.
-- [ ] Chakod AI Manager جدید فقط پس از ممیزی معماری و در پچ مستقل طراحی شود.
+- [x] Chakod AI Manager Foundation v0.1 به‌صورت جدا از هسته سایت اضافه شد.
+- [x] Manager به‌صورت پیش‌فرض غیرفعال و Provider-agnostic تعریف شد.
+- [x] Mode اولیه فقط `read_suggest` است و Write Action خودکار مجاز نیست.
+- [x] Route مدیریتی `GET /api/ai/manager/status` فقط پس از تأیید ادمین پاسخ می‌دهد.
+- [x] Status فقط وضعیت پیکربندی را گزارش می‌کند و Secret/API Key را افشا نمی‌کند.
+- [x] تست Config برای fail-closed بودن Provider و Feature Flag اضافه شد.
+- [~] اجرای Regression/CI برای Foundation جدید هنوز باید تأیید شود.
 
 ### Launch-1 — استارت اولیه محلی
 
@@ -72,10 +77,10 @@ build/sites-vite-plugin
 
 ```text
 Priority 1: تکمیل و تثبیت Backend/API واقعی چاکود و Auth
-Priority 2: اجرای تست‌های Regression پس از حذف Legacy Assistant
-Priority 3: تحلیل امن وابستگی‌ها و آسیب‌پذیری‌ها
-Priority 4: تأیید Build تولید در محیط واقعی Cloudflare
-Priority 5: طراحی Chakod AI Manager جدید پس از ممیزی داده، API و پنل مدیریت
+Priority 2: اجرای Regression Test برای Legacy AI cleanup و AI Manager Foundation
+Priority 3: ساخت Provider Adapter و Read-only Tool Registry برای Chakod AI Manager
+Priority 4: تحلیل امن وابستگی‌ها و آسیب‌پذیری‌ها
+Priority 5: تأیید Build تولید در محیط واقعی Cloudflare
 ```
 
 ## فناوری‌های مخزن
@@ -94,12 +99,13 @@ Priority 5: طراحی Chakod AI Manager جدید پس از ممیزی داده�
 1. `docs/MASTER-SITEMAP-FA.md`
 2. `docs/PROJECT-CHECKLIST-FA.md`
 3. `docs/INITIAL-LAUNCH-CHECKLIST-FA.md`
-4. `PROJECT_CONTEXT.md`
-5. `TODO.md`
-6. `README.md`
-7. `AGENTS.md`
-8. `CLAUDE.md`
-9. `package.json`
+4. `docs/CHAKOD-AI-MANAGER-FA.md`
+5. `PROJECT_CONTEXT.md`
+6. `TODO.md`
+7. `README.md`
+8. `AGENTS.md`
+9. `CLAUDE.md`
+10. `package.json`
 
 در تعارض مسیرها، `docs/MASTER-SITEMAP-FA.md` مبنای محصول است.
 

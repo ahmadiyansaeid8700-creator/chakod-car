@@ -42,6 +42,14 @@ jobs:
           node-version: "22.13.0"
           cache: npm
 
+      - name: Verify orphan QR dependencies can be removed
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm uninstall qrcode @types/qrcode --package-lock-only --ignore-scripts
+          echo "--- QR dependency removal patch ---"
+          git diff -- package.json package-lock.json
+
       - name: Install locked dependencies
         run: npm ci
 

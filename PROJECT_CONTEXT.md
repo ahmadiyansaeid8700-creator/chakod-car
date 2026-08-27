@@ -45,6 +45,8 @@ Main branch: مبنای توسعه جاری نیست
 - [x] examples/d1 نمونه Scaffold حذف شد.
 - [x] فایل‌های بکاپ app/submit/page.before-*.tsx حذف شدند.
 - [x] INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی و ناسازگار با Workflow فعلی حذف شدند.
+- [x] assetهای پیش‌فرض Next/Vercel شامل file.svg، globe.svg، next.svg، vercel.svg و window.svg پس از بررسی Reference مستقیم حذف شدند.
+- [x] public/images/logo.png صفر‌بایت حذف شد؛ assetهای واقعی برند چاکود حفظ شدند.
 - [ ] سایر فایل‌های عمومی مشکوک فقط پس از اثبات بلااستفاده بودن حذف شوند.
 
 ## اقدام‌های بعدی

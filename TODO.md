@@ -29,6 +29,9 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 - [x] حذف examples/d1 نمونه Scaffold.
 - [x] حذف app/submit/page.before-cover-fix.tsx و app/submit/page.before-dealer-select-fix.tsx.
 - [x] حذف INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی.
+- [x] حذف assetهای پیش‌فرض Starter: file.svg، globe.svg، next.svg، vercel.svg و window.svg.
+- [x] حذف public/images/logo.png صفر‌بایت.
+- [x] حفظ assetهای واقعی برند چاکود.
 - [x] حفظ ai-moderation و تست Policy آن برای بررسی آگهی.
 
 ### Chakod AI Manager — Foundation v0.1
@@ -68,8 +71,8 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 
 ### Legacy / clutter audit
 
-- [ ] فایل‌های عمومی قدیمی یا Placeholder فقط پس از اثبات بلااستفاده بودن بررسی و حذف شوند.
-- [ ] فایل‌های صفر بایت، assetهای Starter و مسیرهای نسخه‌ای/پشتیبان دوباره جست‌وجو شوند.
+- [x] فایل‌های صفر‌بایت شناخته‌شده و assetهای Starter اصلی بررسی و پاک‌سازی شدند.
+- [ ] سایر Placeholderها یا assetهای تکراری فقط پس از اثبات بلااستفاده بودن حذف شوند.
 - [ ] هیچ فایل تاریخی داخل app/ به‌عنوان Backup نگهداری نشود؛ تاریخچه باید در Git باشد.
 
 ### امنیت وابستگی‌ها

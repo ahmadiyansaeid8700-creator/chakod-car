@@ -1,12 +1,36 @@
-import ListingDetailPage from "../../listing/[id]/page";
+import { notFound } from "next/navigation";
+import ListingDetailClient from "./ListingDetailClient";
+import { fetchListingDetail, type ListingApiResponse } from "./listing-data";
 
-export default function CarDetailPage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ slug: string }>;
-}) {
-  return ListingDetailPage({
-    params: params.then(({ slug }) => ({ id: slug })),
-    canonical: true,
-  });
+};
+
+async function getInitialListing(listingId: number): Promise<ListingApiResponse | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2600);
+
+  try {
+    return await fetchListingDetail(listingId, controller.signal);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export default async function CarDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const listingId = Number(slug);
+
+  if (!Number.isFinite(listingId) || listingId <= 0) notFound();
+
+  const initialResponse = await getInitialListing(listingId);
+
+  return (
+    <ListingDetailClient
+      listingId={listingId}
+      initialResponse={initialResponse}
+    />
+  );
 }

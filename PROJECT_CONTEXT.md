@@ -9,9 +9,9 @@
 ## مخزن و شاخه‌ها
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
-Regression branch: ci/admin-ai-regression-2026-08-27
 Regression PR: #112 — merged into backup-latest-2026-08-03
-Merged cleanup commit: 2d1de98d64a7c10a603bef45ea5bd81586f72ec2
+Security PR: #113 — merged into backup-latest-2026-08-03
+Latest tested security merge: `0dfdf3cee693dd8a1875ef8e8e0adcff46a7a188`
 Main branch: مبنای توسعه جاری نیست
 
 ادغام با main فقط با تأیید صریح مالک انجام شود.
@@ -40,7 +40,7 @@ Main branch: مبنای توسعه جاری نیست
 - [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
-### Quality Gate — PR #112 / Run #34
+### Quality Gate — Security PR #113 / Run #35
 - [x] `npm ci`
 - [x] Dependency audit reporting
 - [x] TypeScript Check
@@ -48,30 +48,31 @@ Main branch: مبنای توسعه جاری نیست
 - [x] AI Manager + Listing Moderation tests: 16/16 Pass
 - [x] Lint
 - [x] `npm run build`
-- [x] Smoke مسیرهای اصلی
-- [x] Smoke Redirectهای legacy شامل `/ads*`, `/dashboard`, `/dealers`, `/showrooms/*`, `/listing/*`
+- [x] Smoke مسیرهای اصلی و Redirectهای legacy
 - [x] محافظت بدون Session برای `/admin` و `/admin/ai`
+- [x] Merge PR #113 به working backup branch
 
 ### Dependency / Security audit
-آخرین Audit تعداد 18 vulnerability گزارش می‌کند: 2 Low و 16 High؛ Critical وجود ندارد.
+Hardening non-major کامل و Merge شده است. Audit از 18 مورد (2 Low و 16 High) به 2 High کاهش یافت؛ Low/Moderate/Critical باقی نمانده است.
 
-Direct dependencyهای نیازمند بررسی/ارتقا:
-- `@cloudflare/vite-plugin` 1.37.1 → Audit پیشنهاد 1.54.1 بدون SemVer major.
-- `next` 16.2.6 → Audit پیشنهاد 16.3.3 بدون SemVer major.
-- `react-server-dom-webpack` 19.2.6 → Audit پیشنهاد 19.2.8 بدون SemVer major.
-- `vite` 8.0.13 → Audit پیشنهاد 8.2.2 بدون SemVer major.
-- `wrangler` 4.92.0 در بازه آسیب‌پذیر تا 4.113.0 قرار دارد.
-- `vinext` 0.0.50 برای رفع کامل Audit نیازمند 1.0.0-beta.8 است که تغییر major/beta محسوب می‌شود و باید جداگانه Regression شود.
+نسخه‌های تست و Merge‌شده:
+- `@cloudflare/vite-plugin` 1.54.1
+- `next` 16.3.3
+- `react` 19.2.8
+- `react-dom` 19.2.8
+- `react-server-dom-webpack` 19.2.8
+- `vite` 8.2.2
+- `wrangler` 4.127.0
+
+دو High باقی‌مانده فقط از `vinext` 0.0.50 و dependency آن `image-size` هستند. Audit برای رفع آن‌ها `vinext` 1.0.0-beta.8 را پیشنهاد می‌کند که breaking major/beta migration است و باید در Branch مستقل با Full Regression بررسی شود؛ `npm audit fix --force` کور ممنوع است.
 
 `qrcode` و `@types/qrcode` حذف نمی‌شوند: تست حذف واقعی نشان داد `BusinessCardActions.tsx` و `ListingCardActions.tsx` به `qrcode` وابسته‌اند و حذف آن TypeScript را می‌شکند.
 
-هیچ `npm audit fix --force` کور اجرا نشود. Dependency hardening باید در پچ/Branch مستقل و با Full Regression انجام شود.
-
 ## اولویت‌های بعدی
-Priority 1: Dependency/Security hardening در Branch مستقل، ابتدا updateهای non-major و سپس تصمیم جدا برای Vinext major/beta
-Priority 2: تکمیل Backend/API واقعی و Auth روی هاست
-Priority 3: End-to-end OTP / Session / `/api/auth/me` / Profile / Listing / Upload
-Priority 4: Staging smoke واقعی
+Priority 1: تکمیل Backend/API واقعی و Auth روی هاست
+Priority 2: End-to-end OTP / Session / `/api/auth/me` / Profile / Listing / Upload
+Priority 3: بررسی جداگانه migration `vinext` 0.0.50 → 1.0.0-beta.8 با Full Regression
+Priority 4: Staging smoke واقعی و Build Cloudflare
 Priority 5: main فقط بعد از Build/Regression و تأیید صریح مالک
 
 ## فناوری‌های اصلی

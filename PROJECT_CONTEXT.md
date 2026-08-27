@@ -2,86 +2,58 @@
 
 ## هویت پروژه
 
-- **نام:** چاکود (`chakod-car`)
-- **نوع محصول:** بازار خودرو، نمایشگاه‌ها و کسب‌وکارهای خودرویی
-- **زبان و جهت رابط:** فارسی و RTL
-- **اصل توسعه:** ادامه پروژه موجود؛ بازسازی از صفر و ایجاد مسیر موازی بدون تأیید ممنوع است.
+- نام: چاکود (`chakod-car`)
+- نوع محصول: بازار خودرو، نمایشگاه‌ها و کسب‌وکارهای خودرویی
+- زبان و جهت رابط: فارسی و RTL
+- اصل توسعه: ادامه پروژه موجود؛ بازسازی از صفر و ایجاد مسیر موازی بدون تأیید ممنوع است.
 
 ## مخزن و شاخه کاری
 
-```text
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
 Main branch: مبنای توسعه جاری نیست
-```
 
-تا پیش از تأیید صریح مالک و Build تولید، شاخه کاری با `main` ادغام نشود.
+تا پیش از تأیید صریح مالک و Build تولید، شاخه کاری با main ادغام نشود.
 
 ## وضعیت عملیاتی فعلی
 
-### مرحله ۲ — پچ‌های پس از ممیزی
+### مسیرها و دسترسی
 
-- [x] ممیزی مسیرها، صفحات، لینک‌ها و دکمه‌های اصلی انجام شد.
-- [x] بازگشت امن ورود با `returnTo` اصلاح شد.
-- [x] مسیرهای مدیریت برای کاربر عادی محافظت و پنهان شدند.
-- [x] مسیرهای عمومی خودرو روی `/cars/*` تثبیت شدند.
-- [x] مسیرهای ثبت و مدیریت آگهی روی `/account/listings/*` قرار دارند.
-- [x] مسیرهای قدیمی خودرو و آگهی به مسیرهای اصلی Redirect می‌شوند.
-- [x] صفحه 404 استاندارد و مسیر عمومی `/dealerships` وجود دارند.
+- [x] بازگشت امن ورود با returnTo اصلاح شده است.
+- [x] مسیرهای مدیریت برای کاربر عادی محافظت و پنهان شده‌اند.
+- [x] مسیرهای عمومی خودرو روی /cars/* تثبیت شده‌اند.
+- [x] ثبت و مدیریت آگهی روی /account/listings/* قرار دارد.
+- [x] مسیرهای قدیمی خودرو و آگهی Redirect می‌شوند.
+- [x] صفحه 404 استاندارد و مسیر عمومی /dealerships وجود دارند.
 
-### AI — پاک‌سازی Legacy Assistant و Foundation جدید
+### AI — وضعیت فعلی
 
-- [x] دستیار گفتگویی سراسری قدیمی از `RootLayout` و Runtime پروژه حذف شد.
-- [x] Route قدیمی `/api/ai/assistant` و هسته `lib/ai-assistant/*` حذف شدند.
-- [x] تست‌ها، Workflow و مستندات اختصاصی همان دستیار قدیمی حذف شدند.
-- [x] متغیرهای محیطی اختصاصی Assistant قدیمی از `.env.example` حذف شدند.
-- [x] سیستم مستقل Moderation آگهی در `app/api/ai/moderate-listing` و `lib/ai-moderation/*` حفظ شد.
-- [x] Chakod AI Manager Foundation v0.1 به‌صورت جدا از هسته سایت اضافه شد.
-- [x] Manager به‌صورت پیش‌فرض غیرفعال و Provider-agnostic تعریف شد.
-- [x] Mode اولیه فقط `read_suggest` است و Write Action خودکار مجاز نیست.
-- [x] Route مدیریتی `GET /api/ai/manager/status` فقط پس از تأیید ادمین پاسخ می‌دهد.
-- [x] Status فقط وضعیت پیکربندی را گزارش می‌کند و Secret/API Key را افشا نمی‌کند.
-- [x] تست Config برای fail-closed بودن Provider و Feature Flag اضافه شد.
-- [~] اجرای Regression/CI برای Foundation جدید هنوز باید تأیید شود.
+- [x] دستیار گفتگویی سراسری قدیمی از RootLayout و Runtime حذف شده است.
+- [x] Route قدیمی /api/ai/assistant و lib/ai-assistant/* حذف شده‌اند.
+- [x] UI، تست‌ها، Workflow و مستندات اختصاصی Assistant قدیمی حذف شده‌اند.
+- [x] app/chatgpt-auth.ts و مستندات Sign in with ChatGPT مربوط به Starter حذف شده‌اند.
+- [x] Chakod AI Manager Foundation v0.1 جدا از هسته سایت ایجاد شده است.
+- [x] Manager به‌صورت پیش‌فرض غیرفعال، Provider-agnostic و در Mode اولیه read_suggest است.
+- [x] GET /api/ai/manager/status فقط پس از تأیید ادمین پاسخ می‌دهد و Secret افشا نمی‌کند.
+- [x] Moderation مستقل آگهی در app/api/ai/moderate-listing و lib/ai-moderation/* حفظ شده است.
+- [~] Regression/CI برای Foundation جدید هنوز باید به‌صورت واقعی تأیید شود.
 
-### Launch-1 — استارت اولیه محلی
+### Legacy / Starter cleanup
 
-- [x] `tsconfig.launch.json` برای محدوده استارت اولیه اضافه شد.
-- [x] نوع‌های حداقلی Cloudflare Runtime اضافه شدند.
-- [x] نصب قفل‌شده با `npm ci` موفق شده است.
-- [x] تست‌های مسیرها، ورود و دسترسی در نسخه مبنا ثبت شده‌اند.
-- [x] سرور محلی و مسیرهای `/`، `/cars` و `/login` قبلاً Smoke Test شده‌اند.
-
-### Launch-2 — Affiliate TypeScript
-
-- [x] خطاهای `HeadersInit` در پنل کاربر و مدیریت همکاری در فروش رفع شدند.
-- [x] هر دو تابع `tokenHeaders` اکنون فقط `Record<string, string>` برمی‌گردانند.
-- [x] TypeScript اختصاصی Affiliate بدون خطا اجرا شد.
-- [x] PR شماره ۴ با Commit `7fa2c8d8c1b851042d441e80b0d9179a76b8f2ee` ادغام شد.
-
-## وضعیت Build و موانع باز
-
-- Build تولید Cloudflare در محیط فاقد فایل‌های زیر قابل اجرا نیست:
-
-```text
-.openai/hosting.json
-build/sites-vite-plugin
-```
-
-این فایل‌ها محلی و Git-ignored هستند و نباید برای رفع CI به مخزن Commit شوند.
-
-- گزارش قبلی `npm ci` شامل ۱۸ آسیب‌پذیری بود: ۱ کم، ۴ متوسط و ۱۳ بالا.
-- هیچ `npm audit fix --force` نباید بدون تحلیل اثرات اجرا شود.
+- [x] AI_HANDOFF.md قدیمی حذف شد تا Baselineهای تاریخی با وضعیت جاری اشتباه نشوند.
+- [x] README مربوط به vinext-starter با README واقعی چاکود جایگزین شد.
+- [x] examples/d1 نمونه Scaffold حذف شد.
+- [x] فایل‌های بکاپ app/submit/page.before-*.tsx حذف شدند.
+- [x] INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی و ناسازگار با Workflow فعلی حذف شدند.
+- [ ] سایر فایل‌های عمومی مشکوک فقط پس از اثبات بلااستفاده بودن حذف شوند.
 
 ## اقدام‌های بعدی
 
-```text
 Priority 1: تکمیل و تثبیت Backend/API واقعی چاکود و Auth
-Priority 2: اجرای Regression Test برای Legacy AI cleanup و AI Manager Foundation
+Priority 2: اجرای Regression Test برای Cleanup و AI Manager Foundation
 Priority 3: ساخت Provider Adapter و Read-only Tool Registry برای Chakod AI Manager
 Priority 4: تحلیل امن وابستگی‌ها و آسیب‌پذیری‌ها
 Priority 5: تأیید Build تولید در محیط واقعی Cloudflare
-```
 
 ## فناوری‌های مخزن
 
@@ -92,22 +64,22 @@ Priority 5: تأیید Build تولید در محیط واقعی Cloudflare
 - npm
 - Cloudflare Workers / Pages و Wrangler
 - Drizzle و D1
-- PHP/MySQL backend در `api.chakod.com` برای بخش‌هایی از سیستم واقعی
+- PHP/MySQL backend در api.chakod.com برای بخش‌هایی از سیستم واقعی
 
-## اسناد مرجع و ترتیب اعتبار
+## اسناد مرجع
 
-1. `docs/MASTER-SITEMAP-FA.md`
-2. `docs/PROJECT-CHECKLIST-FA.md`
-3. `docs/INITIAL-LAUNCH-CHECKLIST-FA.md`
-4. `docs/CHAKOD-AI-MANAGER-FA.md`
-5. `PROJECT_CONTEXT.md`
-6. `TODO.md`
-7. `README.md`
-8. `AGENTS.md`
-9. `CLAUDE.md`
-10. `package.json`
+1. docs/MASTER-SITEMAP-FA.md
+2. docs/PROJECT-CHECKLIST-FA.md
+3. docs/INITIAL-LAUNCH-CHECKLIST-FA.md
+4. docs/CHAKOD-AI-MANAGER-FA.md
+5. PROJECT_CONTEXT.md
+6. TODO.md
+7. README.md
+8. AGENTS.md
+9. CLAUDE.md
+10. package.json
 
-در تعارض مسیرها، `docs/MASTER-SITEMAP-FA.md` مبنای محصول است.
+در تعارض مسیرها، docs/MASTER-SITEMAP-FA.md مبنای محصول است.
 
 ## قواعد ثابت توسعه
 
@@ -115,29 +87,11 @@ Priority 5: تأیید Build تولید در محیط واقعی Cloudflare
 2. هر پچ کوچک، مستقل و قابل بازگشت باشد.
 3. فرانت‌اند، بک‌اند و دیتابیس بی‌دلیل هم‌زمان تغییر نکنند.
 4. نتیجه تست یا Build بدون اجرای موفق اعلام نشود.
-5. هر مورد تکمیل‌شده همان لحظه در چک‌لیست مرتبط ثبت شود.
-6. موارد در حال بررسی با `[~]` و موارد مسدود با `[!]` ثبت شوند.
-7. مسیر موازی، داده ساختگی و قابلیت نیمه‌کاره وارد نسخه نهایی نشود.
-8. پس از هر پچ، تست مرتبط، `PROJECT_CONTEXT.md` و `TODO.md` به‌روز شوند.
-9. ادغام با `main` فقط با تأیید صریح مالک و پس از Build تولید انجام شود.
+5. مسیر موازی، داده ساختگی و قابلیت نیمه‌کاره وارد نسخه نهایی نشود.
+6. پس از هر پچ، تست مرتبط، PROJECT_CONTEXT.md و TODO.md به‌روز شوند.
+7. ادغام با main فقط با تأیید صریح مالک و پس از Build تولید انجام شود.
+8. فایل یا کد قدیمی صرفاً به دلیل مشکوک بودن حذف نشود؛ باید بلااستفاده یا متناقض بودن آن قابل اثبات باشد.
 
-## فایل‌ها و اطلاعات ممنوع برای Git
+## اطلاعات ممنوع برای Git
 
-```text
-.env
-.env.local
-.env.*
-!.env.example
-.npmrc
-.openai/
-node_modules/
-.next/
-build/
-dist/
-out/
-uploads/
-app/api/config.php
-app/api/config.php.secure
-```
-
-API Key، Token، Password، Secret، کلید خصوصی و اطلاعات اتصال واقعی دیتابیس نباید Commit شوند.
+فایل‌های محیطی واقعی، Secretها، API Keyها، Tokenها، Passwordها، داده واقعی کاربران، uploads و اطلاعات واقعی اتصال دیتابیس نباید Commit شوند.

@@ -68,10 +68,52 @@ text = read(path)
 text = sub_required(
     text,
     r'\n\s*<section className=\{styles\.growthCard\} aria-label="رشد و دیده‌شدن بیشتر">.*?\n\s*</section>',
-    '''\n              <section className={styles.growthCard} aria-label="مدیریت فعالیت‌های حساب">\n                <div className={styles.growthCopy}>\n                  <span>مدیریت حساب</span>\n                  <h2>فعالیت‌های چاکود را از پنل مرتبط مدیریت کنید</h2>\n                  <p>آگهی‌ها و خدمات حرفه‌ای شما بدون مسیر رزرو بنر از بخش‌های اصلی حساب در دسترس هستند.</p>\n                </div>\n                <div className={styles.growthActions}>\n                  {stats.total > 0 && !isBusinessDirectoryAccount && (\n                    <a className={styles.growthPrimary} href="/account/listings">مدیریت آگهی‌ها</a>\n                  )}\n                  {isBusinessDirectoryAccount && (\n                    <a className={styles.growthPrimary} href="/account/services">مدیریت خدمات حرفه‌ای</a>\n                  )}\n                </div>\n              </section>''',
+    '''\n              <section className={styles.growthCard} aria-label="مدیریت فعالیت‌های حساب">\n                <div className={styles.growthCopy}>\n                  <span>مدیریت حساب</span>\n                  <h2>فعالیت‌های چاکود را از پنل مرتبط مدیریت کنید</h2>\n                  <p>آگهی‌ها و خدمات حرفه‌ای شما از بخش‌های اصلی حساب در دسترس هستند.</p>\n                </div>\n                <div className={styles.growthActions}>\n                  {stats.total > 0 && !isBusinessDirectoryAccount && (\n                    <a className={styles.growthPrimary} href="/account/listings">مدیریت آگهی‌ها</a>\n                  )}\n                  {isBusinessDirectoryAccount && (\n                    <a className={styles.growthPrimary} href="/account/services">مدیریت خدمات حرفه‌ای</a>\n                  )}\n                </div>\n              </section>''',
     "account growth card",
     flags=re.S,
 )
+write(path, text)
+
+# Homepage showroom promo remains useful, but it must browse showrooms rather than sell a retired reservation.
+path = "app/components/HomeShowroomBanner.tsx"
+text = read(path)
+text = replace_required(text, 'href="/account/ads"', 'href="/showrooms"', "showroom banner destination")
+text = replace_required(
+    text,
+    'aria-label={`رزرو جایگاه تبلیغاتی نمایشگاه‌داران در ${location}`}',
+    'aria-label={`مشاهده نمایشگاه‌های ${location}`}',
+    "showroom banner aria label",
+)
+text = replace_required(text, "رزرو جایگاه", "مشاهده نمایشگاه‌ها", "showroom banner CTA")
+write(path, text)
+
+# Dealer promo keeps its discovery action only.
+path = "app/components/HomeDealerAdBanner.tsx"
+text = read(path)
+text = replace_required(
+    text,
+    '        <Link href="/account/ads">رزرو جایگاه تبلیغاتی</Link>\n',
+    "",
+    "dealer ad reservation CTA",
+)
+write(path, text)
+
+# Dealer command center no longer links to banner booking.
+path = "app/account/business/DealerCommandCenter.tsx"
+text = read(path)
+text = replace_required(
+    text,
+    '              <Link href="/account/ads">رزرو بنر</Link>\n',
+    "",
+    "dealer command reservation link",
+)
+write(path, text)
+
+# AI Manager must not expose retired banner reservation queues/capabilities.
+path = "lib/chakod-ai-manager/tool-executor.ts"
+text = read(path)
+text = replace_required(text, '  "pending_banners",\n', "", "AI pending banners summary")
+text = replace_required(text, '  "banners_view",\n', "", "AI banner capability")
 write(path, text)
 
 # Admin command center: commerce remains, banner reservation wording does not.

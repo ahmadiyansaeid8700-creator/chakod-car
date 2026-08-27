@@ -1,6 +1,6 @@
 import SegmentCatalogPage, {
   generateMetadata as generateCatalogMetadata,
-} from "../../ads/[segment]/page";
+} from "../_catalog/page";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

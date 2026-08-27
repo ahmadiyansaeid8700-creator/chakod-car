@@ -38,17 +38,21 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Auto-write ممنوع است.
 - [x] Provider Adapter با Timeout، Failure isolation و fail-closed اضافه شده است.
 - [x] Local Provider فقط Loopback endpoint معتبر می‌پذیرد.
-- [x] Read-only Tool Registry اضافه شده است.
+- [x] Read-only Tool Registry و Tool Executor اضافه شده‌اند.
+- [x] Tool Snapshotهای Listings / Businesses / Commerce قبل از ورود به Provider Sanitized می‌شوند.
 - [x] Status API اطلاعات Runtime و Registry را بدون Secret گزارش می‌دهد.
+- [x] Suggestion API فقط Snapshot خلاصه را به Provider می‌دهد و Write Action اجرا نمی‌کند.
 - [x] صفحه اختصاصی `/admin/ai` برای Provider، Tool Registry، Guardrail و Human Approval ساخته شده است.
-- [~] Regression/CI این مرحله هنوز طبق تصمیم مالک اجرا نشده است.
+- [x] ناسازگاری Node strip-types در Provider/Tool Error رفع شده و importهای Runtime قابل Resolve شده‌اند.
+- [x] تست‌های هدفمند Config + Provider + Tool Executor در محیط Node 22 اجرا شدند: 11/11 Pass.
+- [~] Regression کامل Repository، TypeScript check، Build و Smoke UI هنوز باید اجرا و تأیید شوند.
 
 ## اولویت‌های بعدی
 
-Priority 1: تکمیل Backend/API واقعی چاکود و Auth روی هاست
-Priority 2: اتصال Toolهای registered به APIهای Read-only واقعی
-Priority 3: اجرای Regression Test برای Cleanup + AI + Admin UI
-Priority 4: Audit event و Suggestion endpoint مدیریتی
+Priority 1: اجرای Regression کامل Repository و رفع خطاهای احتمالی
+Priority 2: تکمیل Backend/API واقعی چاکود و Auth روی هاست
+Priority 3: بررسی واقعی پاسخ APIهای Read-only روی هاست
+Priority 4: Audit event برای درخواست‌های AI
 Priority 5: Build تولید و سپس تصمیم درباره main
 
 ## فناوری‌های اصلی

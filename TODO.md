@@ -4,7 +4,7 @@
 
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: تثبیت Backend و تکمیل Chakod AI Manager در حالت Read-only
+Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت Read-only
 
 ## انجام‌شده
 
@@ -28,9 +28,20 @@ Current focus: تثبیت Backend و تکمیل Chakod AI Manager در حالت 
 - [x] بازطراحی `/admin` به Command Center
 - [x] ساخت `/admin/ai`
 - [x] ساخت کنسول پیشنهاد مدیریتی Read-only
-- [~] Regression/CI هنوز طبق تصمیم مالک اجرا نشده است
+- [x] رفع ناسازگاری Node strip-types در Provider و Tool Executor
+- [x] اضافه‌شدن تست Tool Executor به Workflow
+- [x] اجرای تست هدفمند Config + Provider + Tool Executor در Node 22: 11/11 Pass
+- [~] Regression کامل Repository و Smoke UI هنوز باقی است
 
 ## اقدام‌های باز فوری
+
+### Regression / Build
+
+- [ ] اجرای `npx tsc --noEmit -p tsconfig.launch.json`
+- [ ] اجرای تست‌های core routes
+- [ ] اجرای `ai-moderation-policy.test.ts` کنار تست‌های جدید AI
+- [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`
+- [ ] رفع هر خطای پیدا شده قبل از فعال‌سازی Provider
 
 ### Backend / Hosting
 
@@ -43,7 +54,6 @@ Current focus: تثبیت Backend و تکمیل Chakod AI Manager در حالت 
 
 ### AI Manager — قبل از فعال‌سازی
 
-- [ ] اجرای Regression Test برای Provider + Registry + Executor + UI
 - [ ] بررسی واقعی پاسخ `admin-listings.php` روی هاست
 - [ ] بررسی واقعی پاسخ `admin-businesses.php` روی هاست
 - [ ] بررسی واقعی پاسخ `admin-commerce.php` روی هاست
@@ -58,7 +68,7 @@ Current focus: تثبیت Backend و تکمیل Chakod AI Manager در حالت 
 - [ ] Audit مستقل برای هر اقدام
 - [ ] امکان Cancel/Revert در صورت ماهیت اقدام
 
-### Build / Release
+### Release
 
 - [ ] npm audit کنترل‌شده
 - [ ] Build واقعی Cloudflare

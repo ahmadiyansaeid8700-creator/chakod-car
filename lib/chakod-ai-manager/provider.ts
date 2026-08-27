@@ -1,14 +1,14 @@
 import type {
   ChakodAiProviderRequest,
   ChakodAiProviderResult,
-} from "./contracts";
+} from "./contracts.ts";
 import {
   getChakodAiManagerStatus,
   getChakodAiOpenAiModel,
   getChakodAiTimeoutMs,
   normalizeLocalEndpoint,
   type ChakodAiEnv,
-} from "./config";
+} from "./config.ts";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const MAX_INSTRUCTIONS_CHARS = 6_000;
@@ -21,13 +21,14 @@ type FetchLike = (
 ) => Promise<Response>;
 
 export class ChakodAiProviderError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code: string,
-  ) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
     super(message);
     this.name = "ChakodAiProviderError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -213,7 +214,9 @@ async function readJson(response: Response): Promise<unknown> {
 }
 
 function extractText(payload: unknown) {
-  const direct = readStringField(payload, "output_text") || readStringField(payload, "text");
+  const direct =
+    readStringField(payload, "output_text") ||
+    readStringField(payload, "text");
   if (direct) return direct.slice(0, MAX_OUTPUT_CHARS);
 
   if (!isRecord(payload) || !Array.isArray(payload.output)) {

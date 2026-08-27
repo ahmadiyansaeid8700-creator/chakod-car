@@ -1,8 +1,8 @@
 import {
   authApiUrl,
   parseJsonResponse,
-} from "../chakod-auth-proxy";
-import { getChakodAiManagerStatus } from "./config";
+} from "../chakod-auth-proxy.ts";
+import { getChakodAiManagerStatus } from "./config.ts";
 
 export type ChakodAiExecutableToolId =
   | "manager_status"
@@ -44,13 +44,14 @@ const SAFE_CAPABILITY_KEYS = [
 ] as const;
 
 export class ChakodAiToolError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code: string,
-  ) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
     super(message);
     this.name = "ChakodAiToolError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -238,7 +239,10 @@ async function readAdminJson(
   }
 
   if (!response.ok || payload.success === false) {
-    const message = typeof payload.message === "string" ? payload.message : "Read-only admin source failed.";
+    const message =
+      typeof payload.message === "string"
+        ? payload.message
+        : "Read-only admin source failed.";
     throw new ChakodAiToolError(
       message.slice(0, 240),
       response.status === 401 || response.status === 403 ? 403 : 502,

@@ -59,6 +59,7 @@ jobs:
           node --experimental-strip-types --test
           tests/chakod-ai-manager-config.test.ts
           tests/chakod-ai-provider.test.ts
+          tests/chakod-ai-tool-executor.test.ts
           tests/ai-moderation-policy.test.ts
 
       - name: Lint launch patch

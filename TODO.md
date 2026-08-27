@@ -4,7 +4,7 @@
 
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Read-only
+Current focus: Cleanup-first و Full Regression بدون احیای قابلیت‌های قدیمی
 
 ## انجام‌شده
 
@@ -15,6 +15,9 @@ Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Rea
 - [x] حذف Banner Reservation قدیمی مبتنی بر ChatGPT/email auth و `demo_paid`
 - [x] حذف D1 schema/migration و helperهای یتیم همان رزرو آزمایشی
 - [x] حذف `/account/ads` و تمام CTA/تب‌های رزرو بنر
+- [x] حذف `pending_banners` از Snapshot هوش مصنوعی
+- [x] حذف `AGENTS.md` و `CLAUDE.md` قدیمی
+- [x] حذف متادیتای آزمایشی `codex-preview`
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
@@ -31,20 +34,26 @@ Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Rea
 - [x] بازطراحی `/admin` به Command Center
 - [x] ساخت `/admin/ai`
 - [x] ساخت کنسول پیشنهاد مدیریتی Read-only
-- [x] رفع ناسازگاری Node strip-types در Provider و Tool Executor
-- [x] اضافه‌شدن تست Tool Executor به Workflow
-- [x] اجرای تست هدفمند Config + Provider + Tool Executor + Moderation در Node 22: 16/16 Pass
+- [x] اجرای تست هدفمند Config + Provider + Tool Executor + Moderation در Node 22: 16/16 Pass در اجرای قبلی
 
 ## اقدام‌های باز فوری
+
+### Cleanup audit
+
+- [~] بررسی خوشه Affiliate / Ambassador و حذف در صورت تأیید یتیم‌بودن در محصول فعلی
+- [~] بررسی کامپوننت‌های Home که دیگر import نمی‌شوند
+- [ ] یکسان‌سازی مسیرهای موازی `/showrooms`، `/dealerships` و `/dealers` پس از تعیین مسیر canonical
+- [ ] حذف assetهای تکراری فقط پس از اثبات بلااستفاده‌بودن مسیر فایل
+- [ ] بازنویسی `MASTER-SITEMAP-FA.md` مطابق محصول واقعی؛ سند فعلی هنوز قابلیت‌های حذف‌شده را فهرست می‌کند
 
 ### Regression / Build
 
 - [~] GitHub Actions PR #112 برای Full Regression در حال استفاده است
 - [x] `npm ci` در Runner واقعی GitHub پاس شد
-- [x] Run اول TypeScript سه import قدیمی `chatgpt-auth` را پیدا کرد؛ زنجیره Legacy مربوط حذف شد
-- [ ] اجرای مجدد `npx tsc --noEmit -p tsconfig.launch.json`
-- [ ] اجرای تست‌های core routes در CI
-- [ ] اجرای تست‌های AI + moderation در CI
+- [x] TypeScript Check در Runner واقعی پاس شد
+- [x] 14 تست Core Routes در Runner واقعی پاس شد
+- [!] تست Tool Executor در اجرای مستقیم Node به‌دلیل import زنجیره‌ای `next/server` متوقف شد؛ helper خالص باید از وابستگی Next جدا شود
+- [ ] اجرای مجدد تست‌های AI + moderation در CI بعد از اصلاح import boundary
 - [ ] اجرای `npm run build`
 - [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`
 - [ ] Smoke امنیتی APIهای AI بدون Session
@@ -69,8 +78,7 @@ Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Rea
 
 ### Dependency audit
 
-- [ ] بررسی 21 vulnerability گزارش‌شده توسط `npm ci`/audit در CI
-- [ ] حذف dependencyهای بلااستفاده مثل Drizzle فقط بعد از بررسی package-lock و Build
+- [ ] بررسی 18 vulnerability گزارش‌شده توسط `npm ci` در CI: 2 low و 16 high
 - [ ] ممنوعیت `npm audit fix --force` بدون بررسی دستی
 
 ### فاز Write آینده

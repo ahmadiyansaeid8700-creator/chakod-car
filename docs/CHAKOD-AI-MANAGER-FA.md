@@ -1,80 +1,106 @@
-# Chakod AI Manager
+# Chakod AI Manager — Foundation
 
 ## هدف
 
-Chakod AI Manager یک لایه مدیریتی جدا از هسته اصلی سایت است. ورود، آگهی، پروفایل، پرداخت و مسیرهای اصلی سایت نباید برای کارکرد عادی به AI وابسته شوند.
+Chakod AI Manager یک لایه مدیریتی جدا از هسته اصلی سایت است. این لایه نباید ورود، آگهی، پروفایل، پرداخت یا مسیرهای اصلی را برای کارکرد عادی سایت به AI وابسته کند.
 
 ## اصول معماری
 
 - AI Manager به‌صورت پیش‌فرض غیرفعال است.
 - Provider قابل تعویض است: `disabled`، `openai` یا `local`.
-- فاز فعلی فقط `read_suggest` است؛ هیچ Write Action خودکار مجاز نیست.
-- Chatbot سراسری در RootLayout وجود ندارد و بدون نیاز محصول دوباره ساخته نمی‌شود.
-- Moderation فعلی آگهی سرویس مستقل باقی می‌ماند.
-- Secret، API Key و Token هرگز در Status، Log عمومی یا GitHub نمایش داده نمی‌شوند.
-- API مدیریتی فقط پس از تأیید نشست ادمین پاسخ می‌دهد.
+- Mode فعلی فقط `read_suggest` است.
+- Write Action خودکار مجاز نیست.
+- Chatbot سراسری در RootLayout وجود ندارد.
+- Moderation آگهی سرویس مستقل باقی می‌ماند.
+- Secret، API Key و Token در UI یا Status نمایش داده نمی‌شوند.
+- مسیرهای مدیریت AI زیر `app/admin/ai` و `app/api/ai/manager` از هسته سایت جدا هستند.
 
-## Foundation v0.1
+## Foundation v0.3
 
-- `lib/chakod-ai-manager/contracts.ts`
-- `lib/chakod-ai-manager/config.ts`
-- `app/api/ai/manager/status/route.ts`
-- `tests/chakod-ai-manager-config.test.ts`
+### Provider Adapter
 
-`GET /api/ai/manager/status` فقط برای ادمین معتبر در دسترس است و وضعیت غیرمحرمانه Manager را گزارش می‌کند. کاربر غیرادمین پاسخ 404 می‌گیرد.
+`lib/chakod-ai-manager/provider.ts`
 
-## Provider Adapter v0.2
+- OpenAI و Local Provider از قرارداد مشترک استفاده می‌کنند.
+- Timeout محدود و قابل تنظیم است.
+- Failure isolation و fail-closed behavior اعمال می‌شود.
+- Local endpoint فقط برای Loopback معتبر پذیرفته می‌شود.
+- ورودی و خروجی اندازه محدود دارند.
+- OpenAI request با `store: false` ارسال می‌شود.
 
-Provider Adapter در `lib/chakod-ai-manager/provider.ts` مرز مشترک ارتباط با مدل را ایجاد می‌کند.
+### Read-only Tool Registry
 
-### کنترل‌های ایمنی
+`lib/chakod-ai-manager/tools.ts`
 
-- Manager و Provider باید صریحاً فعال و پیکربندی شده باشند؛ در غیر این صورت Fail-closed است.
-- درخواست ورودی محدودیت اندازه دارد.
-- Timeout سمت سرور بین ۱ تا ۳۰ ثانیه Clamp می‌شود.
-- خطای شبکه یا Provider به خطای عمومی و بدون نشت جزئیات داخلی تبدیل می‌شود.
-- پاسخ OpenAI با `store: false` ارسال می‌شود.
-- Adapter هیچ Tool یا Write Action به مدل ارائه نمی‌کند.
-- Provider محلی فقط به localhost/loopback متصل می‌شود تا تنظیم اشتباه به ارسال داده به مقصد ناشناس منجر نشود.
-- پاسخ Provider قبل از بازگشت باید متن قابل استفاده داشته باشد.
+Registry وضعیت سه مرحله را نگه می‌دارد:
 
-### OpenAI provider
+- `available`: قابلیت Read-only در Foundation فعلی قابل مشاهده است.
+- `registered`: قرارداد ابزار ثبت شده ولی Executor آن هنوز به API واقعی متصل نشده است.
+- `planned`: ابزار در معماری تعریف شده ولی هنوز وارد مرحله اتصال نشده است.
 
-از Responses API سمت سرور استفاده می‌شود. Model از `CHAKOD_AI_MANAGER_OPENAI_MODEL` خوانده می‌شود و Credential همان `OPENAI_API_KEY` سرور است.
+ابزارهای فعلی شامل وضعیت Manager، وضعیت Moderation، صف آگهی‌ها، کسب‌وکارها، سلامت تجاری و خلاصه عملیات سایت هستند.
 
-### Local provider
+### Status API
 
-Endpoint فقط از `CHAKOD_AI_LOCAL_ENDPOINT` خوانده می‌شود و در این فاز باید loopback باشد. قرارداد پاسخ حداقلی:
+`GET /api/ai/manager/status`
 
-```json
-{
-  "text": "...",
-  "model": "optional-model-name"
-}
-```
+این Route فقط برای ادمین معتبر پاسخ می‌دهد و اطلاعات غیرمحرمانه زیر را برمی‌گرداند:
+
+- Feature Flag و Provider
+- Mode و وضعیت آمادگی
+- Timeout و نام Model غیرمحرمانه
+- خلاصه Tool Registry
+- وضعیت Moderation بدون Secret
+
+کاربر فاقد دسترسی پاسخ 404 می‌گیرد.
+
+### صفحه مدیریت AI
+
+`/admin/ai`
+
+صفحه اختصاصی AI Center شامل موارد زیر است:
+
+- وضعیت Provider و Runtime
+- Tool Registry و Stage هر ابزار
+- معماری پردازش از Admin Request تا Human Decision
+- Guardrailهای استقلال سایت
+- نمایش صریح ممنوع بودن Auto-write
+
+### داشبورد مدیریت
+
+`/admin`
+
+داشبورد مدیریت بازطراحی شده و اکنون Command Center واحد برای این بخش‌ها است:
+
+- آگهی‌ها
+- کسب‌وکارها
+- مالی و تجاری
+- AI Center
+- وضعیت دسترسی و Governance
+- نمای فشرده معماری AI
 
 ## Environment contract
 
-فقط نام و مقدارهای نمونه غیرمحرمانه در `.env.example` نگهداری می‌شوند:
+فقط نام تنظیمات در `.env.example` نگهداری می‌شود؛ مقدار واقعی خارج از Git است.
 
 ```text
 CHAKOD_AI_MANAGER_ENABLED=false
 CHAKOD_AI_MANAGER_PROVIDER=disabled
-CHAKOD_AI_MANAGER_OPENAI_MODEL=gpt-5.4
 CHAKOD_AI_MANAGER_TIMEOUT_MS=12000
+CHAKOD_AI_MANAGER_OPENAI_MODEL=
 CHAKOD_AI_LOCAL_ENDPOINT=
 ```
 
-مقادیر واقعی Secret خارج از Git هستند.
+برای Provider `openai` از `OPENAI_API_KEY` سرور استفاده می‌شود.
 
 ## مراحل بعدی
 
-1. اجرای Regression Test واقعی Foundation و Provider Adapter.
-2. ساخت Tool Registry فقط برای APIهای Read-only تأییدشده چاکود.
-3. تعریف Audit event برای درخواست‌های مدیریتی بدون ذخیره Secret یا Token.
-4. صفحه `/admin/ai` فقط بعد از آماده شدن API و تست دسترسی.
-5. هر Write Action احتمالی در آینده فقط با مجوز صریح، تأیید انسانی و Audit مستقل.
+1. اجرای Regression Test برای Cleanup، Provider Adapter، Tool Registry و صفحات مدیریت.
+2. ساخت Executor برای Toolهای `registered` فقط روی APIهای Read-only تأییدشده.
+3. اضافه‌کردن Audit event برای درخواست‌های AI بدون ذخیره Secret یا Token.
+4. ساخت Suggestion endpoint مدیریتی پس از آماده‌شدن حداقل یک Tool واقعی.
+5. هر Write Action احتمالی آینده فقط با Permission، Human Approval و Audit مستقل.
 
 ## نقطه بازگشت
 
-هر فاز AI در Commit مستقل نگهداری می‌شود تا در صورت مشکل بدون اثر بر Moderation یا هسته اصلی سایت Revert شود.
+AI Manager باید همیشه از هسته سایت جدا بماند تا در صورت مشکل با غیرفعال‌کردن Feature Flag یا Revert Commit، سرویس اصلی بدون AI ادامه دهد.

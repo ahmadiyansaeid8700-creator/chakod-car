@@ -5,7 +5,7 @@
 - نام: چاکود (`chakod-car`)
 - نوع محصول: بازار خودرو، نمایشگاه‌ها و کسب‌وکارهای خودرویی
 - زبان و جهت رابط: فارسی و RTL
-- اصل توسعه: ادامه پروژه موجود؛ بازسازی از صفر و ایجاد مسیر موازی بدون تأیید ممنوع است.
+- اصل توسعه: ادامه پروژه موجود؛ مسیر موازی و بازسازی از صفر بدون تأیید ممنوع است.
 
 ## مخزن و شاخه کاری
 
@@ -13,88 +13,73 @@ Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
 Main branch: مبنای توسعه جاری نیست
 
-تا پیش از تأیید صریح مالک و Build تولید، شاخه کاری با main ادغام نشود.
+ادغام با main فقط با تأیید صریح مالک و پس از Build/Regression واقعی انجام شود.
 
-## وضعیت عملیاتی فعلی
+## وضعیت فعلی
 
-### مسیرها و دسترسی
+### مسیرها و مدیریت
 
-- [x] بازگشت امن ورود با returnTo اصلاح شده است.
-- [x] مسیرهای مدیریت برای کاربر عادی محافظت و پنهان شده‌اند.
-- [x] مسیرهای عمومی خودرو روی /cars/* تثبیت شده‌اند.
-- [x] ثبت و مدیریت آگهی روی /account/listings/* قرار دارد.
-- [x] مسیرهای قدیمی خودرو و آگهی Redirect می‌شوند.
-- [x] صفحه 404 استاندارد و مسیر عمومی /dealerships وجود دارند.
+- [x] مسیرهای اصلی ورود، خودرو، آگهی و مدیریت تثبیت شده‌اند.
+- [x] `/admin/*` با Server-side admin access gate محافظت می‌شود.
+- [x] داشبورد `/admin` به Command Center جدید بازطراحی شده است.
+- [x] ماژول‌های آگهی، کسب‌وکار، مالی و AI از یک داشبورد واحد قابل دسترسی‌اند.
 
-### AI — وضعیت فعلی
+### Legacy cleanup
 
-- [x] دستیار گفتگویی سراسری قدیمی و Route/Library/UI/Test/Workflow آن حذف شده است.
-- [x] app/chatgpt-auth.ts و مستندات Sign in with ChatGPT مربوط به Starter حذف شده‌اند.
-- [x] Chakod AI Manager Foundation v0.1 جدا از هسته سایت ایجاد شده است.
-- [x] Manager به‌صورت پیش‌فرض غیرفعال، Provider-agnostic و در Mode `read_suggest` است.
-- [x] GET /api/ai/manager/status فقط پس از تأیید ادمین پاسخ می‌دهد و Secret افشا نمی‌کند.
-- [x] Provider Adapter v0.2 برای `openai` و `local` با Timeout، محدودیت ورودی و Failure isolation اضافه شده است.
-- [x] OpenAI Adapter از Responses API با `store: false` استفاده می‌کند و Credential فقط سمت سرور است.
-- [x] Local Adapter در این فاز فقط loopback را می‌پذیرد.
-- [x] هیچ Tool یا Write Action هنوز به Provider ارائه نمی‌شود.
-- [x] Moderation مستقل آگهی در app/api/ai/moderate-listing و lib/ai-moderation/* حفظ شده است.
-- [~] Regression/CI برای Foundation و Provider Adapter هنوز باید به‌صورت واقعی تأیید شود.
+- [x] Assistant سراسری قدیمی، ChatGPT starter و مسیرهای وابسته حذف شده‌اند.
+- [x] AI_HANDOFF قدیمی، examples/d1، فایل‌های backup داخل app و راهنماهای قدیمی حذف شده‌اند.
+- [x] Assetهای Starter بلااستفاده حذف شده‌اند.
+- [x] `ai-moderation` مستقل حفظ شده است.
 
-### Legacy / Starter cleanup
+### Chakod AI Manager
 
-- [x] AI_HANDOFF.md قدیمی حذف شد.
-- [x] README مربوط به vinext-starter با README واقعی چاکود جایگزین شد.
-- [x] examples/d1 نمونه Scaffold حذف شد.
-- [x] فایل‌های بکاپ app/submit/page.before-*.tsx حذف شدند.
-- [x] INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی حذف شدند.
-- [x] assetهای پیش‌فرض Next/Vercel و public/images/logo.png صفر‌بایت حذف شدند.
-- [x] assetهای واقعی برند چاکود حفظ شدند.
+- [x] Feature Flag و Provider contract روی `disabled | openai | local`.
+- [x] Mode فعلی فقط `read_suggest`.
+- [x] Auto-write ممنوع است.
+- [x] Provider Adapter با Timeout، Failure isolation و fail-closed اضافه شده است.
+- [x] Local Provider فقط Loopback endpoint معتبر می‌پذیرد.
+- [x] Read-only Tool Registry اضافه شده است.
+- [x] Status API اطلاعات Runtime و Registry را بدون Secret گزارش می‌دهد.
+- [x] صفحه اختصاصی `/admin/ai` برای Provider، Tool Registry، Guardrail و Human Approval ساخته شده است.
+- [~] Regression/CI این مرحله هنوز طبق تصمیم مالک اجرا نشده است.
 
-## اقدام‌های بعدی
+## اولویت‌های بعدی
 
-Priority 1: تکمیل و تثبیت Backend/API واقعی چاکود و Auth
-Priority 2: اجرای Regression Test برای Cleanup و AI Manager
-Priority 3: ساخت Read-only Tool Registry برای Chakod AI Manager فقط روی APIهای تأییدشده
-Priority 4: تعریف Audit event بدون Secret/Token
-Priority 5: تحلیل امن وابستگی‌ها و سپس تأیید Build تولید
+Priority 1: تکمیل Backend/API واقعی چاکود و Auth روی هاست
+Priority 2: اتصال Toolهای registered به APIهای Read-only واقعی
+Priority 3: اجرای Regression Test برای Cleanup + AI + Admin UI
+Priority 4: Audit event و Suggestion endpoint مدیریتی
+Priority 5: Build تولید و سپس تصمیم درباره main
 
-## فناوری‌های مخزن
+## فناوری‌های اصلی
 
 - Next.js 16 / App Router
 - React 19
 - TypeScript
-- Vinext و Vite
-- npm
-- Cloudflare Workers / Pages و Wrangler
-- Drizzle و D1
-- PHP/MySQL backend در api.chakod.com برای بخش‌هایی از سیستم واقعی
+- Vinext / Vite
+- Cloudflare Workers
+- Drizzle / D1
+- PHP/MySQL backend در api.chakod.com
 
 ## اسناد مرجع
 
 1. docs/MASTER-SITEMAP-FA.md
 2. docs/PROJECT-CHECKLIST-FA.md
-3. docs/INITIAL-LAUNCH-CHECKLIST-FA.md
-4. docs/CHAKOD-AI-MANAGER-FA.md
-5. PROJECT_CONTEXT.md
-6. TODO.md
-7. README.md
-8. AGENTS.md
-9. CLAUDE.md
-10. package.json
-
-در تعارض مسیرها، docs/MASTER-SITEMAP-FA.md مبنای محصول است.
+3. docs/CHAKOD-AI-MANAGER-FA.md
+4. PROJECT_CONTEXT.md
+5. TODO.md
+6. README.md
+7. AGENTS.md
+8. CLAUDE.md
+9. package.json
 
 ## قواعد ثابت توسعه
 
-1. قبل از هر پچ، فاز، هدف، مسیرها و فایل‌های درگیر اعلام شوند.
-2. هر پچ کوچک، مستقل و قابل بازگشت باشد.
-3. فرانت‌اند، بک‌اند و دیتابیس بی‌دلیل هم‌زمان تغییر نکنند.
-4. نتیجه تست یا Build بدون اجرای موفق اعلام نشود.
-5. مسیر موازی، داده ساختگی و قابلیت نیمه‌کاره وارد نسخه نهایی نشود.
-6. پس از هر پچ، تست مرتبط، PROJECT_CONTEXT.md و TODO.md به‌روز شوند.
-7. ادغام با main فقط با تأیید صریح مالک و پس از Build تولید انجام شود.
-8. فایل یا کد قدیمی صرفاً به دلیل مشکوک بودن حذف نشود؛ باید بلااستفاده یا متناقض بودن آن قابل اثبات باشد.
-
-## اطلاعات ممنوع برای Git
-
-فایل‌های محیطی واقعی، Secretها، API Keyها، Tokenها، Passwordها، داده واقعی کاربران، uploads و اطلاعات واقعی اتصال دیتابیس نباید Commit شوند.
+1. هر پچ کوچک، مستقل و قابل Revert باشد.
+2. نتیجه تست یا Build بدون اجرای واقعی موفق اعلام نشود.
+3. AI نباید هسته سایت را برای کارکرد عادی وابسته کند.
+4. Toolهای AI در این فاز فقط Read-only هستند.
+5. هر Write Action آینده نیازمند Permission، Human Approval و Audit مستقل است.
+6. Secret، API Key، Token، Password و Credential واقعی وارد Git یا UI نشوند.
+7. Backup تاریخی داخل app نگهداری نشود؛ Git تاریخچه است.
+8. main تا تأیید صریح مالک تغییر نکند.

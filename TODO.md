@@ -4,7 +4,7 @@
 
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Manager جدید بدون وابسته‌کردن هسته سایت به AI
+Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Manager بدون وابسته‌کردن هسته سایت به AI
 
 ## انجام‌شده
 
@@ -19,78 +19,64 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 
 ### Legacy cleanup
 
-- [x] حذف Assistant قدیمی، Route و Library آن.
-- [x] حذف ChatGPT/Vinext starter auth و اسناد قدیمی.
-- [x] حذف AI_HANDOFF.md، examples/d1، فایل‌های page.before-* و راهنماهای نصب قدیمی.
-- [x] جایگزینی README قدیمی با README واقعی چاکود.
-- [x] حذف assetهای پیش‌فرض Next/Vercel و لوگوی صفر‌بایت.
-- [x] حفظ assetهای واقعی برند و ai-moderation.
+- [x] حذف Assistant و ChatGPT starter قدیمی
+- [x] حذف AI_HANDOFF قدیمی، examples/d1 و فایل‌های backup داخل app
+- [x] حذف راهنماها و Assetهای Starter بلااستفاده
+- [x] حفظ ai-moderation مستقل
 
-### Chakod AI Manager — Foundation v0.1
+### Chakod AI Manager
 
-- [x] Provider contract روی disabled | openai | local.
-- [x] Feature Flag پیش‌فرض غیرفعال.
-- [x] Mode فاز اول read_suggest.
-- [x] ممنوعیت Write Action خودکار.
-- [x] GET /api/ai/manager/status فقط برای ادمین.
-
-### Chakod AI Manager — Provider Adapter v0.2
-
-- [x] Provider Adapter مشترک برای OpenAI و Local.
-- [x] محدودیت اندازه Instruction و Input.
-- [x] Timeout قابل تنظیم با Clamp بین ۱ تا ۳۰ ثانیه.
-- [x] Failure isolation و خطاهای عمومی بدون نشت جزئیات داخلی.
-- [x] OpenAI Responses API با `store: false`.
-- [x] Model مستقل Manager با CHAKOD_AI_MANAGER_OPENAI_MODEL.
-- [x] Local provider محدود به localhost/loopback.
-- [x] تست Adapter برای Fail-closed، OpenAI، Local و Transport failure اضافه شد.
-- [x] Workflow تست AI Manager برای Provider Adapter به‌روز شد.
-- [~] اجرای واقعی Regression/CI هنوز باید تأیید شود.
+- [x] Foundation و قرارداد Provider
+- [x] Feature Flag با حالت پیش‌فرض غیرفعال
+- [x] Mode فعلی read_suggest
+- [x] ممنوعیت Auto-write
+- [x] Provider Adapter برای OpenAI و Local با Timeout و fail-closed
+- [x] Local endpoint محدود به Loopback
+- [x] Read-only Tool Registry با وضعیت available / registered / planned
+- [x] Status API بدون افشای Secret
+- [x] بازطراحی کامل /admin به‌عنوان Command Center
+- [x] ساخت صفحه اختصاصی /admin/ai
+- [x] نمایش Provider، Runtime، Registry، Guardrail و Human Approval در UI
+- [~] Regression/CI برای این مرحله هنوز عمداً اجرا نشده است
 
 ## اقدام‌های باز فوری
 
 ### Backend / Hosting
 
-- [ ] ساخت یا بازیابی امن chakod-private/secrets.php خارج از Document Root.
-- [ ] تکمیل تنظیمات دیتابیس بدون ثبت در Git.
-- [ ] تکمیل Kavenegar API Key و Verify Template بدون ثبت در Git.
-- [ ] تست اتصال دیتابیس.
-- [ ] تست OTP ورود.
-- [ ] شناسایی و استقرار تمام PHP endpointهای موردنیاز نسخه فعلی.
-- [ ] Smoke Test ورود، پروفایل، آگهی و آپلود تصویر.
+- [ ] ساخت یا بازیابی امن chakod-private/secrets.php خارج از Document Root
+- [ ] تکمیل تنظیمات دیتابیس بدون ثبت در Git
+- [ ] تکمیل Kavenegar API Key و Verify Template بدون ثبت در Git
+- [ ] تست اتصال دیتابیس
+- [ ] تست OTP ورود
+- [ ] استقرار تمام PHP endpointهای موردنیاز نسخه فعلی
+- [ ] Smoke Test ورود، پروفایل، آگهی و آپلود تصویر
 
-### AI Manager جدید
+### AI Manager — مرحله بعد
 
-- [ ] اجرای Regression Test برای Foundation، Cleanup و Provider Adapter.
-- [ ] ممیزی APIهای Read-only موجود و انتخاب فقط Endpointهای قابل اعتماد.
-- [ ] ساخت Read-only Tool Registry بدون دسترسی Write.
-- [ ] تعریف Audit event بدون Secret/Token.
-- [ ] اضافه‌کردن /admin/ai فقط بعد از آماده‌شدن APIهای پایه و تست دسترسی.
-- [ ] تعریف Human Approval برای هر Write Action احتمالی آینده.
-- [ ] Chatbot سراسری بدون نیاز محصول دوباره ساخته نشود.
-
-### Legacy / clutter audit
-
-- [x] فایل‌های صفر‌بایت شناخته‌شده و assetهای Starter اصلی پاک‌سازی شدند.
-- [ ] سایر Placeholderها یا assetهای تکراری فقط پس از اثبات بلااستفاده بودن حذف شوند.
-- [ ] هیچ فایل تاریخی داخل app/ به‌عنوان Backup نگهداری نشود؛ تاریخچه باید در Git باشد.
+- [ ] اجرای Regression Test برای Cleanup + Provider + Registry + Admin UI
+- [ ] ساخت Executor برای Toolهای registered فقط روی APIهای Read-only تأییدشده
+- [ ] اتصال listings_review_overview به Admin listings API
+- [ ] اتصال businesses_overview به Admin businesses API
+- [ ] اتصال commerce_health فقط به داده‌های غیرتغییردهنده
+- [ ] تعریف Audit event بدون Secret/Token
+- [ ] ساخت Suggestion endpoint پس از آماده‌شدن حداقل یک Tool واقعی
+- [ ] تعریف Human Approval مستقل پیش از هر Write Action آینده
 
 ### امنیت وابستگی‌ها
 
-- [ ] اجرای npm audit --json در محیط کنترل‌شده و ثبت خلاصه غیرحساس.
-- [ ] تفکیک آسیب‌پذیری مستقیم و انتقالی.
-- [ ] رفع موارد بدون Breaking Change.
-- [ ] ممنوعیت npm audit fix --force بدون بررسی دستی.
+- [ ] اجرای npm audit --json در محیط کنترل‌شده
+- [ ] تفکیک آسیب‌پذیری مستقیم و انتقالی
+- [ ] رفع موارد بدون Breaking Change
+- [ ] ممنوعیت npm audit fix --force بدون بررسی دستی
 
 ### Build تولید Cloudflare
 
-- [ ] اجرای npm run build در محیط واقعی Cloudflare پس از فراهم‌شدن پیش‌نیازها.
-- [ ] بررسی دامنه و مسیرهای اصلی پس از استقرار.
+- [ ] اجرای npm run build در محیط واقعی Cloudflare پس از فراهم‌شدن پیش‌نیازها
+- [ ] بررسی دامنه و مسیرهای اصلی پس از استقرار
 
 ## قواعد روزانه
 
-- [ ] هر بار فقط یک پچ اصلی انتخاب شود.
-- [ ] قبل از تغییر، فاز، فایل‌ها، مسیرها و نقطه بازگشت ثبت شوند.
-- [ ] Secret، فایل محیطی واقعی یا داده واقعی کاربر Commit نشود.
-- [ ] main تا تأیید صریح مالک تغییر نکند.
-- [ ] پس از پچ مهم، PROJECT_CONTEXT.md و TODO.md به‌روز شوند.
+- [ ] Secret، فایل محیطی واقعی یا داده واقعی کاربر Commit نشود
+- [ ] main تا تأیید صریح مالک تغییر نکند
+- [ ] هیچ فایل تاریخی به‌عنوان Backup داخل app نگهداری نشود؛ Git تاریخچه است
+- [ ] نتیجه تست یا Build فقط بعد از اجرای واقعی موفق اعلام شود

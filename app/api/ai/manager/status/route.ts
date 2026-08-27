@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { getChakodAiManagerStatus } from "@/lib/chakod-ai-manager/config";
+import {
+  getChakodAiManagerStatus,
+  getChakodAiOpenAiModel,
+  getChakodAiTimeoutMs,
+} from "@/lib/chakod-ai-manager/config";
+import {
+  getChakodAiToolCatalog,
+  getChakodAiToolSummary,
+} from "@/lib/chakod-ai-manager/tools";
 import { hasAdminRouteAccess } from "@/lib/route-access";
 import { readServerIdentity } from "@/lib/server-route-access";
 
@@ -17,10 +25,25 @@ export async function GET() {
     );
   }
 
+  const manager = getChakodAiManagerStatus();
+
   return NextResponse.json(
     {
       success: true,
-      manager: getChakodAiManagerStatus(),
+      manager,
+      runtime: {
+        timeoutMs: getChakodAiTimeoutMs(),
+        model:
+          manager.provider === "openai"
+            ? getChakodAiOpenAiModel()
+            : manager.provider === "local"
+              ? "local"
+              : null,
+      },
+      tools: {
+        summary: getChakodAiToolSummary(),
+        items: getChakodAiToolCatalog(),
+      },
     },
     { status: 200, headers: responseHeaders() },
   );

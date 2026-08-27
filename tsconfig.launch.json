@@ -8,8 +8,6 @@
   "exclude": [
     "node_modules",
     ".next",
-    "vite.config.ts",
-    "app/account/affiliate/**",
-    "app/admin/affiliate/**"
+    "vite.config.ts"
   ]
 }

@@ -1,7 +1,7 @@
 import {
   authApiUrl,
   parseJsonResponse,
-} from "../chakod-auth-proxy.ts";
+} from "../chakod-api-core.ts";
 import { getChakodAiManagerStatus } from "./config.ts";
 
 export type ChakodAiExecutableToolId =

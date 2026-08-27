@@ -6,50 +6,38 @@ Working branch: backup-latest-2026-08-03
 Current focus: Cleanup-first و Full Regression
 
 ## انجام‌شده
-
-### Legacy cleanup
-- [x] حذف Assistant و ChatGPT starter قدیمی
-- [x] حذف Backupهای داخل app و Assetهای Starter بلااستفاده
+- [x] حذف Assistant/Starter/Backup/Assetهای legacy اثبات‌شده
 - [x] حذف Banner Reservation و `/account/ads`
 - [x] حذف برنامه مستقل Affiliate/Ambassador و حفظ Referral واقعی
-- [x] حذف Homeهای یتیم و حفظ `HomeBannerSlot`
 - [x] canonical نمایشگاه: `/dealerships` عمومی، `/businesses/[slug]` پروفایل، `/account/business` مدیریت
-- [x] حذف پیاده‌سازی سنگین legacy در `/dealers` و `/showrooms/[dealer]`
+- [x] تبدیل `/dealers` و `/showrooms/[dealer]` به Redirect سبک
 - [x] تبدیل `/dashboard` به Redirect به `/account`
 - [x] انتقال implementation جزئیات خودرو به `/cars/[slug]` و تبدیل `/listing/[id]` به Redirect
-- [x] حذف `home.module.css`، `DealerQrCard`، `ListingActionButton.module.css` و تصاویر حجیم Home قدیمی پس از تأیید بلااستفاده بودن
-- [x] حفظ ai-moderation مستقل
-
-### Chakod AI Manager
-- [x] Feature Flag و Provider contract
-- [x] Mode `read_suggest` و ممنوعیت Auto-write
-- [x] Provider Adapter، Read-only Tool Registry و Tool Executor
-- [x] Sanitization برای Listings / Businesses / Commerce
-- [x] بازطراحی `/admin` و ساخت `/admin/ai`
-- [x] تست هدفمند قبلی: 16/16 Pass
+- [x] پاک‌سازی Workflow از excludeها و مسیرهای Affiliate قدیمی
+- [x] افزودن Smoke برای `/dealerships` و Redirectهای legacy اصلی
+- [x] جداسازی helperهای API خالص از `next/server` برای تست مستقیم AI Tool Executor
+- [x] حفظ ai-moderation و Chakod AI Manager read-only
 
 ## اقدام‌های باز فوری
 
-### Cleanup audit
-- [ ] ممیزی Workflowهای قدیمی و حذف تست/مسیرهای منسوخ از CI
-- [ ] بررسی Assetهای تکراری باقی‌مانده فقط پس از اثبات بلااستفاده بودن
-- [ ] بازنویسی `MASTER-SITEMAP-FA.md` مطابق محصول واقعی
-- [ ] اصلاح متن اسناد: «دعوت کاربر و پورسانت» به‌جای Affiliate
-
 ### Regression / Build
-- [~] GitHub Actions PR #112 برای Full Regression
-- [x] `npm ci` در Run قبلی پاس شده
-- [x] TypeScript Check در Run قبلی پاس شده
-- [x] تست‌های Core Routes در Run قبلی پاس شده‌اند
-- [ ] اجرای مجدد AI + moderation tests بعد از Cleanupهای جدید
+- [ ] اجرای مجدد PR #112 بعد از آخرین Cleanup
+- [ ] `npm ci`
+- [ ] TypeScript Check
+- [ ] AI + moderation tests
 - [ ] `npm run build`
-- [ ] Smoke Test مسیرهای اصلی و Redirectهای legacy
+- [ ] Smoke مسیرهای اصلی و Redirectهای legacy
+
+### Cleanup / Docs
+- [ ] بازنویسی `MASTER-SITEMAP-FA.md` مطابق محصول واقعی
+- [ ] حذف عبارت‌های Affiliate/Banner Reservation از سایر اسناد قدیمی
+- [ ] بررسی Assetهای تکراری باقی‌مانده فقط با اثبات عدم مصرف
 
 ### Referral / دعوت
 - [x] حفظ `/r/[code]` برای ثبت انتساب دعوت
 - [x] حفظ ارسال کد دعوت به Commerce برای خرید واجد شرایط
-- [ ] بعداً نام‌های فنی legacy مثل `affiliate_code` فقط با migration امن به Referral تغییر کنند
-- [ ] در صورت نیاز، نمایش ساده «دعوت‌های من / پورسانت من» داخل حساب فعلی ساخته شود؛ بدون عضویت جدا
+- [ ] تغییر نام فنی `affiliate_code` فقط با migration امن در آینده
+- [ ] در صورت نیاز، UI ساده «دعوت‌های من / پورسانت من» داخل حساب فعلی؛ بدون عضویت جدا
 
 ### Backend / Hosting
 - [ ] ساخت/بازیابی امن `chakod-private/secrets.php`

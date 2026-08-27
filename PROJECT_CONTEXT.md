@@ -17,16 +17,15 @@ Main branch: مبنای توسعه جاری نیست
 
 ### Legacy cleanup
 - [x] Assistant سراسری قدیمی، ChatGPT starter و مسیرهای وابسته حذف شده‌اند.
-- [x] AI_HANDOFF قدیمی، examples/d1، backupهای داخل app و Assetهای Starter بلااستفاده حذف شده‌اند.
 - [x] Banner Reservation قدیمی و `/account/ads` حذف شده‌اند.
-- [x] `AGENTS.md`، `CLAUDE.md` و متادیتای `codex-preview` حذف شده‌اند.
-- [x] برنامه مستقل Affiliate/Ambassador حذف شده است؛ هسته Referral کاربر حفظ شده است.
-- [x] Homeهای یتیم و مربوط به ساختارهای قبلی حذف شده‌اند؛ `HomeBannerSlot` فعلی حفظ شده است.
+- [x] برنامه مستقل Affiliate/Ambassador حذف شده و هسته Referral کاربر حفظ شده است.
+- [x] Homeهای یتیم و Assetهای قدیمی اثبات‌شده حذف شده‌اند؛ `HomeBannerSlot` فعلی حفظ شده است.
 - [x] مسیر عمومی canonical نمایشگاه‌ها `/dealerships`، پروفایل `/businesses/[slug]` و مدیریت `/account/business` است.
-- [x] کد سنگین legacy در `/dealers` و `/showrooms/[dealer]` حذف شده و فقط Redirect سازگار باقی مانده است.
+- [x] `/dealers` و `/showrooms/[dealer]` فقط Redirect سازگار هستند.
 - [x] داشبورد canonical کاربر `/account` است و `/dashboard` فقط Redirect است.
 - [x] مسیر canonical جزئیات خودرو `/cars/[slug]` است و `/listing/[id]` فقط Redirect سازگار است.
-- [x] `home.module.css` قدیمی، `DealerQrCard` یتیم، `ListingActionButton.module.css` یتیم و تصاویر حجیم Home قدیمی حذف شده‌اند.
+- [x] Workflow اصلی Regression از مسیرها و excludeهای Affiliate قدیمی پاک شده و Smoke مسیرهای canonical/legacy را پوشش می‌دهد.
+- [x] helperهای خالص API از `next/server` جدا شده‌اند تا AI Tool Executor در Node مستقیم قابل تست باشد.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -36,14 +35,13 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Snapshotهای Listings / Businesses / Commerce قبل از Provider Sanitized می‌شوند.
 - [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
 - [x] تست‌های هدفمند AI + moderation قبلاً 16/16 Pass شده‌اند.
-- [~] Full Regression باید بعد از Cleanupهای جدید دوباره تا Build/Smoke اجرا شود.
+- [~] Full Regression بعد از Cleanupهای جدید باید دوباره تا Build/Smoke اجرا شود.
 
 ## اولویت‌های بعدی
-Priority 1: Cleanup-first؛ بررسی Workflowها، اسناد و Assetهای تکراری باقی‌مانده
-Priority 2: Full Regression تا Build و Smoke
+Priority 1: اجرای Full Regression واقعی روی PR تست
+Priority 2: بازنویسی اسناد قدیمی و بررسی Assetهای تکراری باقی‌مانده
 Priority 3: تکمیل Backend/API واقعی و Auth روی هاست
-Priority 4: بازنویسی اسناد قدیمی مطابق محصول واقعی
-Priority 5: تصمیم درباره main فقط پس از تأیید صریح مالک
+Priority 4: تصمیم درباره main فقط پس از تأیید صریح مالک
 
 ## فناوری‌های اصلی
 - Next.js 16 / App Router

@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  authApiUrl,
+  parseJsonResponse,
+  type JsonRecord,
+} from "./chakod-api-core";
+
+export { authApiUrl, parseJsonResponse } from "./chakod-api-core";
+export type { JsonRecord } from "./chakod-api-core";
 
 export const CHAKOD_SESSION_COOKIE = "chakod_session";
 export const CHAKOD_SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
-const DEFAULT_API_ORIGIN = "https://api.chakod.com";
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
-
-export type JsonRecord = Record<string, unknown>;
-
-export function authApiUrl(pathname: string): string {
-  const origin = (process.env.CHAKOD_API_ORIGIN || DEFAULT_API_ORIGIN).replace(/\/+$/, "");
-  const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
-  return `${origin}${path}`;
-}
 
 export function secureJsonHeaders(): Record<string, string> {
   return {
@@ -80,20 +79,6 @@ export function rejectCrossSiteMutation(request: NextRequest): NextResponse | nu
   }
 
   return null;
-}
-
-export async function parseJsonResponse(response: Response): Promise<JsonRecord | null> {
-  const text = await response.text();
-  if (!text.trim()) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(text);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as JsonRecord)
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 export async function proxyAuthenticatedJson(

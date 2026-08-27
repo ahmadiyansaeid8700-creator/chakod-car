@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate initial local launch
+    name: Validate current Chakod application
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -43,10 +43,10 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Initial launch TypeScript check
+      - name: TypeScript check
         run: npx tsc --noEmit -p tsconfig.launch.json
 
-      - name: Run core JavaScript tests
+      - name: Run core route tests
         run: >-
           node --experimental-strip-types --test
           tests/login-return-to.test.mjs
@@ -62,7 +62,7 @@ jobs:
           tests/chakod-ai-tool-executor.test.ts
           tests/ai-moderation-policy.test.ts
 
-      - name: Lint launch patch
+      - name: Lint runtime environment helpers
         run: >-
           npx eslint
           lib/runtime-env.ts
@@ -71,7 +71,7 @@ jobs:
       - name: Build verified application artifact
         run: npm run build
 
-      - name: Start local server and smoke-test routes
+      - name: Start local server and smoke-test current routes
         shell: bash
         run: |
           set -euo pipefail
@@ -89,7 +89,7 @@ jobs:
               ready=true
               break
             fi
-            if ! kill -0 "$server_pid"; then
+            if ! kill -0 "$server_pid" 2>/dev/null; then
               cat /tmp/chakod-dev.log
               exit 1
             fi
@@ -103,9 +103,27 @@ jobs:
 
           curl --fail --silent --show-error http://127.0.0.1:5173/cars > /tmp/chakod-cars.html
           curl --fail --silent --show-error http://127.0.0.1:5173/login > /tmp/chakod-login.html
+          curl --fail --silent --show-error http://127.0.0.1:5173/dealerships > /tmp/chakod-dealerships.html
           test -s /tmp/chakod-home.html
           test -s /tmp/chakod-cars.html
           test -s /tmp/chakod-login.html
+          test -s /tmp/chakod-dealerships.html
+
+          expect_redirect() {
+            local path="$1"
+            local output="$2"
+            local code
+            code=$(curl --silent --show-error --max-redirs 0 --output "$output" --write-out '%{http_code}' "http://127.0.0.1:5173${path}" || true)
+            case "$code" in
+              301|302|303|307|308) ;;
+              *) echo "Expected redirect for ${path}, got ${code}"; cat "$output"; exit 1 ;;
+            esac
+          }
+
+          expect_redirect "/dashboard" /tmp/chakod-dashboard-redirect.html
+          expect_redirect "/dealers" /tmp/chakod-dealers-redirect.html
+          expect_redirect "/showrooms/legacy-showroom" /tmp/chakod-showroom-redirect.html
+          expect_redirect "/listing/1" /tmp/chakod-listing-redirect.html
 
           admin_status="$(curl --silent --output /tmp/chakod-admin.html --write-out '%{http_code}' http://127.0.0.1:5173/admin)"
           ai_status="$(curl --silent --output /tmp/chakod-admin-ai.html --write-out '%{http_code}' http://127.0.0.1:5173/admin/ai)"

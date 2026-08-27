@@ -1,63 +1,80 @@
-# Chakod AI Manager — Foundation
+# Chakod AI Manager
 
 ## هدف
 
-Chakod AI Manager یک لایه مدیریتی جدا از هسته اصلی سایت است. این لایه نباید ورود، آگهی، پروفایل، پرداخت یا مسیرهای اصلی را برای کارکرد عادی سایت به AI وابسته کند.
+Chakod AI Manager یک لایه مدیریتی جدا از هسته اصلی سایت است. ورود، آگهی، پروفایل، پرداخت و مسیرهای اصلی سایت نباید برای کارکرد عادی به AI وابسته شوند.
 
 ## اصول معماری
 
 - AI Manager به‌صورت پیش‌فرض غیرفعال است.
 - Provider قابل تعویض است: `disabled`، `openai` یا `local`.
-- فاز اول فقط `read_suggest` است؛ هیچ Write Action خودکار مجاز نیست.
+- فاز فعلی فقط `read_suggest` است؛ هیچ Write Action خودکار مجاز نیست.
 - Chatbot سراسری در RootLayout وجود ندارد و بدون نیاز محصول دوباره ساخته نمی‌شود.
-- Moderation فعلی آگهی به‌عنوان سرویس مستقل حفظ می‌شود و با AI Manager ادغام اجباری ندارد.
-- Secret، API Key و Token هرگز در پاسخ Status یا GitHub نمایش داده نمی‌شوند.
+- Moderation فعلی آگهی سرویس مستقل باقی می‌ماند.
+- Secret، API Key و Token هرگز در Status، Log عمومی یا GitHub نمایش داده نمی‌شوند.
 - API مدیریتی فقط پس از تأیید نشست ادمین پاسخ می‌دهد.
 
 ## Foundation v0.1
-
-### فایل‌ها
 
 - `lib/chakod-ai-manager/contracts.ts`
 - `lib/chakod-ai-manager/config.ts`
 - `app/api/ai/manager/status/route.ts`
 - `tests/chakod-ai-manager-config.test.ts`
 
-### Status API
+`GET /api/ai/manager/status` فقط برای ادمین معتبر در دسترس است و وضعیت غیرمحرمانه Manager را گزارش می‌کند. کاربر غیرادمین پاسخ 404 می‌گیرد.
 
-`GET /api/ai/manager/status`
+## Provider Adapter v0.2
 
-این Route فقط برای ادمین معتبر در دسترس است و اطلاعات غیرمحرمانه زیر را گزارش می‌کند:
+Provider Adapter در `lib/chakod-ai-manager/provider.ts` مرز مشترک ارتباط با مدل را ایجاد می‌کند.
 
-- فعال یا غیرفعال بودن درخواست‌شده Manager
-- Provider انتخاب‌شده
-- آماده بودن Provider بدون افشای Credential
-- Mode فعلی (`read_suggest`)
-- ممنوع بودن Write Action
-- وضعیت پیکربندی Moderation موجود بدون نمایش Secret
+### کنترل‌های ایمنی
 
-کاربر غیرادمین پاسخ 404 می‌گیرد تا سطح مدیریت افشا نشود.
+- Manager و Provider باید صریحاً فعال و پیکربندی شده باشند؛ در غیر این صورت Fail-closed است.
+- درخواست ورودی محدودیت اندازه دارد.
+- Timeout سمت سرور بین ۱ تا ۳۰ ثانیه Clamp می‌شود.
+- خطای شبکه یا Provider به خطای عمومی و بدون نشت جزئیات داخلی تبدیل می‌شود.
+- پاسخ OpenAI با `store: false` ارسال می‌شود.
+- Adapter هیچ Tool یا Write Action به مدل ارائه نمی‌کند.
+- Provider محلی فقط به localhost/loopback متصل می‌شود تا تنظیم اشتباه به ارسال داده به مقصد ناشناس منجر نشود.
+- پاسخ Provider قبل از بازگشت باید متن قابل استفاده داشته باشد.
+
+### OpenAI provider
+
+از Responses API سمت سرور استفاده می‌شود. Model از `CHAKOD_AI_MANAGER_OPENAI_MODEL` خوانده می‌شود و Credential همان `OPENAI_API_KEY` سرور است.
+
+### Local provider
+
+Endpoint فقط از `CHAKOD_AI_LOCAL_ENDPOINT` خوانده می‌شود و در این فاز باید loopback باشد. قرارداد پاسخ حداقلی:
+
+```json
+{
+  "text": "...",
+  "model": "optional-model-name"
+}
+```
 
 ## Environment contract
 
-فقط نام تنظیمات در `.env.example` نگهداری می‌شود؛ مقدار واقعی خارج از Git است.
+فقط نام و مقدارهای نمونه غیرمحرمانه در `.env.example` نگهداری می‌شوند:
 
 ```text
 CHAKOD_AI_MANAGER_ENABLED=false
 CHAKOD_AI_MANAGER_PROVIDER=disabled
+CHAKOD_AI_MANAGER_OPENAI_MODEL=gpt-5.4
+CHAKOD_AI_MANAGER_TIMEOUT_MS=12000
 CHAKOD_AI_LOCAL_ENDPOINT=
 ```
 
-برای Provider `openai` از `OPENAI_API_KEY` سرور استفاده می‌شود. AI Manager هیچ Credential جدیدی داخل کد نگهداری نمی‌کند.
+مقادیر واقعی Secret خارج از Git هستند.
 
 ## مراحل بعدی
 
-1. Provider adapter با قرارداد مشترک و Timeout/Failure isolation.
-2. Tool registry فقط برای APIهای Read-only تأییدشده چاکود.
-3. ثبت Audit event برای درخواست‌های مدیریتی بدون ذخیره Secret یا Token.
+1. اجرای Regression Test واقعی Foundation و Provider Adapter.
+2. ساخت Tool Registry فقط برای APIهای Read-only تأییدشده چاکود.
+3. تعریف Audit event برای درخواست‌های مدیریتی بدون ذخیره Secret یا Token.
 4. صفحه `/admin/ai` فقط بعد از آماده شدن API و تست دسترسی.
 5. هر Write Action احتمالی در آینده فقط با مجوز صریح، تأیید انسانی و Audit مستقل.
 
 ## نقطه بازگشت
 
-Foundation باید در یک Commit مستقل باشد تا در صورت مشکل بدون اثر بر Moderation یا هسته سایت Revert شود.
+هر فاز AI در Commit مستقل نگهداری می‌شود تا در صورت مشکل بدون اثر بر Moderation یا هسته اصلی سایت Revert شود.

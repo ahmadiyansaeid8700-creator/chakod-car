@@ -3,7 +3,7 @@ export type ChakodAiProvider = "disabled" | "openai" | "local";
 export type ChakodAiMode = "read_suggest";
 
 export type ChakodAiManagerStatus = {
-  version: "0.1";
+  version: "0.2";
   requestedEnabled: boolean;
   ready: boolean;
   provider: ChakodAiProvider;
@@ -14,4 +14,15 @@ export type ChakodAiManagerStatus = {
     preserved: true;
     configured: boolean;
   };
+};
+
+export type ChakodAiProviderRequest = {
+  instructions: string;
+  input: string;
+};
+
+export type ChakodAiProviderResult = {
+  provider: Exclude<ChakodAiProvider, "disabled">;
+  model: string;
+  text: string;
 };

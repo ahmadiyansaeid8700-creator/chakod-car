@@ -58,6 +58,7 @@ jobs:
         run: >-
           node --experimental-strip-types --test
           tests/chakod-ai-manager-config.test.ts
+          tests/chakod-ai-provider.test.ts
           tests/ai-moderation-policy.test.ts
 
       - name: Lint launch patch
@@ -84,7 +85,7 @@ jobs:
               ready=true
               break
             fi
-            if ! kill -0 "$server_pid" 2>/dev/null; then
+            if ! kill -0 "$server_pid"; then
               cat /tmp/chakod-dev.log
               exit 1
             fi

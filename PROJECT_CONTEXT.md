@@ -28,34 +28,35 @@ Main branch: مبنای توسعه جاری نیست
 
 ### AI — وضعیت فعلی
 
-- [x] دستیار گفتگویی سراسری قدیمی از RootLayout و Runtime حذف شده است.
-- [x] Route قدیمی /api/ai/assistant و lib/ai-assistant/* حذف شده‌اند.
-- [x] UI، تست‌ها، Workflow و مستندات اختصاصی Assistant قدیمی حذف شده‌اند.
+- [x] دستیار گفتگویی سراسری قدیمی و Route/Library/UI/Test/Workflow آن حذف شده است.
 - [x] app/chatgpt-auth.ts و مستندات Sign in with ChatGPT مربوط به Starter حذف شده‌اند.
 - [x] Chakod AI Manager Foundation v0.1 جدا از هسته سایت ایجاد شده است.
-- [x] Manager به‌صورت پیش‌فرض غیرفعال، Provider-agnostic و در Mode اولیه read_suggest است.
+- [x] Manager به‌صورت پیش‌فرض غیرفعال، Provider-agnostic و در Mode `read_suggest` است.
 - [x] GET /api/ai/manager/status فقط پس از تأیید ادمین پاسخ می‌دهد و Secret افشا نمی‌کند.
+- [x] Provider Adapter v0.2 برای `openai` و `local` با Timeout، محدودیت ورودی و Failure isolation اضافه شده است.
+- [x] OpenAI Adapter از Responses API با `store: false` استفاده می‌کند و Credential فقط سمت سرور است.
+- [x] Local Adapter در این فاز فقط loopback را می‌پذیرد.
+- [x] هیچ Tool یا Write Action هنوز به Provider ارائه نمی‌شود.
 - [x] Moderation مستقل آگهی در app/api/ai/moderate-listing و lib/ai-moderation/* حفظ شده است.
-- [~] Regression/CI برای Foundation جدید هنوز باید به‌صورت واقعی تأیید شود.
+- [~] Regression/CI برای Foundation و Provider Adapter هنوز باید به‌صورت واقعی تأیید شود.
 
 ### Legacy / Starter cleanup
 
-- [x] AI_HANDOFF.md قدیمی حذف شد تا Baselineهای تاریخی با وضعیت جاری اشتباه نشوند.
+- [x] AI_HANDOFF.md قدیمی حذف شد.
 - [x] README مربوط به vinext-starter با README واقعی چاکود جایگزین شد.
 - [x] examples/d1 نمونه Scaffold حذف شد.
 - [x] فایل‌های بکاپ app/submit/page.before-*.tsx حذف شدند.
-- [x] INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی و ناسازگار با Workflow فعلی حذف شدند.
-- [x] assetهای پیش‌فرض Next/Vercel شامل file.svg، globe.svg، next.svg، vercel.svg و window.svg پس از بررسی Reference مستقیم حذف شدند.
-- [x] public/images/logo.png صفر‌بایت حذف شد؛ assetهای واقعی برند چاکود حفظ شدند.
-- [ ] سایر فایل‌های عمومی مشکوک فقط پس از اثبات بلااستفاده بودن حذف شوند.
+- [x] INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی حذف شدند.
+- [x] assetهای پیش‌فرض Next/Vercel و public/images/logo.png صفر‌بایت حذف شدند.
+- [x] assetهای واقعی برند چاکود حفظ شدند.
 
 ## اقدام‌های بعدی
 
 Priority 1: تکمیل و تثبیت Backend/API واقعی چاکود و Auth
-Priority 2: اجرای Regression Test برای Cleanup و AI Manager Foundation
-Priority 3: ساخت Provider Adapter و Read-only Tool Registry برای Chakod AI Manager
-Priority 4: تحلیل امن وابستگی‌ها و آسیب‌پذیری‌ها
-Priority 5: تأیید Build تولید در محیط واقعی Cloudflare
+Priority 2: اجرای Regression Test برای Cleanup و AI Manager
+Priority 3: ساخت Read-only Tool Registry برای Chakod AI Manager فقط روی APIهای تأییدشده
+Priority 4: تعریف Audit event بدون Secret/Token
+Priority 5: تحلیل امن وابستگی‌ها و سپس تأیید Build تولید
 
 ## فناوری‌های مخزن
 

@@ -17,34 +17,34 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 - [x] Redirect مسیرهای قدیمی خودرو و آگهی
 - [x] صفحه استاندارد 404
 
-### Legacy AI cleanup
+### Legacy cleanup
 
-- [x] حذف ChakodAiAssistant از RootLayout و تمام صفحات سایت.
-- [x] حذف UI/CSS دستیار گفتگویی قدیمی.
-- [x] حذف /api/ai/assistant و lib/ai-assistant/*.
-- [x] حذف تست، Workflow و مستندات Assistant قدیمی.
-- [x] حذف app/chatgpt-auth.ts مربوط به OpenAI/Vinext starter.
-- [x] حذف AI_HANDOFF.md قدیمی و متناقض با وضعیت فعلی.
-- [x] جایگزینی README قدیمی vinext-starter با README واقعی چاکود.
-- [x] حذف examples/d1 نمونه Scaffold.
-- [x] حذف app/submit/page.before-cover-fix.tsx و app/submit/page.before-dealer-select-fix.tsx.
-- [x] حذف INSTALL-FA.txt و LOCALHOST-FA.txt قدیمی.
-- [x] حذف assetهای پیش‌فرض Starter: file.svg، globe.svg، next.svg، vercel.svg و window.svg.
-- [x] حذف public/images/logo.png صفر‌بایت.
-- [x] حفظ assetهای واقعی برند چاکود.
-- [x] حفظ ai-moderation و تست Policy آن برای بررسی آگهی.
+- [x] حذف Assistant قدیمی، Route و Library آن.
+- [x] حذف ChatGPT/Vinext starter auth و اسناد قدیمی.
+- [x] حذف AI_HANDOFF.md، examples/d1، فایل‌های page.before-* و راهنماهای نصب قدیمی.
+- [x] جایگزینی README قدیمی با README واقعی چاکود.
+- [x] حذف assetهای پیش‌فرض Next/Vercel و لوگوی صفر‌بایت.
+- [x] حفظ assetهای واقعی برند و ai-moderation.
 
 ### Chakod AI Manager — Foundation v0.1
 
-- [x] تعریف Provider روی disabled | openai | local.
-- [x] Feature Flag با حالت پیش‌فرض غیرفعال.
+- [x] Provider contract روی disabled | openai | local.
+- [x] Feature Flag پیش‌فرض غیرفعال.
 - [x] Mode فاز اول read_suggest.
-- [x] ممنوعیت Write Action خودکار در Contract.
-- [x] Status غیرمحرمانه Manager.
-- [x] GET /api/ai/manager/status فقط برای نشست معتبر ادمین.
-- [x] تست Config و fail-closed behavior.
-- [x] Workflow اولیه برای تست AI Manager به‌روز شده است.
-- [x] docs/CHAKOD-AI-MANAGER-FA.md اضافه شده است.
+- [x] ممنوعیت Write Action خودکار.
+- [x] GET /api/ai/manager/status فقط برای ادمین.
+
+### Chakod AI Manager — Provider Adapter v0.2
+
+- [x] Provider Adapter مشترک برای OpenAI و Local.
+- [x] محدودیت اندازه Instruction و Input.
+- [x] Timeout قابل تنظیم با Clamp بین ۱ تا ۳۰ ثانیه.
+- [x] Failure isolation و خطاهای عمومی بدون نشت جزئیات داخلی.
+- [x] OpenAI Responses API با `store: false`.
+- [x] Model مستقل Manager با CHAKOD_AI_MANAGER_OPENAI_MODEL.
+- [x] Local provider محدود به localhost/loopback.
+- [x] تست Adapter برای Fail-closed، OpenAI، Local و Transport failure اضافه شد.
+- [x] Workflow تست AI Manager برای Provider Adapter به‌روز شد.
 - [~] اجرای واقعی Regression/CI هنوز باید تأیید شود.
 
 ## اقدام‌های باز فوری
@@ -61,9 +61,9 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 
 ### AI Manager جدید
 
-- [ ] اجرای Regression Test برای Foundation و Cleanup.
-- [ ] ساخت Provider Adapter مشترک با Timeout و Failure isolation.
-- [ ] ساخت Tool Registry فقط برای APIهای Read-only تأییدشده چاکود.
+- [ ] اجرای Regression Test برای Foundation، Cleanup و Provider Adapter.
+- [ ] ممیزی APIهای Read-only موجود و انتخاب فقط Endpointهای قابل اعتماد.
+- [ ] ساخت Read-only Tool Registry بدون دسترسی Write.
 - [ ] تعریف Audit event بدون Secret/Token.
 - [ ] اضافه‌کردن /admin/ai فقط بعد از آماده‌شدن APIهای پایه و تست دسترسی.
 - [ ] تعریف Human Approval برای هر Write Action احتمالی آینده.
@@ -71,7 +71,7 @@ Current focus: تثبیت Backend و توسعه مرحله‌ای Chakod AI Mana
 
 ### Legacy / clutter audit
 
-- [x] فایل‌های صفر‌بایت شناخته‌شده و assetهای Starter اصلی بررسی و پاک‌سازی شدند.
+- [x] فایل‌های صفر‌بایت شناخته‌شده و assetهای Starter اصلی پاک‌سازی شدند.
 - [ ] سایر Placeholderها یا assetهای تکراری فقط پس از اثبات بلااستفاده بودن حذف شوند.
 - [ ] هیچ فایل تاریخی داخل app/ به‌عنوان Backup نگهداری نشود؛ تاریخچه باید در Git باشد.
 

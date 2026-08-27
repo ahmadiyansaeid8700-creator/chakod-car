@@ -1,14 +1,12 @@
 # Project Context — Chakod
 
 ## هویت پروژه
-
 - نام: چاکود (`chakod-car`)
 - نوع محصول: بازار خودرو، نمایشگاه‌ها و کسب‌وکارهای خودرویی
 - زبان و جهت رابط: فارسی و RTL
-- اصل توسعه: ادامه پروژه موجود؛ مسیر موازی و بازسازی از صفر بدون تأیید ممنوع است.
+- اصل توسعه: ادامه پروژه موجود؛ بازسازی موازی بدون تأیید ممنوع است.
 
 ## مخزن و شاخه کاری
-
 Repository: ahmadiyansaeid8700-creator/chakod-car
 Working branch: backup-latest-2026-08-03
 Main branch: مبنای توسعه جاری نیست
@@ -17,52 +15,34 @@ Main branch: مبنای توسعه جاری نیست
 
 ## وضعیت فعلی
 
-### مسیرها و مدیریت
-
-- [x] مسیرهای اصلی ورود، خودرو، آگهی و مدیریت تثبیت شده‌اند.
-- [x] `/admin/*` با Server-side admin access gate محافظت می‌شود.
-- [x] داشبورد `/admin` به Command Center جدید بازطراحی شده است.
-- [x] ماژول‌های آگهی، کسب‌وکار، مالی و AI از یک داشبورد واحد قابل دسترسی‌اند.
-
 ### Legacy cleanup
-
 - [x] Assistant سراسری قدیمی، ChatGPT starter و مسیرهای وابسته حذف شده‌اند.
-- [x] AI_HANDOFF قدیمی، examples/d1، فایل‌های backup داخل app و راهنماهای قدیمی حذف شده‌اند.
-- [x] Assetهای Starter بلااستفاده حذف شده‌اند.
-- [x] زنجیره قدیمی Banner Reservation مبتنی بر ChatGPT/email auth، D1 و `demo_paid` حذف شده است.
-- [x] قابلیت رزرو بنر توسط کاربر به‌طور کامل از رابط و مسیرهای برنامه حذف شده است.
-- [x] دستورهای عامل‌های قدیمی `AGENTS.md` و `CLAUDE.md` حذف شده‌اند.
-- [x] متادیتای آزمایشی `codex-preview` از Root Layout حذف شده است.
-- [x] برنامه مستقل Affiliate/Ambassador حذف شده است: عضویت جدا، KYC جدا، پنل کاربر، پنل ادمین و APIهای اختصاصی آن‌ها دیگر جزو محصول نیستند.
-- [x] هسته دعوت کاربر و پورسانت حفظ شده است: هر User می‌تواند کد دعوت داشته باشد، `/r/[code]` انتساب را ثبت می‌کند و Commerce کد دعوت را هنگام خرید واجد شرایط ارسال می‌کند.
-- [x] نام‌های فنی legacy مانند `affiliate_code` و `chakod_affiliate_ref` فعلاً فقط برای سازگاری Backend حفظ شده‌اند و به معنی وجود برنامه Affiliate در محصول نیستند.
+- [x] AI_HANDOFF قدیمی، examples/d1، backupهای داخل app و Assetهای Starter بلااستفاده حذف شده‌اند.
+- [x] Banner Reservation قدیمی و `/account/ads` حذف شده‌اند.
+- [x] `AGENTS.md`، `CLAUDE.md` و متادیتای `codex-preview` حذف شده‌اند.
+- [x] برنامه مستقل Affiliate/Ambassador حذف شده است؛ عضویت، KYC و پنل جدا دیگر وجود ندارد.
+- [x] هسته Referral حفظ شده است: `/r/[code]` انتساب دعوت را ثبت می‌کند و Commerce کد دعوت را برای خرید واجد شرایط ارسال می‌کند.
+- [x] Homeهای یتیم و مربوط به ساختارهای قبلی حذف شده‌اند: `HomeAutoBusinesses`، `HomeBusinessDirectory`، `HomeQuickServices`، `HomeServiceCategories`، `HomeBusinessBanners`، `HomeDealerAdBanner`، `HomeShowroomBanner`، `HomePaidBanner` و `HomeExperienceOverrides`.
+- [x] مدیریت فعلی بنر صفحه اصلی با `HomeBannerSlot` و `/api/home-banners.php` حفظ شده است.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
-
 - [x] Feature Flag و Provider contract روی `disabled | openai | local`.
-- [x] Mode فعلی فقط `read_suggest`.
-- [x] Auto-write ممنوع است.
-- [x] Provider Adapter با Timeout، Failure isolation و fail-closed اضافه شده است.
-- [x] Local Provider فقط Loopback endpoint معتبر می‌پذیرد.
-- [x] Read-only Tool Registry و Tool Executor اضافه شده‌اند.
-- [x] Tool Snapshotهای Listings / Businesses / Commerce قبل از ورود به Provider Sanitized می‌شوند.
-- [x] Status API اطلاعات Runtime و Registry را بدون Secret گزارش می‌دهد.
-- [x] Suggestion API فقط Snapshot خلاصه را به Provider می‌دهد و Write Action اجرا نمی‌کند.
-- [x] صفحه اختصاصی `/admin/ai` برای Provider، Tool Registry، Guardrail و Human Approval ساخته شده است.
-- [x] تست‌های هدفمند Config + Provider + Tool Executor + Moderation قبلاً در محیط Node 22 اجرا شدند: 16/16 Pass.
-- [~] Full Regression روی GitHub Actions ادامه دارد: `npm ci`، TypeScript و 14 تست Core پاس شده‌اند؛ تست Tool Executor به‌دلیل import زنجیره‌ای `next/server` در اجرای مستقیم Node متوقف شده و باید boundary آن اصلاح شود.
+- [x] Mode فعلی فقط `read_suggest` و Auto-write ممنوع است.
+- [x] Provider Adapter، Tool Registry و Tool Executor Read-only اضافه شده‌اند.
+- [x] Snapshotهای Listings / Businesses / Commerce قبل از Provider Sanitized می‌شوند.
+- [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
+- [x] تست‌های هدفمند AI + moderation قبلاً 16/16 Pass شده‌اند.
+- [~] Full Regression روی GitHub Actions ادامه دارد؛ `npm ci`، TypeScript و 14 تست Core پاس شده‌اند. تست Tool Executor نیازمند اصلاح import boundary برای اجرای مستقیم Node است.
 
 ## اولویت‌های بعدی
-
-Priority 1: Cleanup-first؛ حذف خوشه‌های واقعاً یتیم و قدیمی براساس import/route usage فعلی
-Priority 2: اصلاح boundary تست AI و ادامه Full Regression تا Build و Smoke
-Priority 3: تکمیل Backend/API واقعی چاکود و Auth روی هاست
-Priority 4: بررسی واقعی پاسخ APIهای Read-only روی هاست
-Priority 5: Build تولید و سپس تصمیم درباره main
+Priority 1: Cleanup-first؛ بررسی مسیرهای تکراری نمایشگاه (`/showrooms`، `/dealerships`، `/dealers`)
+Priority 2: ادامه Full Regression تا Build و Smoke
+Priority 3: تکمیل Backend/API واقعی و Auth روی هاست
+Priority 4: بازنویسی اسناد قدیمی مطابق محصول واقعی
+Priority 5: تصمیم درباره main فقط پس از تأیید صریح مالک
 
 ## فناوری‌های اصلی
-
 - Next.js 16 / App Router
 - React 19
 - TypeScript
@@ -71,22 +51,19 @@ Priority 5: Build تولید و سپس تصمیم درباره main
 - PHP/MySQL backend در api.chakod.com
 
 ## اسناد مرجع
-
 1. PROJECT_CONTEXT.md
 2. TODO.md
 3. docs/CHAKOD-AI-MANAGER-FA.md
-4. docs/MASTER-SITEMAP-FA.md — قدیمی است و باید با ساختار واقعی سایت بازنویسی شود
+4. docs/MASTER-SITEMAP-FA.md — قدیمی و نیازمند بازنویسی
 5. docs/PROJECT-CHECKLIST-FA.md
 6. README.md
 7. package.json
 
 ## قواعد ثابت توسعه
-
 1. هر پچ کوچک، مستقل و قابل Revert باشد.
 2. نتیجه تست یا Build بدون اجرای واقعی موفق اعلام نشود.
 3. AI نباید هسته سایت را برای کارکرد عادی وابسته کند.
 4. Toolهای AI در این فاز فقط Read-only هستند.
-5. هر Write Action آینده نیازمند Permission، Human Approval و Audit مستقل است.
-6. Secret، API Key، Token، Password و Credential واقعی وارد Git یا UI نشوند.
-7. Backup تاریخی داخل app نگهداری نشود؛ Git تاریخچه است.
-8. main تا تأیید صریح مالک تغییر نکند.
+5. Secret، API Key، Token، Password و Credential واقعی وارد Git یا UI نشوند.
+6. Backup تاریخی داخل app نگهداری نشود؛ Git تاریخچه است.
+7. main تا تأیید صریح مالک تغییر نکند.

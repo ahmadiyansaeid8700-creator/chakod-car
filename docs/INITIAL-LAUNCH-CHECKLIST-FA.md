@@ -1,57 +1,86 @@
-# چک‌لیست استارت اولیه چاکود
+# چک‌لیست اجرای اولیه چاکود
 
-> هدف این مرحله آماده‌کردن نسخه محلی قابل اجرا و قابل توسعه روزانه است. Build نهایی Cloudflare تا فراهم‌شدن پیش‌نیازهای محیط میزبانی جداگانه پیگیری می‌شود.
+> این سند فقط وضعیت محصول فعلی را پوشش می‌دهد. قابلیت‌های حذف‌شده مثل Affiliate مستقل، Ambassador و Banner Reservation جزو Launch نیستند.
 
-## وضعیت
+## 1. Repository / Branch
+- [ ] کار روی Branch تأییدشده انجام شده باشد.
+- [ ] `main` بدون تأیید صریح مالک تغییر نکرده باشد.
+- [ ] فایل Backup تاریخی یا Scaffold آزمایشی داخل Runtime باقی نمانده باشد.
+
+## 2. Dependency / TypeScript
+- [ ] `npm ci` موفق باشد.
+- [ ] `npx tsc --noEmit -p tsconfig.launch.json` موفق باشد.
+- [ ] dependencyهای High/Critical با `npm audit` ثبت و جداگانه بررسی شوند؛ `npm audit fix --force` کور اجرا نشود.
+
+## 3. تست‌های Route
+- [ ] Login return-to tests
+- [ ] Route access tests
+- [ ] Car route tests
+- [ ] Listing route tests
+
+مسیرهای canonical مورد انتظار:
 
 ```text
-Phase: Launch-1 — تکمیل‌شده
-Working branch: backup-latest-2026-08-03
-Pull Request: #3 — ادغام‌شده
-Published commit: 375deff98d4d73f11cf630778a0d384b61d4b5a8
-CI Run: 31040565024 — موفق
-Rollback point: dadecbc21b00884ce6af54e2c17c471bffa001cc
+/
+/cars
+/cars/luxury
+/cars/free-zone
+/cars/[slug]
+/dealerships
+/businesses
+/businesses/[slug]
+/account
 ```
 
-## نسخه و کد
+Redirectهای Legacy باید سبک و بدون implementation موازی باشند:
 
-- [x] هسته مستقل AI تست و در شاخه کاری ادغام شد.
-- [x] شاخه مستقل آماده‌سازی استارت اولیه ساخته شد.
-- [x] تنظیم TypeScript مخصوص استارت اولیه اضافه شد.
-- [x] تعریف حداقلی نوع‌های Cloudflare Runtime اضافه شد.
-- [x] Workflow مستقل استارت اولیه اضافه شد.
-- [x] Pull Request شماره ۳ آماده‌سازی استارت اولیه ساخته شد.
+```text
+/ads*
+/listing/*
+/dashboard*
+/dealers*
+/showrooms*
+```
 
-## نصب و کنترل کیفیت
+## 4. AI / Moderation
+- [ ] Chakod AI Manager Config tests
+- [ ] Provider Adapter tests
+- [ ] Read-only Tool Executor tests
+- [ ] Listing Moderation policy tests
+- [ ] AI Manager بدون config صریح Fail-closed باشد.
+- [ ] هیچ Write Action خودکار فعال نباشد.
 
-- [x] نصب قفل‌شده وابستگی‌ها با `npm ci` موفق شد.
-- [x] TypeScript اولیه با `tsconfig.launch.json` بدون خطا اجرا شد.
-- [x] ۱۹ تست مسیرها، ورود، دسترسی و هسته AI موفق شد.
-- [x] ۸ تست TypeScript هوش مصنوعی و سیاست بررسی آگهی موفق شد.
-- [x] ESLint فایل‌های پچ بدون خطا اجرا شد.
+## 5. Build
+- [ ] `scripts/build-verified.sh` executable باشد.
+- [ ] `scripts/validate-artifact.sh` executable باشد.
+- [ ] `npm run build` موفق باشد.
+- [ ] Artifact validation موفق باشد.
 
-## اجرای محلی
+## 6. Smoke محلی
+- [ ] `/`
+- [ ] `/cars`
+- [ ] `/dealerships`
+- [ ] `/login`
+- [ ] `/admin` بدون Session محافظت شود.
+- [ ] `/admin/ai` بدون Session محافظت شود.
+- [ ] APIهای AI Manager بدون Admin Session داده مدیریتی برنگردانند.
 
-- [x] سرور توسعه با `npm run dev` بالا آمد.
-- [x] صفحه `/` پاسخ HTTP موفق داد.
-- [x] صفحه `/cars` پاسخ HTTP موفق داد.
-- [x] صفحه `/login` پاسخ HTTP موفق داد.
-- [x] فرایند تست بعد از پایان به‌درستی متوقف شد.
+## 7. Backend / Hosting
+- [ ] API روی `api.chakod.com` از Document Root مستقل اجرا شود.
+- [ ] secrets خارج از Document Root و خارج از Git باشند.
+- [ ] DB connection موفق باشد.
+- [ ] OTP واقعی تست شود.
+- [ ] Session creation تست شود.
+- [ ] `/api/auth/me` تست شود.
+- [ ] Profile / Listing / Upload smoke شوند.
 
-## موارد خارج از استارت اولیه
+## 8. Referral
+- [ ] `/r/[code]` attribution دعوت را ثبت کند.
+- [ ] Commerce کد دعوت را برای خرید واجد شرایط ارسال کند.
+- [ ] هیچ عضویت Affiliate/Ambassador جداگانه‌ای وجود نداشته باشد.
 
-- [!] TypeScript بخش‌های Affiliate در پچ جداگانه اصلاح می‌شود.
-- [!] Build تولید Cloudflare به `.openai/hosting.json` و `build/sites-vite-plugin` وابسته است.
-- [ ] پیش‌نیازهای واقعی محیط Cloudflare فراهم و Build تولید تأیید شود.
-- [x] گزارش نصب npm بررسی شد: ۱۸ آسیب‌پذیری شامل ۱ مورد کم، ۴ مورد متوسط و ۱۳ مورد بالا ثبت شد؛ هیچ `npm audit fix --force` اجرا نشد.
-- [ ] آسیب‌پذیری‌های npm در پچ مستقل و بدون تغییر مخرب وابستگی‌ها تعیین تکلیف شود.
-
-## نتیجه Launch-1
-
-- [x] شرط پایان استارت اولیه محلی تأیید شد.
-- [x] Pull Request شماره ۳ با Commit `375deff98d4d73f11cf630778a0d384b61d4b5a8` در شاخه کاری ادغام شد.
-- [x] پروژه برای استارت محلی و ادامه توسعه روزانه آماده است.
-
-## شرط پایان Launch-1
-
-نسخه محلی با نصب قفل‌شده بالا بیاید، مسیرهای اصلی پاسخ موفق بدهند، تست‌های پایه و TypeScript اولیه سبز باشند و همه نتایج در همین چک‌لیست ثبت شوند.
+## 9. Release
+- [ ] Regression کامل سبز باشد.
+- [ ] Build واقعی سبز باشد.
+- [ ] Smoke استیجینگ سبز باشد.
+- [ ] فقط بعد از تأیید صریح مالک، تصمیم درباره `main` گرفته شود.

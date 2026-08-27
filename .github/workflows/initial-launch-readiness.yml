@@ -9,9 +9,11 @@ on:
       - "lib/**"
       - "types/**"
       - "tests/**"
+      - "worker/**"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
+      - "vite.config.ts"
       - "vite.windows.config.ts"
       - "docs/INITIAL-LAUNCH-CHECKLIST-FA.md"
       - ".github/workflows/initial-launch-readiness.yml"
@@ -68,7 +70,7 @@ jobs:
           lib/runtime-env.ts
           types/cloudflare-runtime.d.ts
 
-      - name: Build verified application artifact
+      - name: Build application
         run: npm run build
 
       - name: Start local server and smoke-test current routes
@@ -120,6 +122,8 @@ jobs:
             esac
           }
 
+          expect_redirect "/ads" /tmp/chakod-ads-redirect.html
+          expect_redirect "/ads/luxury" /tmp/chakod-ads-luxury-redirect.html
           expect_redirect "/dashboard" /tmp/chakod-dashboard-redirect.html
           expect_redirect "/dealers" /tmp/chakod-dealers-redirect.html
           expect_redirect "/showrooms/legacy-showroom" /tmp/chakod-showroom-redirect.html

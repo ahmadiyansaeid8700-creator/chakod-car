@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -13,56 +11,35 @@
 # testing
 /coverage
 
-# next.js
+# build output
 /.next/
 /out/
+/dist/
+/build/
+tsconfig.tsbuildinfo
 
-# misc
+# Cloudflare local runtime
+/.wrangler/
+/.wrangler-backup/
+
+# local/generated files
 .DS_Store
 *.pem
-
-# debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-next-env.d.ts
-/dist/
-/.wrangler/
-/.sites-runtime/
 /outputs/
 /work/
-# Local dependencies and generated files
-node_modules/
-.next/
-build/
-dist/
-out/
-*.log
-tsconfig.tsbuildinfo
 ping-body.json
 
-# Local runtime folders
-.sites-runtime/
-.wrangler/
-.wrangler-backup/
-.openai/
+# uploads
+/uploads/
 
-# Local uploads
-uploads/
-
-# Local configuration and possible secrets
+# local configuration and secrets
 .npmrc
-.env
-.env.*
+.env*
 !.env.example
 app/api/config.php
 app/api/config.php.secure

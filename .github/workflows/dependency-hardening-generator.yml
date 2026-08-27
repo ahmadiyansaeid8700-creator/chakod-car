@@ -1,0 +1,136 @@
+name: Dependency Hardening Generator
+
+on:
+  push:
+    branches:
+      - security/dependency-hardening-2026-08-27
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dependency-hardening-generator.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependency-hardening-generator
+  cancel-in-progress: true
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout security branch
+        uses: actions/checkout@v4
+        with:
+          ref: security/dependency-hardening-2026-08-27
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+
+      - name: Generate non-major security candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --save-exact \
+            @cloudflare/vite-plugin@1.54.1 \
+            next@16.3.3 \
+            react-server-dom-webpack@19.2.8 \
+            vite@8.2.2 \
+            wrangler@latest
+          npm audit fix --package-lock-only --ignore-scripts || true
+          git diff --stat -- package.json package-lock.json
+
+      - name: Install generated lockfile
+        run: npm ci
+
+      - name: Report candidate audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit --json > /tmp/chakod-security-audit.json || true
+          node --input-type=module - /tmp/chakod-security-audit.json <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const report = JSON.parse(await readFile(process.argv[2], "utf8"));
+          console.log("audit-summary", JSON.stringify(report.metadata?.vulnerabilities || {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
+            console.log(`${name}\tseverity=${item.severity}\tdirect=${Boolean(item.isDirect)}\trange=${item.range}\tfix=${JSON.stringify(item.fixAvailable)}`);
+          }
+          NODE
+
+      - name: TypeScript check
+        run: npx tsc --noEmit -p tsconfig.launch.json
+
+      - name: Run core route tests
+        run: >-
+          node --experimental-strip-types --test
+          tests/login-return-to.test.mjs
+          tests/route-access.test.mjs
+          tests/car-routes.test.mjs
+          tests/listing-routes.test.mjs
+
+      - name: Run AI manager and listing moderation tests
+        run: >-
+          node --experimental-strip-types --test
+          tests/chakod-ai-manager-config.test.ts
+          tests/chakod-ai-provider.test.ts
+          tests/chakod-ai-tool-executor.test.ts
+          tests/ai-moderation-policy.test.ts
+
+      - name: Lint runtime environment helpers
+        run: >-
+          npx eslint
+          lib/runtime-env.ts
+          types/cloudflare-runtime.d.ts
+
+      - name: Build application
+        run: npm run build
+
+      - name: Smoke current routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run dev > /tmp/chakod-security-dev.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=false
+          for _ in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/ > /tmp/chakod-security-home.html; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/chakod-security-dev.log
+              exit 1
+            fi
+            sleep 2
+          done
+          test "$ready" = "true"
+          curl --fail --silent --show-error http://127.0.0.1:5173/cars > /tmp/chakod-security-cars.html
+          curl --fail --silent --show-error http://127.0.0.1:5173/login > /tmp/chakod-security-login.html
+          curl --fail --silent --show-error http://127.0.0.1:5173/dealerships > /tmp/chakod-security-dealerships.html
+
+      - name: Commit verified dependency files
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "Dependency files already match the verified candidate."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Harden non-major dependencies"
+          git push origin HEAD:security/dependency-hardening-2026-08-27

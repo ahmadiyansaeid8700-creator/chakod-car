@@ -5,14 +5,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import ListingCard from "./ListingCard";
-import CatalogFilterPanel from "../ads/[segment]/CatalogFilterPanel";
+import CatalogFilterPanel from "../cars/_catalog/CatalogFilterPanel";
 import type {
   CatalogFacets,
   CatalogFilters,
   CatalogResponse,
   CatalogSegment,
-} from "../ads/[segment]/catalog-types";
-import styles from "../ads/[segment]/CatalogPage.module.css";
+} from "../cars/_catalog/catalog-types";
+import styles from "../cars/_catalog/CatalogPage.module.css";
 import { carMarketPath, withSearchParams } from "../../lib/car-routes";
 
 type Props = {

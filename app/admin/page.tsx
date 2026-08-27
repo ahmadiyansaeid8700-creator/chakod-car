@@ -269,7 +269,7 @@ export default function AdminPage() {
           href: "/admin/commerce",
           code: "CM",
           title: "مالی و تجاری",
-          description: "تعرفه‌ها، پرداخت‌ها، اشتراک‌ها، بنرها و تنظیمات تجاری.",
+          description: "تعرفه‌ها، پرداخت‌ها، اشتراک‌ها و تنظیمات تجاری.",
           meta: "ماژول تجاری",
         }
       : null,

@@ -9,9 +9,11 @@ on:
       - "lib/**"
       - "types/**"
       - "tests/**"
+      - "worker/**"
       - "package.json"
       - "package-lock.json"
       - "tsconfig*.json"
+      - "vite.config.ts"
       - "vite.windows.config.ts"
       - "docs/INITIAL-LAUNCH-CHECKLIST-FA.md"
       - ".github/workflows/initial-launch-readiness.yml"
@@ -26,9 +28,9 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate initial local launch
+    name: Validate current Chakod application
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -43,10 +45,42 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Initial launch TypeScript check
+      - name: Report dependency audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit --json > /tmp/chakod-audit.json || true
+          node --input-type=module - /tmp/chakod-audit.json <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const text = await readFile(process.argv[2], "utf8");
+          let report;
+          try {
+            report = JSON.parse(text);
+          } catch {
+            console.log(text);
+            process.exit(0);
+          }
+
+          console.log("audit-summary", JSON.stringify(report.metadata?.vulnerabilities || {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
+            console.log(
+              `${name}\tseverity=${item.severity}\tdirect=${Boolean(item.isDirect)}\trange=${item.range}\tfix=${JSON.stringify(item.fixAvailable)}`,
+            );
+            for (const via of item.via || []) {
+              if (via && typeof via === "object") {
+                console.log(
+                  `  via=${via.name || name}\tseverity=${via.severity}\ttitle=${via.title}\turl=${via.url}`,
+                );
+              }
+            }
+          }
+          NODE
+
+      - name: TypeScript check
         run: npx tsc --noEmit -p tsconfig.launch.json
 
-      - name: Run core JavaScript tests
+      - name: Run core route tests
         run: >-
           node --experimental-strip-types --test
           tests/login-return-to.test.mjs
@@ -62,13 +96,16 @@ jobs:
           tests/chakod-ai-tool-executor.test.ts
           tests/ai-moderation-policy.test.ts
 
-      - name: Lint launch patch
+      - name: Lint runtime environment helpers
         run: >-
           npx eslint
           lib/runtime-env.ts
           types/cloudflare-runtime.d.ts
 
-      - name: Start local server and smoke-test routes
+      - name: Build application
+        run: npm run build
+
+      - name: Start local server and smoke-test current routes
         shell: bash
         run: |
           set -euo pipefail
@@ -86,7 +123,7 @@ jobs:
               ready=true
               break
             fi
-            if ! kill -0 "$server_pid"; then
+            if ! kill -0 "$server_pid" 2>/dev/null; then
               cat /tmp/chakod-dev.log
               exit 1
             fi
@@ -100,6 +137,38 @@ jobs:
 
           curl --fail --silent --show-error http://127.0.0.1:5173/cars > /tmp/chakod-cars.html
           curl --fail --silent --show-error http://127.0.0.1:5173/login > /tmp/chakod-login.html
+          curl --fail --silent --show-error http://127.0.0.1:5173/dealerships > /tmp/chakod-dealerships.html
           test -s /tmp/chakod-home.html
           test -s /tmp/chakod-cars.html
           test -s /tmp/chakod-login.html
+          test -s /tmp/chakod-dealerships.html
+
+          expect_redirect() {
+            local path="$1"
+            local output="$2"
+            local code
+            code=$(curl --silent --show-error --max-redirs 0 --output "$output" --write-out '%{http_code}' "http://127.0.0.1:5173${path}" || true)
+            case "$code" in
+              301|302|303|307|308) ;;
+              *) echo "Expected redirect for ${path}, got ${code}"; cat "$output"; exit 1 ;;
+            esac
+          }
+
+          expect_redirect "/ads" /tmp/chakod-ads-redirect.html
+          expect_redirect "/ads/luxury" /tmp/chakod-ads-luxury-redirect.html
+          expect_redirect "/dashboard" /tmp/chakod-dashboard-redirect.html
+          expect_redirect "/dealers" /tmp/chakod-dealers-redirect.html
+          expect_redirect "/showrooms/legacy-showroom" /tmp/chakod-showroom-redirect.html
+          expect_redirect "/listing/1" /tmp/chakod-listing-redirect.html
+
+          admin_status="$(curl --silent --output /tmp/chakod-admin.html --write-out '%{http_code}' http://127.0.0.1:5173/admin)"
+          ai_status="$(curl --silent --output /tmp/chakod-admin-ai.html --write-out '%{http_code}' http://127.0.0.1:5173/admin/ai)"
+          case "$admin_status" in 301|302|303|307|308) ;; *) echo "Expected protected /admin redirect, got $admin_status"; cat /tmp/chakod-admin.html; exit 1 ;; esac
+          case "$ai_status" in 301|302|303|307|308) ;; *) echo "Expected protected /admin/ai redirect, got $ai_status"; cat /tmp/chakod-admin-ai.html; exit 1 ;; esac
+
+          status_api="$(curl --silent --output /tmp/chakod-ai-status.json --write-out '%{http_code}' http://127.0.0.1:5173/api/ai/manager/status)"
+          tool_api="$(curl --silent --output /tmp/chakod-ai-tool.json --write-out '%{http_code}' http://127.0.0.1:5173/api/ai/manager/tools/manager_status)"
+          suggest_api="$(curl --silent --output /tmp/chakod-ai-suggest.json --write-out '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"question":"وضعیت سایت چیست؟"}' http://127.0.0.1:5173/api/ai/manager/suggest)"
+          test "$status_api" = "404"
+          test "$tool_api" = "404"
+          test "$suggest_api" = "404"

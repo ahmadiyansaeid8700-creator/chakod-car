@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import SegmentCatalogPage from "../ads/[segment]/page";
+import SegmentCatalogPage from "./_catalog/page";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

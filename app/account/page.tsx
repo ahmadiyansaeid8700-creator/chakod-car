@@ -499,22 +499,18 @@ export default function AccountPage() {
             </section>
 
             {user.profile_completed && (
-              <section className={styles.growthCard} aria-label="رشد و دیده‌شدن بیشتر">
+              <section className={styles.growthCard} aria-label="مدیریت فعالیت‌های حساب">
                 <div className={styles.growthCopy}>
-                  <span>رشد در چاکود</span>
-                  <h2>
-                    {user.account_type === "personal"
-                      ? "آگهی‌تان را بیشتر در معرض دید قرار دهید"
-                      : `مجموعه‌تان را در ${user.business_location_label || user.business_city || "محدوده فعالیت"} بیشتر دیده کنید`}
-                  </h2>
-                  <p>
-                    تبلیغ منطقه‌ای و جایگاه‌های ویژه، دقیقاً به کاربرانی نمایش داده می‌شوند که همان محدوده را دنبال می‌کنند.
-                  </p>
+                  <span>مدیریت حساب</span>
+                  <h2>فعالیت‌های چاکود را از پنل مرتبط مدیریت کنید</h2>
+                  <p>آگهی‌ها و خدمات حرفه‌ای شما از بخش‌های اصلی حساب در دسترس هستند.</p>
                 </div>
                 <div className={styles.growthActions}>
-                  <a className={styles.growthPrimary} href="/account/ads">رزرو تبلیغ منطقه‌ای</a>
                   {stats.total > 0 && !isBusinessDirectoryAccount && (
-                    <a className={styles.growthSecondary} href="/account/listings">ویژه‌کردن آگهی</a>
+                    <a className={styles.growthPrimary} href="/account/listings">مدیریت آگهی‌ها</a>
+                  )}
+                  {isBusinessDirectoryAccount && (
+                    <a className={styles.growthPrimary} href="/account/services">مدیریت خدمات حرفه‌ای</a>
                   )}
                 </div>
               </section>

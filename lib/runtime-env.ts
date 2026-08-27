@@ -2,8 +2,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export type ChakodRuntimeEnv = {
   ASSETS: Fetcher;
-  DB: D1Database;
-  CHAKOD_ADMIN_EMAILS?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

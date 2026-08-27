@@ -41,7 +41,6 @@ export default function HomeDealerAdBanner() {
         <p>پیشنهادهای ویژه و موجودی نمایشگاه‌های همین محدوده را یکجا ببینید.</p>
       </div>
       <div className="dealerAdActions">
-        <Link href="/account/ads">رزرو جایگاه تبلیغاتی</Link>
         <Link href="/showrooms">مشاهده نمایشگاه‌ها</Link>
       </div>
     </section>

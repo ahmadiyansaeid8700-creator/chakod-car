@@ -14,7 +14,7 @@ Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Rea
 - [x] حذف Backupهای داخل app و Assetهای Starter بلااستفاده
 - [x] حذف Banner Reservation قدیمی مبتنی بر ChatGPT/email auth و `demo_paid`
 - [x] حذف D1 schema/migration و helperهای یتیم همان رزرو آزمایشی
-- [x] حفظ `/account/ads` جدید مبتنی بر `/api/auth/commerce`
+- [x] حذف `/account/ads` و تمام CTA/تب‌های رزرو بنر
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager

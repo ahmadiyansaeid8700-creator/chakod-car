@@ -30,7 +30,7 @@ Main branch: مبنای توسعه جاری نیست
 - [x] AI_HANDOFF قدیمی، examples/d1، فایل‌های backup داخل app و راهنماهای قدیمی حذف شده‌اند.
 - [x] Assetهای Starter بلااستفاده حذف شده‌اند.
 - [x] زنجیره قدیمی Banner Reservation مبتنی بر ChatGPT/email auth، D1 و `demo_paid` حذف شده است.
-- [x] صفحه رزرو جدید `/account/ads` که از Commerce/Auth فعلی چاکود استفاده می‌کند حفظ شده است.
+- [x] قابلیت رزرو بنر توسط کاربر به‌طور کامل از رابط و مسیرهای برنامه حذف شده است.
 - [x] D1 schema/migration و helperهای `admin-access`/`banner-booking` که فقط به رزرو آزمایشی قدیمی وابسته بودند حذف شده‌اند.
 - [x] `ai-moderation` مستقل حفظ شده است.
 

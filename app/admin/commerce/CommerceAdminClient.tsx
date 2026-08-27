@@ -11,8 +11,6 @@ type Capabilities = {
   pricing_manage: boolean;
   orders_view: boolean;
   orders_manage: boolean;
-  banners_view: boolean;
-  banners_manage: boolean;
   subscriptions_view: boolean;
   subscriptions_manage: boolean;
   discounts_view: boolean;
@@ -42,9 +40,6 @@ type Province = {
   story_price_toman: number;
   story_duration_hours: number;
   story_is_active: boolean;
-  banner_price_toman: number;
-  banner_day_capacity: number;
-  banner_is_active: boolean;
 };
 
 type DiscountCode = {
@@ -93,23 +88,6 @@ type Order = {
   paid_at?: string | null;
 };
 
-type Banner = {
-  id: number;
-  dealer_name: string;
-  mobile: string;
-  province: string;
-  start_date: string;
-  end_date: string;
-  reserved_days: number;
-  total_price_toman: number;
-  title: string;
-  subtitle?: string | null;
-  desktop_image_url?: string | null;
-  mobile_image_url?: string | null;
-  destination_url?: string | null;
-  status: string;
-  admin_note?: string | null;
-};
 
 
 type Subscription = {
@@ -159,14 +137,12 @@ type AdminResponse = {
     pending_orders: number | null;
     paid_orders_30d: number | null;
     revenue_30d: number | null;
-    pending_banners: number | null;
     active_subscriptions: number | null;
   };
   services?: Service[];
   provinces?: Province[];
   discounts?: DiscountCode[];
   orders?: Order[];
-  banners?: Banner[];
   subscriptions?: Subscription[];
   admins?: AdminUser[];
   audit?: Audit[];
@@ -176,7 +152,7 @@ type AdminResponse = {
   warnings?: string[];
 };
 
-type Tab = "overview" | "pricing" | "provinces" | "discounts" | "orders" | "subscriptions" | "banners" | "admins" | "audit";
+type Tab = "overview" | "pricing" | "provinces" | "discounts" | "orders" | "subscriptions" | "admins" | "audit";
 
 const adminPermissions = [
   ["pricing.view", "مشاهده قیمت‌ها"],
@@ -185,8 +161,6 @@ const adminPermissions = [
   ["orders.manage", "مدیریت سفارش‌ها"],
   ["payments.view", "مشاهده پرداخت‌ها"],
   ["payments.manage", "اصلاح و بازگشت پرداخت"],
-  ["banners.view", "مشاهده بنرها"],
-  ["banners.manage", "تأیید و رد بنرها"],
   ["subscriptions.view", "مشاهده اشتراک‌ها"],
   ["subscriptions.manage", "مدیریت اشتراک‌ها"],
   ["discounts.view", "مشاهده کدهای تخفیف"],
@@ -215,8 +189,6 @@ const capabilityLabels: Record<keyof Capabilities, string> = {
   pricing_manage: "مدیریت تعرفه‌ها",
   orders_view: "مشاهده سفارش‌ها",
   orders_manage: "مدیریت سفارش‌ها",
-  banners_view: "مشاهده رزروهای بنر",
-  banners_manage: "مدیریت رزروهای بنر",
   subscriptions_view: "مشاهده اشتراک‌ها",
   subscriptions_manage: "مدیریت اشتراک‌ها",
   discounts_view: "مشاهده کدهای تخفیف",
@@ -235,7 +207,6 @@ const tabIcons: Record<Tab, string> = {
   discounts: "%",
   orders: "▣",
   subscriptions: "◫",
-  banners: "▧",
   admins: "♙",
   audit: "≡",
 };
@@ -244,7 +215,6 @@ const serviceGroupDefinitions = [
   { key: "listing", title: "آگهی خودرو", description: "انتشار، تمدید و بالابر آگهی‌ها", match: (key: string) => key.startsWith("listing_personal") || key.startsWith("listing_dealer") || key === "listing_bump" },
   { key: "professional", title: "پروفایل حرفه‌ای", description: "اشتراک نمایشگاه، تعمیرگاه و فروشگاه یدکی", match: (key: string) => key.startsWith("professional_profile") },
   { key: "story", title: "استوری استانی", description: "تبلیغ ۲۴ ساعته بر اساس گروه استان", match: (key: string) => key.startsWith("listing_story") },
-  { key: "banner", title: "بنر صفحه اصلی", description: "رزرو روزانه بنر استانی", match: (key: string) => key.startsWith("home_banner") },
 ] as const;
 
 type DiscountStep = 1 | 2 | 3;
@@ -255,7 +225,6 @@ const auditActionLabels: Record<string, string> = {
   update_province: "تغییر قیمت یا ظرفیت استان",
   update_order_status: "تغییر وضعیت سفارش",
   update_subscription: "ویرایش اشتراک",
-  review_banner: "بررسی رزرو بنر",
   create_admin: "افزودن مدیر",
   update_admin_access: "تغییر دسترسی مدیر",
   "discount.create": "ساخت کد تخفیف",
@@ -395,7 +364,6 @@ export default function CommerceAdminClient() {
   const [discountDrafts, setDiscountDrafts] = useState<Record<number, DiscountCode>>({});
   const [adminDrafts, setAdminDrafts] = useState<Record<number, AdminUser>>({});
   const [subscriptionDrafts, setSubscriptionDrafts] = useState<Record<number, Subscription>>({});
-  const [bannerNotes, setBannerNotes] = useState<Record<number, string>>({});
   const [provinceSearch, setProvinceSearch] = useState("");
   const [discountSearch, setDiscountSearch] = useState("");
   const [discountCreatorOpen, setDiscountCreatorOpen] = useState(false);
@@ -471,11 +439,10 @@ export default function CommerceAdminClient() {
         ...payload,
         capabilities: payload.capabilities || current?.capabilities,
         summary: payload.summary || current?.summary,
-        services: payload.services ?? current?.services,
+        services: (payload.services ?? current?.services ?? []).filter((item) => !item.service_key.startsWith("home_banner")),
         provinces: payload.provinces ?? current?.provinces,
         discounts: payload.discounts ?? current?.discounts,
         orders: payload.orders ?? current?.orders,
-        banners: payload.banners ?? current?.banners,
         subscriptions: payload.subscriptions ?? current?.subscriptions,
         admins: payload.admins ?? current?.admins,
         audit: payload.audit ?? current?.audit,
@@ -490,7 +457,6 @@ export default function CommerceAdminClient() {
       if (payload.discounts) setDiscountDrafts(Object.fromEntries(payload.discounts.map((item) => [item.id, { ...item, allowed_services: [...(item.allowed_services || [])], allowed_audiences: [...(item.allowed_audiences || [])], allowed_provinces: [...(item.allowed_provinces || [])], allowed_mobiles: [...(item.allowed_mobiles || [])] }])));
       if (payload.admins) setAdminDrafts(Object.fromEntries(payload.admins.map((item) => [item.id, { ...item, permissions: [...(item.permissions || [])] }])));
       if (payload.subscriptions) setSubscriptionDrafts(Object.fromEntries(payload.subscriptions.map((item) => [item.id, { ...item }])));
-      if (payload.banners) setBannerNotes(Object.fromEntries(payload.banners.map((item) => [item.id, item.admin_note || ""])));
       setLoadedSections((current) => current.includes(section) ? current : [...current, section]);
     } catch (loadError) {
       if (loadError instanceof DOMException && loadError.name === "AbortError") {
@@ -521,7 +487,6 @@ export default function CommerceAdminClient() {
     if (caps?.discounts_view) items.push({ key: "discounts", label: "کدهای تخفیف" });
     if (caps?.orders_view) items.push({ key: "orders", label: "سفارش‌ها" });
     if (caps?.subscriptions_view) items.push({ key: "subscriptions", label: "اشتراک‌ها" });
-    if (caps?.banners_view) items.push({ key: "banners", label: "رزرو بنر" });
     if (caps?.admins_view) items.push({ key: "admins", label: "مدیران و دسترسی" });
     if (caps?.audit_view) items.push({ key: "audit", label: "گزارش تغییرات" });
     return items;
@@ -563,7 +528,7 @@ export default function CommerceAdminClient() {
   );
 
   const enabledCapabilities = useMemo(
-    () => Object.entries(caps || {}).filter(([, value]) => Boolean(value)),
+    () => Object.entries(caps || {}).filter(([key, value]) => key in capabilityLabels && Boolean(value)),
     [caps],
   );
 
@@ -827,12 +792,6 @@ export default function CommerceAdminClient() {
                       <div><span>پرداخت‌های در انتظار</span><strong>{formatNumber(data.summary?.pending_orders)}</strong><small>پیش‌فاکتورهای باز</small></div>
                     </article>
                   )}
-                  {data.summary?.pending_banners !== null && (
-                    <article className={styles.summaryCard}>
-                      <div className={styles.summaryIcon}>▧</div>
-                      <div><span>بنرهای نیازمند بررسی</span><strong>{formatNumber(data.summary?.pending_banners)}</strong><small>در صف تأیید مدیریت</small></div>
-                    </article>
-                  )}
                   {data.summary?.active_subscriptions !== null && (
                     <article className={styles.summaryCard}>
                       <div className={styles.summaryIcon}>◫</div>
@@ -884,9 +843,8 @@ export default function CommerceAdminClient() {
                       <small>مواردی که نیاز به بررسی یا تصمیم دارند.</small>
                     </header>
                     <div className={styles.quickActions}>
-                      {caps?.banners_view && Number(data.summary?.pending_banners || 0) > 0 && <button onClick={() => setActiveTab("banners")}><span><b>رزروهای بنر در انتظار بررسی</b><small>تأیید، رد یا زمان‌بندی رزروها</small></span><em>{formatNumber(data.summary?.pending_banners)}</em></button>}
                       {caps?.orders_view && Number(data.summary?.pending_orders || 0) > 0 && <button onClick={() => setActiveTab("orders")}><span><b>پرداخت‌های ناتمام</b><small>پیگیری پیش‌فاکتورها و تراکنش‌های باز</small></span><em>{formatNumber(data.summary?.pending_orders)}</em></button>}
-                      {Number(data.summary?.pending_banners || 0) === 0 && Number(data.summary?.pending_orders || 0) === 0 && <div className={styles.clearQueue}><b>مورد فوری وجود ندارد</b><small>همه صف‌های عملیاتی در وضعیت عادی هستند.</small></div>}
+                      {Number(data.summary?.pending_orders || 0) === 0 && <div className={styles.clearQueue}><b>مورد فوری وجود ندارد</b><small>همه صف‌های عملیاتی در وضعیت عادی هستند.</small></div>}
                     </div>
                     <div className={styles.managerIdentity}>
                       <span>نقش فعلی</span>
@@ -964,7 +922,7 @@ export default function CommerceAdminClient() {
                 <select value={provinceClassFilter} onChange={(event)=>setProvinceClassFilter(event.target.value as "all"|"regular"|"large")}><option value="all">همه استان‌ها</option><option value="regular">استان عادی</option><option value="large">استان بزرگ</option></select>
               </div>
             </header>
-            <div className={styles.tableWrap}><table><thead><tr><th>استان</th><th>گروه بزرگ</th><th>استوری ۲۴ساعته</th><th>بنر روزانه</th><th>ظرفیت بنر</th><th>وضعیت</th><th /></tr></thead><tbody>{filteredProvinces.map((province)=>{const draft=provinceDrafts[province.province]||province;return <tr key={province.province}><td><strong>{province.province}</strong><small>{draft.is_large?"استان بزرگ":"استان عادی"}</small></td><td><input type="checkbox" checked={draft.is_large} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{is_large:event.target.checked})}/></td><td><input type="number" value={draft.story_price_toman} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{story_price_toman:Number(event.target.value)})}/></td><td><input type="number" value={draft.banner_price_toman} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{banner_price_toman:Number(event.target.value)})}/></td><td><input type="number" value={draft.banner_day_capacity} min={1} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{banner_day_capacity:Number(event.target.value)})}/></td><td><label className={styles.miniCheck}><input type="checkbox" checked={draft.story_is_active} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{story_is_active:event.target.checked})}/><span>استوری</span></label><label className={styles.miniCheck}><input type="checkbox" checked={draft.banner_is_active} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{banner_is_active:event.target.checked})}/><span>بنر</span></label></td><td>{caps.pricing_manage&&<button className={styles.tableButton} disabled={workingKey===`province-${province.province}`} onClick={()=>void patch({action:"update_province",...draft},`province-${province.province}`)}>ذخیره</button>}</td></tr>})}{filteredProvinces.length===0&&<tr><td colSpan={7}><div className={styles.inlineEmpty}>استانی با این فیلتر پیدا نشد.</div></td></tr>}</tbody></table></div>
+            <div className={styles.tableWrap}><table><thead><tr><th>استان</th><th>گروه بزرگ</th><th>استوری ۲۴ساعته</th><th>وضعیت</th><th /></tr></thead><tbody>{filteredProvinces.map((province)=>{const draft=provinceDrafts[province.province]||province;return <tr key={province.province}><td><strong>{province.province}</strong><small>{draft.is_large?"استان بزرگ":"استان عادی"}</small></td><td><input type="checkbox" checked={draft.is_large} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{is_large:event.target.checked})}/></td><td><input type="number" value={draft.story_price_toman} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{story_price_toman:Number(event.target.value)})}/></td><td><label className={styles.miniCheck}><input type="checkbox" checked={draft.story_is_active} disabled={!caps.pricing_manage} onChange={(event)=>updateProvinceDraft(province.province,{story_is_active:event.target.checked})}/><span>استوری</span></label></td><td>{caps.pricing_manage&&<button className={styles.tableButton} disabled={workingKey===`province-${province.province}`} onClick={()=>void patch({action:"update_province",province:draft.province,is_large:draft.is_large,story_price_toman:draft.story_price_toman,story_duration_hours:draft.story_duration_hours,story_is_active:draft.story_is_active},`province-${province.province}`)}>ذخیره</button>}</td></tr>})}{filteredProvinces.length===0&&<tr><td colSpan={5}><div className={styles.inlineEmpty}>استانی با این فیلتر پیدا نشد.</div></td></tr>}</tbody></table></div>
           </section>
         )}
 
@@ -1092,13 +1050,6 @@ export default function CommerceAdminClient() {
           <section className={styles.panel}>
             <header className={styles.panelHeader}><div><span>نمایش عمومی مجموعه‌ها</span><h2>اشتراک‌های حرفه‌ای</h2></div></header>
             <div className={styles.tableWrap}><table><thead><tr><th>مجموعه</th><th>پلن</th><th>وضعیت</th><th>شروع</th><th>پایان</th><th /></tr></thead><tbody>{(data.subscriptions||[]).map((subscription)=>{const draft=subscriptionDrafts[subscription.id]||subscription;return <tr key={subscription.id}><td><strong>{subscription.dealer_name}</strong><small>{subscription.business_type||"مجموعه حرفه‌ای"} · {maskMobile(subscription.mobile)}</small></td><td>{serviceTitleByKey[subscription.service_key] || subscription.service_key}</td><td><select value={draft.status} disabled={!caps.subscriptions_manage} onChange={(event)=>updateSubscriptionDraft(subscription.id,{status:event.target.value})}><option value="pending_payment">در انتظار پرداخت</option><option value="active">فعال</option><option value="expired">منقضی</option><option value="suspended">تعلیق</option><option value="cancelled">لغو</option></select></td><td><PersianDatePicker includeTime value={draft.starts_at} disabled={!caps.subscriptions_manage} onChange={(value)=>updateSubscriptionDraft(subscription.id,{starts_at:value})}/></td><td><PersianDatePicker includeTime value={draft.expires_at} disabled={!caps.subscriptions_manage} onChange={(value)=>updateSubscriptionDraft(subscription.id,{expires_at:value})}/></td><td>{caps.subscriptions_manage&&<button className={styles.tableButton} disabled={workingKey===`subscription-${subscription.id}`} onClick={()=>void patch({action:"update_subscription",subscription_id:subscription.id,status:draft.status,starts_at:draft.starts_at,expires_at:draft.expires_at},`subscription-${subscription.id}`)}>ذخیره</button>}</td></tr>})}{(data.subscriptions||[]).length===0&&<tr><td colSpan={6}><div className={styles.inlineEmpty}>اشتراک حرفه‌ای ثبت نشده است.</div></td></tr>}</tbody></table></div>
-          </section>
-        )}
-
-        {activeTab === "banners" && caps?.banners_view && (
-          <section className={styles.bannerGrid}>
-            {(data.banners || []).length===0&&<div className={styles.discountEmpty}><div>▧</div><h3>رزرو بنری وجود ندارد</h3><p>رزروهای جدید نمایشگاه‌ها در این بخش ظاهر می‌شوند.</p></div>}
-            {(data.banners || []).map((banner)=><article className={styles.bannerCard} key={banner.id}>{banner.desktop_image_url?<img src={banner.desktop_image_url} alt=""/>:<div className={styles.bannerPlaceholder}>بدون تصویر</div>}<div className={styles.bannerBody}><div className={styles.bannerTitle}><div><span>{banner.province} · {formatPersianDate(banner.start_date)} تا {formatPersianDate(banner.end_date)}</span><h3>{banner.title}</h3><small>{banner.dealer_name} · {maskMobile(banner.mobile)}</small></div><span className={`${styles.status} ${styles[`status_${banner.status}`]||""}`}>{statusLabels[banner.status]||banner.status}</span></div><p>{banner.subtitle||"بدون متن تکمیلی"}</p><strong>{formatToman(banner.total_price_toman)}</strong>{caps.banners_manage&&<><textarea value={bannerNotes[banner.id]||""} onChange={(event)=>setBannerNotes({...bannerNotes,[banner.id]:event.target.value})} placeholder="یادداشت مدیریت یا دلیل رد"/><div className={styles.bannerActions}><button onClick={()=>void patch({action:"review_banner",reservation_id:banner.id,decision:"approved",admin_note:bannerNotes[banner.id]},`banner-${banner.id}-approve`)}>تأیید و زمان‌بندی</button><button className={styles.dangerButton} onClick={()=>void patch({action:"review_banner",reservation_id:banner.id,decision:"rejected",admin_note:bannerNotes[banner.id]},`banner-${banner.id}-reject`)}>رد بنر</button></div></>}</div></article>)}
           </section>
         )}
 

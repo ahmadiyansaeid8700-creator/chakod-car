@@ -28,8 +28,8 @@ export default function HomeShowroomBanner({
   return (
     <a
       className={styles.banner}
-      href="/account/ads"
-      aria-label={`رزرو جایگاه تبلیغاتی نمایشگاه‌داران در ${location}`}
+      href="/showrooms"
+      aria-label={`مشاهده نمایشگاه‌های ${location}`}
     >
       <span className={styles.media} aria-hidden="true">
         <img src="/banners/home-hero.png" alt="" />
@@ -39,7 +39,7 @@ export default function HomeShowroomBanner({
         <small>ویترین ویژه نمایشگاه‌داران</small>
         <strong>خودروهای منتخب را نزدیک خودت ببین</strong>
         <i>
-          رزرو جایگاه
+          مشاهده نمایشگاه‌ها
           <ArrowIcon />
         </i>
       </span>

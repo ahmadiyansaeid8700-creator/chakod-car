@@ -344,7 +344,6 @@ export default function DealerCommandCenter() {
             <Link href="/account" className={styles.back}>← حساب من</Link>
             <div className={styles.heroActions}>
               <Link href="/account/services">خدمات و پرداخت</Link>
-              <Link href="/account/ads">رزرو بنر</Link>
             </div>
           </div>
           <div className={styles.identity}>

@@ -30,13 +30,11 @@ const COMMERCE_SUMMARY_KEYS = [
   "pending_orders",
   "paid_orders_30d",
   "revenue_30d",
-  "pending_banners",
   "active_subscriptions",
 ] as const;
 const SAFE_CAPABILITY_KEYS = [
   "pricing_view",
   "orders_view",
-  "banners_view",
   "subscriptions_view",
   "discounts_view",
   "financial_reports",

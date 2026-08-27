@@ -11,15 +11,13 @@ Current focus: Cleanup-first و Full Regression
 - [x] حذف Assistant و ChatGPT starter قدیمی
 - [x] حذف Backupهای داخل app و Assetهای Starter بلااستفاده
 - [x] حذف Banner Reservation و `/account/ads`
-- [x] حذف `AGENTS.md`، `CLAUDE.md` و `codex-preview`
-- [x] حذف برنامه مستقل Affiliate/Ambassador و پنل‌های جدا
-- [x] حفظ Referral واقعی: `/r/[code]` + انتقال کد دعوت به Commerce
-- [x] حذف Homeهای یتیم و قدیمی
-- [x] حفظ `HomeBannerSlot` و مدیریت فعلی بنر صفحه اصلی
-- [x] تعیین ساختار canonical نمایشگاه: `/dealerships` عمومی، `/businesses/[slug]` پروفایل، `/account/business` مدیریت
-- [x] حذف پیاده‌سازی سنگین legacy در `/dealers` و `/showrooms/[dealer]` و نگه‌داشتن Redirect سبک
-- [x] حذف UI قدیمی `/dashboard` و تبدیل آن به Redirect به `/account`
-- [x] انتقال implementation جزئیات خودرو به `/cars/[slug]` و تبدیل `/listing/[id]` به Redirect سازگار
+- [x] حذف برنامه مستقل Affiliate/Ambassador و حفظ Referral واقعی
+- [x] حذف Homeهای یتیم و حفظ `HomeBannerSlot`
+- [x] canonical نمایشگاه: `/dealerships` عمومی، `/businesses/[slug]` پروفایل، `/account/business` مدیریت
+- [x] حذف پیاده‌سازی سنگین legacy در `/dealers` و `/showrooms/[dealer]`
+- [x] تبدیل `/dashboard` به Redirect به `/account`
+- [x] انتقال implementation جزئیات خودرو به `/cars/[slug]` و تبدیل `/listing/[id]` به Redirect
+- [x] حذف `home.module.css`، `DealerQrCard`، `ListingActionButton.module.css` و تصاویر حجیم Home قدیمی پس از تأیید بلااستفاده بودن
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
@@ -33,9 +31,8 @@ Current focus: Cleanup-first و Full Regression
 ## اقدام‌های باز فوری
 
 ### Cleanup audit
-- [ ] بررسی `DealerQrCard` و فایل‌های نمایشگاهی یتیم پس از حذف پروفایل قدیمی
-- [ ] بررسی CSSهای قدیمی Home پس از حذف کامپوننت‌های یتیم
-- [ ] بررسی Assetهای قدیمی و حجیم فقط پس از اثبات بلااستفاده بودن
+- [ ] ممیزی Workflowهای قدیمی و حذف تست/مسیرهای منسوخ از CI
+- [ ] بررسی Assetهای تکراری باقی‌مانده فقط پس از اثبات بلااستفاده بودن
 - [ ] بازنویسی `MASTER-SITEMAP-FA.md` مطابق محصول واقعی
 - [ ] اصلاح متن اسناد: «دعوت کاربر و پورسانت» به‌جای Affiliate
 

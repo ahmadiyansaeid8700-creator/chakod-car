@@ -20,15 +20,13 @@ Main branch: مبنای توسعه جاری نیست
 - [x] AI_HANDOFF قدیمی، examples/d1، backupهای داخل app و Assetهای Starter بلااستفاده حذف شده‌اند.
 - [x] Banner Reservation قدیمی و `/account/ads` حذف شده‌اند.
 - [x] `AGENTS.md`، `CLAUDE.md` و متادیتای `codex-preview` حذف شده‌اند.
-- [x] برنامه مستقل Affiliate/Ambassador حذف شده است؛ عضویت، KYC و پنل جدا دیگر وجود ندارد.
-- [x] هسته Referral حفظ شده است: `/r/[code]` انتساب دعوت را ثبت می‌کند و Commerce کد دعوت را برای خرید واجد شرایط ارسال می‌کند.
-- [x] Homeهای یتیم و مربوط به ساختارهای قبلی حذف شده‌اند.
-- [x] مدیریت فعلی بنر صفحه اصلی با `HomeBannerSlot` و `/api/home-banners.php` حفظ شده است.
-- [x] مسیر عمومی canonical نمایشگاه‌ها `/dealerships` است و پروفایل نهایی هر مجموعه از `/businesses/[slug]` استفاده می‌کند.
-- [x] مدیریت canonical نمایشگاه/کسب‌وکار زیر `/account/business` است.
-- [x] کد سنگین legacy در `/dealers` و `/showrooms/[dealer]` حذف شده و فقط Redirect سازگار برای لینک‌های قدیمی باقی مانده است.
-- [x] داشبورد canonical کاربر `/account` است؛ UI قدیمی `/dashboard` حذف شده و مسیر فقط به `/account` Redirect می‌شود.
-- [x] مسیر canonical جزئیات خودرو `/cars/[slug]` است؛ implementation از `/listing/[id]` به مسیر canonical منتقل شده و `/listing/[id]` فقط Redirect سازگار است.
+- [x] برنامه مستقل Affiliate/Ambassador حذف شده است؛ هسته Referral کاربر حفظ شده است.
+- [x] Homeهای یتیم و مربوط به ساختارهای قبلی حذف شده‌اند؛ `HomeBannerSlot` فعلی حفظ شده است.
+- [x] مسیر عمومی canonical نمایشگاه‌ها `/dealerships`، پروفایل `/businesses/[slug]` و مدیریت `/account/business` است.
+- [x] کد سنگین legacy در `/dealers` و `/showrooms/[dealer]` حذف شده و فقط Redirect سازگار باقی مانده است.
+- [x] داشبورد canonical کاربر `/account` است و `/dashboard` فقط Redirect است.
+- [x] مسیر canonical جزئیات خودرو `/cars/[slug]` است و `/listing/[id]` فقط Redirect سازگار است.
+- [x] `home.module.css` قدیمی، `DealerQrCard` یتیم، `ListingActionButton.module.css` یتیم و تصاویر حجیم Home قدیمی حذف شده‌اند.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -38,11 +36,11 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Snapshotهای Listings / Businesses / Commerce قبل از Provider Sanitized می‌شوند.
 - [x] `/admin` بازطراحی و `/admin/ai` ساخته شده است.
 - [x] تست‌های هدفمند AI + moderation قبلاً 16/16 Pass شده‌اند.
-- [~] Full Regression روی GitHub Actions باید بعد از Cleanupهای جدید دوباره تا Build/Smoke اجرا شود.
+- [~] Full Regression باید بعد از Cleanupهای جدید دوباره تا Build/Smoke اجرا شود.
 
 ## اولویت‌های بعدی
-Priority 1: Cleanup-first؛ بررسی CSS/Assetهای یتیم و کامپوننت‌های قدیمی باقی‌مانده
-Priority 2: ادامه Full Regression تا Build و Smoke
+Priority 1: Cleanup-first؛ بررسی Workflowها، اسناد و Assetهای تکراری باقی‌مانده
+Priority 2: Full Regression تا Build و Smoke
 Priority 3: تکمیل Backend/API واقعی و Auth روی هاست
 Priority 4: بازنویسی اسناد قدیمی مطابق محصول واقعی
 Priority 5: تصمیم درباره main فقط پس از تأیید صریح مالک

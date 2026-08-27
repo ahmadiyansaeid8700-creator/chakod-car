@@ -4,7 +4,7 @@
 
 Project: chakod-car
 Working branch: backup-latest-2026-08-03
-Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت Read-only
+Current focus: Full Regression و تثبیت Chakod AI Manager در حالت Read-only
 
 ## انجام‌شده
 
@@ -12,6 +12,9 @@ Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت
 
 - [x] حذف Assistant، ChatGPT starter، AI_HANDOFF قدیمی و Scaffoldهای بلااستفاده
 - [x] حذف Backupهای داخل app و Assetهای Starter بلااستفاده
+- [x] حذف Banner Reservation قدیمی مبتنی بر ChatGPT/email auth و `demo_paid`
+- [x] حذف D1 schema/migration و helperهای یتیم همان رزرو آزمایشی
+- [x] حفظ `/account/ads` جدید مبتنی بر `/api/auth/commerce`
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
@@ -30,18 +33,21 @@ Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت
 - [x] ساخت کنسول پیشنهاد مدیریتی Read-only
 - [x] رفع ناسازگاری Node strip-types در Provider و Tool Executor
 - [x] اضافه‌شدن تست Tool Executor به Workflow
-- [x] اجرای تست هدفمند Config + Provider + Tool Executor در Node 22: 11/11 Pass
-- [~] Regression کامل Repository و Smoke UI هنوز باقی است
+- [x] اجرای تست هدفمند Config + Provider + Tool Executor + Moderation در Node 22: 16/16 Pass
 
 ## اقدام‌های باز فوری
 
 ### Regression / Build
 
-- [ ] اجرای `npx tsc --noEmit -p tsconfig.launch.json`
-- [ ] اجرای تست‌های core routes
-- [ ] اجرای `ai-moderation-policy.test.ts` کنار تست‌های جدید AI
+- [~] GitHub Actions PR #112 برای Full Regression در حال استفاده است
+- [x] `npm ci` در Runner واقعی GitHub پاس شد
+- [x] Run اول TypeScript سه import قدیمی `chatgpt-auth` را پیدا کرد؛ زنجیره Legacy مربوط حذف شد
+- [ ] اجرای مجدد `npx tsc --noEmit -p tsconfig.launch.json`
+- [ ] اجرای تست‌های core routes در CI
+- [ ] اجرای تست‌های AI + moderation در CI
+- [ ] اجرای `npm run build`
 - [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`
-- [ ] رفع هر خطای پیدا شده قبل از فعال‌سازی Provider
+- [ ] Smoke امنیتی APIهای AI بدون Session
 
 ### Backend / Hosting
 
@@ -61,6 +67,12 @@ Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت
 - [ ] تست Suggestion endpoint با Provider معتبر
 - [ ] ثبت Audit event برای درخواست‌های AI بدون ذخیره Prompt حساس یا Token
 
+### Dependency audit
+
+- [ ] بررسی 21 vulnerability گزارش‌شده توسط `npm ci`/audit در CI
+- [ ] حذف dependencyهای بلااستفاده مثل Drizzle فقط بعد از بررسی package-lock و Build
+- [ ] ممنوعیت `npm audit fix --force` بدون بررسی دستی
+
 ### فاز Write آینده
 
 - [ ] هیچ Write Tool قبل از طراحی Permission مستقل ساخته نشود
@@ -70,7 +82,6 @@ Current focus: Regression کامل و تثبیت Chakod AI Manager در حالت
 
 ### Release
 
-- [ ] npm audit کنترل‌شده
 - [ ] Build واقعی Cloudflare
 - [ ] بررسی دامنه‌ها و مسیرهای اصلی
 - [ ] main فقط با تأیید صریح مالک تغییر کند

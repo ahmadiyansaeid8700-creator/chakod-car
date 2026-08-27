@@ -29,6 +29,9 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Assistant سراسری قدیمی، ChatGPT starter و مسیرهای وابسته حذف شده‌اند.
 - [x] AI_HANDOFF قدیمی، examples/d1، فایل‌های backup داخل app و راهنماهای قدیمی حذف شده‌اند.
 - [x] Assetهای Starter بلااستفاده حذف شده‌اند.
+- [x] زنجیره قدیمی Banner Reservation مبتنی بر ChatGPT/email auth، D1 و `demo_paid` حذف شده است.
+- [x] صفحه رزرو جدید `/account/ads` که از Commerce/Auth فعلی چاکود استفاده می‌کند حفظ شده است.
+- [x] D1 schema/migration و helperهای `admin-access`/`banner-booking` که فقط به رزرو آزمایشی قدیمی وابسته بودند حذف شده‌اند.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -44,12 +47,12 @@ Main branch: مبنای توسعه جاری نیست
 - [x] Suggestion API فقط Snapshot خلاصه را به Provider می‌دهد و Write Action اجرا نمی‌کند.
 - [x] صفحه اختصاصی `/admin/ai` برای Provider، Tool Registry، Guardrail و Human Approval ساخته شده است.
 - [x] ناسازگاری Node strip-types در Provider/Tool Error رفع شده و importهای Runtime قابل Resolve شده‌اند.
-- [x] تست‌های هدفمند Config + Provider + Tool Executor در محیط Node 22 اجرا شدند: 11/11 Pass.
-- [~] Regression کامل Repository، TypeScript check، Build و Smoke UI هنوز باید اجرا و تأیید شوند.
+- [x] تست‌های هدفمند Config + Provider + Tool Executor + Moderation در محیط Node 22 اجرا شدند: 16/16 Pass.
+- [~] Full Regression روی GitHub Actions آغاز شده است؛ Run اول `npm ci` را پاس کرد و سه import باقی‌مانده از ChatGPT Auth را در Banner Reservation قدیمی پیدا کرد که اکنون حذف شده‌اند.
 
 ## اولویت‌های بعدی
 
-Priority 1: اجرای Regression کامل Repository و رفع خطاهای احتمالی
+Priority 1: ادامه Full Regression تا عبور TypeScript، Unit Tests، Build و Smoke
 Priority 2: تکمیل Backend/API واقعی چاکود و Auth روی هاست
 Priority 3: بررسی واقعی پاسخ APIهای Read-only روی هاست
 Priority 4: Audit event برای درخواست‌های AI
@@ -62,7 +65,6 @@ Priority 5: Build تولید و سپس تصمیم درباره main
 - TypeScript
 - Vinext / Vite
 - Cloudflare Workers
-- Drizzle / D1
 - PHP/MySQL backend در api.chakod.com
 
 ## اسناد مرجع

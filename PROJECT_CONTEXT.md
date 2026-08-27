@@ -27,6 +27,8 @@ Main branch: مبنای توسعه جاری نیست
 - [x] مسیر عمومی canonical نمایشگاه‌ها `/dealerships` است و پروفایل نهایی هر مجموعه از `/businesses/[slug]` استفاده می‌کند.
 - [x] مدیریت canonical نمایشگاه/کسب‌وکار زیر `/account/business` است.
 - [x] کد سنگین legacy در `/dealers` و `/showrooms/[dealer]` حذف شده و فقط Redirect سازگار برای لینک‌های قدیمی باقی مانده است.
+- [x] داشبورد canonical کاربر `/account` است؛ UI قدیمی `/dashboard` حذف شده و مسیر فقط به `/account` Redirect می‌شود.
+- [x] `/dashboard/listings` و `/dashboard/listings/[listingId]` فقط Redirectهای سازگار به مسیرهای `/account/listings` هستند.
 - [x] `ai-moderation` مستقل حفظ شده است.
 
 ### Chakod AI Manager
@@ -39,7 +41,7 @@ Main branch: مبنای توسعه جاری نیست
 - [~] Full Regression روی GitHub Actions ادامه دارد؛ نتیجه نهایی Build/Smoke هنوز باید دوباره گرفته شود.
 
 ## اولویت‌های بعدی
-Priority 1: Cleanup-first؛ بررسی routeهای قدیمی Dashboard/Listings و CSS/Assetهای یتیم
+Priority 1: Cleanup-first؛ بررسی CSS/Assetهای یتیم، routeهای قدیمی Listing و اسناد قدیمی
 Priority 2: ادامه Full Regression تا Build و Smoke
 Priority 3: تکمیل Backend/API واقعی و Auth روی هاست
 Priority 4: بازنویسی اسناد قدیمی مطابق محصول واقعی

@@ -18,6 +18,8 @@ Current focus: Cleanup-first و Full Regression
 - [x] حفظ `HomeBannerSlot` و مدیریت فعلی بنر صفحه اصلی
 - [x] تعیین ساختار canonical نمایشگاه: `/dealerships` عمومی، `/businesses/[slug]` پروفایل، `/account/business` مدیریت
 - [x] حذف پیاده‌سازی سنگین legacy در `/dealers` و `/showrooms/[dealer]` و نگه‌داشتن Redirect سبک برای لینک‌های قدیمی
+- [x] حذف UI قدیمی `/dashboard` و تبدیل آن به Redirect به `/account`
+- [x] حفظ Redirectهای سازگار `/dashboard/listings` به `/account/listings`
 - [x] حفظ ai-moderation مستقل
 
 ### Chakod AI Manager
@@ -31,8 +33,7 @@ Current focus: Cleanup-first و Full Regression
 ## اقدام‌های باز فوری
 
 ### Cleanup audit
-- [ ] اصلاح لینک‌های قدیمی `/dealers` داخل Dashboard به `/account/business`
-- [ ] بررسی مسیرهای قدیمی `/dashboard/listings` در برابر `/account/listings`
+- [ ] بررسی مسیرهای قدیمی `/listing/[id]` در برابر `/cars/[slug]`
 - [ ] بررسی CSSهای قدیمی Home پس از حذف کامپوننت‌های یتیم
 - [ ] بررسی `DealerQrCard` و Assetهای نمایشگاهی قدیمی پس از اثبات بلااستفاده بودن
 - [ ] بررسی Assetهای قدیمی و حجیم فقط پس از اثبات بلااستفاده بودن
@@ -46,7 +47,7 @@ Current focus: Cleanup-first و Full Regression
 - [x] تست‌های Core Routes در Run قبلی پاس شده‌اند
 - [ ] اجرای مجدد AI + moderation tests بعد از Cleanupهای جدید
 - [ ] `npm run build`
-- [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`, `/dealerships`, `/account/business`
+- [ ] Smoke Test `/`, `/cars`, `/login`, `/admin`, `/admin/ai`, `/dealerships`, `/account/business`, `/account`
 
 ### Referral / دعوت
 - [x] حفظ `/r/[code]` برای ثبت انتساب دعوت

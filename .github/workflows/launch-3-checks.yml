@@ -43,5 +43,12 @@ jobs:
       - name: Portable Vinext build preflight
         run: npm run build:preflight
 
+      - name: Production Worker build contract
+        env:
+          CLOUDFLARE_PRODUCTION_WORKER_NAME: chakod-car-production-contract
+          CLOUDFLARE_PRODUCTION_D1_DATABASE_NAME: chakod-production-contract
+          CLOUDFLARE_PRODUCTION_D1_DATABASE_ID: 00000000-0000-0000-0000-000000000000
+        run: npm run build:production
+
       - name: Portable runtime smoke
         run: npm run smoke:portable

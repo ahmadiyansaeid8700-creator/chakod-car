@@ -52,6 +52,18 @@ check_200() {
   echo "OK 200 $path"
 }
 
+check_404() {
+  local path="$1"
+  local code
+  code="$(curl --silent --show-error --output /tmp/chakod-smoke-body --write-out '%{http_code}' --max-time 12 "$BASE$path")"
+  if [[ "$code" != "404" ]]; then
+    echo "Expected 404 for retired route $path, received $code" >&2
+    cat /tmp/chakod-smoke-body >&2 || true
+    exit 1
+  fi
+  echo "OK 404 $path"
+}
+
 for path in \
   "/" \
   "/about" \
@@ -84,6 +96,27 @@ for path in "/sitemap.xml" "/sitemaps/static.xml" "/sitemaps/cars.xml" "/sitemap
   fi
 done
 
+STATIC_SITEMAP="$(curl --silent --show-error --fail --max-time 12 "$BASE/sitemaps/static.xml")"
+for legacy_path in \
+  "/contact" \
+  "/affiliate" \
+  "/affiliate/rules" \
+  "/affiliate/privacy" \
+  "/ads" \
+  "/dashboard" \
+  "/dealer" \
+  "/dealers" \
+  "/help" \
+  "/my-listings" \
+  "/showrooms" \
+  "/submit"; do
+  if printf '%s' "$STATIC_SITEMAP" | grep -Fq "${legacy_path}</loc>"; then
+    echo "Legacy or redirect-only route leaked into static sitemap: $legacy_path" >&2
+    exit 1
+  fi
+done
+echo "Static sitemap contains canonical 200 routes only."
+
 check_redirect() {
   local path="$1"
   local expected="$2"
@@ -107,14 +140,30 @@ check_redirect() {
   echo "OK $code $path -> $location"
 }
 
-check_redirect "/showrooms" "/dealerships"
+# Compatibility aliases remain available for old inbound links, but all of them
+# must converge on the current canonical routes.
+check_redirect "/account-v2" "/account"
+check_redirect "/ads" "/cars"
+check_redirect "/dashboard" "/account"
+check_redirect "/dashboard/listings" "/account/listings"
+check_redirect "/dealer" "/dealerships"
 check_redirect "/help" "/support"
+check_redirect "/my-listings" "/account/listings"
+check_redirect "/showrooms" "/dealerships"
+check_redirect "/submit" "/account/listings/new"
+check_redirect "/contact" "/support#request"
 check_redirect "/advertising/banners" "/advertising/dealership-placement"
 
 # `/dealers` is a legacy private entry point. The auth guard intentionally runs
 # before the page-level compatibility redirect, so guests must first authenticate.
 # After login, the page source contract redirects it to `/account/business/dealers`.
 check_redirect "/dealers" "/login?returnTo=/dealers"
+
+# The retired affiliate program must not return as a public route. Normal user
+# referrals are handled elsewhere and are intentionally not modeled as affiliate pages.
+check_404 "/affiliate"
+check_404 "/affiliate/rules"
+check_404 "/affiliate/privacy"
 
 # Chakod AI is admin-first. The legacy public assistant must stay removed and
 # AI Manager endpoints must fail closed for unauthenticated callers.

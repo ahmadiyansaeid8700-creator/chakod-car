@@ -48,10 +48,15 @@ jobs:
             printf '%s' "${status:-000}" > "artifacts/${name}.status"
           }
 
-          # These two endpoints may require broader read scopes than deployment.
-          # They are informative only and must not force us to widen the token.
+          # Informational account-wide reads. Lack of broader list permissions
+          # must not force us to widen the deployment token.
           request workers "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts"
           request d1 "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100"
+
+          # Read the existing candidate production Worker directly. The response
+          # is kept only inside the ephemeral runner; the artifact contains a
+          # redacted summary and never raw binding values.
+          request production_worker_settings "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/chakod-car/settings"
 
           # This endpoint is already required by the proven staging deploy path.
           request domains "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains"
@@ -74,6 +79,7 @@ jobs:
 
           const workersResult = readResult('workers');
           const d1Result = readResult('d1');
+          const productionSettingsResult = readResult('production_worker_settings');
           const domainsResult = readResult('domains');
 
           if (!domainsResult.available) {
@@ -122,6 +128,27 @@ jobs:
             ? chakodDomains.map((item) => `- ${item.hostname} -> ${item.service}${item.environment ? ` (${item.environment})` : ''}`)
             : ['- none'];
 
+          let productionBindingLines;
+          if (!productionSettingsResult.available) {
+            productionBindingLines = [
+              `- settings unavailable (HTTP ${productionSettingsResult.status}); no production binding was guessed`,
+            ];
+          } else {
+            const bindings = Array.isArray(productionSettingsResult.payload.result?.bindings)
+              ? productionSettingsResult.payload.result.bindings
+              : [];
+            productionBindingLines = bindings.map((binding) => {
+              const name = String(binding?.name || '').trim() || '(unnamed)';
+              const type = String(binding?.type || '').trim() || 'unknown';
+              if (type === 'd1') {
+                const databaseId = String(binding?.id || binding?.database_id || '').trim();
+                return `- ${name}: ${type}${databaseId ? ` — database_id=${databaseId}` : ''}`;
+              }
+              return `- ${name}: ${type}`;
+            });
+            if (!productionBindingLines.length) productionBindingLines = ['- none'];
+          }
+
           const lines = [
             '# Chakod Cloudflare production inventory',
             '',
@@ -132,6 +159,9 @@ jobs:
             '',
             '## D1 databases containing “chakod”',
             ...d1Lines,
+            '',
+            '## Existing chakod-car Worker bindings (values redacted)',
+            ...productionBindingLines,
             '',
             '## Worker custom domains under chakod.com',
             ...domainLines,

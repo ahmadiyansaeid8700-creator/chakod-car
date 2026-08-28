@@ -10,6 +10,7 @@
     "dev:cloudflare": "vite --config vite.cloudflare.config.ts",
     "build": "npm run build:preflight",
     "build:cloudflare": "vite build --config vite.cloudflare.config.ts",
+    "build:production": "vite build --config vite.production.config.ts",
     "build:cpanel": "vite build --config vite.cpanel.config.ts",
     "build:preflight": "vite build --config vite.windows.config.ts",
     "start": "vinext start",

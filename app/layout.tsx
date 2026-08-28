@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import AppViewport from "./components/AppViewport";
-import ChakodAiAssistant from "./components/ChakodAiAssistant";
 import LocalPublicApiBridge from "./components/LocalPublicApiBridge";
 import "./globals.css";
 import "./mobile-runtime.css";
@@ -100,7 +99,6 @@ export default function RootLayout({
       <body>
         <LocalPublicApiBridge />
         <AppViewport>{children}</AppViewport>
-        <ChakodAiAssistant />
       </body>
     </html>
   );

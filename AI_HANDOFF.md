@@ -421,3 +421,15 @@ Online verification: انجام نشده؛ تغییر Runtime یا دامنه‌
 Open issue: Token فعلی Cloudflare برای D1 inventory پاسخ 401 می‌دهد و Worker تولیدی chakod-car در Audit فقط IMAGES binding دارد؛ نام و شناسه D1 تولیدی نباید حدس زده شود
 Exact next action: ادغام PR #125، تأیید Deploy و Smoke استیجینگ، سپس دریافت مجوز D1 Read/Edit برای شناسایی یا ساخت دیتابیس تولیدی
 ```
+
+```text
+Date: 2026-08-28
+Requested change: آماده‌سازی انتقال همان نسخه نهایی staging.chakod.com به Worker واقعی chakod-car، بدون ساخت سایت یا دیتابیس جدید و بدون اتصال زودهنگام دامنه
+Affected routes/files: .github/workflows/production-candidate-deploy.yml و AI_HANDOFF.md
+Tests actually run: در انتظار CI؛ Workflow شامل check:launch، D1 verify، Build واقعی Production، Smoke صفحه اصلی، مسیر D1، Auth و پایداری پنج‌دقیقه‌ای است
+PR and merge commit: شاخه release/production-candidate-2026-08-28؛ PR هنوز ساخته نشده
+Deployment result: منتشر نشده؛ پس از ادغام فقط Worker بدون دامنه chakod-car Deploy می‌شود و chakod.com دست‌نخورده می‌ماند
+Online verification: در انتظار آدرس موقت workers.dev برای Worker تولیدی
+Open issue: برای حفظ دقیق امکانات موجود، Production Candidate موقتاً به D1 موجود chakod-staging متصل می‌شود؛ هیچ Migration یا ساخت دیتابیس انجام نمی‌شود
+Exact next action: ساخت PR به agent/launch-3-local-baseline، گرفتن CI، ادغام، اجرای Candidate Deploy و سپس بررسی نتیجه پیش از Cutover دامنه
+```

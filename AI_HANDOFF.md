@@ -1,6 +1,6 @@
 # راهنمای قطعی ادامه پروژه چاکود برای هوش مصنوعی
 
-آخرین به‌روزرسانی: 2026-08-21
+آخرین به‌روزرسانی: 2026-08-28
 
 این فایل نقطه شروع اجباری هر گفت‌وگوی جدید است. پروژه نباید از صفر بازسازی شود. ابتدا وضعیت واقعی مخزن و استیجینگ بررسی شود، سپس فقط ادامه همین پروژه انجام شود.
 
@@ -415,9 +415,9 @@ Date: 2026-08-28
 Requested change: افزودن Gate ایمن برای Build واقعی Production Worker بدون Deploy، DNS، D1 mutation یا استفاده از Secret
 Affected routes/files: .github/workflows/launch-3-checks.yml و AI_HANDOFF.md
 Tests actually run: GitHub Actions run 33178395639 موفق؛ check:launch، D1 verify، critical audit، preflight build، production Worker build contract و runtime smoke همگی PASS
-PR and merge commit: PR #125 روی شاخه gate/production-build-readiness-2026-08-28؛ CI سبز و ادغام هنوز انجام نشده است
-Deployment result: منتشر نشده؛ این Gate فقط Build است و هیچ دستور deploy ندارد
-Online verification: انجام نشده؛ تغییر Runtime یا دامنه‌ای وجود ندارد
+PR and merge commit: PR #125؛ merge commit 5c771ac8d119eb0b48f8517166dd44bcdeeebe98
+Deployment result: تغییر Gate با موفقیت روی شاخه استیجینگ ادغام شد؛ Deploy staging run 33178690851 کامل SUCCESS شد. خود Gate تولیدی همچنان فقط Build است و هیچ دستور deploy تولیدی ندارد
+Online verification: staging.chakod.com، workers.dev fallback، custom-domain binding، Smoke پنج‌دقیقه‌ای و Auth همگی در run 33178690851 PASS شدند
 Open issue: Token فعلی Cloudflare برای D1 inventory پاسخ 401 می‌دهد و Worker تولیدی chakod-car در Audit فقط IMAGES binding دارد؛ نام و شناسه D1 تولیدی نباید حدس زده شود
-Exact next action: ادغام PR #125، تأیید Deploy و Smoke استیجینگ، سپس دریافت مجوز D1 Read/Edit برای شناسایی یا ساخت دیتابیس تولیدی
+Exact next action: با تأیید مالک، مجوز Account D1 Read/Edit به Token Cloudflare داده شود؛ سپس Audit فقط‌خواندنی تکرار و دیتابیس تولیدی موجود شناسایی یا یک D1 جدا با نام صریح تولیدی ساخته شود
 ```

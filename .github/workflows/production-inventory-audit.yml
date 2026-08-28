@@ -30,26 +30,31 @@ jobs:
             exit 1
           fi
 
-      - name: Read Workers, D1 and custom-domain inventory
+      - name: Read Cloudflare inventory with least privilege
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
 
-          curl --fail --silent --show-error \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts" \
-            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            > artifacts/workers.json
+          request() {
+            local name="$1"
+            local url="$2"
+            local status
+            status="$(curl --silent --show-error \
+              --output "artifacts/${name}.json" \
+              --write-out '%{http_code}' \
+              "$url" \
+              --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" || true)"
+            printf '%s' "${status:-000}" > "artifacts/${name}.status"
+          }
 
-          curl --fail --silent --show-error \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100" \
-            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            > artifacts/d1.json
+          # These two endpoints may require broader read scopes than deployment.
+          # They are informative only and must not force us to widen the token.
+          request workers "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts"
+          request d1 "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100"
 
-          curl --fail --silent --show-error \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
-            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            > artifacts/domains.json
+          # This endpoint is already required by the proven staging deploy path.
+          request domains "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains"
 
       - name: Summarize Chakod resources only
         shell: bash
@@ -58,25 +63,31 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
 
-          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
-          const workersPayload = read('artifacts/workers.json');
-          const d1Payload = read('artifacts/d1.json');
-          const domainsPayload = read('artifacts/domains.json');
-
-          for (const [label, payload] of [
-            ['workers', workersPayload],
-            ['d1', d1Payload],
-            ['domains', domainsPayload],
-          ]) {
-            if (!payload?.success) {
-              console.error(`Cloudflare ${label} inventory request was not successful.`);
-              process.exit(1);
-            }
+          function readResult(name) {
+            const status = fs.readFileSync(`artifacts/${name}.status`, 'utf8').trim() || '000';
+            let payload = null;
+            try {
+              payload = JSON.parse(fs.readFileSync(`artifacts/${name}.json`, 'utf8'));
+            } catch {}
+            return { status, payload, available: status === '200' && payload?.success === true };
           }
 
-          const workers = Array.isArray(workersPayload.result) ? workersPayload.result : [];
-          const d1 = Array.isArray(d1Payload.result) ? d1Payload.result : [];
-          const domains = Array.isArray(domainsPayload.result) ? domainsPayload.result : [];
+          const workersResult = readResult('workers');
+          const d1Result = readResult('d1');
+          const domainsResult = readResult('domains');
+
+          if (!domainsResult.available) {
+            console.error(`Worker custom-domain inventory is unavailable (HTTP ${domainsResult.status}).`);
+            process.exit(1);
+          }
+
+          const workers = workersResult.available && Array.isArray(workersResult.payload.result)
+            ? workersResult.payload.result
+            : [];
+          const d1 = d1Result.available && Array.isArray(d1Result.payload.result)
+            ? d1Result.payload.result
+            : [];
+          const domains = Array.isArray(domainsResult.payload.result) ? domainsResult.payload.result : [];
 
           const chakodWorkers = workers
             .map((item) => String(item.id || item.name || '').trim())
@@ -97,23 +108,33 @@ jobs:
               environment: String(item.environment || '').trim(),
             }));
 
+          const workersLines = workersResult.available
+            ? (chakodWorkers.length ? chakodWorkers.map((name) => `- ${name}`) : ['- none'])
+            : [`- permission-limited (HTTP ${workersResult.status}); token scope was not widened`];
+
+          const d1Lines = d1Result.available
+            ? (chakodD1.length
+                ? chakodD1.map((item) => `- ${item.name}${item.uuid ? ` — ${item.uuid}` : ''}`)
+                : ['- none'])
+            : [`- permission-limited (HTTP ${d1Result.status}); token scope was not widened`];
+
+          const domainLines = chakodDomains.length
+            ? chakodDomains.map((item) => `- ${item.hostname} -> ${item.service}${item.environment ? ` (${item.environment})` : ''}`)
+            : ['- none'];
+
           const lines = [
             '# Chakod Cloudflare production inventory',
             '',
             'Read-only audit. No Worker, DNS, route, secret or database mutation was performed.',
             '',
             '## Workers containing “chakod”',
-            ...(chakodWorkers.length ? chakodWorkers.map((name) => `- ${name}`) : ['- none']),
+            ...workersLines,
             '',
             '## D1 databases containing “chakod”',
-            ...(chakodD1.length
-              ? chakodD1.map((item) => `- ${item.name}${item.uuid ? ` — ${item.uuid}` : ''}`)
-              : ['- none']),
+            ...d1Lines,
             '',
             '## Worker custom domains under chakod.com',
-            ...(chakodDomains.length
-              ? chakodDomains.map((item) => `- ${item.hostname} -> ${item.service}${item.environment ? ` (${item.environment})` : ''}`)
-              : ['- none']),
+            ...domainLines,
             '',
           ];
 

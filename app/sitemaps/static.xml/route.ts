@@ -17,16 +17,12 @@ const staticPages = [
   { path: "/advertising/dealership-placement", priority: 0.5, changefreq: "monthly" as const },
   { path: "/articles", priority: 0.7, changefreq: "weekly" as const },
   { path: "/about", priority: 0.5, changefreq: "monthly" as const },
-  { path: "/contact", priority: 0.5, changefreq: "monthly" as const },
   { path: "/support", priority: 0.6, changefreq: "weekly" as const },
   { path: "/rules", priority: 0.4, changefreq: "monthly" as const },
   { path: "/privacy", priority: 0.4, changefreq: "monthly" as const },
   { path: "/terms", priority: 0.4, changefreq: "monthly" as const },
   { path: "/refund-policy", priority: 0.4, changefreq: "monthly" as const },
   { path: "/legal", priority: 0.4, changefreq: "monthly" as const },
-  { path: "/affiliate", priority: 0.5, changefreq: "monthly" as const },
-  { path: "/affiliate/rules", priority: 0.3, changefreq: "monthly" as const },
-  { path: "/affiliate/privacy", priority: 0.3, changefreq: "monthly" as const },
 ];
 
 export function GET() {

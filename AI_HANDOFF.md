@@ -414,10 +414,10 @@ Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baselin
 Date: 2026-08-28
 Requested change: افزودن Gate ایمن برای Build واقعی Production Worker بدون Deploy، DNS، D1 mutation یا استفاده از Secret
 Affected routes/files: .github/workflows/launch-3-checks.yml و AI_HANDOFF.md
-Tests actually run: هنوز اجرا نشده؛ GitHub Actions پس از ساخت PR باید check:launch، D1 verify، audit، preflight، production build contract و runtime smoke را اجرا کند
-PR and merge commit: شاخه gate/production-build-readiness-2026-08-28؛ PR هنوز ساخته نشده و ادغام انجام نشده است
+Tests actually run: GitHub Actions run 33178395639 موفق؛ check:launch، D1 verify، critical audit، preflight build، production Worker build contract و runtime smoke همگی PASS
+PR and merge commit: PR #125 روی شاخه gate/production-build-readiness-2026-08-28؛ CI سبز و ادغام هنوز انجام نشده است
 Deployment result: منتشر نشده؛ این Gate فقط Build است و هیچ دستور deploy ندارد
 Online verification: انجام نشده؛ تغییر Runtime یا دامنه‌ای وجود ندارد
 Open issue: Token فعلی Cloudflare برای D1 inventory پاسخ 401 می‌دهد و Worker تولیدی chakod-car در Audit فقط IMAGES binding دارد؛ نام و شناسه D1 تولیدی نباید حدس زده شود
-Exact next action: ساخت PR به agent/launch-3-local-baseline، انتظار برای CI کامل، سپس ادغام در صورت سبز بودن و درخواست مجوز D1 Read/Edit برای شناسایی یا ساخت دیتابیس تولیدی
+Exact next action: ادغام PR #125، تأیید Deploy و Smoke استیجینگ، سپس دریافت مجوز D1 Read/Edit برای شناسایی یا ساخت دیتابیس تولیدی
 ```

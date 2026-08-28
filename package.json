@@ -6,10 +6,9 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "install:ci": "bash scripts/install-ci.sh",
     "dev": "vite --config vite.windows.config.ts",
-    "dev:cloudflare": "vite",
-    "build": "bash scripts/build-verified.sh",
+    "dev:cloudflare": "vite --config vite.cloudflare.config.ts",
+    "build": "npm run build:preflight",
     "build:cloudflare": "vite build --config vite.cloudflare.config.ts",
     "build:cpanel": "vite build --config vite.cpanel.config.ts",
     "build:preflight": "vite build --config vite.windows.config.ts",
@@ -21,9 +20,8 @@
     "check:launch": "npx tsc --noEmit -p tsconfig.launch.json && npm run test:contracts",
     "d1:verify": "node scripts/verify-d1-migrations.mjs",
     "instagram:publisher": "node scripts/run-instagram-story-publisher.mjs",
-    "validate:artifact": "bash scripts/validate-artifact.sh",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

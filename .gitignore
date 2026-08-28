@@ -37,9 +37,9 @@ yarn-error.log*
 next-env.d.ts
 /dist/
 /.wrangler/
-/.sites-runtime/
 /outputs/
 /work/
+
 # Local dependencies and generated files
 node_modules/
 .next/
@@ -51,10 +51,8 @@ tsconfig.tsbuildinfo
 ping-body.json
 
 # Local runtime folders
-.sites-runtime/
 .wrangler/
 .wrangler-backup/
-.openai/
 
 # Local uploads
 uploads/

@@ -14,7 +14,11 @@ export default defineConfig({
       config: {
         name: "chakod-platform",
         main: "./worker/index.ts",
+        compatibility_date: "2026-08-28",
         compatibility_flags: ["nodejs_compat"],
+        images: {
+          binding: "IMAGES",
+        },
       },
     }),
   ],

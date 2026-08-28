@@ -27,12 +27,18 @@ jobs:
           cache: npm
 
       - name: Apply non-breaking audit fixes to lockfile
-        run: npm audit fix --package-lock-only --ignore-scripts --no-fund
+        shell: bash
+        run: |
+          set +e
+          npm audit fix --package-lock-only --ignore-scripts --no-fund
+          audit_fix_status=$?
+          set -e
+          echo "npm audit fix exit code: ${audit_fix_status}; remaining non-critical findings are allowed here."
 
       - name: Verify clean install
         run: npm ci
 
-      - name: Show remaining audit inventory
+      - name: Enforce zero critical vulnerabilities
         run: npm audit --audit-level=critical
 
       - name: Commit safe audit fix

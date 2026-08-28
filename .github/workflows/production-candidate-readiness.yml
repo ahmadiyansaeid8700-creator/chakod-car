@@ -1,0 +1,153 @@
+name: Production candidate readiness
+
+on:
+  pull_request:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - "app/**"
+      - "lib/**"
+      - "db/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.production.config.ts"
+      - ".github/workflows/production-candidate-readiness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-only-candidate:
+    name: Build-only production candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Build-contract values only. They are deliberately non-staging and are
+      # never deployed. Real production D1 values remain mandatory for deploy.
+      CLOUDFLARE_PRODUCTION_D1_DATABASE_NAME: chakod-production-build-contract
+      CLOUDFLARE_PRODUCTION_D1_DATABASE_ID: 11111111-1111-4111-8111-111111111111
+      CLOUDFLARE_PRODUCTION_WORKER_NAME: chakod-car-production-build-contract
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate source and contracts
+        run: npm run check:launch
+
+      - name: Verify D1 migration chain locally
+        run: npm run d1:verify
+
+      - name: Build production Worker without deploying
+        run: npm run build:production
+
+      - name: Confirm build stayed isolated from staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R --exclude-dir=node_modules --exclude-dir=.git --exclude='*.map' \
+            -E 'chakod-staging|staging\.chakod\.com|chakod-car-staging' dist .wrangler 2>/dev/null; then
+            echo "Production candidate output contains a staging resource reference."
+            exit 1
+          fi
+          echo "Production candidate compiled with no staging resource reference."
+
+  backend-readiness:
+    name: Public PHP backend readiness snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Probe root and non-mutating auth validation path
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+
+          root_status="$(curl --silent --show-error \
+            --output artifacts/api-root-body.txt \
+            --write-out '%{http_code}' \
+            --connect-timeout 10 \
+            --max-time 20 \
+            'https://api.chakod.com/' || true)"
+
+          auth_status="$(curl --silent --show-error \
+            --output artifacts/auth-probe-body.txt \
+            --write-out '%{http_code}' \
+            --connect-timeout 10 \
+            --max-time 20 \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data '{"mobile":"invalid","accept_terms":true}' \
+            'https://api.chakod.com/api/send-login-code.php' || true)"
+
+          echo "API root HTTP ${root_status:-000}"
+          echo "Auth validation HTTP ${auth_status:-000}"
+
+          AUTH_STATUS="${auth_status:-000}" node - <<'NODE'
+          const fs = require('fs');
+          const status = process.env.AUTH_STATUS || '000';
+          const raw = fs.readFileSync('artifacts/auth-probe-body.txt', 'utf8').trim();
+          let json = null;
+          try { json = JSON.parse(raw); } catch {}
+
+          let state = 'blocked';
+          let note = 'Auth endpoint did not return the expected JSON validation response.';
+          if (json && json.success === false && /^4\d\d$/.test(status)) {
+            state = 'reachable';
+            note = 'PHP auth endpoint is reachable and rejects a deliberately invalid mobile without sending an OTP.';
+          } else if (json && json.success === false) {
+            state = 'reachable-with-backend-error';
+            note = 'PHP auth endpoint returned structured JSON but is not yet in a clean validation state.';
+          }
+
+          const safeMessage = json && typeof json.message === 'string'
+            ? json.message.slice(0, 300)
+            : '(non-JSON or no message)';
+
+          fs.writeFileSync(
+            'artifacts/backend-readiness.md',
+            [
+              '# Production backend readiness snapshot',
+              '',
+              `- auth endpoint state: ${state}`,
+              `- auth endpoint HTTP: ${status}`,
+              `- safe response message: ${safeMessage}`,
+              '',
+              'Probe used an invalid mobile value; it is validation-only and must not send an OTP.',
+            ].join('\n') + '\n',
+          );
+          console.log(fs.readFileSync('artifacts/backend-readiness.md', 'utf8'));
+          NODE
+
+          {
+            echo '### Production backend readiness'
+            echo
+            echo "- API root HTTP: ${root_status:-000}"
+            echo "- Auth probe HTTP: ${auth_status:-000}"
+            cat artifacts/backend-readiness.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload readiness evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-backend-readiness
+          path: artifacts/
+          retention-days: 7
+          if-no-files-found: error

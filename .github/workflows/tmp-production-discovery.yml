@@ -1,0 +1,60 @@
+name: Temporary production resource discovery
+
+on:
+  push:
+    branches:
+      - prep/production-readiness-2026-08-28
+    paths:
+      - .github/workflows/tmp-production-discovery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Verify credentials exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: List Chakod D1 databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+              const fs = require("fs");
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              if (!payload.success) process.exit(1);
+              const rows = (payload.result || [])
+                .filter((x) => /chakod/i.test(String(x.name || "")))
+                .map((x) => ({ name: x.name, uuid: x.uuid }));
+              console.log("CHAKOD_D1=" + JSON.stringify(rows));
+            '
+
+      - name: List Chakod Worker domain bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            | node -e '
+              const fs = require("fs");
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              if (!payload.success) process.exit(1);
+              const rows = (payload.result || [])
+                .filter((x) => /chakod/i.test(String(x.hostname || "")) || /chakod/i.test(String(x.service || "")))
+                .map((x) => ({ hostname: x.hostname, service: x.service, environment: x.environment || null }));
+              console.log("CHAKOD_DOMAINS=" + JSON.stringify(rows));
+            '

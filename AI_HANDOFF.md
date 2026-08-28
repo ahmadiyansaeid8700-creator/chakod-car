@@ -408,3 +408,16 @@ Online verification: انجام نشده
 Open issue: اجرای TypeScript و Build در GitHub Actions و فعال‌سازی موقت دو فلگ فقط روی محیط تست لازم است
 Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، بررسی CI و سپس فعال‌سازی موقت NEXT_PUBLIC_PRELAUNCH_FIXTURES و PRELAUNCH_FIXTURES روی استیجینگ با اجازه مالک
 ```
+
+
+```text
+Date: 2026-08-28
+Requested change: افزودن Gate ایمن برای Build واقعی Production Worker بدون Deploy، DNS، D1 mutation یا استفاده از Secret
+Affected routes/files: .github/workflows/launch-3-checks.yml و AI_HANDOFF.md
+Tests actually run: GitHub Actions run 33178395639 موفق؛ check:launch، D1 verify، critical audit، preflight build، production Worker build contract و runtime smoke همگی PASS
+PR and merge commit: PR #125 روی شاخه gate/production-build-readiness-2026-08-28؛ CI سبز و ادغام هنوز انجام نشده است
+Deployment result: منتشر نشده؛ این Gate فقط Build است و هیچ دستور deploy ندارد
+Online verification: انجام نشده؛ تغییر Runtime یا دامنه‌ای وجود ندارد
+Open issue: Token فعلی Cloudflare برای D1 inventory پاسخ 401 می‌دهد و Worker تولیدی chakod-car در Audit فقط IMAGES binding دارد؛ نام و شناسه D1 تولیدی نباید حدس زده شود
+Exact next action: ادغام PR #125، تأیید Deploy و Smoke استیجینگ، سپس دریافت مجوز D1 Read/Edit برای شناسایی یا ساخت دیتابیس تولیدی
+```

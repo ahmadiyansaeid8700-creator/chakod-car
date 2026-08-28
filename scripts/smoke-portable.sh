@@ -116,30 +116,27 @@ check_redirect "/advertising/banners" "/advertising/dealership-placement"
 # After login, the page source contract redirects it to `/account/business/dealers`.
 check_redirect "/dealers" "/login?returnTo=/dealers"
 
-AI_RESPONSE="$(curl --silent --show-error --fail --max-time 12 \
+# Chakod AI is admin-first. The legacy public assistant must stay removed and
+# AI Manager endpoints must fail closed for unauthenticated callers.
+LEGACY_AI_CODE="$(curl --silent --show-error --output /tmp/chakod-legacy-ai-body --write-out '%{http_code}' --max-time 12 \
   -H 'Content-Type: application/json' \
   -X POST \
-  --data '{"messages":[{"role":"user","content":"برای خرید خودرو از کجا شروع کنم؟"}]}' \
+  --data '{"messages":[{"role":"user","content":"test"}]}' \
   "$BASE/api/ai/assistant")"
-
-if ! printf '%s' "$AI_RESPONSE" | grep -q '"reply"'; then
-  echo "AI assistant smoke response is missing reply." >&2
-  printf '%s\n' "$AI_RESPONSE" >&2
+if [[ "$LEGACY_AI_CODE" != "404" ]]; then
+  echo "Expected removed public AI assistant to return 404, received $LEGACY_AI_CODE" >&2
+  cat /tmp/chakod-legacy-ai-body >&2 || true
   exit 1
 fi
+echo "OK 404 /api/ai/assistant"
 
-# CI intentionally runs without OPENAI_API_KEY. The assistant must still return
-# a successful offline response instead of failing the public product.
-if ! printf '%s' "$AI_RESPONSE" | grep -q '"success":true'; then
-  echo "AI assistant smoke response is not successful." >&2
-  printf '%s\n' "$AI_RESPONSE" >&2
+AI_MANAGER_CODE="$(curl --silent --show-error --output /tmp/chakod-ai-manager-body --write-out '%{http_code}' --max-time 12 \
+  "$BASE/api/ai/manager/status")"
+if [[ "$AI_MANAGER_CODE" != "404" ]]; then
+  echo "Expected unauthenticated AI Manager status to fail closed with 404, received $AI_MANAGER_CODE" >&2
+  cat /tmp/chakod-ai-manager-body >&2 || true
   exit 1
 fi
-
-if ! printf '%s' "$AI_RESPONSE" | grep -q '"configured":false'; then
-  echo "AI assistant did not use the expected offline fallback in portable CI." >&2
-  printf '%s\n' "$AI_RESPONSE" >&2
-  exit 1
-fi
+echo "OK 404 /api/ai/manager/status (unauthenticated)"
 
 echo "Portable runtime smoke passed."

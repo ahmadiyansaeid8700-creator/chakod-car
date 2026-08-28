@@ -63,13 +63,19 @@ function upstreamSubmitterUserId(item: JsonRecord) {
 async function stagingDemoPayload(request: NextRequest) {
   if (!isStagingDemoEnabled(request.nextUrl.hostname)) return null;
   const identity = await readServerIdentity("/api/me.php");
-  if (!isRecord(identity) || identity.staging_demo !== true || !isRecord(identity.user)) return null;
+  if (!isRecord(identity)) return null;
+
+  const identityRecord = identity as JsonRecord;
+  if (identityRecord.staging_demo !== true) return null;
+
+  const user = identityRecord.user;
+  if (!isRecord(user)) return null;
 
   const owner = request.nextUrl.searchParams.get("owner")?.trim() || "";
   const dealerId = positiveId(request.nextUrl.searchParams.get("dealer_id"));
   const perPage = Math.min(24, Math.max(1, positiveId(request.nextUrl.searchParams.get("per_page")) || 6));
-  const userName = text(identity.user.display_name) || text(identity.user.full_name) || "کاربر چاکود";
-  const accountType = text(identity.user.account_type) || "personal";
+  const userName = text(user.display_name) || text(user.full_name) || "کاربر چاکود";
+  const accountType = text(user.account_type) || "personal";
   const fixtures = PRELAUNCH_LISTINGS as unknown as JsonRecord[];
 
   let selected = fixtures;
@@ -90,7 +96,7 @@ async function stagingDemoPayload(request: NextRequest) {
       : null,
     submitted_by_display_name: userName,
     submitted_by_role: accountType,
-    submitted_by_user_id: positiveId(identity.user.id) || null,
+    submitted_by_user_id: positiveId(user.id) || null,
   }));
   const total = selected.length;
 

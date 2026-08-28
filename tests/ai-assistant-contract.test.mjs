@@ -6,53 +6,49 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("keeps Chakod AI mounted globally", async () => {
+test("does not mount a public AI assistant globally", async () => {
   const layout = await source("app/layout.tsx");
-  assert.match(layout, /ChakodAiAssistant/);
-  assert.match(layout, /<ChakodAiAssistant\s*\/>/);
+  assert.doesNotMatch(layout, /ChakodAiAssistant/);
 });
 
-test("keeps offline AI fallback when cloud key is unavailable", async () => {
-  const route = await source("app/api/ai/assistant/route.ts");
-  assert.match(route, /if \(!process\.env\.OPENAI_API_KEY\)/);
-  assert.match(route, /buildOfflineAssistantReply/);
-  assert.match(route, /cloud_not_configured/);
-  assert.match(route, /cloud_unavailable/);
+test("keeps Chakod AI Manager admin-first and read-only", async () => {
+  const page = await source("app/admin/ai/page.tsx");
+  const tools = await source("lib/chakod-ai-manager/tools.ts");
+  assert.match(page, /مرکز هوش مصنوعی مدیریت/);
+  assert.match(page, /Write Action خودکار وجود ندارد/);
+  assert.match(tools, /scope: "read_only"/);
 });
 
-test("keeps Chakod AI automotive-first, conversational and uncertainty-aware", async () => {
-  const openai = await source("lib/ai-assistant/openai.ts");
-  const client = await source("app/components/ChakodAiAssistant.tsx");
-
-  assert.match(openai, /Handle greetings, thanks, brief small talk/);
-  assert.match(openai, /Never invent a specification/);
-  assert.match(openai, /stop driving when appropriate/);
-  assert.match(client, /کارشناس هوشمند خودرو/);
+test("keeps AI Manager disabled unless explicitly configured", async () => {
+  const config = await source("lib/chakod-ai-manager/config.ts");
+  assert.match(config, /return "disabled"/);
+  assert.match(config, /requestedEnabled && providerConfigured/);
+  assert.match(config, /writeActionsAllowed: false/);
 });
 
-test("keeps assistant request limits and no-store response", async () => {
-  const route = await source("app/api/ai/assistant/route.ts");
-  assert.match(route, /MAX_REQUEST_BYTES/);
-  assert.match(route, /MAX_MESSAGES/);
-  assert.match(route, /MAX_MESSAGE_LENGTH/);
-  assert.match(route, /RATE_LIMIT/);
-  assert.match(route, /Cache-Control/);
-  assert.match(route, /no-store/);
+test("protects manager routes with admin access", async () => {
+  const statusRoute = await source("app/api/ai/manager/status/route.ts");
+  const suggestRoute = await source("app/api/ai/manager/suggest/route.ts");
+  const toolRoute = await source("app/api/ai/manager/tools/[toolId]/route.ts");
+  for (const route of [statusRoute, suggestRoute, toolRoute]) {
+    assert.match(route, /hasAdminRouteAccess/);
+    assert.match(route, /readServerIdentity/);
+  }
+  assert.match(suggestRoute, /writeActionsExecuted: false/);
 });
 
-test("does not send an admin session token in public assistant mode", async () => {
-  const client = await source("app/components/ChakodAiAssistant.tsx");
-  assert.match(client, /currentMode === "admin"/);
-  assert.match(client, /chakod_session_token/);
-  assert.match(client, /\/api\/ai\/assistant/);
+test("limits local provider endpoints to loopback hosts", async () => {
+  const config = await source("lib/chakod-ai-manager/config.ts");
+  assert.match(config, /localhost/);
+  assert.match(config, /127\.0\.0\.1/);
+  assert.match(config, /::1/);
+  assert.match(config, /LOOPBACK_HOSTS\.has/);
 });
 
-test("supports cookie-backed admin mode and effective admin permissions", async () => {
-  const route = await source("app/api/ai/assistant/route.ts");
-  const context = await source("lib/ai-assistant/context.ts");
-  const client = await source("app/components/ChakodAiAssistant.tsx");
-
-  assert.match(route, /chakod_session=/);
-  assert.match(context, /Array\.isArray\(me\.permissions\)/);
-  assert.match(client, /path\.startsWith\("\/admin"\) \? "admin" : "user"/);
+test("reads only sanitized operational summaries before AI suggestions", async () => {
+  const executor = await source("lib/chakod-ai-manager/tool-executor.ts");
+  assert.match(executor, /site_operations_summary/);
+  assert.match(executor, /warningsCount/);
+  assert.match(executor, /safeNumericStats/);
+  assert.doesNotMatch(executor, /method:\s*"(?:POST|PUT|PATCH|DELETE)"/);
 });

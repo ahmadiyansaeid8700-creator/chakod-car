@@ -1,0 +1,141 @@
+name: Production inventory audit
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/production-inventory-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Read-only Cloudflare inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Ensure Cloudflare credentials exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Missing Cloudflare read credentials."
+            exit 1
+          fi
+
+      - name: Read Workers, D1 and custom-domain inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            > artifacts/workers.json
+
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/d1/database?per_page=100" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            > artifacts/d1.json
+
+          curl --fail --silent --show-error \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            > artifacts/domains.json
+
+      - name: Summarize Chakod resources only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const workersPayload = read('artifacts/workers.json');
+          const d1Payload = read('artifacts/d1.json');
+          const domainsPayload = read('artifacts/domains.json');
+
+          for (const [label, payload] of [
+            ['workers', workersPayload],
+            ['d1', d1Payload],
+            ['domains', domainsPayload],
+          ]) {
+            if (!payload?.success) {
+              console.error(`Cloudflare ${label} inventory request was not successful.`);
+              process.exit(1);
+            }
+          }
+
+          const workers = Array.isArray(workersPayload.result) ? workersPayload.result : [];
+          const d1 = Array.isArray(d1Payload.result) ? d1Payload.result : [];
+          const domains = Array.isArray(domainsPayload.result) ? domainsPayload.result : [];
+
+          const chakodWorkers = workers
+            .map((item) => String(item.id || item.name || '').trim())
+            .filter((name) => /chakod/i.test(name));
+
+          const chakodD1 = d1
+            .filter((item) => /chakod/i.test(String(item.name || '')))
+            .map((item) => ({
+              name: String(item.name || '').trim(),
+              uuid: String(item.uuid || item.id || '').trim(),
+            }));
+
+          const chakodDomains = domains
+            .filter((item) => /(^|\.)chakod\.com$/i.test(String(item.hostname || '')))
+            .map((item) => ({
+              hostname: String(item.hostname || '').trim(),
+              service: String(item.service || '').trim(),
+              environment: String(item.environment || '').trim(),
+            }));
+
+          const lines = [
+            '# Chakod Cloudflare production inventory',
+            '',
+            'Read-only audit. No Worker, DNS, route, secret or database mutation was performed.',
+            '',
+            '## Workers containing “chakod”',
+            ...(chakodWorkers.length ? chakodWorkers.map((name) => `- ${name}`) : ['- none']),
+            '',
+            '## D1 databases containing “chakod”',
+            ...(chakodD1.length
+              ? chakodD1.map((item) => `- ${item.name}${item.uuid ? ` — ${item.uuid}` : ''}`)
+              : ['- none']),
+            '',
+            '## Worker custom domains under chakod.com',
+            ...(chakodDomains.length
+              ? chakodDomains.map((item) => `- ${item.hostname} -> ${item.service}${item.environment ? ` (${item.environment})` : ''}`)
+              : ['- none']),
+            '',
+          ];
+
+          fs.writeFileSync('artifacts/production-inventory-summary.md', lines.join('\n') + '\n');
+          console.log(lines.join('\n'));
+          NODE
+
+      - name: Record public endpoint status without changing anything
+        shell: bash
+        run: |
+          set -euo pipefail
+          chakod_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --connect-timeout 10 --max-time 20 https://chakod.com/ || true)"
+          api_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --connect-timeout 10 --max-time 20 https://api.chakod.com/ || true)"
+          {
+            echo "## Public HTTP snapshot"
+            echo "- https://chakod.com/ -> ${chakod_status:-unreachable}"
+            echo "- https://api.chakod.com/ -> ${api_status:-unreachable}"
+          } | tee -a artifacts/production-inventory-summary.md
+
+      - name: Upload inventory evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-inventory-audit
+          path: artifacts/production-inventory-summary.md
+          retention-days: 7

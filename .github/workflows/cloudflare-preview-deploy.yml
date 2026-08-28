@@ -1,0 +1,110 @@
+name: Cloudflare Preview Deploy
+
+on:
+  push:
+    branches:
+      - deploy/cloudflare-preview-2026-08-28
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chakod-cloudflare-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build and deploy isolated preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit -p tsconfig.launch.json
+
+      - name: Build application
+        run: npm run build
+
+      - name: Verify Vinext Cloudflare output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/server/wrangler.json
+
+      - name: Isolate preview Worker configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const path = "dist/server/wrangler.json";
+          const config = JSON.parse(readFileSync(path, "utf8"));
+
+          config.name = "chakod-platform-preview";
+          config.workers_dev = true;
+          config.preview_urls = true;
+          config.images = { binding: "IMAGES" };
+
+          delete config.route;
+          delete config.routes;
+
+          writeFileSync(path, JSON.stringify(config, null, 2) + "\n");
+          NODE
+
+      - name: Check Cloudflare deployment credentials
+        id: cloudflare_credentials
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare deployment credentials are configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare deployment credentials are not configured in this repository yet."
+          fi
+
+      - name: Deploy isolated Worker preview
+        id: deploy
+        if: steps.cloudflare_credentials.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: npm
+          command: deploy --config dist/server/wrangler.json
+
+      - name: Record preview deployment
+        if: steps.cloudflare_credentials.outputs.ready == 'true'
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          echo "### Chakod Cloudflare Preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "Worker: \`chakod-platform-preview\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployment URL: ${DEPLOYMENT_URL:-see Wrangler output above}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production routes were deliberately removed from the generated config." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record credential blocker
+        if: steps.cloudflare_credentials.outputs.ready != 'true'
+        shell: bash
+        run: |
+          echo "### Chakod Cloudflare Preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build and preview configuration completed successfully." >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployment was skipped because \`CLOUDFLARE_API_TOKEN\` and/or \`CLOUDFLARE_ACCOUNT_ID\` are not configured as GitHub Actions secrets." >> "$GITHUB_STEP_SUMMARY"

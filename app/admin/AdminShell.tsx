@@ -46,8 +46,6 @@ const navigation: NavGroup[] = [
       { href: "/admin/advertising", label: "تبلیغات", icon: "megaphone", permissions: ["banners.view", "banners.manage", "advertising.manage"] },
       { href: "/admin/featured-showrooms", label: "نمایشگاه منتخب", icon: "star", permissions: ["businesses.manage", "placements.manage"] },
       { href: "/admin/placements", label: "جایگاه‌ها", icon: "pin", permissions: ["placements.view", "placements.manage"] },
-      { href: "/admin/ambassadors", label: "سفیران", icon: "ambassador", permissions: ["ambassadors.view", "ambassadors.manage"] },
-      { href: "/admin/affiliate", label: "همکاری در فروش", icon: "affiliate", permissions: ["affiliate.view", "affiliate.manage"] },
     ],
   },
   {

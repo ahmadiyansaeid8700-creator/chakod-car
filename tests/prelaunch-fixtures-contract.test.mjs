@@ -34,7 +34,7 @@ test("homepage and market floor consume fixtures only through their gates", () =
     "app/components/HomeFeaturedBusinesses.tsx",
     "app/components/HomeFeaturedShowrooms.tsx",
   ]) assert.match(read(path), /PRELAUNCH_FIXTURES_ENABLED/);
-  assert.match(read("app/api/market-floor/public/route.ts"), /PRELAUNCH_FIXTURES === "true"/);
+  assert.match(read("app/api/market-floor/public/route.ts"), /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
 });
 
 test("staging demo fixtures resolve through public server catalog and detail paths", () => {
@@ -45,7 +45,10 @@ test("staging demo fixtures resolve through public server catalog and detail pat
   const businessesRoute = read("app/api/businesses/route.ts");
 
   assert.match(fixtures, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
-  assert.match(fixtures, /PRELAUNCH_FIXTURES === "true"/);
+  assert.match(
+    fixtures,
+    /PRELAUNCH_SERVER_FIXTURES_ENABLED\s*=\s*[\s\S]{0,220}PRELAUNCH_FIXTURES\s*===\s*"true"[\s\S]{0,220}NEXT_PUBLIC_PRELAUNCH_FIXTURES\s*===\s*"true"/,
+  );
   assert.match(catalogRoute, /PRELAUNCH_LISTINGS/);
   assert.match(catalogRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
   assert.match(catalogPage, /PRELAUNCH_LISTINGS/);
@@ -56,11 +59,46 @@ test("staging demo fixtures resolve through public server catalog and detail pat
   assert.match(businessesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
 });
 
-test("post-deploy staging smoke verifies demo content instead of HTTP status only", () => {
+test("staging demo stories are persistent until manually removed", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const storiesRoute = read("app/api/stories/public/route.ts");
+
+  assert.match(fixtures, /PRELAUNCH_STORIES[\s\S]{0,2200}expires_at:\s*null/);
+  assert.match(fixtures, /PRELAUNCH_STORIES[\s\S]{0,2200}demo_persistent:\s*true/);
+  assert.match(storiesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.doesNotMatch(storiesRoute, /const fixturesEnabled = process\.env\.PRELAUNCH_FIXTURES/);
+  assert.doesNotMatch(
+    storiesRoute,
+    /fixtureStories[\s\S]{0,1200}return !story\.expires_at \|\| story\.expires_at > now/,
+  );
+});
+
+test("staging market-floor fixtures are persistent and never show a fake 24-hour timer", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const marketFloorRoute = read("app/api/market-floor/public/route.ts");
+  const marketFloorPage = read("app/market-floor/page.tsx");
+
+  assert.match(fixtures, /PRELAUNCH_MARKET_FLOOR[\s\S]{0,1800}demoPersistent:\s*true/);
+  assert.match(marketFloorRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.doesNotMatch(marketFloorRoute, /const fixturesEnabled = process\.env\.PRELAUNCH_FIXTURES/);
+  assert.match(marketFloorPage, /demoPersistent\?:\s*boolean/);
+  assert.match(marketFloorPage, /item\.demoPersistent\s*\?/);
+  assert.match(marketFloorPage, /نمایش ثابت|دمو/);
+});
+
+test("post-deploy staging smoke verifies every presentation surface instead of HTTP status only", () => {
   const workflow = read(".github/workflows/staging-demo-content-smoke.yml");
-  assert.match(workflow, /Deploy staging Worker/);
-  assert.match(workflow, /api\/catalog\?segment=luxury/);
-  assert.match(workflow, /9100001/);
-  assert.match(workflow, /test-business-9500001/);
-  assert.match(workflow, /TEST_/);
+  for (const expected of [
+    "Deploy staging Worker",
+    "api/catalog?segment=luxury",
+    "api/businesses?type=dealer",
+    "api/businesses?type=car_service",
+    "api/stories/public",
+    "api/market-floor/public",
+    "9100001",
+    "9300001",
+    "9600001",
+    "test-showroom-9200001",
+    "test-business-9500001",
+  ]) assert.ok(workflow.includes(expected), `${expected} must be covered by staging smoke`);
 });

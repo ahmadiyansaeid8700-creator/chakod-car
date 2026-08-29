@@ -146,7 +146,7 @@ export default function BusinessesAdminClient() {
     <main className={styles.page} dir="rtl">
       <header className={styles.header}>
         <div><span>مدیریت چاکود</span><h1>کسب‌وکارهای خودرو</h1><p>بررسی، تأیید، تعلیق و انتخاب جایگاه صفحه اصلی؛ بدون دسترسی به مبلغ یا موجودی کاربران.</p></div>
-        <nav><button type="button" onClick={() => window.history.back()}>بازگشت</button><a href="/admin">مدیریت اصلی</a><a href="/admin/affiliate">همکاری در فروش</a><a href="/businesses">نمای عمومی</a><a href="/">صفحه اصلی</a></nav>
+        <nav><button type="button" onClick={() => window.history.back()}>بازگشت</button><a href="/admin">مدیریت اصلی</a><a href="/businesses">نمای عمومی</a><a href="/">صفحه اصلی</a></nav>
       </header>
 
       <section className={styles.stats}>

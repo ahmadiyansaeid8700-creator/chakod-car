@@ -37,6 +37,10 @@ export default defineConfig(async () => {
           compatibility_flags: ["nodejs_compat"],
           workers_dev: true,
           preview_urls: false,
+          vars: {
+            NEXT_PUBLIC_PRELAUNCH_FIXTURES: "true",
+            PRELAUNCH_FIXTURES: "true",
+          },
           routes: [
             {
               pattern: "staging.chakod.com",

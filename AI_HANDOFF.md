@@ -445,3 +445,15 @@ Online verification: صفحه اصلی و /businesses هر دو HTTP 200؛ اع�
 Open issue: 6 آسیب‌پذیری غیر Critical فقط با ارتقای Breaking وابستگی‌های Vinext و Drizzle قابل رفع‌اند؛ استیجینگ همچنان باید فقط از داده آزمایشی استفاده کند و انتقال نهایی همه داده‌ها به VPS شخصی پیش از ورود کاربران واقعی انجام شود
 Exact next action: انتخاب و پیاده‌سازی شکاف بعدی Launch Candidate روی شاخه تازه از agent/launch-3-local-baseline؛ فقط با داده آزمایشی و بدون اتصال chakod.com
 ```
+
+```text
+Date: 2026-08-29
+Requested change: ممیزی جریان ورود، حساب و آگهی در Launch Candidate و رفع شکست ورود آزمایشی staging بدون فعال‌کردن کاربر یا داده واقعی
+Affected routes/files: /api/auth/send-code، /api/auth/verify، /api/auth/me، /api/auth/dashboard-listings، lib/staging-demo-session.ts، .github/workflows/staging-deploy.yml، package.json و تست قرارداد staging-demo-session
+Tests actually run: check:launch با 112/112 تست موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare staging موفق؛ تست مستقیم Worker ساخته‌شده برای send-code/verify/me/dashboard-listings همگی HTTP 200؛ Build مستقل production بدون Deploy موفق؛ npm test شامل 112 قرارداد، Build preflight و Smoke قابل‌حمل 117 صفحه موفق؛ npm audit در سطح critical بدون Critical موفق
+PR and merge commit: شاخه audit/launch-user-flows-2026-08-29؛ هنوز PR ساخته و ادغام نشده است
+Deployment result: هنوز منتشر نشده؛ دامنه اصلی و Production دست‌نخورده‌اند
+Online verification: پیش از اصلاح، send-code روی staging با HTTP 500 و پیام نبود تنظیمات محرمانه شکست می‌خورد؛ نتیجه آنلاین پس از Deploy هنوز باید ثبت شود
+Open issue: Commerce و پرداخت staging هنوز به Backend قدیمی PHP وابسته‌اند و پس از تثبیت ورود باید با fixture محلی و D1 ممیزی/تکمیل شوند؛ هیچ تراکنش یا داده واقعی تا انتقال به VPS مجاز نیست
+Exact next action: ساخت PR به agent/launch-3-local-baseline، گرفتن CI کامل، ادغام، Deploy staging و اجرای زنده send-code/verify/me/dashboard-listings با هویت آزمایشی 09000000000
+```

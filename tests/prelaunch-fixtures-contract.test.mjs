@@ -86,6 +86,14 @@ test("staging market-floor fixtures are persistent and never show a fake 24-hour
   assert.match(marketFloorPage, /نمایش ثابت|دمو/);
 });
 
+test("homepage business fixtures remain visible if the upstream business API fails", () => {
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+  assert.match(
+    businesses,
+    /\.catch\([\s\S]{0,500}PRELAUNCH_FIXTURES_ENABLED[\s\S]{0,400}setItems\([\s\S]{0,250}setStatus\(PRELAUNCH_FIXTURES_ENABLED \? "ready" : "error"\)/,
+  );
+});
+
 test("post-deploy staging smoke verifies every presentation surface instead of HTTP status only", () => {
   const workflow = read(".github/workflows/staging-demo-content-smoke.yml");
   for (const expected of [

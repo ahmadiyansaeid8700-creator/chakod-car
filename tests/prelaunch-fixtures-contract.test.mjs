@@ -56,8 +56,9 @@ test("staging demo fixtures resolve through public server catalog and detail pat
   assert.match(businessesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
 });
 
-test("staging deploy smoke verifies demo content instead of HTTP status only", () => {
-  const workflow = read(".github/workflows/staging-deploy.yml");
+test("post-deploy staging smoke verifies demo content instead of HTTP status only", () => {
+  const workflow = read(".github/workflows/staging-demo-content-smoke.yml");
+  assert.match(workflow, /Deploy staging Worker/);
   assert.match(workflow, /api\/catalog\?segment=luxury/);
   assert.match(workflow, /9100001/);
   assert.match(workflow, /test-business-9500001/);

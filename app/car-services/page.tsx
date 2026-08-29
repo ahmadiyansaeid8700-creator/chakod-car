@@ -1,8 +1,8 @@
-import BusinessesPage from "../businesses/page";
+import ServicesRoute from "../services/ServicesRoute";
 
 export default function CarServicesPage() {
   return (
-    <BusinessesPage
+    <ServicesRoute
       initialType="car_service"
       basePath="/car-services"
       lockType

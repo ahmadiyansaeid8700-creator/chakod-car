@@ -4,10 +4,8 @@ import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
 import { commerceOrders } from "../../../../db/schema";
-import {
-  PRELAUNCH_SERVER_FIXTURES_ENABLED,
-  PRELAUNCH_STORIES,
-} from "../../../../lib/prelaunch-fixtures";
+import { PRELAUNCH_STORIES } from "../../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../../lib/prelaunch-server-fixtures";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +52,7 @@ function listingPublicUrl(value: unknown, listingId: number) {
 }
 
 export async function GET(request: NextRequest) {
+  const fixturesEnabled = prelaunchServerFixturesEnabled();
   const now = new Date().toISOString();
   const province = clean(request.nextUrl.searchParams.get("province"));
   const requestedCities = request.nextUrl.searchParams
@@ -65,7 +64,7 @@ export async function GET(request: NextRequest) {
     ? requestedStoryId - LOCAL_STORY_ID_BASE
     : 0;
 
-  const fixtureStories = PRELAUNCH_SERVER_FIXTURES_ENABLED
+  const fixtureStories = fixturesEnabled
     ? PRELAUNCH_STORIES.filter((story) => {
         if (requestedStoryId > 0 && Number(story.story_id) !== requestedStoryId) return false;
         if (province && clean(story.province) !== province) return false;
@@ -165,7 +164,7 @@ export async function GET(request: NextRequest) {
         success: true,
         count: data.length,
         data,
-        ...(PRELAUNCH_SERVER_FIXTURES_ENABLED ? { staging_demo: true } : {}),
+        ...(fixturesEnabled ? { staging_demo: true } : {}),
       },
       { headers: { "Cache-Control": "no-store" } },
     );

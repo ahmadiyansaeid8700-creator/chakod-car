@@ -1,7 +1,5 @@
-import {
-  PRELAUNCH_LISTINGS,
-  PRELAUNCH_SERVER_FIXTURES_ENABLED,
-} from "../../../lib/prelaunch-fixtures";
+import { PRELAUNCH_LISTINGS } from "../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../lib/prelaunch-server-fixtures";
 
 const CATALOG_API_URL = "https://api.chakod.com/api/listings.php";
 
@@ -149,6 +147,7 @@ function mergeFixtures(payload: CatalogPayload | null, params: URLSearchParams) 
 }
 
 export async function GET(request: Request) {
+  const fixturesEnabled = prelaunchServerFixturesEnabled();
   const requestUrl = new URL(request.url);
   const upstreamUrl = new URL(CATALOG_API_URL);
 
@@ -174,7 +173,7 @@ export async function GET(request: Request) {
     });
     const payload = (await response.json().catch(() => null)) as CatalogPayload | null;
 
-    if (PRELAUNCH_SERVER_FIXTURES_ENABLED) {
+    if (fixturesEnabled) {
       return Response.json(mergeFixtures(payload, upstreamUrl.searchParams), {
         headers: { "Cache-Control": "no-store" },
       });
@@ -192,7 +191,7 @@ export async function GET(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch {
-    if (PRELAUNCH_SERVER_FIXTURES_ENABLED) {
+    if (fixturesEnabled) {
       return Response.json(mergeFixtures(null, upstreamUrl.searchParams), {
         headers: { "Cache-Control": "no-store" },
       });

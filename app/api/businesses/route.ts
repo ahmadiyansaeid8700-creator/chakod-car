@@ -6,9 +6,9 @@ import { accountActivities } from "../../../db/schema";
 import { readBusinessResume } from "../../../lib/business-resume";
 import {
   PRELAUNCH_BUSINESSES,
-  PRELAUNCH_SERVER_FIXTURES_ENABLED,
   PRELAUNCH_SHOWROOMS,
 } from "../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../lib/prelaunch-server-fixtures";
 
 const API_BASE = (process.env.CHAKOD_API_BASE || "https://api.chakod.com").replace(/\/+$/, "");
 
@@ -27,8 +27,8 @@ function normalize(value: unknown) {
   return String(value || "").trim().toLocaleLowerCase("fa");
 }
 
-function prelaunchBusinesses(request: NextRequest) {
-  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return [];
+function prelaunchBusinesses(request: NextRequest, fixturesEnabled: boolean) {
+  if (!fixturesEnabled) return [];
 
   const slug = request.nextUrl.searchParams.get("slug") || "";
   const requestedType = normalize(request.nextUrl.searchParams.get("type"));
@@ -126,10 +126,11 @@ function uniqueItems(items: unknown[]) {
 }
 
 export async function GET(request: NextRequest) {
-  const fixtureItems = prelaunchBusinesses(request);
+  const fixturesEnabled = prelaunchServerFixturesEnabled();
+  const fixtureItems = prelaunchBusinesses(request, fixturesEnabled);
   const slug = request.nextUrl.searchParams.get("slug") || "";
 
-  if (PRELAUNCH_SERVER_FIXTURES_ENABLED && slug.startsWith("test-")) {
+  if (fixturesEnabled && slug.startsWith("test-")) {
     return NextResponse.json(
       fixtureItems[0]
         ? { success: true, item: fixtureItems[0], staging_demo: true }
@@ -169,19 +170,19 @@ export async function GET(request: NextRequest) {
       const items = uniqueItems([...fixtureItems, ...nativeItems, ...externalItems]);
       payload.items = items;
       payload.total = items.length;
-      if (PRELAUNCH_SERVER_FIXTURES_ENABLED) payload.staging_demo = true;
+      if (fixturesEnabled) payload.staging_demo = true;
     }
     return new NextResponse(payload ? JSON.stringify(payload) : text, {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
-        "Cache-Control": PRELAUNCH_SERVER_FIXTURES_ENABLED
+        "Cache-Control": fixturesEnabled
           ? "no-store"
           : "public, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch {
-    if (PRELAUNCH_SERVER_FIXTURES_ENABLED) {
+    if (fixturesEnabled) {
       return NextResponse.json(
         { success: true, items: fixtureItems, total: fixtureItems.length, staging_demo: true },
         { headers: { "Cache-Control": "no-store" } },

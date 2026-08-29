@@ -8,10 +8,8 @@ import CatalogListingsClient from "../../components/CatalogListingsClient";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import MarketModeSwitch from "../../components/MarketModeSwitch";
 import { carMarketPath, legacyAdsRedirect } from "../../../lib/car-routes";
-import {
-  PRELAUNCH_LISTINGS,
-  PRELAUNCH_SERVER_FIXTURES_ENABLED,
-} from "../../../lib/prelaunch-fixtures";
+import { PRELAUNCH_LISTINGS } from "../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../lib/prelaunch-server-fixtures";
 import type {
   CatalogFilters,
   CatalogResponse,
@@ -230,7 +228,7 @@ function withPrelaunchFixtures(
   segment: CatalogSegment,
   filters: CatalogFilters,
 ): CatalogResponse | null {
-  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return upstream;
+  if (!prelaunchServerFixturesEnabled()) return upstream;
 
   const fixtures = PRELAUNCH_LISTINGS.filter((listing) => fixtureMatches(listing, segment, filters));
   const upstreamItems = Array.isArray(upstream?.data) ? upstream.data : [];

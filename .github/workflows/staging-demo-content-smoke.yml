@@ -1,24 +1,65 @@
 name: Staging demo content smoke
 
 on:
-  workflow_run:
-    workflows:
-      - Deploy staging Worker
+  push:
     branches:
       - agent/launch-3-local-baseline
-    types:
-      - completed
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   demo-content-smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
+      - name: Wait for matching Deploy staging Worker
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/staging-deploy.yml/runs?branch=agent%2Flaunch-3-local-baseline&event=push&per_page=20"
+
+          for attempt in $(seq 1 120); do
+            payload="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_url")"
+
+            set +e
+            printf '%s' "$payload" | node -e '
+              const fs = require("fs");
+              const sha = process.argv[1];
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              const run = (payload.workflow_runs || []).find((item) => item.head_sha === sha);
+              if (!run || run.status !== "completed") process.exit(10);
+              if (run.conclusion !== "success") {
+                console.error(`Matching staging deploy ${run.id} finished with ${run.conclusion}`);
+                process.exit(20);
+              }
+              console.log(`Matching staging deploy ${run.id} succeeded for ${sha}`);
+            ' "$GITHUB_SHA"
+            check_status=$?
+            set -e
+
+            if [ "$check_status" = "0" ]; then
+              break
+            fi
+            if [ "$check_status" = "20" ]; then
+              exit 1
+            fi
+            if [ "$attempt" = "120" ]; then
+              echo "Timed out waiting for the matching Deploy staging Worker run."
+              exit 1
+            fi
+            sleep 5
+          done
+
       - name: Verify staging demo catalog and detail routes
         shell: bash
         run: |

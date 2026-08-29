@@ -1,7 +1,5 @@
-import {
-  PRELAUNCH_LISTINGS,
-  PRELAUNCH_SERVER_FIXTURES_ENABLED,
-} from "../../../lib/prelaunch-fixtures";
+import { PRELAUNCH_LISTINGS } from "../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../lib/prelaunch-server-fixtures";
 
 export const API_BASE = "https://api.chakod.com";
 export const SITE_BASE = "https://chakod.com";
@@ -107,7 +105,7 @@ export class ListingFetchError extends Error {
 }
 
 function fixtureListingResponse(listingId: number): ListingApiResponse | null {
-  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return null;
+  if (!prelaunchServerFixturesEnabled()) return null;
   const fixture = PRELAUNCH_LISTINGS.find((item) => Number(item.id) === listingId);
   if (!fixture) return null;
 

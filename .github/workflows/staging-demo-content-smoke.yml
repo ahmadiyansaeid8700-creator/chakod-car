@@ -1,0 +1,57 @@
+name: Staging demo content smoke
+
+on:
+  workflow_run:
+    workflows:
+      - Deploy staging Worker
+    branches:
+      - agent/launch-3-local-baseline
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo-content-smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify staging demo catalog and detail routes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          catalog_body="$(mktemp)"
+          listing_body="$(mktemp)"
+          business_body="$(mktemp)"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$catalog_body" \
+            'https://staging.chakod.com/api/catalog?segment=luxury&limit=12'
+          grep -q '9100001' "$catalog_body"
+          grep -q 'TEST_' "$catalog_body"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: text/html' \
+            --output "$listing_body" \
+            'https://staging.chakod.com/cars/9100001'
+          grep -q 'TEST_' "$listing_body"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$business_body" \
+            'https://staging.chakod.com/api/businesses?slug=test-business-9500001'
+          grep -q 'test-business-9500001' "$business_body"
+          grep -q 'TEST_' "$business_body"
+
+          echo 'Staging demo catalog, listing detail, and business detail are populated.'

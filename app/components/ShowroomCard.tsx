@@ -131,7 +131,6 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
   const showCover = Boolean(desktopCoverUrl || mobileCoverUrl) && failedCoverUrl !== (desktopCoverUrl || mobileCoverUrl);
   const showLogo = Boolean(logoUrl) && failedLogoUrl !== logoUrl;
   const latestListings = (showroom.latestListings || []).slice(0, 3);
-  const thumbnailSlots = Array.from({ length: 3 }, (_, index) => latestListings[index] || null);
   const location = [showroom.city, showroom.province]
     .filter(Boolean)
     .filter((item, index, values) => values.indexOf(item) === index)
@@ -216,17 +215,19 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
           </span>
         </div>
 
-        <div className={styles.latestGrid} aria-label={`خودروهای منتخب ${showroom.name}`}>
-          {thumbnailSlots.map((listing, index) =>
-            listing ? (
+        {latestListings.length > 0 ? (
+          <div
+            className={styles.latestGrid}
+            aria-label={`خودروهای منتخب ${showroom.name}`}
+            style={{
+              gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {latestListings.map((listing) => (
               <ListingThumbnail key={listing.id} listing={listing} />
-            ) : (
-              <span className={styles.emptyListing} key={`empty-${index}`} aria-hidden="true">
-                <CarIcon />
-              </span>
-            ),
-          )}
-        </div>
+            ))}
+          </div>
+        ) : null}
 
         <a className={styles.primaryAction} href={href}>
           <span>مشاهده نمایشگاه</span>

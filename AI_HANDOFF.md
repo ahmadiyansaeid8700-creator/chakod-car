@@ -462,10 +462,10 @@ Exact next action: ساخت fixture محدود به staging و مبتنی بر D
 Date: 2026-08-29
 Requested change: تکمیل جریان Commerce و Checkout حساب آزمایشی استیجینگ بدون درگاه، پول یا داده واقعی
 Affected routes/files: /api/auth/commerce، /api/finance/orders، /api/payments/create، /api/payments/verify، رابط‌های Checkout، lib/staging-demo-commerce.ts، Workflow استیجینگ و تست‌های قرارداد Commerce
-Tests actually run: تست قرمز اولیه ثبت شد؛ check:launch شامل TypeScript و 117/117 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare staging موفق؛ Build مستقل Production با D1 قراردادی موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ Smoke قابل‌حمل محلی به‌علت محدودیت اجرای شبکه محیط Codex کامل نشد و در GitHub Actions اجرا می‌شود
-PR and merge commit: شاخه fix/staging-demo-commerce-2026-08-29؛ PR هنوز ساخته و ادغام نشده است
-Deployment result: منتشر نشده؛ chakod.com، Production و اطلاعات واقعی دست‌نخورده‌اند
-Online verification: انجام نشده؛ Workflow پس از Deploy باید ورود آزمایشی، کاتالوگ، سفارش D1، ساخت پرداخت داخلی، Verify و فاکتور را بررسی کند
+Tests actually run: تست قرمز اولیه ثبت شد؛ check:launch شامل TypeScript و 117/117 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare staging موفق؛ Build مستقل Production با D1 قراردادی موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ GitHub Actions Launch 3 checks run 33245994016 شامل همه بررسی‌ها و Portable runtime smoke موفق
+PR and merge commit: PR #131؛ CI موفق و ادغام در commit b46bb6b57c5c3741fe39fbdf7650acbf694784f2
+Deployment result: Deploy staging Worker run 33245993954 موفق؛ Worker استیجینگ منتشر شد و chakod.com، Production و اطلاعات واقعی دست‌نخورده ماندند
+Online verification: صفحه اصلی پس از پنج دقیقه، دامنه اختصاصی و workers.dev موفق؛ ورود دو حساب آزمایشی، کاتالوگ Commerce، ساخت سفارش TEST-CHK در D1، callback داخلی TEST، Verify پرداخت آزمایشی و ثبت نتیجه همگی PASS
 Open issue: شبیه‌سازی فقط برای hostname دقیق staging.chakod.com، Session معتبر آزمایشی و سفارش دارای metadata صریح staging_demo فعال است؛ هیچ اثر محصول یا تراکنش واقعی ایجاد نمی‌کند
-Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، گرفتن CI، ادغام و دنبال‌کردن Deploy و Smoke کامل Checkout استیجینگ
+Exact next action: ممیزی بصری و رفتاری مسیر Checkout و تاریخچه سفارش در موبایل و دسکتاپ با هر دو حساب آزمایشی، سپس انتخاب شکاف بعدی Launch Candidate بدون اتصال دامنه اصلی یا ورود داده واقعی
 ```

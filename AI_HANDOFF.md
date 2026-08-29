@@ -439,9 +439,9 @@ Date: 2026-08-29
 Requested change: ادامه تکمیل نسخه واقعی استیجینگ و رفع ایرادهای باقی‌مانده ناوبری پس از بازنشستگی Affiliate
 Affected routes/files: /businesses، ناوبری /admin/businesses، docs/MASTER-SITEMAP-FA.md و تست‌های قرارداد صفحه اصلی/کسب‌وکار/موبایل
 Tests actually run: 24/24 تست متمرکز موفق؛ UI Audit با 515 ارجاع و صفر مقصد مرده/دکمه بی‌عمل موفق؛ Master Route Audit با 101 مسیر لازم و صفر مسیر گمشده موفق؛ check:launch با 79/79 تست موفق؛ npm audit در سطح critical بدون مورد critical و با 4 moderate + 2 high شناخته‌شده موفق؛ Build کامل Cloudflare موفق؛ D1 verify محلی به‌علت محدودیت شبکه محیط Codex کامل نشد و باید در GitHub Actions اجرا شود
-PR and merge commit: شاخه fix/launch-navigation-audit-2026-08-29؛ هنوز PR ساخته و ادغام نشده است
-Deployment result: منتشر نشده؛ دامنه اصلی و Production دست‌نخورده‌اند
-Online verification: انجام نشده؛ پس از ادغام باید روی staging.chakod.com انجام شود
+PR and merge commit: PR #127؛ ادغام موفق در commit e7e531dd61e95a933078a127f981f4678729276b
+Deployment result: GitHub Actions Launch 3 checks run 33241289572 و Deploy staging Worker run 33241289599 هر دو موفق؛ Worker استیجینگ منتشر شد و دامنه اصلی و Production دست‌نخورده ماندند
+Online verification: صفحه اصلی و /businesses هر دو HTTP 200؛ اعتبارسنجی ورودی نامعتبر Auth طبق قرارداد HTTP 400؛ دامنه اختصاصی، workers.dev fallback و پایداری پنج‌دقیقه‌ای همگی PASS
 Open issue: 6 آسیب‌پذیری غیر Critical فقط با ارتقای Breaking وابستگی‌های Vinext و Drizzle قابل رفع‌اند؛ استیجینگ همچنان باید فقط از داده آزمایشی استفاده کند و انتقال نهایی همه داده‌ها به VPS شخصی پیش از ورود کاربران واقعی انجام شود
-Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، اجرای CI شامل D1 verify، سپس ادغام و بررسی کامل Deploy استیجینگ
+Exact next action: انتخاب و پیاده‌سازی شکاف بعدی Launch Candidate روی شاخه تازه از agent/launch-3-local-baseline؛ فقط با داده آزمایشی و بدون اتصال chakod.com
 ```

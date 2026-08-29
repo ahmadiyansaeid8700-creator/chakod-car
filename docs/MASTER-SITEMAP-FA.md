@@ -1,7 +1,7 @@
 # نقشه مادر ساختاری چاکود
 
 > **وضعیت:** مبنای ثابت توسعه  
-> **نسخه:** ۲ — همگام با تصمیم مالک در 2026-08-07  
+> **نسخه:** ۳ — همگام با حذف برنامه مستقل Affiliate در 2026-08-28
 > **قاعده:** هر قابلیت باید جای مشخصی در این نقشه داشته باشد و هیچ پچ نباید ساختار مسیرها را بی‌دلیل به‌هم بزند.
 
 ## دو نقشه مستقل پروژه
@@ -289,7 +289,6 @@ parts_store
 - بازپرداخت
 - تبلیغات من
 - نمایشگاه منتخب
-- همکاری در فروش
 - اعلان‌ها
 - پروفایل و امنیت
 - پشتیبانی
@@ -441,28 +440,9 @@ parts_store
 
 ---
 
-## ۱۱. همکاری در فروش
+## ۱۱. معرفی و دعوت
 
-### صفحات عمومی
-
-```text
-/affiliate
-/affiliate/rules
-/affiliate/privacy
-```
-
-### پنل کاربر
-
-```text
-/account/affiliate
-/account/affiliate/links
-/account/affiliate/sales
-/account/affiliate/commissions
-/account/affiliate/payouts
-/account/affiliate/profile
-```
-
-> همکاری در فروش داخل محتوای اصلی صفحه اول قرار نمی‌گیرد.
+برنامه مستقل Affiliate و صفحه‌های عمومی، حساب و مدیریت آن از محصول حذف شده‌اند. منطق معرفی یا دعوت موردنیاز Commerce فقط داخل جریان‌های فعال حساب و سفارش باقی می‌ماند و مسیرهای بازنشسته Affiliate نباید دوباره به ناوبری یا Sitemap برگردند.
 
 ---
 
@@ -569,17 +549,6 @@ parts_store
 
 ```text
 /admin/support
-```
-
-### همکاری در فروش
-
-```text
-/admin/affiliate
-/admin/affiliate/accounts
-/admin/affiliate/commissions
-/admin/affiliate/payouts
-/admin/affiliate/settings
-/admin/affiliate/legal
 ```
 
 ### محتوا و تنظیمات

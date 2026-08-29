@@ -56,6 +56,10 @@ async function stagingDemoPayload(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  if (!readSessionToken(request)) {
+    return jsonResponse({ success: false, message: "برای مشاهده خدمات وارد شوید." }, 401);
+  }
+
   const demo = await stagingDemoPayload(request);
   if (demo) return jsonResponse(demo);
   return proxyAuthenticatedJson(request, "/api/commerce.php");
@@ -64,6 +68,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const rejected = rejectCrossSiteMutation(request);
   if (rejected) return rejected;
+
+  if (!readSessionToken(request)) {
+    return jsonResponse({ success: false, message: "برای استفاده از خدمات وارد شوید." }, 401);
+  }
 
   const raw = await request.text();
   const demo = await stagingDemoPayload(request);

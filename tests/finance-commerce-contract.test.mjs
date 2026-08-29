@@ -71,3 +71,16 @@ test("keeps simulated checkout bound to an explicit staging demo session and mar
   assert.match(verify, /هیچ پول واقعی جابه‌جا نشده است/);
   assert.match(checkout, /محیط آزمایشی است/);
 });
+
+test("rejects anonymous Commerce locally and returns protected account pages to Login", async () => {
+  const catalog = await source("app/api/auth/commerce/route.ts");
+  const center = await source("app/account/services/CommerceCenter.tsx");
+  const checkout = await source("app/account/payments/checkout/CheckoutClient.tsx");
+
+  assert.match(catalog, /if \(!readSessionToken\(request\)\)[\s\S]*?401/);
+  assert.match(center, /response\.status === 401 \|\| response\.status === 403/);
+  assert.match(center, /\/login\?returnTo=/);
+  assert.match(checkout, /catalogResult\.value\.status === 401 \|\| catalogResult\.value\.status === 403/);
+  assert.match(checkout, /orderResponse\.status === 401 \|\| orderResponse\.status === 403/);
+  assert.doesNotMatch(checkout, /if \(!token\)[\s\S]*?window\.location\.assign\(`\/login/);
+});

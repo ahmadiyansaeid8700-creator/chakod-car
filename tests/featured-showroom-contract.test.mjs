@@ -93,27 +93,21 @@ test("shows selected placements in the account listing manager", async () => {
 
 test("does not pad showroom cards with fake empty listing slots", async () => {
   const card = await source("app/components/ShowroomCard.tsx");
-  const css = await source("app/components/ShowroomCard.module.css");
 
   assert.match(card, /const latestListings = \(showroom\.latestListings \|\| \[\]\)\.slice\(0, 3\)/);
   assert.doesNotMatch(card, /thumbnailSlots/);
   assert.doesNotMatch(card, /styles\.emptyListing/);
   assert.match(card, /latestListings\.length > 0/);
-  assert.match(card, /latestGridOne/);
-  assert.match(card, /latestGridTwo/);
-  assert.match(css, /\.latestGridOne[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
-  assert.match(css, /\.latestGridTwo[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(card, /gridTemplateColumns:\s*`repeat\(\$\{latestListings\.length\}, minmax\(0, 1fr\)\)`/);
+  assert.match(card, /latestListings\.map\(\(listing\) =>/);
 });
 
-test("uses full document navigation for the homepage showroom view-all action", async () => {
+test("keeps the homepage showroom view-all action above overlapping rails", async () => {
   const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
+  const css = await source("app/components/HomeFeaturedShowrooms.module.css");
 
-  assert.match(
-    homepage,
-    /className=\{styles\.sectionActions\}[\s\S]{0,220}<a href="\/dealerships">[\s\S]{0,100}مشاهده همه/,
-  );
-  assert.doesNotMatch(
-    homepage,
-    /className=\{styles\.sectionActions\}[\s\S]{0,220}<Link href="\/dealerships">/,
-  );
+  assert.match(homepage, /<Link href="\/dealerships">[\s\S]{0,100}مشاهده همه/);
+  assert.match(css, /\.sectionActions\s*\{[\s\S]{0,120}position:\s*relative;/);
+  assert.match(css, /\.sectionActions\s*\{[\s\S]{0,160}z-index:\s*10;/);
+  assert.match(css, /\.sectionActions a\s*\{[\s\S]{0,240}pointer-events:\s*auto;/);
 });

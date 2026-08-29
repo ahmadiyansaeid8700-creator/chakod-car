@@ -60,7 +60,7 @@ jobs:
             sleep 5
           done
 
-      - name: Verify staging demo catalog and detail routes
+      - name: Verify complete persistent staging demo
         shell: bash
         run: |
           set -euo pipefail
@@ -68,6 +68,10 @@ jobs:
           catalog_body="$(mktemp)"
           listing_body="$(mktemp)"
           business_body="$(mktemp)"
+          dealer_body="$(mktemp)"
+          service_body="$(mktemp)"
+          stories_body="$(mktemp)"
+          market_floor_body="$(mktemp)"
 
           curl --fail --silent --show-error --location \
             --retry 5 --retry-delay 3 --retry-all-errors \
@@ -95,4 +99,38 @@ jobs:
           grep -q 'test-business-9500001' "$business_body"
           grep -q 'TEST_' "$business_body"
 
-          echo 'Staging demo catalog, listing detail, and business detail are populated.'
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$dealer_body" \
+            'https://staging.chakod.com/api/businesses?type=dealer&limit=24'
+          grep -q 'test-showroom-9200001' "$dealer_body"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$service_body" \
+            'https://staging.chakod.com/api/businesses?type=car_service&limit=24'
+          grep -q 'test-business-9500001' "$service_body"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$stories_body" \
+            'https://staging.chakod.com/api/stories/public?scope=all&limit=80'
+          grep -q '9300001' "$stories_body"
+          grep -q '"demo_persistent":true' "$stories_body"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Accept: application/json' \
+            --output "$market_floor_body" \
+            'https://staging.chakod.com/api/market-floor/public'
+          grep -q '9600001' "$market_floor_body"
+          grep -q '"demoPersistent":true' "$market_floor_body"
+
+          echo 'Complete staging demo is populated across catalog, details, dealerships, services, stories, and market floor.'

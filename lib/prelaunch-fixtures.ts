@@ -5,7 +5,8 @@ export const PRELAUNCH_FIXTURES_ENABLED =
   process.env.NEXT_PUBLIC_PRELAUNCH_FIXTURES === "true" || IS_STAGING_BROWSER;
 
 export const PRELAUNCH_SERVER_FIXTURES_ENABLED =
-  process.env.PRELAUNCH_FIXTURES === "true";
+  process.env.PRELAUNCH_FIXTURES === "true" ||
+  process.env.NEXT_PUBLIC_PRELAUNCH_FIXTURES === "true";
 
 const ASSET_BASE = "https://staging.chakod.com";
 const now = "2026-08-26T10:00:00.000Z";
@@ -51,7 +52,7 @@ export const PRELAUNCH_STORIES = PRELAUNCH_LISTINGS.slice(0, 8).map((listing, in
   cover_image: { image_id: 9400001 + index, image_url: listing.cover_image },
   public_url: `/cars/${listing.id}`, media_type: "image", media_url: listing.cover_image,
   thumbnail_url: listing.cover_image, story_owner_key: `test-owner-${listing.dealer_id || index + 1}`,
-  dealer_id: listing.dealer_id, expires_at: "2027-01-01T00:00:00.000Z",
+  dealer_id: listing.dealer_id, starts_at: now, expires_at: null, is_active: true, demo_persistent: true,
 }));
 
 export const PRELAUNCH_BUSINESSES = ([
@@ -88,7 +89,7 @@ export const PRELAUNCH_SHOWROOMS = ([
 
 export const PRELAUNCH_MARKET_FLOOR = PRELAUNCH_LISTINGS.slice(0, 8).map((listing, index) => ({
   id: 9600001 + index, score: 98 - index * 3, province: listing.province,
-  reason: "TEST_ امتیاز آزمایشی کف بازار", cycleEndsAt: "2027-01-01T00:00:00.000Z",
+  reason: "TEST_ امتیاز آزمایشی کف بازار", cycleEndsAt: null, demoPersistent: true,
   listing: { id: listing.id, title: listing.title, brand: listing.brand, model: listing.model,
     year: listing.production_year, mileageKm: listing.mileage_km, priceToman: listing.price_toman,
     coverUrl: listing.cover_image, publicUrl: `/cars/${listing.id}` },

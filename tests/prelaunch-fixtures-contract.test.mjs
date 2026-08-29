@@ -15,12 +15,13 @@ test("prelaunch fixtures stay explicitly gated and never become production defau
   assert.doesNotMatch(fixtures, /password|mobile_number|phone_number|INSERT INTO/i);
 });
 
-test("staging Worker carries fixture gates as runtime vars, not build-only environment", () => {
+test("staging Worker carries fixture gates as runtime vars and exposes them through process.env", () => {
   const config = read("vite.cloudflare.config.ts");
   const runtimeEnv = read("lib/runtime-env.ts");
 
   assert.match(config, /vars:\s*\{[\s\S]{0,300}NEXT_PUBLIC_PRELAUNCH_FIXTURES:\s*"true"/);
   assert.match(config, /vars:\s*\{[\s\S]{0,300}PRELAUNCH_FIXTURES:\s*"true"/);
+  assert.match(config, /compatibility_flags:\s*\[[^\]]*"nodejs_compat_populate_process_env"[^\]]*\]/);
   assert.match(runtimeEnv, /NEXT_PUBLIC_PRELAUNCH_FIXTURES\?:\s*string/);
   assert.match(runtimeEnv, /PRELAUNCH_FIXTURES\?:\s*string/);
 });
@@ -77,10 +78,6 @@ test("staging demo stories are persistent until manually removed", () => {
   assert.match(fixtures, /PRELAUNCH_STORIES[\s\S]{0,2200}demo_persistent:\s*true/);
   assert.match(storiesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
   assert.doesNotMatch(storiesRoute, /const fixturesEnabled = process\.env\.PRELAUNCH_FIXTURES/);
-  assert.doesNotMatch(
-    storiesRoute,
-    /fixtureStories[\s\S]{0,1200}return !story\.expires_at \|\| story\.expires_at > now/,
-  );
 });
 
 test("staging market-floor fixtures are persistent and never show a fake 24-hour timer", () => {

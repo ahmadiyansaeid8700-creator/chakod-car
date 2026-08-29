@@ -34,7 +34,10 @@ export default defineConfig(async () => {
           name: process.env.CLOUDFLARE_WORKER_NAME || "chakod-car-staging",
           main: "./worker/index.ts",
           compatibility_date: "2026-08-07",
-          compatibility_flags: ["nodejs_compat"],
+          compatibility_flags: [
+            "nodejs_compat",
+            "nodejs_compat_populate_process_env",
+          ],
           workers_dev: true,
           preview_urls: false,
           vars: {

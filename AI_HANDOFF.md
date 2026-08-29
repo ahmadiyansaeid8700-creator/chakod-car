@@ -474,10 +474,10 @@ Exact next action: ممیزی بصری و رفتاری مسیر Checkout و تا
 Date: 2026-08-29
 Requested change: ادامه ممیزی Launch Candidate و رفع نمایش خطای Backend قدیمی برای مهمان در مرکز خدمات و Checkout
 Affected routes/files: /api/auth/commerce، /account/services، /account/payments/checkout، تست قرارداد Finance/Commerce و Smoke قابل‌حمل
-Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز Finance/Commerce با 7/7 موفق؛ check:launch شامل TypeScript و 118/118 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ Smoke قابل‌حمل قبل از افزودن Gate جدید با 117 صفحه موفق و Gate مستقیم جدید در انتظار CI است
-PR and merge commit: شاخه fix/staging-checkout-history-audit-2026-08-29؛ هنوز PR ساخته و ادغام نشده است
-Deployment result: منتشر نشده؛ staging فعلی هنوز نسخه پیش از این اصلاح است و chakod.com و Production دست‌نخورده‌اند
-Online verification: ممیزی زنده روی /account/services نشان داد مهمان به‌جای Login خطای 502 سرویس قدیمی می‌بیند؛ تأیید رفع آنلاین پس از Deploy لازم است
-Open issue: ممیزی بصری حساب‌های آزمایشی باید بعد از رفع Gate ورود ادامه یابد؛ هیچ تراکنش، حساب یا داده واقعی مجاز نیست
-Exact next action: ساخت PR به agent/launch-3-local-baseline، اجرای CI و Deploy استیجینگ، سپس تأیید 401 ناشناس و بازگشت امن /account/services و Checkout به Login
+Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز Finance/Commerce با 7/7 موفق؛ check:launch شامل TypeScript و 118/118 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ GitHub Actions Launch 3 checks run 33260513741 شامل Build Production و Runtime Smoke جدید موفق
+PR and merge commit: PR #133؛ CI موفق و ادغام در commit 0f8b863a7d9e2ea18dc54b83470f88117dff5113
+Deployment result: Deploy staging Worker run 33260513650 موفق؛ Worker استیجینگ، پایداری پنج‌دقیقه‌ای، دامنه اختصاصی، workers.dev و Smoke ورود/Checkout آزمایشی همگی PASS و chakod.com و Production دست‌نخورده ماندند
+Online verification: /api/auth/commerce بدون Session اکنون HTTP 401 و پیام ورود می‌دهد؛ /account/services مهمان به /login?returnTo=%2Faccount%2Fservices هدایت می‌شود و خطای 502 قدیمی حذف شده است
+Open issue: ممیزی بصری حساب‌های آزمایشی در چند عرض موبایل و دسکتاپ و بررسی تاریخچه سفارش باید ادامه یابد؛ هیچ تراکنش، حساب یا داده واقعی مجاز نیست
+Exact next action: ورود آزمایشی با حساب شخصی و نمایشگاهی، بررسی responsive مرکز خدمات، Checkout و تب سفارش‌ها، سپس رفع نخستین شکاف رفتاری یا نمایشی مستقل
 ```

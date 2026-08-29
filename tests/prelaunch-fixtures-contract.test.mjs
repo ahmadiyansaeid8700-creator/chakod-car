@@ -109,6 +109,44 @@ test("staging market-floor fixtures are persistent and never show a fake 24-hour
   assert.match(marketFloorPage, /نمایش ثابت|دمو/);
 });
 
+test("staging services demo has enough inventory to fill every service filter", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const serviceRows = [...fixtures.matchAll(/\[(950\d{4}),\s*"(car_service|parts_store|repair_shop)"/g)];
+  assert.ok(serviceRows.length >= 15, `expected at least 15 service businesses, got ${serviceRows.length}`);
+  for (const category of [
+    "car_wash",
+    "detailing",
+    "ceramic_coating",
+    "window_tint",
+    "ppf",
+    "vehicle_wrap",
+    "audio_alarm",
+    "mechanical",
+    "auto_electrical",
+    "oil_change",
+    "spare_parts",
+  ]) assert.ok(fixtures.includes(`"${category}"`), `${category} needs demo inventory`);
+});
+
+test("services market renders fixture inventory without depending on the business API", () => {
+  const servicesPage = read("app/services/page.tsx");
+  const directory = read("app/businesses/page.tsx");
+  assert.match(servicesPage, /PRELAUNCH_BUSINESSES/);
+  assert.match(servicesPage, /prelaunchServerFixturesEnabled\(\)/);
+  assert.match(servicesPage, /initialItems=/);
+  assert.match(directory, /initialItems\?:\s*PublicBusiness\[\]/);
+  assert.match(directory, /filterFixtureBusinesses/);
+  assert.match(directory, /catch[\s\S]{0,500}filterFixtureBusinesses/);
+});
+
+test("staging service business detail resolves fixtures even when the business API is unavailable", () => {
+  const detail = read("app/businesses/[slug]/page.tsx");
+  assert.match(detail, /PRELAUNCH_BUSINESSES/);
+  assert.match(detail, /PRELAUNCH_FIXTURES_ENABLED/);
+  assert.match(detail, /fixtureBusinessBySlug/);
+  assert.match(detail, /setBusiness\(fixture/);
+});
+
 test("post-deploy staging smoke verifies every presentation surface instead of HTTP status only", () => {
   const workflow = read(".github/workflows/staging-demo-content-smoke.yml");
   for (const expected of [

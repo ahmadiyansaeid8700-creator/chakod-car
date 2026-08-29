@@ -15,6 +15,16 @@ test("prelaunch fixtures stay explicitly gated and never become production defau
   assert.doesNotMatch(fixtures, /password|mobile_number|phone_number|INSERT INTO/i);
 });
 
+test("staging Worker carries fixture gates as runtime vars, not build-only environment", () => {
+  const config = read("vite.cloudflare.config.ts");
+  const runtimeEnv = read("lib/runtime-env.ts");
+
+  assert.match(config, /vars:\s*\{[\s\S]{0,300}NEXT_PUBLIC_PRELAUNCH_FIXTURES:\s*"true"/);
+  assert.match(config, /vars:\s*\{[\s\S]{0,300}PRELAUNCH_FIXTURES:\s*"true"/);
+  assert.match(runtimeEnv, /NEXT_PUBLIC_PRELAUNCH_FIXTURES\?:\s*string/);
+  assert.match(runtimeEnv, /PRELAUNCH_FIXTURES\?:\s*string/);
+});
+
 test("fixtures cover every requested prelaunch surface and are visibly marked", () => {
   const fixtures = read("lib/prelaunch-fixtures.ts");
   for (const token of [

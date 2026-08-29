@@ -15,3 +15,13 @@ test("does not render empty phone or map actions on public business profiles", a
   assert.match(page, /\{mapHref \? \(/);
   assert.match(page, /String\(business\.whatsapp_phone \|\| ""\)/);
 });
+
+test("keeps retired affiliate pages out of active business navigation and the master sitemap", async () => {
+  const adminBusinesses = await source("app/admin/businesses/BusinessesAdminClient.tsx");
+  const masterSitemap = await source("docs/MASTER-SITEMAP-FA.md");
+
+  assert.doesNotMatch(adminBusinesses, /href="\/admin\/affiliate"/);
+  assert.doesNotMatch(masterSitemap, /^\/affiliate(?:\/|$)/m);
+  assert.doesNotMatch(masterSitemap, /^\/account\/affiliate(?:\/|$)/m);
+  assert.doesNotMatch(masterSitemap, /^\/admin\/affiliate(?:\/|$)/m);
+});

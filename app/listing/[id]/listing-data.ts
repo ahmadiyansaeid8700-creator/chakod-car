@@ -1,3 +1,8 @@
+import {
+  PRELAUNCH_LISTINGS,
+  PRELAUNCH_SERVER_FIXTURES_ENABLED,
+} from "../../../lib/prelaunch-fixtures";
+
 export const API_BASE = "https://api.chakod.com";
 export const SITE_BASE = "https://chakod.com";
 
@@ -101,6 +106,35 @@ export class ListingFetchError extends Error {
   }
 }
 
+function fixtureListingResponse(listingId: number): ListingApiResponse | null {
+  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return null;
+  const fixture = PRELAUNCH_LISTINGS.find((item) => Number(item.id) === listingId);
+  if (!fixture) return null;
+
+  const data = fixture as unknown as ListingData;
+  const images = Array.isArray(fixture.images)
+    ? fixture.images as unknown as ListingImage[]
+    : [{ image_url: String(fixture.cover_image || ""), is_cover: true, sort_order: 0 }];
+
+  return {
+    success: true,
+    message: "Staging demo fixture",
+    data: {
+      ...data,
+      show_seller_name: Boolean(fixture.dealer_id),
+      seller_phone: null,
+      phone: null,
+      mobile: null,
+      contact_phone: null,
+      dealer_is_verified: Boolean(fixture.dealer_id),
+      is_dealer_verified: Boolean(fixture.dealer_id),
+      location_label: [fixture.city, fixture.neighborhood].filter(Boolean).join("، "),
+      images,
+    },
+    images,
+  };
+}
+
 export function normalizeAssetUrl(value?: string | null) {
   if (!value) return "";
   const url = String(value).trim();
@@ -163,6 +197,9 @@ export async function fetchListingDetail(
   listingId: number,
   signal?: AbortSignal,
 ): Promise<ListingApiResponse> {
+  const fixture = fixtureListingResponse(listingId);
+  if (fixture) return fixture;
+
   const response = await fetch(
     `${API_BASE}/api/listing-detail.php?id=${encodeURIComponent(listingId)}`,
     {
@@ -197,6 +234,9 @@ export async function fetchListingSummary(
   listingId: number,
   signal?: AbortSignal,
 ): Promise<ListingApiResponse> {
+  const fixture = fixtureListingResponse(listingId);
+  if (fixture) return fixture;
+
   const response = await fetch(
     `${API_BASE}/api/listings.php?limit=100&sort=vip`,
     {

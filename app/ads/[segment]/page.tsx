@@ -8,6 +8,10 @@ import CatalogListingsClient from "../../components/CatalogListingsClient";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import MarketModeSwitch from "../../components/MarketModeSwitch";
 import { carMarketPath, legacyAdsRedirect } from "../../../lib/car-routes";
+import {
+  PRELAUNCH_LISTINGS,
+  PRELAUNCH_SERVER_FIXTURES_ENABLED,
+} from "../../../lib/prelaunch-fixtures";
 import type {
   CatalogFilters,
   CatalogResponse,
@@ -66,7 +70,7 @@ const segmentConfig: Record<CatalogSegment, SegmentConfig> = {
     soft: "#e9fbf8",
   },
   economic: {
-    title: "خودروهای اقتصادی",
+    title: "خودروهای اقتصادی چاکود",
     shortTitle: "اقتصادی",
     kicker: "خودروهای اقتصادی",
     description:
@@ -169,6 +173,100 @@ function buildApiUrl(segment: CatalogSegment, filters: CatalogFilters) {
   return url.toString();
 }
 
+function normalizeText(value: unknown) {
+  return String(value || "").trim().toLocaleLowerCase("fa");
+}
+
+function fixtureMatches(
+  listing: (typeof PRELAUNCH_LISTINGS)[number],
+  segment: CatalogSegment,
+  filters: CatalogFilters,
+) {
+  if (segment !== "all") {
+    const market = String(listing.market_segment);
+    if (segment === "economic") {
+      if (market !== "economic" && market !== "regular") return false;
+    } else if (market !== segment) return false;
+  }
+
+  const exactPairs: Array<[string, unknown]> = [
+    [filters.province, listing.province],
+    [filters.city, listing.city],
+    [filters.category, listing.category_code],
+    [filters.brand, listing.brand],
+    [filters.model, listing.model],
+    [filters.bodyStatus, listing.body_status],
+    [filters.transmission, listing.transmission],
+    [filters.fuelType, listing.fuel_type],
+    [filters.sellerType, listing.seller_type],
+  ];
+  if (exactPairs.some(([expected, actual]) => expected && normalizeText(expected) !== normalizeText(actual))) {
+    return false;
+  }
+
+  if (filters.q) {
+    const haystack = normalizeText(
+      [listing.title, listing.brand, listing.model, listing.province, listing.city, listing.dealer_name]
+        .filter(Boolean)
+        .join(" "),
+    );
+    if (!haystack.includes(normalizeText(filters.q))) return false;
+  }
+
+  const valueInRange = (value: unknown, minValue: string, maxValue: string) => {
+    const numeric = Number(value || 0);
+    const min = Number(normalizeNumber(minValue) || 0);
+    const max = Number(normalizeNumber(maxValue) || 0);
+    return (!min || numeric >= min) && (!max || numeric <= max);
+  };
+
+  return valueInRange(listing.price_toman, filters.minPrice, filters.maxPrice)
+    && valueInRange(listing.production_year, filters.minYear, filters.maxYear)
+    && valueInRange(listing.mileage_km, filters.minMileage, filters.maxMileage);
+}
+
+function withPrelaunchFixtures(
+  upstream: CatalogResponse | null,
+  segment: CatalogSegment,
+  filters: CatalogFilters,
+): CatalogResponse | null {
+  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return upstream;
+
+  const fixtures = PRELAUNCH_LISTINGS.filter((listing) => fixtureMatches(listing, segment, filters));
+  const upstreamItems = Array.isArray(upstream?.data) ? upstream.data : [];
+  const merged = new Map<string, CatalogResponse["data"][number]>();
+  fixtures.forEach((item) => merged.set(String(item.id), item));
+  upstreamItems.forEach((item) => {
+    const key = String(item.id);
+    if (!merged.has(key)) merged.set(key, item);
+  });
+
+  const data = Array.from(merged.values()).slice(0, 12);
+  const emptyFacets: CatalogResponse["facets"] = {
+    provinces: [],
+    cities: [],
+    categories: [],
+    brands: [],
+    models: [],
+    body_statuses: [],
+    transmissions: [],
+    fuel_types: [],
+    range: {},
+  };
+
+  return {
+    success: true,
+    segment,
+    sort: filters.sort,
+    page: filters.page,
+    limit: 12,
+    total: Math.max(data.length, Number(upstream?.total || 0) + fixtures.length),
+    total_pages: Math.max(1, Number(upstream?.total_pages || 0), Math.ceil(fixtures.length / 12)),
+    data,
+    facets: upstream?.facets || emptyFacets,
+  };
+}
+
 async function fetchCatalog(apiUrl: string): Promise<CatalogResponse | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4200);
@@ -232,7 +330,7 @@ export default async function SegmentCatalogPage({
   const filters = readFilters(resolvedSearchParams);
   const apiUrl = buildApiUrl(segment, filters);
   const clientApiUrl = `/api/catalog?${new URL(apiUrl).searchParams.toString()}`;
-  const initialResponse = await fetchCatalog(apiUrl);
+  const initialResponse = withPrelaunchFixtures(await fetchCatalog(apiUrl), segment, filters);
 
   const cssVars = {
     "--accent": config.accent,

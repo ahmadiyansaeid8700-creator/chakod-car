@@ -15,6 +15,7 @@ test("uses the approved homepage showroom card in compact directory mode", async
   const directory = await source("app/dealerships/DealerDirectoryClient.tsx");
   const sharedCard = await source("app/components/ShowroomCard.tsx");
   const cardStyles = await source("app/components/ShowroomCard.module.css");
+  const seamlessStyles = await source("app/components/ShowroomCardSeamless.module.css");
 
   assert.match(directory, /import ShowroomCard from "\.\.\/components\/ShowroomCard"/);
   assert.match(directory, /density="compact"/);
@@ -24,7 +25,12 @@ test("uses the approved homepage showroom card in compact directory mode", async
   assert.match(cardStyles, /\.compact \.logo \{[\s\S]*?width: 56px;[\s\S]*?height: 56px/);
   assert.match(cardStyles, /@media \(max-width: 700px\)[\s\S]*?\.compact \.logo \{[\s\S]*?width: 52px;[\s\S]*?height: 52px/);
   assert.match(sharedCard, /gridTemplateColumns:\s*`repeat\(\$\{latestListings\.length\}, minmax\(0, 1fr\)\)`/);
-  assert.match(cardStyles, /\.compact \.latestGrid \{[\s\S]*?height: 58px;[\s\S]*?gap: 2px/);
+  assert.match(sharedCard, /ShowroomCardSeamless\.module\.css/);
+  assert.match(sharedCard, /seamlessStyles\.gallery/);
+  assert.match(sharedCard, /seamlessStyles\.item/);
+  assert.match(seamlessStyles, /\.gallery\.gallery\s*\{[\s\S]*?gap:\s*0/);
+  assert.match(seamlessStyles, /\.item\.item::after\s*\{[\s\S]*?content:\s*none/);
+  assert.match(cardStyles, /\.compact \.latestGrid \{[\s\S]*?height: 58px/);
   assert.match(cardStyles, /\.compact \.latestListing \{[\s\S]*?width: 100%;[\s\S]*?height: 100%/);
   assert.doesNotMatch(cardStyles, /\.compact \.latestGrid \{[\s\S]{0,180}?grid-template-columns: repeat\(3/);
   assert.doesNotMatch(directory, /selectedCard|ordinaryCard|ShowroomBanner|VehicleStrip/);

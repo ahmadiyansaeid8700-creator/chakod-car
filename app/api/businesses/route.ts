@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { accountActivities } from "../../../db/schema";
 import { readBusinessResume } from "../../../lib/business-resume";
+import {
+  PRELAUNCH_BUSINESSES,
+  PRELAUNCH_SERVER_FIXTURES_ENABLED,
+  PRELAUNCH_SHOWROOMS,
+} from "../../../lib/prelaunch-fixtures";
 
 const API_BASE = (process.env.CHAKOD_API_BASE || "https://api.chakod.com").replace(/\/+$/, "");
 
@@ -14,7 +19,39 @@ function typeTitle(type: string) {
   if (type === "parts_store") return "فروشگاه قطعات و لوازم یدکی";
   if (type === "repair_shop") return "تعمیرگاه خودرو";
   if (type === "car_service") return "مرکز خدمات خودرو";
+  if (type === "dealer") return "نمایشگاه خودرو";
   return "کسب‌وکار خودرو";
+}
+
+function normalize(value: unknown) {
+  return String(value || "").trim().toLocaleLowerCase("fa");
+}
+
+function prelaunchBusinesses(request: NextRequest) {
+  if (!PRELAUNCH_SERVER_FIXTURES_ENABLED) return [];
+
+  const slug = request.nextUrl.searchParams.get("slug") || "";
+  const requestedType = normalize(request.nextUrl.searchParams.get("type"));
+  const query = normalize(request.nextUrl.searchParams.get("q"));
+  const province = normalize(request.nextUrl.searchParams.get("province"));
+  const city = normalize(request.nextUrl.searchParams.get("city"));
+  const fixtures = [...PRELAUNCH_SHOWROOMS, ...PRELAUNCH_BUSINESSES];
+
+  return fixtures.filter((item) => {
+    if (slug) return item.slug === slug;
+    if (requestedType && normalize(item.business_type) !== requestedType) return false;
+    if (province && !normalize(item.province).includes(province)) return false;
+    if (city && !normalize(item.city).includes(city)) return false;
+    if (query) {
+      const haystack = normalize(
+        [item.name, item.province, item.city, item.neighborhood, item.description]
+          .filter(Boolean)
+          .join(" "),
+      );
+      if (!haystack.includes(query)) return false;
+    }
+    return true;
+  });
 }
 
 async function nativeBusinesses(request: NextRequest) {
@@ -76,7 +113,34 @@ async function nativeBusinesses(request: NextRequest) {
   return items;
 }
 
+function uniqueItems(items: unknown[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item || typeof item !== "object") return false;
+    const candidate = item as { id?: unknown; slug?: unknown };
+    const key = String(candidate.id || candidate.slug || "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function GET(request: NextRequest) {
+  const fixtureItems = prelaunchBusinesses(request);
+  const slug = request.nextUrl.searchParams.get("slug") || "";
+
+  if (PRELAUNCH_SERVER_FIXTURES_ENABLED && slug.startsWith("test-")) {
+    return NextResponse.json(
+      fixtureItems[0]
+        ? { success: true, item: fixtureItems[0], staging_demo: true }
+        : { success: false, message: "کسب‌وکار پیدا نشد." },
+      {
+        status: fixtureItems[0] ? 200 : 404,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
 
@@ -95,7 +159,6 @@ export async function GET(request: NextRequest) {
     try { payload = JSON.parse(text) as Record<string, unknown>; } catch { payload = null; }
     const nativeItems = await nativeBusinesses(request);
     if (payload && upstream.ok) {
-      const slug = request.nextUrl.searchParams.get("slug") || "";
       if (slug.startsWith("activity-")) {
         return NextResponse.json(nativeItems[0]
           ? { success: true, item: nativeItems[0] }
@@ -103,17 +166,28 @@ export async function GET(request: NextRequest) {
         { status: nativeItems[0] ? 200 : 404, headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
       }
       const externalItems = Array.isArray(payload.items) ? payload.items : [];
-      payload.items = [...nativeItems, ...externalItems];
-      payload.total = Number(payload.total || externalItems.length) + nativeItems.length;
+      const items = uniqueItems([...fixtureItems, ...nativeItems, ...externalItems]);
+      payload.items = items;
+      payload.total = items.length;
+      if (PRELAUNCH_SERVER_FIXTURES_ENABLED) payload.staging_demo = true;
     }
     return new NextResponse(payload ? JSON.stringify(payload) : text, {
       status: upstream.status,
       headers: {
         "Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "Cache-Control": PRELAUNCH_SERVER_FIXTURES_ENABLED
+          ? "no-store"
+          : "public, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch {
+    if (PRELAUNCH_SERVER_FIXTURES_ENABLED) {
+      return NextResponse.json(
+        { success: true, items: fixtureItems, total: fixtureItems.length, staging_demo: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     return NextResponse.json(
       { success: false, message: "ارتباط با سرویس کسب‌وکارهای خودرو برقرار نشد." },
       { status: 502, headers: { "Cache-Control": "no-store" } },

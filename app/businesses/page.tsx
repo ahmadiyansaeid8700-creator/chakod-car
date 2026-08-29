@@ -1,7 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import AuthStatus from "../components/AuthStatus";
 import MobileBottomNav from "../components/MobileBottomNav";
@@ -331,6 +331,7 @@ export default function BusinessesPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const resultsRef = useRef<HTMLElement>(null);
 
   const dealerDirectory = lockType && initialType === "dealer";
 
@@ -408,6 +409,13 @@ export default function BusinessesPage({
   const mobileTitle = dealerDirectory ? "نمایشگاه‌ها" : marketMode ? "بازار خدمات" : "کسب‌وکارها";
   const resultNoun = dealerDirectory ? "نمایشگاه" : "کسب‌وکار";
 
+  function submitFilters(event: FormEvent<HTMLFormElement>, closeMobile = false) {
+    event.preventDefault();
+    if (closeMobile) setMobileFiltersOpen(false);
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   if (marketMode) {
     const toneKey = (type || "all") as keyof typeof serviceMarketTone;
     const tone = serviceMarketTone[toneKey] || serviceMarketTone.all;
@@ -461,15 +469,15 @@ export default function BusinessesPage({
           ))}
         </nav>
 
-        <div className={`${catalogStyles.mobileToolbar} ${styles.marketMobileToolbar}`} aria-label="جست‌وجو و فیلتر خدمات">
+        <form className={`${catalogStyles.mobileToolbar} ${styles.marketMobileToolbar}`} aria-label="جست‌وجو و فیلتر خدمات" onSubmit={submitFilters}>
           <label className={catalogStyles.mobileSearchForm}>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="نام کسب‌وکار یا نوع خدمت" aria-label="جست‌وجوی خدمات" />
-            <button type="button" aria-label="جست‌وجو">⌕</button>
+            <button type="submit" aria-label="جست‌وجو">⌕</button>
           </label>
           <button className={catalogStyles.mobileFilterButton} type="button" onClick={() => setMobileFiltersOpen(true)}>
             فیلترها <b>{[type, category, city].filter(Boolean).length.toLocaleString("fa-IR")}</b>
           </button>
-        </div>
+        </form>
 
         <section className={chrome.browser} aria-label={title}>
           <div className={catalogStyles.marketGrid}>
@@ -478,7 +486,7 @@ export default function BusinessesPage({
                 <div><span>نتیجه دقیق</span><strong>فیلتر خدمات</strong></div>
                 <b>⌕</b>
               </div>
-              <form className={catalogStyles.filterForm} onSubmit={(event) => event.preventDefault()}>
+              <form className={catalogStyles.filterForm} onSubmit={submitFilters}>
                 <div className={catalogStyles.filterBody}>
                   <section className={catalogStyles.filterSection}>
                     <div className={catalogStyles.sectionTitle}>جست‌وجوی کسب‌وکار <small>نام یا نوع خدمت</small></div>
@@ -516,13 +524,13 @@ export default function BusinessesPage({
                   </section>
                 </div>
                 <div className={catalogStyles.filterActions}>
-                  <button className={catalogStyles.applyButton} type="button">اعمال فیلترها</button>
+                  <button className={catalogStyles.applyButton} type="submit">اعمال فیلترها</button>
                   <button className={catalogStyles.clearButton} type="button" onClick={() => { setQuery(""); setCity(""); setCategory(""); setType(""); }}>پاک‌کردن</button>
                 </div>
               </form>
             </aside>
 
-            <section className={catalogStyles.resultsColumn} aria-live="polite">
+            <section ref={resultsRef} className={catalogStyles.resultsColumn} aria-live="polite">
               <div className={catalogStyles.resultsTop}>
                 <div className={catalogStyles.resultsCopy}>
                   <strong>{loading ? "در حال دریافت خدمات" : `${total.toLocaleString("fa-IR")} کسب‌وکار پیدا شد`}</strong>
@@ -572,7 +580,7 @@ export default function BusinessesPage({
               <div><span>بازار خدمات چاکود</span><strong>فیلترها</strong></div>
               <button className={catalogStyles.drawerClose} type="button" aria-label="بستن" onClick={() => setMobileFiltersOpen(false)}>×</button>
             </header>
-            <form className={catalogStyles.filterForm} onSubmit={(event) => { event.preventDefault(); setMobileFiltersOpen(false); }}>
+            <form className={catalogStyles.filterForm} onSubmit={(event) => submitFilters(event, true)}>
               <div className={catalogStyles.filterBody}>
                 <section className={catalogStyles.filterSection}>
                   <div className={catalogStyles.sectionTitle}>جست‌وجوی کسب‌وکار</div>

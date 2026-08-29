@@ -14,7 +14,7 @@ import {
 import MobileBottomNav from "../components/MobileBottomNav";
 import styles from "./page.module.css";
 
-type Item = { id: number; score: number; province: string; reason: string; cycleEndsAt: string; listing: { id: number; title: string; brand: string; model: string; year: number; mileageKm?: number; priceToman: number; coverUrl?: string; publicUrl: string } };
+type Item = { id: number; score: number; province: string; reason: string; cycleEndsAt: string | null; demoPersistent?: boolean; listing: { id: number; title: string; brand: string; model: string; year: number; mileageKm?: number; priceToman: number; coverUrl?: string; publicUrl: string } };
 
 function toFa(value: number | string) { return String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]); }
 function formatPrice(value: number) {
@@ -57,9 +57,9 @@ export default function MarketFloorPage() {
   const nationwideItems = useMemo(() => location.mode === "all" ? [] : items.filter((item) => !localProvinces.has(normalizeText(item.province))), [items, localProvinces, location.mode]);
   const showNationwide = location.mode !== "all" && localItems.length < 10 && nationwideItems.length > 0;
   const cards = (values: Item[], offset = 0) => values.map((item, index) => {
-    const countdown = remainingTime(item.cycleEndsAt);
+    const countdown = item.demoPersistent ? null : remainingTime(item.cycleEndsAt || undefined);
     return <Link href={item.listing.publicUrl} key={item.id} className={styles.carCard}>
-    <div className={styles.cardMedia}>{item.listing.coverUrl ? <img src={item.listing.coverUrl} alt={item.listing.title} /> : <div className={styles.noImage}><span>چاکود</span><small>تصویر خودرو</small></div>}<span className={styles.rankBadge}>انتخاب {toFa(offset + index + 1)}</span><span className={styles.cardTimer} dir="ltr" aria-label="زمان باقی‌مانده نمایش"><small>مانده</small><b>{countdown.hours}:{countdown.minutes}:{countdown.seconds}</b></span><span className={styles.scoreBadge}><b>{toFa(item.score)}</b><small>امتیاز</small></span></div>
+    <div className={styles.cardMedia}>{item.listing.coverUrl ? <img src={item.listing.coverUrl} alt={item.listing.title} /> : <div className={styles.noImage}><span>چاکود</span><small>تصویر خودرو</small></div>}<span className={styles.rankBadge}>انتخاب {toFa(offset + index + 1)}</span>{item.demoPersistent ? <span className={styles.cardTimer} aria-label="آگهی دمو با نمایش ثابت"><small>دمو</small><b>نمایش ثابت</b></span> : countdown ? <span className={styles.cardTimer} dir="ltr" aria-label="زمان باقی‌مانده نمایش"><small>مانده</small><b>{countdown.hours}:{countdown.minutes}:{countdown.seconds}</b></span> : null}<span className={styles.scoreBadge}><b>{toFa(item.score)}</b><small>امتیاز</small></span></div>
     <div className={styles.cardContent}><span className={styles.location}>⌖ {item.province}</span><h3>{item.listing.title}</h3><div className={styles.facts}>{item.listing.year ? <span><small>مدل</small><b>{toFa(item.listing.year)}</b></span> : null}{item.listing.mileageKm ? <span><small>کارکرد</small><b>{toFa(item.listing.mileageKm.toLocaleString("fa-IR"))} کیلومتر</b></span> : null}</div><p className={styles.reason}>{item.reason}</p><footer><strong>{formatPrice(item.listing.priceToman)}</strong><span>دیدن خودرو ←</span></footer></div>
   </Link>;
   });
@@ -86,7 +86,7 @@ export default function MarketFloorPage() {
     </section>
 
     <section id="today-market" className={styles.marketBody}>
-      <header className={styles.sectionHeader}><div><span>ویترین فعال کف بازار</span><h2>{location.mode === "all" ? "فرصت‌های کف بازار" : `فرصت‌های ${location.label}`}</h2></div><p><i /> هر خودرو از زمان ورود، ۲۴ ساعت مستقل نمایش داده می‌شود.</p></header>
+      <header className={styles.sectionHeader}><div><span>ویترین فعال کف بازار</span><h2>{location.mode === "all" ? "فرصت‌های کف بازار" : `فرصت‌های ${location.label}`}</h2></div><p><i /> آگهی‌های واقعی از زمان ورود ۲۴ ساعت مستقل نمایش داده می‌شوند؛ موارد دمو تا حذف دستی ثابت می‌مانند.</p></header>
       {!loading && location.mode !== "all" && localItems.length === 0 ? <div className={styles.noLocalNotice}><i>!</i><span><strong>در {location.label} فعلاً پیشنهاد تأییدشده‌ای نیست</strong><small>آگهی‌های این محدوده هنوز حداقل امتیاز قیمت، شرایط و کیفیت کف بازار را نگرفته‌اند.</small></span></div> : null}
       <div className={styles.showcaseBoard} aria-label="ویترین آگهی‌های کف بازار">
         {loading ? <div className={styles.showcaseGrid} aria-label="در حال بارگذاری">{[1, 2, 3, 4].map((item) => <div className={styles.skeleton} key={item}><i /><span /><b /></div>)}</div> : <div className={styles.showcaseGrid} key={clock}>

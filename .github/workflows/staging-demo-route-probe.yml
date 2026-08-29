@@ -1,0 +1,36 @@
+name: Staging demo route probe
+
+on:
+  push:
+    branches:
+      - diag/staging-demo-route-probe
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live staging demo endpoints
+        shell: bash
+        run: |
+          set -u
+          endpoints=(
+            '/api/catalog?segment=luxury&limit=12'
+            '/api/businesses?type=dealer&limit=24'
+            '/api/businesses?type=car_service&limit=24'
+            '/api/stories/public?scope=all&limit=80'
+            '/api/market-floor/public'
+            '/cars/luxury'
+            '/dealerships'
+            '/services'
+            '/market-floor'
+          )
+          for path in "${endpoints[@]}"; do
+            body="$(mktemp)"
+            status="$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' --header 'Cache-Control: no-cache' --header 'Pragma: no-cache' "https://staging.chakod.com${path}?probe=${GITHUB_SHA:0:8}" 2>/dev/null || true)"
+            echo "PROBE ${status:-curl-error} ${path}"
+            head -c 320 "$body" | tr '\n' ' ' || true
+            echo
+          done

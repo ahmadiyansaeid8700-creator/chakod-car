@@ -487,9 +487,9 @@ Date: 2026-08-29
 Requested change: حذف قابلیت منسوخ «رزرو استوری» از مسیر حساب کاربری بدون حذف جریان معتبر دبل استوری
 Affected routes/files: /account/services، docs/MASTER-SITEMAP-FA.md و تست قرارداد Finance/Commerce
 Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز Finance/Commerce با 8/8 موفق؛ check:launch شامل TypeScript و 119/119 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare موفق؛ Smoke قابل‌حمل 117 صفحه موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق
-PR and merge commit: شاخه fix/remove-account-story-reservation-2026-08-29؛ PR هنوز ساخته نشده و ادغام انجام نشده است
-Deployment result: فقط محلی؛ staging، chakod.com و Production هنوز تغییر نکرده‌اند
-Online verification: انجام نشده؛ باید پس از Deploy روی staging با حساب آزمایشی بررسی شود
+PR and merge commit: PR #135؛ CI موفق و ادغام در commit 249d2fd77f096e58dcc6f38524774ab8a561a425
+Deployment result: Launch 3 checks run 33262057273 و Deploy staging Worker run 33262057360 هر دو موفق؛ Worker استیجینگ منتشر شد و chakod.com، Production و اطلاعات واقعی دست‌نخورده ماندند
+Online verification: Asset جدید CommerceCenter-C8xfyUG9.js هیچ‌یک از عبارت‌های «رزرو استوری»، «استوری استانی ۲۴ ساعته» یا کلیدهای listing_story_large/regular را ندارد؛ Asset مستقل StoryListingSelectorClient-DzqJXMs3.js همچنان جریان معتبر «ساخت دبل استوری» را حفظ می‌کند؛ دامنه، workers.dev، پایداری پنج‌دقیقه‌ای و Smoke حساب آزمایشی همگی PASS
 Open issue: ممیزی responsive مرکز خدمات و تب سفارش‌ها با هر دو حساب آزمایشی باید ادامه یابد؛ هیچ تراکنش یا داده واقعی مجاز نیست
-Exact next action: ساخت PR به agent/launch-3-local-baseline، گرفتن CI، ادغام، Deploy staging و تأیید نبود کارت رزرو استوری در مرکز خدمات حساب آزمایشی
+Exact next action: ادامه ممیزی responsive مرکز خدمات و تب سفارش‌ها با هر دو حساب آزمایشی و رفع نخستین شکاف مستقل، بدون اتصال دامنه اصلی یا ورود داده واقعی
 ```

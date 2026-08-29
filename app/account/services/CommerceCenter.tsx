@@ -157,6 +157,11 @@ export default function CommerceCenter() {
         headers: { Accept: "application/json", ...authHeaders() },
       });
       const payload = await readJson<CommerceResponse>(response);
+      if (response.status === 401 || response.status === 403) {
+        const returnTo = `${window.location.pathname}${window.location.search}`;
+        window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+        return;
+      }
       if (!response.ok || !payload.success) {
         throw new Error(payload.message || "اطلاعات خدمات دریافت نشد.");
       }

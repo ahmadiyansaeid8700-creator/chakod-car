@@ -469,3 +469,15 @@ Online verification: صفحه اصلی پس از پنج دقیقه، دامنه 
 Open issue: شبیه‌سازی فقط برای hostname دقیق staging.chakod.com، Session معتبر آزمایشی و سفارش دارای metadata صریح staging_demo فعال است؛ هیچ اثر محصول یا تراکنش واقعی ایجاد نمی‌کند
 Exact next action: ممیزی بصری و رفتاری مسیر Checkout و تاریخچه سفارش در موبایل و دسکتاپ با هر دو حساب آزمایشی، سپس انتخاب شکاف بعدی Launch Candidate بدون اتصال دامنه اصلی یا ورود داده واقعی
 ```
+
+```text
+Date: 2026-08-29
+Requested change: ادامه ممیزی Launch Candidate و رفع نمایش خطای Backend قدیمی برای مهمان در مرکز خدمات و Checkout
+Affected routes/files: /api/auth/commerce، /account/services، /account/payments/checkout، تست قرارداد Finance/Commerce و Smoke قابل‌حمل
+Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز Finance/Commerce با 7/7 موفق؛ check:launch شامل TypeScript و 118/118 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ Smoke قابل‌حمل قبل از افزودن Gate جدید با 117 صفحه موفق و Gate مستقیم جدید در انتظار CI است
+PR and merge commit: شاخه fix/staging-checkout-history-audit-2026-08-29؛ هنوز PR ساخته و ادغام نشده است
+Deployment result: منتشر نشده؛ staging فعلی هنوز نسخه پیش از این اصلاح است و chakod.com و Production دست‌نخورده‌اند
+Online verification: ممیزی زنده روی /account/services نشان داد مهمان به‌جای Login خطای 502 سرویس قدیمی می‌بیند؛ تأیید رفع آنلاین پس از Deploy لازم است
+Open issue: ممیزی بصری حساب‌های آزمایشی باید بعد از رفع Gate ورود ادامه یابد؛ هیچ تراکنش، حساب یا داده واقعی مجاز نیست
+Exact next action: ساخت PR به agent/launch-3-local-baseline، اجرای CI و Deploy استیجینگ، سپس تأیید 401 ناشناس و بازگشت امن /account/services و Checkout به Login
+```

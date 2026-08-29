@@ -188,4 +188,16 @@ if [[ "$AI_MANAGER_CODE" != "404" ]]; then
 fi
 echo "OK 404 /api/ai/manager/status (unauthenticated)"
 
+# Protected Commerce must reject guests before attempting the legacy PHP
+# upstream. This keeps account pages on a predictable 401 -> Login flow even
+# when the upstream service is unavailable.
+COMMERCE_CODE="$(curl --silent --show-error --output /tmp/chakod-commerce-body --write-out '%{http_code}' --max-time 12 \
+  "$BASE/api/auth/commerce")"
+if [[ "$COMMERCE_CODE" != "401" ]]; then
+  echo "Expected unauthenticated Commerce to return 401, received $COMMERCE_CODE" >&2
+  cat /tmp/chakod-commerce-body >&2 || true
+  exit 1
+fi
+echo "OK 401 /api/auth/commerce (unauthenticated)"
+
 echo "Portable runtime smoke passed."

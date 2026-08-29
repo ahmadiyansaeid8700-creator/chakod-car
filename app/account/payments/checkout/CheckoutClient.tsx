@@ -167,6 +167,11 @@ export default function CheckoutClient() {
       try {
         if (catalogResult.status === "fulfilled") {
           const result = await readJson<CommerceResponse>(catalogResult.value);
+          if (catalogResult.value.status === 401 || catalogResult.value.status === 403) {
+            const returnTo = `${window.location.pathname}${window.location.search}`;
+            window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+            return;
+          }
           if (!catalogResult.value.ok || !result?.success) {
             setError(result?.message || "تعرفه‌های فعال دریافت نشد.");
           } else {
@@ -274,13 +279,6 @@ export default function CheckoutClient() {
       return;
     }
 
-    const token = localStorage.getItem("chakod_session_token") || "";
-    if (!token) {
-      const returnTo = `${window.location.pathname}${window.location.search}`;
-      window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -308,6 +306,12 @@ export default function CheckoutClient() {
         }),
       });
       const orderResult = await readJson<CreateOrderResponse>(orderResponse);
+
+      if (orderResponse.status === 401 || orderResponse.status === 403) {
+        const returnTo = `${window.location.pathname}${window.location.search}`;
+        window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+        return;
+      }
 
       if (!orderResponse.ok || !orderResult?.success || !orderResult.order?.order_no) {
         setError(orderResult?.message || "ساخت سفارش انجام نشد. دوباره تلاش کنید.");

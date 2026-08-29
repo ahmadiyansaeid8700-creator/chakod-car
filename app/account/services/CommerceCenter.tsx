@@ -17,16 +17,6 @@ type Service = {
   settings?: Record<string, unknown>;
 };
 
-type ProvincePrice = {
-  province: string;
-  is_large: boolean;
-  story_price_toman: number;
-  story_duration_hours: number;
-  story_is_active: boolean;
-  banner_price_toman: number;
-  banner_is_active: boolean;
-};
-
 type Listing = {
   id: number;
   title: string;
@@ -79,7 +69,6 @@ type CommerceResponse = {
     display_name?: string;
   };
   services?: Service[];
-  provinces?: ProvincePrice[];
   listings?: Listing[];
   dealers?: Dealer[];
   orders?: Order[];
@@ -143,7 +132,6 @@ export default function CommerceCenter() {
   const [error, setError] = useState("");
   const [listingId, setListingId] = useState<number>(0);
   const [dealerId, setDealerId] = useState<number>(0);
-  const [province, setProvince] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [activeTab, setActiveTab] = useState<"listing" | "profile" | "orders">("listing");
 
@@ -168,10 +156,8 @@ export default function CommerceCenter() {
       setData(payload);
       const firstListing = payload.listings?.[0];
       const firstDealer = payload.dealers?.[0];
-      const firstProvince = payload.provinces?.[0];
       setListingId((current) => current || firstListing?.id || 0);
       setDealerId((current) => current || firstDealer?.dealer_id || 0);
-      setProvince((current) => current || firstProvince?.province || "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "خطای ناشناخته");
     } finally {
@@ -194,7 +180,6 @@ export default function CommerceCenter() {
     if (Number.isSafeInteger(requestedDealerId) && requestedDealerId > 0) {
       setDealerId(requestedDealerId);
     }
-    setProvince(params.get("province") || "");
     setDiscountCode((params.get("discount_code") || "").toUpperCase());
 
     void load();
@@ -204,11 +189,6 @@ export default function CommerceCenter() {
     () => data?.listings?.find((listing) => listing.id === listingId) || null,
     [data?.listings, listingId],
   );
-  const selectedProvince = useMemo(
-    () => data?.provinces?.find((item) => item.province === province) || null,
-    [data?.provinces, province],
-  );
-
   const listingServices = useMemo(() => {
     const services = (data?.services || []).filter((item) => item.is_active);
     if (!selectedListing) return services.filter((item) => item.service_key === "listing_bump");
@@ -230,7 +210,7 @@ export default function CommerceCenter() {
     [data?.services],
   );
 
-  function continueToCheckout(serviceKey: string, override?: { province?: string }) {
+  function continueToCheckout(serviceKey: string) {
     setError("");
 
     const params = new URLSearchParams({
@@ -255,8 +235,6 @@ export default function CommerceCenter() {
       params.set("dealer_id", String(dealerId));
     }
 
-    const targetProvince = override?.province || province;
-    if (targetProvince) params.set("province", targetProvince);
     if (discountCode.trim()) params.set("discount_code", discountCode.trim());
 
     window.location.assign(`/account/payments/checkout?${params.toString()}`);
@@ -361,26 +339,6 @@ export default function CommerceCenter() {
                   </article>
                 ))}
 
-                <article className={`${styles.serviceCard} ${styles.storyCard}`}>
-                  <span className={styles.serviceIcon}>◉</span>
-                  <h3>استوری استانی ۲۴ ساعته</h3>
-                  <p>نمایش آگهی برای کاربران استان انتخاب‌شده؛ قیمت هر استان جداگانه مدیریت می‌شود.</p>
-                  <select value={province} onChange={(event) => setProvince(event.target.value)} className={styles.inlineSelect}>
-                    {(data?.provinces || []).filter((item) => item.story_is_active).map((item) => (
-                      <option value={item.province} key={item.province}>{item.province}</option>
-                    ))}
-                  </select>
-                  <strong>{formatToman(selectedProvince?.story_price_toman || 0)}</strong>
-                  <button
-                    disabled={!selectedListing || !selectedProvince}
-                    onClick={() => continueToCheckout(
-                      selectedProvince?.is_large ? "listing_story_large" : "listing_story_regular",
-                      { province },
-                    )}
-                  >
-                    ادامه رزرو استوری
-                  </button>
-                </article>
               </div>
             </div>
           </section>

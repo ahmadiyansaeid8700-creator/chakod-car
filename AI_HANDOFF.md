@@ -481,3 +481,15 @@ Online verification: /api/auth/commerce بدون Session اکنون HTTP 401 و 
 Open issue: ممیزی بصری حساب‌های آزمایشی در چند عرض موبایل و دسکتاپ و بررسی تاریخچه سفارش باید ادامه یابد؛ هیچ تراکنش، حساب یا داده واقعی مجاز نیست
 Exact next action: ورود آزمایشی با حساب شخصی و نمایشگاهی، بررسی responsive مرکز خدمات، Checkout و تب سفارش‌ها، سپس رفع نخستین شکاف رفتاری یا نمایشی مستقل
 ```
+
+```text
+Date: 2026-08-29
+Requested change: حذف قابلیت منسوخ «رزرو استوری» از مسیر حساب کاربری بدون حذف جریان معتبر دبل استوری
+Affected routes/files: /account/services، docs/MASTER-SITEMAP-FA.md و تست قرارداد Finance/Commerce
+Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز Finance/Commerce با 8/8 موفق؛ check:launch شامل TypeScript و 119/119 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare موفق؛ Smoke قابل‌حمل 117 صفحه موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق
+PR and merge commit: شاخه fix/remove-account-story-reservation-2026-08-29؛ PR هنوز ساخته نشده و ادغام انجام نشده است
+Deployment result: فقط محلی؛ staging، chakod.com و Production هنوز تغییر نکرده‌اند
+Online verification: انجام نشده؛ باید پس از Deploy روی staging با حساب آزمایشی بررسی شود
+Open issue: ممیزی responsive مرکز خدمات و تب سفارش‌ها با هر دو حساب آزمایشی باید ادامه یابد؛ هیچ تراکنش یا داده واقعی مجاز نیست
+Exact next action: ساخت PR به agent/launch-3-local-baseline، گرفتن CI، ادغام، Deploy staging و تأیید نبود کارت رزرو استوری در مرکز خدمات حساب آزمایشی
+```

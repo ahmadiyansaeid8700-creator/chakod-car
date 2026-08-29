@@ -70,6 +70,21 @@ test("staging demo fixtures resolve through public server catalog and detail pat
   assert.match(businessesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
 });
 
+test("server demo gate is evaluated inside the request runtime instead of at module import", () => {
+  for (const path of [
+    "app/api/catalog/route.ts",
+    "app/api/businesses/route.ts",
+    "app/api/stories/public/route.ts",
+    "app/api/market-floor/public/route.ts",
+    "app/ads/[segment]/page.tsx",
+    "app/listing/[id]/listing-data.ts",
+  ]) {
+    const source = read(path);
+    assert.doesNotMatch(source, /PRELAUNCH_SERVER_FIXTURES_ENABLED/, `${path} must not capture the server fixture gate at module import`);
+    assert.match(source, /prelaunchServerFixturesEnabled\(\)/, `${path} must evaluate the server fixture gate at request time`);
+  }
+});
+
 test("staging demo stories are persistent until manually removed", () => {
   const fixtures = read("lib/prelaunch-fixtures.ts");
   const storiesRoute = read("app/api/stories/public/route.ts");

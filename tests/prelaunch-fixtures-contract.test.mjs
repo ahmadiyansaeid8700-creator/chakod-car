@@ -38,36 +38,37 @@ test("fixtures cover every requested prelaunch surface and are visibly marked", 
   ]) assert.ok(fixtures.includes(token), `${token} must exist`);
 });
 
-test("homepage and market floor consume fixtures only through their gates", () => {
+test("homepage client fixtures remain browser-gated", () => {
   for (const path of [
     "app/components/HomeStories.tsx",
     "app/components/HomePublicListingsClient.tsx",
     "app/components/HomeFeaturedBusinesses.tsx",
     "app/components/HomeFeaturedShowrooms.tsx",
   ]) assert.match(read(path), /PRELAUNCH_FIXTURES_ENABLED/);
-  assert.match(read("app/api/market-floor/public/route.ts"), /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+});
+
+test("server demo gate reads the current Worker request environment", () => {
+  const gate = read("lib/prelaunch-server-fixtures.ts");
+  assert.match(gate, /getRuntimeEnv\(\)/);
+  assert.match(gate, /env\.PRELAUNCH_FIXTURES === "true"/);
+  assert.match(gate, /env\.NEXT_PUBLIC_PRELAUNCH_FIXTURES === "true"/);
+  assert.match(gate, /process\.env\.PRELAUNCH_FIXTURES === "true"/);
 });
 
 test("staging demo fixtures resolve through public server catalog and detail paths", () => {
-  const fixtures = read("lib/prelaunch-fixtures.ts");
   const catalogRoute = read("app/api/catalog/route.ts");
   const catalogPage = read("app/ads/[segment]/page.tsx");
   const listingData = read("app/listing/[id]/listing-data.ts");
   const businessesRoute = read("app/api/businesses/route.ts");
 
-  assert.match(fixtures, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
-  assert.match(
-    fixtures,
-    /PRELAUNCH_SERVER_FIXTURES_ENABLED\s*=\s*[\s\S]{0,220}PRELAUNCH_FIXTURES\s*===\s*"true"[\s\S]{0,220}NEXT_PUBLIC_PRELAUNCH_FIXTURES\s*===\s*"true"/,
-  );
   assert.match(catalogRoute, /PRELAUNCH_LISTINGS/);
-  assert.match(catalogRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(catalogRoute, /prelaunchServerFixturesEnabled\(\)/);
   assert.match(catalogPage, /PRELAUNCH_LISTINGS/);
-  assert.match(catalogPage, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(catalogPage, /prelaunchServerFixturesEnabled\(\)/);
   assert.match(listingData, /PRELAUNCH_LISTINGS/);
-  assert.match(listingData, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(listingData, /prelaunchServerFixturesEnabled\(\)/);
   assert.match(businessesRoute, /PRELAUNCH_BUSINESSES/);
-  assert.match(businessesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(businessesRoute, /prelaunchServerFixturesEnabled\(\)/);
 });
 
 test("server demo gate is evaluated inside the request runtime instead of at module import", () => {
@@ -91,7 +92,7 @@ test("staging demo stories are persistent until manually removed", () => {
 
   assert.match(fixtures, /PRELAUNCH_STORIES[\s\S]{0,2200}expires_at:\s*null/);
   assert.match(fixtures, /PRELAUNCH_STORIES[\s\S]{0,2200}demo_persistent:\s*true/);
-  assert.match(storiesRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(storiesRoute, /prelaunchServerFixturesEnabled\(\)/);
   assert.doesNotMatch(storiesRoute, /const fixturesEnabled = process\.env\.PRELAUNCH_FIXTURES/);
 });
 
@@ -101,7 +102,7 @@ test("staging market-floor fixtures are persistent and never show a fake 24-hour
   const marketFloorPage = read("app/market-floor/page.tsx");
 
   assert.match(fixtures, /PRELAUNCH_MARKET_FLOOR[\s\S]{0,1800}demoPersistent:\s*true/);
-  assert.match(marketFloorRoute, /PRELAUNCH_SERVER_FIXTURES_ENABLED/);
+  assert.match(marketFloorRoute, /prelaunchServerFixturesEnabled\(\)/);
   assert.doesNotMatch(marketFloorRoute, /const fixturesEnabled = process\.env\.PRELAUNCH_FIXTURES/);
   assert.match(marketFloorPage, /demoPersistent\?:\s*boolean/);
   assert.match(marketFloorPage, /item\.demoPersistent\s*\?/);

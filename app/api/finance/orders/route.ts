@@ -7,6 +7,7 @@ import {
   authApiUrl,
   jsonResponse,
   parseJsonResponse,
+  readSessionToken,
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
@@ -14,6 +15,10 @@ import {
   createPublicReference,
   getFinanceOwnerKey,
 } from "../../../../lib/finance-core";
+import {
+  buildStagingDemoCommerce,
+  quoteStagingDemoService,
+} from "../../../../lib/staging-demo-commerce";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -231,6 +236,10 @@ export async function POST(request: NextRequest) {
   const orderType = cleanText(input.type, 32);
   const idempotencyKey = cleanText(input.idempotency_key, 100);
   const requestedServiceKey = cleanText(input.service_key || input.code, 80);
+  const stagingDemo = buildStagingDemoCommerce({
+    hostname: request.nextUrl.hostname,
+    token: readSessionToken(request),
+  });
 
   if (!IDEMPOTENCY_PATTERN.test(idempotencyKey)) {
     return jsonResponse({ success: false, message: "شناسه امن سفارش معتبر نیست." }, 400);
@@ -300,11 +309,24 @@ export async function POST(request: NextRequest) {
         return jsonResponse({ success: false, message: "برای این خدمت باید یک آگهی معتبر انتخاب شود." }, 400);
       }
 
-      const ownership = await verifyManagedListing(request, listingId);
-      if (!ownership.ok) {
-        return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+      if (stagingDemo) {
+        const listing = stagingDemo.listings.find((item) => item.id === listingId);
+        if (!listing) {
+          return jsonResponse({ success: false, message: "این آگهی آزمایشی متعلق به حساب شما نیست." }, 403);
+        }
+        verifiedListing = {
+          id: listing.id,
+          title: listing.title,
+          status: listing.status,
+          dealerId: listing.dealer_id,
+        };
+      } else {
+        const ownership = await verifyManagedListing(request, listingId);
+        if (!ownership.ok) {
+          return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+        }
+        verifiedListing = ownership.listing;
       }
-      verifiedListing = ownership.listing;
     }
 
     const requiresManagedBusiness =
@@ -317,21 +339,50 @@ export async function POST(request: NextRequest) {
         return jsonResponse({ success: false, message: "برای این خدمت باید یک مجموعه قابل مدیریت انتخاب شود." }, 400);
       }
 
-      const ownership = await verifyManagedBusiness(request, dealerIdInput);
-      if (!ownership.ok) {
-        return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+      if (stagingDemo) {
+        const business = stagingDemo.dealers.find((item) => item.dealer_id === dealerIdInput);
+        if (!business) {
+          return jsonResponse({ success: false, message: "این مجموعه آزمایشی متعلق به حساب شما نیست." }, 403);
+        }
+        verifiedBusiness = {
+          id: business.dealer_id,
+          name: business.dealer_name,
+          role: business.role,
+        };
+      } else {
+        const ownership = await verifyManagedBusiness(request, dealerIdInput);
+        if (!ownership.ok) {
+          return jsonResponse({ success: false, message: ownership.message }, ownership.status);
+        }
+        verifiedBusiness = ownership.business;
       }
-      verifiedBusiness = ownership.business;
     }
 
     const dealerId = verifiedBusiness?.id || dealerIdInput || verifiedListing?.dealerId || 0;
-    const commerceResult = await createCommerceOrder(request, {
-      serviceKey: requestedServiceKey,
-      listingId: verifiedListing?.id,
-      dealerId: dealerId || undefined,
-      province: province || undefined,
-      discountCode: discountCode || undefined,
-    });
+    const demoQuote = stagingDemo
+      ? quoteStagingDemoService(requestedServiceKey, discountCode)
+      : null;
+    if (stagingDemo && !demoQuote) {
+      return jsonResponse({ success: false, message: "خدمت آزمایشی انتخاب‌شده فعال نیست." }, 400);
+    }
+
+    const commerceResult = stagingDemo && demoQuote
+      ? {
+          ok: true as const,
+          orderNo: createPublicReference("TEST-CHK"),
+          amountToman: demoQuote.finalAmountToman,
+          originalAmountToman: demoQuote.amountToman,
+          discountToman: demoQuote.discountToman,
+          discountCode: demoQuote.discountCode,
+          message: "سفارش آزمایشی بدون اتصال به سرویس پرداخت واقعی ساخته شد.",
+        }
+      : await createCommerceOrder(request, {
+          serviceKey: requestedServiceKey,
+          listingId: verifiedListing?.id,
+          dealerId: dealerId || undefined,
+          province: province || undefined,
+          discountCode: discountCode || undefined,
+        });
 
     if (!commerceResult.ok) {
       return jsonResponse(
@@ -353,6 +404,8 @@ export async function POST(request: NextRequest) {
       province: province || "",
       discount_code: commerceResult.discountCode || "",
       upstream_message: commerceResult.message || "",
+      staging_demo: Boolean(stagingDemo),
+      service_title: demoQuote?.service.title || "",
     };
 
     const [order] = await db

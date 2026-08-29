@@ -14,6 +14,7 @@ import {
   authApiUrl,
   jsonResponse,
   parseJsonResponse,
+  readSessionToken,
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
@@ -22,6 +23,10 @@ import {
   ensureWallet,
   getFinanceOwnerKey,
 } from "../../../../lib/finance-core";
+import {
+  buildStagingDemoCommerce,
+  isStagingDemoOrderMetadata,
+} from "../../../../lib/staging-demo-commerce";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +83,10 @@ export async function POST(request: NextRequest) {
   const status = cleanText(input.status, 32).toUpperCase();
   const orderNo = cleanText(input.order_no, 100);
   const idempotencyKey = cleanText(input.idempotency_key, 100);
+  const stagingDemo = buildStagingDemoCommerce({
+    hostname: request.nextUrl.hostname,
+    token: readSessionToken(request),
+  });
 
   if (!authority || !/^[a-z0-9_-]{6,128}$/i.test(authority)) {
     return jsonResponse({ success: false, message: "شناسه پرداخت معتبر نیست." }, 400);
@@ -120,9 +129,108 @@ export async function POST(request: NextRequest) {
 
       return jsonResponse({
         success: true,
+        staging_demo: Boolean(stagingDemo && isStagingDemoOrderMetadata(order.metadataJson)),
         message: "این پرداخت قبلاً با موفقیت ثبت شده است.",
         invoice_id: existingInvoice?.id,
         invoice_no: existingInvoice?.invoiceNo,
+      });
+    }
+
+    if (stagingDemo) {
+      if (!isStagingDemoOrderMetadata(order.metadataJson) || !/^TEST-[a-z0-9-]+$/i.test(authority)) {
+        return jsonResponse({ success: false, message: "شناسه پرداخت آزمایشی معتبر نیست." }, 403);
+      }
+      if (!["OK", "SUCCESS"].includes(status)) {
+        return jsonResponse({ success: false, message: "پرداخت آزمایشی تکمیل نشد." }, 400);
+      }
+
+      const invoiceNo = createPublicReference("TEST-INV");
+      const responseJson = JSON.stringify({
+        reference_id: authority,
+        gateway: "staging-demo",
+        verified: true,
+        staging_demo: true,
+      });
+      const paidAt = new Date().toISOString();
+
+      if (order.orderType === "wallet_charge") {
+        const wallet = await ensureWallet(ownerKey);
+        const nextBalance = wallet.availableBalanceToman + order.finalAmountToman;
+        await db.batch([
+          db
+            .update(commerceOrders)
+            .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(eq(commerceOrders.id, order.id)),
+          db.insert(paymentAttempts).values({
+            orderId: order.id,
+            gateway: "staging-demo",
+            authority,
+            gatewayTransactionId: authority,
+            idempotencyKey: order.idempotencyKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+            responseJson,
+            paidAt,
+          }),
+          db.insert(invoices).values({
+            invoiceNo,
+            orderId: order.id,
+            ownerKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+          }),
+          db
+            .update(wallets)
+            .set({
+              availableBalanceToman: nextBalance,
+              updatedAt: sql`CURRENT_TIMESTAMP`,
+            })
+            .where(eq(wallets.id, wallet.id)),
+          db.insert(walletTransactions).values({
+            walletId: wallet.id,
+            direction: "credit",
+            transactionType: "staging_demo_charge",
+            amountToman: order.finalAmountToman,
+            balanceAfterToman: nextBalance,
+            status: "completed",
+            referenceType: "order",
+            referenceId: order.orderNo,
+            description: "افزایش موجودی آزمایشی بدون جابه‌جایی پول واقعی",
+          }),
+        ]);
+      } else {
+        await db.batch([
+          db
+            .update(commerceOrders)
+            .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(eq(commerceOrders.id, order.id)),
+          db.insert(paymentAttempts).values({
+            orderId: order.id,
+            gateway: "staging-demo",
+            authority,
+            gatewayTransactionId: authority,
+            idempotencyKey: order.idempotencyKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+            responseJson,
+            paidAt,
+          }),
+          db.insert(invoices).values({
+            invoiceNo,
+            orderId: order.id,
+            ownerKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+          }),
+        ]);
+      }
+
+      return jsonResponse({
+        success: true,
+        staging_demo: true,
+        message: "پرداخت آزمایشی ثبت شد؛ هیچ پول واقعی جابه‌جا نشده است.",
+        reference_id: authority,
+        invoice_no: invoiceNo,
       });
     }
 

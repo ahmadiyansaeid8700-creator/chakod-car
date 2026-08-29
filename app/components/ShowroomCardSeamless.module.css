@@ -1,0 +1,9 @@
+.gallery.gallery {
+  gap: 0;
+  background: #f5f3f7;
+}
+
+.item.item::after {
+  content: none;
+  border: 0;
+}

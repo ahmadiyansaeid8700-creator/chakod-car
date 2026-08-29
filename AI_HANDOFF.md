@@ -451,9 +451,9 @@ Date: 2026-08-29
 Requested change: ممیزی جریان ورود، حساب و آگهی در Launch Candidate و رفع شکست ورود آزمایشی staging بدون فعال‌کردن کاربر یا داده واقعی
 Affected routes/files: /api/auth/send-code، /api/auth/verify، /api/auth/me، /api/auth/dashboard-listings، lib/staging-demo-session.ts، .github/workflows/staging-deploy.yml، package.json و تست قرارداد staging-demo-session
 Tests actually run: check:launch با 112/112 تست موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare staging موفق؛ تست مستقیم Worker ساخته‌شده برای send-code/verify/me/dashboard-listings همگی HTTP 200؛ Build مستقل production بدون Deploy موفق؛ npm test شامل 112 قرارداد، Build preflight و Smoke قابل‌حمل 117 صفحه موفق؛ npm audit در سطح critical بدون Critical موفق
-PR and merge commit: شاخه audit/launch-user-flows-2026-08-29؛ هنوز PR ساخته و ادغام نشده است
-Deployment result: هنوز منتشر نشده؛ دامنه اصلی و Production دست‌نخورده‌اند
-Online verification: پیش از اصلاح، send-code روی staging با HTTP 500 و پیام نبود تنظیمات محرمانه شکست می‌خورد؛ نتیجه آنلاین پس از Deploy هنوز باید ثبت شود
-Open issue: Commerce و پرداخت staging هنوز به Backend قدیمی PHP وابسته‌اند و پس از تثبیت ورود باید با fixture محلی و D1 ممیزی/تکمیل شوند؛ هیچ تراکنش یا داده واقعی تا انتقال به VPS مجاز نیست
-Exact next action: ساخت PR به agent/launch-3-local-baseline، گرفتن CI کامل، ادغام، Deploy staging و اجرای زنده send-code/verify/me/dashboard-listings با هویت آزمایشی 09000000000
+PR and merge commit: PR #129؛ CI موفق و ادغام در commit 0b9c2619fa1d8bd4eae5a449d2696463590122dc
+Deployment result: Launch 3 checks run 33242747745 و Deploy staging Worker run 33242747747 هر دو موفق؛ Worker استیجینگ منتشر شد و chakod.com و Production دست‌نخورده ماندند
+Online verification: send-code و verify آزمایشی، ساخت Cookie، /api/auth/me، سه آگهی fixture، account-activities و finance summary همگی HTTP 200؛ دامنه اختصاصی، workers.dev و پایداری پنج‌دقیقه‌ای نیز PASS
+Open issue: /api/auth/commerce با Session آزمایشی هنوز HTTP 502 و پیام «پاسخ سرویس حساب کاربری معتبر نیست» برمی‌گرداند، چون Commerce و پرداخت staging به Backend قدیمی PHP وابسته‌اند؛ هیچ تراکنش یا داده واقعی تا انتقال به VPS مجاز نیست
+Exact next action: ساخت fixture محدود به staging و مبتنی بر D1 برای Commerce/محصول/سفارش/پرداخت آزمایشی و سپس Smoke کامل checkout بدون درگاه یا پول واقعی
 ```

@@ -1,6 +1,9 @@
 export const PRELAUNCH_FIXTURES_ENABLED =
   process.env.NEXT_PUBLIC_PRELAUNCH_FIXTURES === "true";
 
+export const PRELAUNCH_SERVER_FIXTURES_ENABLED =
+  process.env.PRELAUNCH_FIXTURES === "true";
+
 const ASSET_BASE = "https://staging.chakod.com";
 const now = "2026-08-26T10:00:00.000Z";
 
@@ -21,11 +24,19 @@ export const PRELAUNCH_LISTINGS = [
   id, title, brand, model, trim_name: "نسخه تست افتتاح", production_year: year,
   mileage_km: index % 3 === 0 ? 0 : (index + 1) * 4200, price_toman: price,
   province, city, neighborhood: "مرکز شهر", body_status: "clean", transmission: "automatic",
-  seller_type: dealerId ? "dealer" : "personal", dealer_name: dealerName || null,
+  fuel_type: index % 2 === 0 ? "gasoline" : "hybrid", color: index % 2 === 0 ? "مشکی" : "سفید",
+  technical_condition: "سالم و آماده بازدید", price_is_negotiable: index % 2 === 1,
+  seller_type: dealerId ? "dealer" : "personal", listing_owner_type: dealerId ? "dealer" : "personal",
+  seller_display_name: dealerName || "فروشنده شخصی", dealer_name: dealerName || null,
   dealer_id: dealerId || null, dealer_slug: dealerId ? `test-showroom-${dealerId}` : null,
   dealer_verified: Boolean(dealerId), dealer_logo_url: dealerId ? `${ASSET_BASE}/test-avatars/dealer.webp` : null,
-  category_code: "car", category_name: "خودرو سواری", created_at: now,
+  category_code: "car", category_name: "خودرو سواری", created_at: now, updated_at: now,
+  status: "published", description: `${title}؛ آگهی دمو برای معرفی امکانات چاکود. اطلاعات این آگهی آزمایشی است.`,
   market_segment: segment, cover_image: `${ASSET_BASE}/${image}`, views_count: 100 + index * 17,
+  images: [
+    { id: 9700001 + index * 2, image_url: `${ASSET_BASE}/${image}`, is_cover: true, sort_order: 0 },
+    { id: 9700002 + index * 2, image_url: `${ASSET_BASE}/${image}`, is_cover: false, sort_order: 1 },
+  ],
 }));
 
 export const PRELAUNCH_STORIES = PRELAUNCH_LISTINGS.slice(0, 8).map((listing, index) => ({
@@ -50,17 +61,25 @@ export const PRELAUNCH_BUSINESSES = [
 ].map(([id, type, name, province, city, neighborhood, description, services]) => ({
   id, slug: `test-business-${id}`, business_type: type,
   business_type_title: type === "car_service" ? "خدمات خودرویی" : type === "parts_store" ? "لوازم یدکی" : "تعمیرگاه",
-  name, province, city, neighborhood, description, category_labels: services, services,
+  name, province, city, neighborhood, address: `${city}، ${neighborhood}`,
+  description, category_labels: services, services,
   logo_url: `${ASSET_BASE}/test-avatars/${type === "car_service" ? "car-service" : type === "parts_store" ? "parts-store" : "repair-shop"}.webp`,
   cover_url: `${ASSET_BASE}/economic-car.webp`, mobile_service: type === "car_service",
   price_range_text: "قیمت تستی", is_verified: true,
+  phone: null, whatsapp_phone: null, email: null, website_url: null, instagram_url: null,
+  latitude: null, longitude: null, business_hours: [], gallery: [],
 }));
 
 export const PRELAUNCH_SHOWROOMS = [
-  { id: 9200001, slug: "test-showroom-9200001", name: "TEST_ نمایشگاه آریا", province: "تهران", city: "تهران", neighborhood: "سعادت‌آباد", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/luxury-car.webp`, is_verified: true },
-  { id: 9200002, slug: "test-showroom-9200002", name: "TEST_ نمایشگاه ساحل", province: "اصفهان", city: "اصفهان", neighborhood: "مرداویج", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/luxury-car.webp`, is_verified: true },
-  { id: 9200003, slug: "test-showroom-9200003", name: "TEST_ خودرو آزاد کاسپین", province: "گیلان", city: "بندر انزلی", neighborhood: "منطقه آزاد", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/freezone-car.webp`, is_verified: true },
-];
+  { id: 9200001, slug: "test-showroom-9200001", business_type: "dealer", business_type_title: "نمایشگاه خودرو", name: "TEST_ نمایشگاه آریا", province: "تهران", city: "تهران", neighborhood: "سعادت‌آباد", address: "تهران، سعادت‌آباد", description: "نمایشگاه دمو خودروهای لوکس چاکود", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/luxury-car.webp`, category_labels: ["خودرو لوکس"], services: ["خرید و فروش خودرو"], business_hours: [], gallery: [], is_verified: true },
+  { id: 9200002, slug: "test-showroom-9200002", business_type: "dealer", business_type_title: "نمایشگاه خودرو", name: "TEST_ نمایشگاه ساحل", province: "اصفهان", city: "اصفهان", neighborhood: "مرداویج", address: "اصفهان، مرداویج", description: "نمایشگاه دمو خودروهای منتخب چاکود", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/luxury-car.webp`, category_labels: ["خودرو لوکس"], services: ["خرید و فروش خودرو"], business_hours: [], gallery: [], is_verified: true },
+  { id: 9200003, slug: "test-showroom-9200003", business_type: "dealer", business_type_title: "نمایشگاه خودرو", name: "TEST_ خودرو آزاد کاسپین", province: "گیلان", city: "بندر انزلی", neighborhood: "منطقه آزاد", address: "بندر انزلی، منطقه آزاد", description: "نمایشگاه دمو خودروهای منطقه آزاد", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/freezone-car.webp`, category_labels: ["منطقه آزاد"], services: ["خرید و فروش خودرو"], business_hours: [], gallery: [], is_verified: true },
+  { id: 9200004, slug: "test-showroom-9200004", business_type: "dealer", business_type_title: "نمایشگاه خودرو", name: "TEST_ نمایشگاه خلیج", province: "هرمزگان", city: "قشم", neighborhood: "مرکز شهر", address: "قشم، مرکز شهر", description: "نمایشگاه دمو خودروهای منطقه آزاد خلیج فارس", logo_url: `${ASSET_BASE}/test-avatars/dealer.webp`, cover_url: `${ASSET_BASE}/freezone-car.webp`, category_labels: ["منطقه آزاد"], services: ["خرید و فروش خودرو"], business_hours: [], gallery: [], is_verified: true },
+].map((showroom) => ({
+  phone: null, whatsapp_phone: null, email: null, website_url: null, instagram_url: null,
+  latitude: null, longitude: null, mobile_service: false, price_range_text: "قیمت توافقی",
+  ...showroom,
+}));
 
 export const PRELAUNCH_MARKET_FLOOR = PRELAUNCH_LISTINGS.slice(0, 8).map((listing, index) => ({
   id: 9600001 + index, score: 98 - index * 3, province: listing.province,

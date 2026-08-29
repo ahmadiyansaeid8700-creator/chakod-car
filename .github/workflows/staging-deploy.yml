@@ -292,6 +292,10 @@ jobs:
           verify_body="$(mktemp)"
           account_body="$(mktemp)"
           listings_body="$(mktemp)"
+          commerce_body="$(mktemp)"
+          order_body="$(mktemp)"
+          payment_body="$(mktemp)"
+          payment_verify_body="$(mktemp)"
 
           send_status="$(curl \
             --silent \
@@ -373,3 +377,86 @@ jobs:
           test "$listings_status" = "200"
           grep -q '"success":true' "$listings_body"
           grep -q '"staging_demo":true' "$listings_body"
+
+          commerce_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$commerce_body" \
+            --write-out '%{http_code}' \
+            --header 'Accept: application/json' \
+            'https://staging.chakod.com/api/auth/commerce')"
+
+          echo "Demo Commerce HTTP $commerce_status"
+          test "$commerce_status" = "200"
+          grep -q '"success":true' "$commerce_body"
+          grep -q '"staging_demo":true' "$commerce_body"
+          grep -q '"service_key":"listing_bump"' "$commerce_body"
+
+          request_key="smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          order_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$order_body" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --header 'Origin: https://staging.chakod.com' \
+            --data "{\"type\":\"promotion\",\"service_key\":\"listing_bump\",\"listing_id\":9100009,\"idempotency_key\":\"${request_key}\"}" \
+            'https://staging.chakod.com/api/finance/orders')"
+
+          echo "Demo order HTTP $order_status"
+          test "$order_status" = "201" -o "$order_status" = "200"
+          grep -q '"success":true' "$order_body"
+          order_no="$(node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!p.order?.order_no)process.exit(1);process.stdout.write(p.order.order_no)' "$order_body")"
+
+          payment_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$payment_body" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --header 'Origin: https://staging.chakod.com' \
+            --data "{\"order_no\":\"${order_no}\",\"idempotency_key\":\"${request_key}\",\"callback_path\":\"/account/payments/callback\"}" \
+            'https://staging.chakod.com/api/payments/create')"
+
+          echo "Demo payment create HTTP $payment_status"
+          test "$payment_status" = "200"
+          grep -q '"staging_demo":true' "$payment_body"
+          payment_fields="$(node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const u=new URL(p.payment_url);const v=[u.searchParams.get("authority"),u.searchParams.get("status"),u.searchParams.get("order_no"),u.searchParams.get("request_key")];if(v.some(x=>!x))process.exit(1);process.stdout.write(v.join("\t"))' "$payment_body")"
+          IFS=$'\t' read -r authority gateway_status callback_order callback_key <<< "$payment_fields"
+
+          payment_verify_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$payment_verify_body" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --header 'Origin: https://staging.chakod.com' \
+            --data "{\"authority\":\"${authority}\",\"status\":\"${gateway_status}\",\"order_no\":\"${callback_order}\",\"idempotency_key\":\"${callback_key}\"}" \
+            'https://staging.chakod.com/api/payments/verify')"
+
+          echo "Demo payment verify HTTP $payment_verify_status"
+          test "$payment_verify_status" = "200"
+          grep -q '"success":true' "$payment_verify_body"
+          grep -q '"staging_demo":true' "$payment_verify_body"

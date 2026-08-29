@@ -23,6 +23,7 @@ type CommerceService = {
 type CommerceResponse = {
   success?: boolean;
   message?: string;
+  staging_demo?: boolean;
   services?: CommerceService[];
   payment_gateway_ready?: boolean;
 };
@@ -221,6 +222,7 @@ export default function CheckoutClient() {
     ? "مبلغ دلخواه را برای شارژ کیف پول چاکود وارد کنید."
     : serviceDescriptions[serviceKey] || "تعرفه و مدت این خدمت از پنل مدیریت چاکود خوانده می‌شود.";
   const gatewayReady = catalog?.payment_gateway_ready !== false;
+  const stagingDemo = catalog?.staging_demo === true;
   const walletPaymentReady = finance?.wallet_payment_ready === true;
   const walletAvailable = Number(finance?.wallet?.available_balance_toman || 0);
   const walletBlocked = Number(finance?.wallet?.blocked_balance_toman || 0);
@@ -404,7 +406,9 @@ export default function CheckoutClient() {
   const actionLabel = submitting
     ? selectedMethod === "wallet"
       ? "در حال پرداخت از کیف پول..."
-      : "در حال اتصال به درگاه..."
+      : stagingDemo
+        ? "در حال تکمیل پرداخت آزمایشی..."
+        : "در حال اتصال به درگاه..."
     : requiresBannerConfiguration
       ? "تکمیل اطلاعات بنر"
       : requiresListing && !hasValidListing
@@ -421,7 +425,9 @@ export default function CheckoutClient() {
                   : `پرداخت ${formatToman(amount)} از کیف پول`
               : !gatewayReady
                 ? "درگاه در انتظار تنظیم"
-                : `پرداخت ${formatToman(amount)} از درگاه`;
+                : stagingDemo
+                  ? `تکمیل آزمایشی ${formatToman(amount)} بدون جابه‌جایی پول`
+                  : `پرداخت ${formatToman(amount)} از درگاه`;
 
   return (
     <main className={styles.page} dir="rtl">
@@ -438,6 +444,12 @@ export default function CheckoutClient() {
             <span className={styles.eyebrow}>تسویه حساب امن</span>
             <h1>{catalogLoading && !isWalletCharge ? "در حال دریافت تعرفه..." : title}</h1>
             <p>{description}</p>
+
+            {stagingDemo && (
+              <div className={styles.notice}>
+                محیط آزمایشی است: سفارش و فاکتور تستی ثبت می‌شود، اما هیچ پول واقعی جابه‌جا نخواهد شد.
+              </div>
+            )}
 
             {isWalletCharge && (
               <label className={styles.amountField}>
@@ -481,9 +493,9 @@ export default function CheckoutClient() {
                   className={paymentMethod === "gateway" ? styles.paymentMethodActive : ""}
                   onClick={() => setPaymentMethod("gateway")}
                 >
-                  <span>درگاه بانکی</span>
-                  <strong>پرداخت آنلاین</strong>
-                  <small>{gatewayReady ? "انتقال امن به درگاه" : "درگاه هنوز تنظیم نشده"}</small>
+                  <span>{stagingDemo ? "پرداخت آزمایشی" : "درگاه بانکی"}</span>
+                  <strong>{stagingDemo ? "بدون پول واقعی" : "پرداخت آنلاین"}</strong>
+                  <small>{gatewayReady ? (stagingDemo ? "ثبت سفارش و فاکتور تستی" : "انتقال امن به درگاه") : "درگاه هنوز تنظیم نشده"}</small>
                 </button>
               </section>
             )}
@@ -551,7 +563,9 @@ export default function CheckoutClient() {
                 <p>
                   {selectedMethod === "wallet"
                     ? "مبلغ ابتدا رزرو می‌شود؛ فقط پس از نهایی‌شدن Commerce از کیف پول کسر قطعی و فاکتور صادر می‌شود."
-                    : "مبلغ از Commerce خوانده می‌شود و تراکنش فقط پس از تأیید سمت سرور نهایی خواهد شد."}
+                    : stagingDemo
+                      ? "مبلغ از کاتالوگ آزمایشی سمت سرور خوانده می‌شود و فقط یک تراکنش تستی در دیتابیس استیجینگ ثبت خواهد شد."
+                      : "مبلغ از Commerce خوانده می‌شود و تراکنش فقط پس از تأیید سمت سرور نهایی خواهد شد."}
                 </p>
               </div>
             )}

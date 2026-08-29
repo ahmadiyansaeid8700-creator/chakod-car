@@ -54,3 +54,20 @@ test("keeps finance mutations protected from cross-site requests", async () => {
     assert.match(text, /rejectCrossSiteMutation/);
   }
 });
+
+test("keeps simulated checkout bound to an explicit staging demo session and marked D1 orders", async () => {
+  const catalog = await source("app/api/auth/commerce/route.ts");
+  const orders = await source("app/api/finance/orders/route.ts");
+  const create = await source("app/api/payments/create/route.ts");
+  const verify = await source("app/api/payments/verify/route.ts");
+  const checkout = await source("app/account/payments/checkout/CheckoutClient.tsx");
+
+  assert.match(catalog, /buildStagingDemoCommerce/);
+  assert.match(orders, /createPublicReference\("TEST-CHK"\)/);
+  assert.match(orders, /staging_demo:\s*Boolean\(stagingDemo\)/);
+  assert.match(create, /isStagingDemoOrderMetadata\(order\.metadataJson\)/);
+  assert.match(create, /callbackUrl\.searchParams\.set\("authority", `TEST-/);
+  assert.match(verify, /gateway:\s*"staging-demo"/);
+  assert.match(verify, /هیچ پول واقعی جابه‌جا نشده است/);
+  assert.match(checkout, /محیط آزمایشی است/);
+});

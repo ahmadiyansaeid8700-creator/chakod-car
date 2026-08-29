@@ -457,3 +457,15 @@ Online verification: send-code و verify آزمایشی، ساخت Cookie، /api
 Open issue: /api/auth/commerce با Session آزمایشی هنوز HTTP 502 و پیام «پاسخ سرویس حساب کاربری معتبر نیست» برمی‌گرداند، چون Commerce و پرداخت staging به Backend قدیمی PHP وابسته‌اند؛ هیچ تراکنش یا داده واقعی تا انتقال به VPS مجاز نیست
 Exact next action: ساخت fixture محدود به staging و مبتنی بر D1 برای Commerce/محصول/سفارش/پرداخت آزمایشی و سپس Smoke کامل checkout بدون درگاه یا پول واقعی
 ```
+
+```text
+Date: 2026-08-29
+Requested change: تکمیل جریان Commerce و Checkout حساب آزمایشی استیجینگ بدون درگاه، پول یا داده واقعی
+Affected routes/files: /api/auth/commerce، /api/finance/orders، /api/payments/create، /api/payments/verify، رابط‌های Checkout، lib/staging-demo-commerce.ts، Workflow استیجینگ و تست‌های قرارداد Commerce
+Tests actually run: تست قرمز اولیه ثبت شد؛ check:launch شامل TypeScript و 117/117 قرارداد موفق؛ D1 verify با 10 migration و 17 جدول موفق؛ Build واقعی Cloudflare staging موفق؛ Build مستقل Production با D1 قراردادی موفق؛ npm audit در سطح critical بدون Critical و با 4 moderate + 2 high شناخته‌شده موفق؛ Smoke قابل‌حمل محلی به‌علت محدودیت اجرای شبکه محیط Codex کامل نشد و در GitHub Actions اجرا می‌شود
+PR and merge commit: شاخه fix/staging-demo-commerce-2026-08-29؛ PR هنوز ساخته و ادغام نشده است
+Deployment result: منتشر نشده؛ chakod.com، Production و اطلاعات واقعی دست‌نخورده‌اند
+Online verification: انجام نشده؛ Workflow پس از Deploy باید ورود آزمایشی، کاتالوگ، سفارش D1، ساخت پرداخت داخلی، Verify و فاکتور را بررسی کند
+Open issue: شبیه‌سازی فقط برای hostname دقیق staging.chakod.com، Session معتبر آزمایشی و سفارش دارای metadata صریح staging_demo فعال است؛ هیچ اثر محصول یا تراکنش واقعی ایجاد نمی‌کند
+Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، گرفتن CI، ادغام و دنبال‌کردن Deploy و Smoke کامل Checkout استیجینگ
+```

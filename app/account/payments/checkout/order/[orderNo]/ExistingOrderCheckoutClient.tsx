@@ -35,6 +35,7 @@ type FinanceSummaryResponse = {
 
 type CommerceResponse = {
   success?: boolean;
+  staging_demo?: boolean;
   payment_gateway_ready?: boolean;
 };
 
@@ -78,6 +79,7 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
   const [orderData, setOrderData] = useState<OrderResponse["order"] | null>(null);
   const [finance, setFinance] = useState<FinanceSummaryResponse | null>(null);
   const [gatewayReady, setGatewayReady] = useState(true);
+  const [stagingDemo, setStagingDemo] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("gateway");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -137,6 +139,7 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
         const commercePayload = await readJson<CommerceResponse>(commerceResult.value);
         if (commerceResult.value.ok && commercePayload?.success) {
           setGatewayReady(commercePayload.payment_gateway_ready !== false);
+          setStagingDemo(commercePayload.staging_demo === true);
         }
       }
     } finally {
@@ -313,8 +316,8 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
                     className={method === "gateway" ? styles.paymentMethodActive : ""}
                     onClick={() => setMethod("gateway")}
                   >
-                    <b>درگاه بانکی</b>
-                    <small>{gatewayReady ? "پرداخت مستقیم بانکی" : "در انتظار تنظیم درگاه"}</small>
+                    <b>{stagingDemo ? "پرداخت آزمایشی" : "درگاه بانکی"}</b>
+                    <small>{gatewayReady ? (stagingDemo ? "بدون جابه‌جایی پول واقعی" : "پرداخت مستقیم بانکی") : "در انتظار تنظیم درگاه"}</small>
                   </button>
                   <button
                     type="button"
@@ -338,6 +341,12 @@ export default function ExistingOrderCheckoutClient({ orderNo }: { orderNo: stri
 
               {error && <div className={styles.error}>{error}</div>}
               {notice && <div className={styles.securityNote}><span>✓</span><p>{notice}</p></div>}
+              {stagingDemo && !isSelectedTestOrder && (
+                <div className={styles.securityNote}>
+                  <span>TEST</span>
+                  <p>این سفارش فقط در دیتابیس استیجینگ ثبت می‌شود و هیچ پول واقعی جابه‌جا نمی‌شود.</p>
+                </div>
+              )}
 
               <button
                 className={styles.payButton}

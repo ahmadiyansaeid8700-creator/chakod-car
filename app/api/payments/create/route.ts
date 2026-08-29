@@ -6,9 +6,14 @@ import { commerceOrders } from "../../../../db/schema";
 import {
   jsonResponse,
   proxyAuthenticatedJson,
+  readSessionToken,
   rejectCrossSiteMutation,
 } from "../../../../lib/chakod-auth-proxy";
 import { getFinanceOwnerKey } from "../../../../lib/finance-core";
+import {
+  buildStagingDemoCommerce,
+  isStagingDemoOrderMetadata,
+} from "../../../../lib/staging-demo-commerce";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +64,10 @@ export async function POST(request: NextRequest) {
   const orderNo = cleanText(input.order_no, 100);
   const suppliedIdempotencyKey = cleanText(input.idempotency_key, 100);
   const callbackPath = cleanText(input.callback_path, 160);
+  const stagingDemo = buildStagingDemoCommerce({
+    hostname: request.nextUrl.hostname,
+    token: readSessionToken(request),
+  });
 
   if (!ORDER_PATTERN.test(orderNo)) {
     return jsonResponse({ success: false, message: "شماره سفارش معتبر نیست." }, 400);
@@ -102,6 +111,24 @@ export async function POST(request: NextRequest) {
     const callbackUrl = new URL(safeCallbackPath, request.nextUrl.origin);
     callbackUrl.searchParams.set("order_no", order.orderNo);
     callbackUrl.searchParams.set("request_key", order.idempotencyKey);
+
+    if (stagingDemo) {
+      if (!isStagingDemoOrderMetadata(order.metadataJson)) {
+        return jsonResponse({ success: false, message: "این سفارش برای پرداخت آزمایشی ساخته نشده است." }, 403);
+      }
+
+      const authoritySuffix = order.idempotencyKey
+        .replace(/[^a-z0-9-]/gi, "-")
+        .slice(0, 12);
+      callbackUrl.searchParams.set("authority", `TEST-${order.id}-${authoritySuffix}`);
+      callbackUrl.searchParams.set("status", "OK");
+      return jsonResponse({
+        success: true,
+        staging_demo: true,
+        message: "درگاه آزمایشی آماده است؛ هیچ پولی جابه‌جا نمی‌شود.",
+        payment_url: callbackUrl.toString(),
+      });
+    }
 
     return proxyAuthenticatedJson(request, "/api/payments/create.php", {
       method: "POST",

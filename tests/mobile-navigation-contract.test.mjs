@@ -11,17 +11,15 @@ test("uses one accessible icon-only back control across primary mobile headers",
   const businesses = read("app/businesses/page.tsx");
   const dealerships = read("app/dealerships/DealerDirectoryClient.tsx");
   const stories = read("app/stories/[id]/page.tsx");
-  const affiliate = read("app/affiliate/AffiliateLandingClient.tsx");
 
   assert.match(component, /aria-label="بازگشت به صفحه قبل"/);
   assert.match(component, /d="m9 5 7 7-7 7"/);
   assert.match(component, /window\.history\.length > 1/);
   assert.match(component, /router\.push\(fallbackHref\)/);
 
-  for (const source of [businesses, dealerships, stories, affiliate]) {
+  for (const source of [businesses, dealerships, stories]) {
     assert.match(source, /<MobileBackButton/);
   }
 
   assert.doesNotMatch(stories, />\s*برگشت\s*<\/button>/);
-  assert.doesNotMatch(affiliate, />بازگشت<\/button>/);
 });

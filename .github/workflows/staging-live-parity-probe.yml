@@ -1,0 +1,55 @@
+name: Staging live parity probe
+
+on:
+  push:
+    branches:
+      - diag/staging-showroom-live-parity
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fetch live homepage and showroom asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(mktemp)"
+          css="$(mktemp)"
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Cache-Control: no-cache' \
+            --header 'Pragma: no-cache' \
+            --output "$html" \
+            'https://staging.chakod.com/?parity=7422cccc8f16'
+
+          asset="$(grep -oE '/assets/ShowroomCard-[A-Za-z0-9_-]+\.css' "$html" | head -n 1 || true)"
+          echo "Live showroom CSS asset: ${asset:-<missing>}"
+
+          if [ -z "$asset" ]; then
+            echo 'Homepage does not reference a ShowroomCard CSS asset.'
+            grep -oE '/assets/[A-Za-z0-9_.-]+\.css' "$html" | sort -u | head -n 80 || true
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --location \
+            --retry 5 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header 'Cache-Control: no-cache' \
+            --header 'Pragma: no-cache' \
+            --output "$css" \
+            "https://staging.chakod.com${asset}?parity=7422cccc8f16"
+
+          if grep -Eq 'gap:[[:space:]]*2px' "$css" && \
+             grep -Eq 'border-radius:[[:space:]]*14px' "$css" && \
+             grep -Eq 'border:[[:space:]]*1px solid #e8e4ec' "$css"; then
+            echo 'LIVE_PARITY=NEW_GALLERY_CSS'
+          else
+            echo 'LIVE_PARITY=OLD_OR_DIFFERENT_GALLERY_CSS'
+            grep -oE 'gap:[^;}]+|border-radius:[^;}]+|border:[^;}]+' "$css" | head -n 80 || true
+            exit 2
+          fi

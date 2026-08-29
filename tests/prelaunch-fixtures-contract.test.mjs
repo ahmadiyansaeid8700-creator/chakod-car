@@ -109,6 +109,51 @@ test("staging market-floor fixtures are persistent and never show a fake 24-hour
   assert.match(marketFloorPage, /نمایش ثابت|دمو/);
 });
 
+test("staging services demo has enough inventory to fill every service filter", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const serviceRows = [...fixtures.matchAll(/\[(950\d{4}),\s*"(car_service|parts_store|repair_shop)"/g)];
+  assert.ok(serviceRows.length >= 15, `expected at least 15 service businesses, got ${serviceRows.length}`);
+  for (const category of [
+    "car_wash",
+    "detailing",
+    "ceramic_coating",
+    "window_tint",
+    "ppf",
+    "vehicle_wrap",
+    "audio_alarm",
+    "mechanical",
+    "auto_electrical",
+    "oil_change",
+    "spare_parts",
+  ]) assert.ok(fixtures.includes(`"${category}"`), `${category} needs demo inventory`);
+});
+
+test("staging service directories use one API-independent fixture fallback", () => {
+  const route = read("app/services/ServicesRoute.tsx");
+  const fallback = read("app/services/ServicesFixtureFallback.tsx");
+  for (const path of [
+    "app/services/page.tsx",
+    "app/car-services/page.tsx",
+    "app/parts-stores/page.tsx",
+    "app/workshops/page.tsx",
+  ]) assert.match(read(path), /ServicesRoute/, `${path} must use the shared services route`);
+  assert.match(route, /PRELAUNCH_BUSINESSES/);
+  assert.match(route, /prelaunchServerFixturesEnabled\(\)/);
+  assert.match(route, /ServicesFixtureFallback/);
+  assert.match(route, /BusinessesPage/);
+  assert.match(fallback, /filterFixtureBusinesses/);
+  assert.match(fallback, /category_keys/);
+  assert.match(fallback, /\/services\/\$\{business\.slug\}/);
+});
+
+test("staging service detail resolves fixtures without the business API", () => {
+  const detail = read("app/services/[slug]/page.tsx");
+  assert.match(detail, /PRELAUNCH_BUSINESSES/);
+  assert.match(detail, /prelaunchServerFixturesEnabled\(\)/);
+  assert.match(detail, /redirect\(`\/businesses\/\$\{encodeURIComponent\(slug\)\}`\)/);
+  assert.match(detail, /TEST_|business\.name/);
+});
+
 test("post-deploy staging smoke verifies every presentation surface instead of HTTP status only", () => {
   const workflow = read(".github/workflows/staging-demo-content-smoke.yml");
   for (const expected of [

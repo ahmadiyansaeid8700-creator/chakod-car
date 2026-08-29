@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import BusinessesPage from "../businesses/page";
+import ServicesRoute from "./ServicesRoute";
 
 export const metadata: Metadata = {
   title: "بازار خدمات خودرو چاکود",
@@ -8,11 +8,13 @@ export const metadata: Metadata = {
 };
 
 export default function ServicesMarketPage() {
-  return <BusinessesPage
-    basePath="/services"
-    marketMode
-    kicker="بازار خدمات"
-    title="بازار خدمات خودرو چاکود"
-    description="تعمیرکار، خدمات خودرویی و فروشگاه لوازم یدکی را بر اساس تخصص، موقعیت و خدمات پیدا کن."
-  />;
+  return (
+    <ServicesRoute
+      basePath="/services"
+      marketMode
+      kicker="بازار خدمات"
+      title="بازار خدمات خودرو چاکود"
+      description="تعمیرکار، خدمات خودرویی و فروشگاه لوازم یدکی را بر اساس تخصص، موقعیت و خدمات پیدا کن."
+    />
+  );
 }

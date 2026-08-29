@@ -1,0 +1,110 @@
+name: Staging services demo smoke
+
+on:
+  push:
+    branches:
+      - agent/launch-3-local-baseline
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  services-demo-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Wait for matching Deploy staging Worker
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/staging-deploy.yml/runs?branch=agent%2Flaunch-3-local-baseline&event=push&per_page=20"
+
+          for attempt in $(seq 1 120); do
+            payload="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_url")"
+
+            set +e
+            printf '%s' "$payload" | node -e '
+              const fs = require("fs");
+              const sha = process.argv[1];
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              const run = (payload.workflow_runs || []).find((item) => item.head_sha === sha);
+              if (!run || run.status !== "completed") process.exit(10);
+              if (run.conclusion !== "success") {
+                console.error(`Matching staging deploy ${run.id} finished with ${run.conclusion}`);
+                process.exit(20);
+              }
+              console.log(`Matching staging deploy ${run.id} succeeded for ${sha}`);
+            ' "$GITHUB_SHA"
+            check_status=$?
+            set -e
+
+            if [ "$check_status" = "0" ]; then
+              break
+            fi
+            if [ "$check_status" = "20" ]; then
+              exit 1
+            fi
+            if [ "$attempt" = "120" ]; then
+              echo "Timed out waiting for the matching Deploy staging Worker run."
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Verify populated staging services pages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          fetch_html() {
+            local url="$1"
+            local output="$2"
+            curl --fail --silent --show-error --location \
+              --retry 5 --retry-delay 3 --retry-all-errors \
+              --connect-timeout 10 --max-time 30 \
+              --header 'Accept: text/html' \
+              --output "$output" \
+              "$url"
+          }
+
+          services_body="$(mktemp)"
+          car_services_body="$(mktemp)"
+          parts_body="$(mktemp)"
+          workshops_body="$(mktemp)"
+          detail_body="$(mktemp)"
+
+          fetch_html 'https://staging.chakod.com/services' "$services_body"
+          grep -q 'test-business-9500001' "$services_body"
+          grep -q 'test-business-9500003' "$services_body"
+          grep -q 'test-business-9500005' "$services_body"
+          grep -q 'test-business-9500018' "$services_body"
+          service_count="$(grep -oE 'test-business-950[0-9]{4}' "$services_body" | sort -u | wc -l | tr -d ' ')"
+          test "$service_count" -ge 15
+
+          fetch_html 'https://staging.chakod.com/car-services' "$car_services_body"
+          grep -q 'test-business-9500001' "$car_services_body"
+          grep -q 'test-business-9500007' "$car_services_body"
+          grep -q 'test-business-9500012' "$car_services_body"
+
+          fetch_html 'https://staging.chakod.com/parts-stores' "$parts_body"
+          grep -q 'test-business-9500003' "$parts_body"
+          grep -q 'test-business-9500015' "$parts_body"
+
+          fetch_html 'https://staging.chakod.com/workshops' "$workshops_body"
+          grep -q 'test-business-9500005' "$workshops_body"
+          grep -q 'test-business-9500018' "$workshops_body"
+
+          fetch_html 'https://staging.chakod.com/services/test-business-9500001' "$detail_body"
+          grep -q 'TEST_' "$detail_body"
+          grep -q 'بازگشت به بازار خدمات' "$detail_body"
+
+          echo "Staging services demo is populated across the main market, all three directories, and fixture detail pages."

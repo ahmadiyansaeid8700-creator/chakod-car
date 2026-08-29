@@ -23,8 +23,10 @@ test("uses the approved homepage showroom card in compact directory mode", async
   assert.match(cardStyles, /\.compact \.cover \{[\s\S]*?aspect-ratio: 2\.55 \/ 1/);
   assert.match(cardStyles, /\.compact \.logo \{[\s\S]*?width: 56px;[\s\S]*?height: 56px/);
   assert.match(cardStyles, /@media \(max-width: 700px\)[\s\S]*?\.compact \.logo \{[\s\S]*?width: 52px;[\s\S]*?height: 52px/);
-  assert.match(cardStyles, /\.compact \.latestGrid \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[\s\S]*?gap: 8px/);
-  assert.match(cardStyles, /\.compact \.latestListing,[\s\S]*?width: 100%;[\s\S]*?height: 56px/);
+  assert.match(sharedCard, /gridTemplateColumns:\s*`repeat\(\$\{latestListings\.length\}, minmax\(0, 1fr\)\)`/);
+  assert.match(cardStyles, /\.compact \.latestGrid \{[\s\S]*?height: 58px;[\s\S]*?gap: 2px/);
+  assert.match(cardStyles, /\.compact \.latestListing \{[\s\S]*?width: 100%;[\s\S]*?height: 100%/);
+  assert.doesNotMatch(cardStyles, /\.compact \.latestGrid \{[\s\S]{0,180}?grid-template-columns: repeat\(3/);
   assert.doesNotMatch(directory, /selectedCard|ordinaryCard|ShowroomBanner|VehicleStrip/);
 });
 

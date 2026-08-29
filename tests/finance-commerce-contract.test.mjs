@@ -84,3 +84,11 @@ test("rejects anonymous Commerce locally and returns protected account pages to 
   assert.match(checkout, /orderResponse\.status === 401 \|\| orderResponse\.status === 403/);
   assert.doesNotMatch(checkout, /if \(!token\)[\s\S]*?window\.location\.assign\(`\/login/);
 });
+
+test("does not restore the retired story reservation card in account services", async () => {
+  const center = await source("app/account/services/CommerceCenter.tsx");
+
+  assert.doesNotMatch(center, /رزرو استوری/);
+  assert.doesNotMatch(center, /استوری استانی ۲۴ ساعته/);
+  assert.doesNotMatch(center, /listing_story_(?:large|regular)/);
+});

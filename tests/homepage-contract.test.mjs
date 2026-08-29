@@ -157,6 +157,10 @@ test("connects the vehicle and service markets with a shared premium switch", ()
   assert.match(servicePage, /basePath="\/services"/);
   assert.match(businesses, /<MarketModeSwitch active="services"/);
   assert.doesNotMatch(businesses, /href="\/businesses">کسب‌وکارها/);
+  assert.equal((businesses.match(/href="\/services">بازار خدمات/g) || []).length, 1);
+  assert.match(businesses, /mobileSearchForm[\s\S]*?<button type="submit" aria-label="جست‌وجو">/);
+  assert.match(businesses, /className=\{catalogStyles\.applyButton\} type="submit">اعمال فیلترها/);
+  assert.match(businesses, /resultsRef\.current\?\.scrollIntoView/);
   assert.match(businesses, /business_type !== "dealer"/);
   assert.match(businesses, /serviceMarketTypes/);
   assert.match(businesses, /تعمیرکاران/);

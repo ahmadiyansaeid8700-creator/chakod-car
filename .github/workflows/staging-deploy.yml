@@ -283,12 +283,17 @@ jobs:
           echo "Five-minute workers.dev fallback HTTP $status"
           test "$status" = "200"
 
-      - name: Smoke staging auth route
+      - name: Smoke staging demo login and account routes
         shell: bash
         run: |
           set -euo pipefail
-          body_file="$(mktemp)"
-          status="$(curl \
+          cookie_file="$(mktemp)"
+          send_body="$(mktemp)"
+          verify_body="$(mktemp)"
+          account_body="$(mktemp)"
+          listings_body="$(mktemp)"
+
+          send_status="$(curl \
             --silent \
             --show-error \
             --location \
@@ -297,24 +302,74 @@ jobs:
             --retry-all-errors \
             --connect-timeout 10 \
             --max-time 25 \
-            --output "$body_file" \
+            --output "$send_body" \
             --write-out '%{http_code}' \
             --request POST \
             --header 'Accept: application/json' \
             --header 'Content-Type: application/json' \
-            --data '{"mobile":"0900000000","accept_terms":true}' \
+            --header 'Origin: https://staging.chakod.com' \
+            --data '{"mobile":"09000000000","accept_terms":true}' \
             'https://staging.chakod.com/api/auth/send-code')"
 
-          cat "$body_file"
-          echo
-          echo "HTTP $status"
+          echo "Demo send-code HTTP $send_status"
+          test "$send_status" = "200"
+          grep -q '"success":true' "$send_body"
+          grep -q '"staging_demo":true' "$send_body"
 
-          if [ "$status" != "400" ]; then
-            echo "Expected auth route validation HTTP 400, got $status."
-            exit 1
-          fi
+          verify_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie-jar "$cookie_file" \
+            --output "$verify_body" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --header 'Origin: https://staging.chakod.com' \
+            --data '{"mobile":"09000000000","code":"11111"}' \
+            'https://staging.chakod.com/api/auth/verify')"
 
-          if ! grep -q '"success":false' "$body_file"; then
-            echo "Auth smoke response is not the expected JSON payload."
-            exit 1
-          fi
+          echo "Demo verify HTTP $verify_status"
+          test "$verify_status" = "200"
+          grep -q '"success":true' "$verify_body"
+          grep -q '"staging_demo":true' "$verify_body"
+
+          account_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$account_body" \
+            --write-out '%{http_code}' \
+            --header 'Accept: application/json' \
+            'https://staging.chakod.com/api/auth/me')"
+
+          echo "Demo account HTTP $account_status"
+          test "$account_status" = "200"
+          grep -q '"success":true' "$account_body"
+          grep -q '"staging_demo":true' "$account_body"
+
+          listings_status="$(curl \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --cookie "$cookie_file" \
+            --output "$listings_body" \
+            --write-out '%{http_code}' \
+            --header 'Accept: application/json' \
+            'https://staging.chakod.com/api/auth/dashboard-listings?page=1&per_page=3&status=all&owner=personal')"
+
+          echo "Demo listings HTTP $listings_status"
+          test "$listings_status" = "200"
+          grep -q '"success":true' "$listings_body"
+          grep -q '"staging_demo":true' "$listings_body"

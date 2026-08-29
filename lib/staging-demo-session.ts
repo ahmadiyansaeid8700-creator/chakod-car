@@ -47,10 +47,11 @@ function normalizeHostname(value: string) {
 }
 
 export function isStagingDemoEnabled(hostname: string) {
-  return (
-    process.env.PRELAUNCH_FIXTURES === "true" &&
-    normalizeHostname(hostname) === "staging.chakod.com"
-  );
+  // staging.chakod.com is deliberately a fixture-only environment until the
+  // final VPS migration. Basing demo auth on the hostname keeps it available
+  // even when a server-only build variable is not preserved by Vinext, while
+  // production and workers.dev hosts remain unable to mint demo sessions.
+  return normalizeHostname(hostname) === "staging.chakod.com";
 }
 
 function demoAccountType(mobile: string): DemoAccountType {

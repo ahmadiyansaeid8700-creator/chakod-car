@@ -102,6 +102,19 @@ test("does not pad showroom cards with fake empty listing slots", async () => {
   assert.match(card, /latestListings\.map\(\(listing\) =>/);
 });
 
+test("renders showroom listing previews inside one unified clipped gallery frame", async () => {
+  const css = await source("app/components/ShowroomCard.module.css");
+
+  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,220}overflow:\s*hidden;/);
+  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,260}border-radius:\s*14px;/);
+  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,300}border:\s*1px solid #e8e4ec;/);
+  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,340}gap:\s*2px;/);
+  assert.match(css, /\.latestListing\s*\{[\s\S]{0,180}aspect-ratio:\s*16 \/ 10;/);
+  assert.match(css, /\.latestListing\s*\{[\s\S]{0,220}border:\s*0;/);
+  assert.match(css, /\.latestListing\s*\{[\s\S]{0,260}border-radius:\s*0;/);
+  assert.match(css, /\.latestListing img\s*\{[\s\S]{0,160}object-fit:\s*cover;/);
+});
+
 test("keeps the homepage showroom view-all action above overlapping rails", async () => {
   const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
   const css = await source("app/components/HomeFeaturedShowrooms.module.css");

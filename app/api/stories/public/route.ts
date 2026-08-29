@@ -4,7 +4,10 @@ import { NextRequest } from "next/server";
 
 import { getDb } from "../../../../db";
 import { commerceOrders } from "../../../../db/schema";
-import { PRELAUNCH_STORIES } from "../../../../lib/prelaunch-fixtures";
+import {
+  PRELAUNCH_SERVER_FIXTURES_ENABLED,
+  PRELAUNCH_STORIES,
+} from "../../../../lib/prelaunch-fixtures";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +54,6 @@ function listingPublicUrl(value: unknown, listingId: number) {
 }
 
 export async function GET(request: NextRequest) {
-  const fixturesEnabled = process.env.PRELAUNCH_FIXTURES === "true";
   const now = new Date().toISOString();
   const province = clean(request.nextUrl.searchParams.get("province"));
   const requestedCities = request.nextUrl.searchParams
@@ -63,18 +65,18 @@ export async function GET(request: NextRequest) {
     ? requestedStoryId - LOCAL_STORY_ID_BASE
     : 0;
 
-  const fixtureStories = fixturesEnabled
+  const fixtureStories = PRELAUNCH_SERVER_FIXTURES_ENABLED
     ? PRELAUNCH_STORIES.filter((story) => {
         if (requestedStoryId > 0 && Number(story.story_id) !== requestedStoryId) return false;
         if (province && clean(story.province) !== province) return false;
         if (requestedCities.length > 0 && story.city && !requestedCities.includes(clean(story.city))) return false;
-        return !story.expires_at || story.expires_at > now;
+        return true;
       })
     : [];
 
   if (requestedStoryId > 0 && fixtureStories.length > 0) {
     return Response.json(
-      { success: true, count: fixtureStories.length, data: fixtureStories },
+      { success: true, count: fixtureStories.length, data: fixtureStories, staging_demo: true },
       { headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -159,13 +161,18 @@ export async function GET(request: NextRequest) {
 
     const data = requestedStoryId > 0 ? liveStories : [...fixtureStories, ...liveStories];
     return Response.json(
-      { success: true, count: data.length, data },
+      {
+        success: true,
+        count: data.length,
+        data,
+        ...(PRELAUNCH_SERVER_FIXTURES_ENABLED ? { staging_demo: true } : {}),
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
     if (fixtureStories.length > 0) {
       return Response.json(
-        { success: true, count: fixtureStories.length, data: fixtureStories },
+        { success: true, count: fixtureStories.length, data: fixtureStories, staging_demo: true },
         { headers: { "Cache-Control": "no-store" } },
       );
     }

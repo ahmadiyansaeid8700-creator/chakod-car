@@ -357,32 +357,32 @@
 .latestGrid {
   min-width: 0;
   margin-top: 15px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.latestListing,
-.emptyListing {
-  min-width: 0;
-  aspect-ratio: 1.16 / 1;
   overflow: hidden;
   border: 1px solid #e8e4ec;
-  border-radius: 12px;
+  border-radius: 14px;
   display: grid;
-  place-items: center;
-  background: #f5f3f7;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  background: #e8e4ec;
 }
 
 .latestListing {
   position: relative;
+  min-width: 0;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  place-items: center;
+  background: #f5f3f7;
 }
 
 .latestListing::after {
   position: absolute;
   inset: 0;
   border: 2px solid transparent;
-  border-radius: inherit;
+  border-radius: 0;
   content: "";
   transition: border-color 170ms ease;
 }
@@ -403,23 +403,18 @@
   transform: scale(1.055);
 }
 
-.listingPlaceholder,
-.emptyListing {
+.listingPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
   color: #a18cad;
   background:
     radial-gradient(circle at 75% 24%, rgba(124, 58, 237, 0.11), transparent 46%),
     #f7f5f8;
 }
 
-.listingPlaceholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-}
-
-.listingPlaceholder svg,
-.emptyListing svg {
+.listingPlaceholder svg {
   width: 43%;
   height: auto;
   fill: none;
@@ -428,10 +423,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.62;
-}
-
-.emptyListing {
-  opacity: 0.52;
 }
 
 .primaryAction {
@@ -536,15 +527,14 @@
 }
 
 .compact .latestGrid {
+  height: 58px;
   margin-top: 8px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 2px;
 }
 
-.compact .latestListing,
-.compact .emptyListing {
+.compact .latestListing {
   width: 100%;
-  height: 56px;
+  height: 100%;
   max-height: none;
   aspect-ratio: auto;
 }
@@ -632,12 +622,11 @@
 
   .latestGrid {
     margin-top: 13px;
-    gap: 7px;
+    gap: 2px;
   }
 
-  .latestListing,
-  .emptyListing {
-    border-radius: 10px;
+  .latestListing {
+    border-radius: 0;
   }
 
   .primaryAction {
@@ -666,9 +655,12 @@
     font-size: 18px;
   }
 
-  .compact .latestListing,
-  .compact .emptyListing {
-    height: 52px;
+  .compact .latestGrid {
+    height: 54px;
+  }
+
+  .compact .latestListing {
+    height: 100%;
   }
 }
 
@@ -683,7 +675,7 @@
   }
 
   .latestGrid {
-    gap: 6px;
+    gap: 2px;
   }
 }
 

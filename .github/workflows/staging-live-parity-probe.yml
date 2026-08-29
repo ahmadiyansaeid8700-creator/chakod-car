@@ -25,7 +25,7 @@ jobs:
             --header 'Cache-Control: no-cache' \
             --header 'Pragma: no-cache' \
             --output "$html" \
-            'https://staging.chakod.com/?parity=7422cccc8f16'
+            'https://staging.chakod.com/?parity=ab6b122301e6'
 
           asset="$(grep -oE '/assets/ShowroomCard-[A-Za-z0-9_-]+\.css' "$html" | head -n 1 || true)"
           echo "Live showroom CSS asset: ${asset:-<missing>}"
@@ -42,14 +42,14 @@ jobs:
             --header 'Cache-Control: no-cache' \
             --header 'Pragma: no-cache' \
             --output "$css" \
-            "https://staging.chakod.com${asset}?parity=7422cccc8f16"
+            "https://staging.chakod.com${asset}?parity=ab6b122301e6"
 
-          if grep -Eq 'gap:[[:space:]]*2px' "$css" && \
-             grep -Eq 'border-radius:[[:space:]]*14px' "$css" && \
-             grep -Eq 'border:[[:space:]]*1px solid #e8e4ec' "$css"; then
-            echo 'LIVE_PARITY=NEW_GALLERY_CSS'
+          if grep -Eq 'gap:[[:space:]]*0([;}])' "$css" && \
+             grep -Eq 'content:[[:space:]]*none' "$css" && \
+             grep -Eq 'border-radius:[[:space:]]*14px' "$css"; then
+            echo 'LIVE_PARITY=SEAMLESS_GALLERY_CSS'
           else
             echo 'LIVE_PARITY=OLD_OR_DIFFERENT_GALLERY_CSS'
-            grep -oE 'gap:[^;}]+|border-radius:[^;}]+|border:[^;}]+' "$css" | head -n 80 || true
+            grep -oE 'gap:[^;}]+|content:[^;}]+|border-radius:[^;}]+' "$css" | head -n 120 || true
             exit 2
           fi

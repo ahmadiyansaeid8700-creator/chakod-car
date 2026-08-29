@@ -5,6 +5,7 @@
 import { useState } from "react";
 import DealerShareActions from "./DealerShareActions";
 import styles from "./ShowroomCard.module.css";
+import seamlessStyles from "./ShowroomCardSeamless.module.css";
 
 const API_BASE = "https://api.chakod.com";
 const SITE_BASE = "https://chakod.com";
@@ -94,7 +95,7 @@ function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
 
   return (
     <a
-      className={styles.latestListing}
+      className={`${styles.latestListing} ${seamlessStyles.item}`}
       href={`/cars/${listing.id}`}
       aria-label={`مشاهده آگهی ${listing.title}`}
       title={listing.title}
@@ -217,7 +218,7 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
 
         {latestListings.length > 0 ? (
           <div
-            className={styles.latestGrid}
+            className={`${styles.latestGrid} ${seamlessStyles.gallery}`}
             aria-label={`خودروهای منتخب ${showroom.name}`}
             style={{
               gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,

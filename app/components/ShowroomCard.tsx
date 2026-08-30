@@ -88,7 +88,13 @@ function ArrowIcon() {
   );
 }
 
-function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
+function ListingThumbnail({
+  listing,
+  compactTwoUp = false,
+}: {
+  listing: ShowroomListingPreview;
+  compactTwoUp?: boolean;
+}) {
   const imageUrl = getImageUrl(listing.image);
   const [failedUrl, setFailedUrl] = useState("");
   const showImage = Boolean(imageUrl) && failedUrl !== imageUrl;
@@ -99,6 +105,7 @@ function ListingThumbnail({ listing }: { listing: ShowroomListingPreview }) {
       href={`/cars/${listing.id}`}
       aria-label={`مشاهده آگهی ${listing.title}`}
       title={listing.title}
+      style={compactTwoUp ? { height: "auto", aspectRatio: "16 / 10" } : undefined}
     >
       {showImage ? (
         <img
@@ -132,6 +139,7 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
   const showCover = Boolean(desktopCoverUrl || mobileCoverUrl) && failedCoverUrl !== (desktopCoverUrl || mobileCoverUrl);
   const showLogo = Boolean(logoUrl) && failedLogoUrl !== logoUrl;
   const latestListings = (showroom.latestListings || []).slice(0, 3);
+  const compactTwoUp = latestListings.length === 2 && density === "compact";
   const location = [showroom.city, showroom.province]
     .filter(Boolean)
     .filter((item, index, values) => values.indexOf(item) === index)
@@ -220,18 +228,19 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
           <div
             className={`${styles.latestGrid} ${seamlessStyles.gallery} ${
               latestListings.length === 2 ? seamlessStyles.galleryTwo : ""
-            } ${
-              latestListings.length === 2 && density === "compact"
-                ? seamlessStyles.galleryTwoCompact
-                : ""
-            }`}
+            } ${compactTwoUp ? seamlessStyles.galleryTwoCompact : ""}`}
             aria-label={`خودروهای منتخب ${showroom.name}`}
             style={{
               gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,
+              height: compactTwoUp ? "auto" : undefined,
             }}
           >
             {latestListings.map((listing) => (
-              <ListingThumbnail key={listing.id} listing={listing} />
+              <ListingThumbnail
+                key={listing.id}
+                listing={listing}
+                compactTwoUp={compactTwoUp}
+              />
             ))}
           </div>
         ) : null}

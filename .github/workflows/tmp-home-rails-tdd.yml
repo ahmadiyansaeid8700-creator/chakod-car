@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   add-red-contract:
-    if: ${{ !contains(github.event.head_commit.message, 'test: require concise home rail labels and controls') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,8 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
-      - name: Append RED homepage rail contract
+      - name: Append RED homepage rail contract once
         run: |
+          if grep -q 'uses concise homepage rail labels and shared desktop controls' tests/homepage-contract.test.mjs; then
+            echo "RED contract already present"
+            exit 0
+          fi
           cat >> tests/homepage-contract.test.mjs <<'TEST'
 
           test("uses concise homepage rail labels and shared desktop controls", () => {
@@ -51,8 +54,11 @@ jobs:
             assert.match(homeCss, /@media \(max-width: 760px\)[\s\S]*?\.homeRailControls[\s\S]*?display: none/);
           });
           TEST
-      - name: Commit RED contract
+      - name: Commit RED contract if changed
         run: |
+          if git diff --quiet; then
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tests/homepage-contract.test.mjs

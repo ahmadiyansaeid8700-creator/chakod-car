@@ -128,6 +128,20 @@ test("staging services demo has enough inventory to fill every service filter", 
   ]) assert.ok(fixtures.includes(`"${category}"`), `${category} needs demo inventory`);
 });
 
+test("staging service businesses use distinct category-specific covers instead of vehicle listing art", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const block = fixtures.match(/export const PRELAUNCH_BUSINESSES = \(\[([\s\S]*?)\] as const\)\.map/)?.[1] || "";
+  const serviceRows = [...block.matchAll(/\[(950\d{4}),\s*"(car_service|parts_store|repair_shop)"[^\n]*?"(demo-business-covers\/[^"]+\.webp)"\]/g)];
+  const covers = serviceRows.map((match) => match[3]);
+
+  assert.equal(serviceRows.length, 18, "every staging service business needs an explicit demo cover");
+  assert.equal(new Set(covers).size, 18, "service demo covers must be unique per business");
+  assert.doesNotMatch(block, /luxury-car\.webp|economic-car\.webp|freezone-car\.webp/);
+  for (const token of ["detailing", "car-wash", "ppf", "tint", "wrap", "audio", "parts", "battery", "tire", "mechanic", "electrical", "oil-change"]) {
+    assert.ok(covers.some((cover) => cover.includes(token)), `${token} needs a category-specific cover`);
+  }
+});
+
 test("staging service directories use one API-independent fixture fallback", () => {
   const route = read("app/services/ServicesRoute.tsx");
   const fallback = read("app/services/ServicesFixtureFallback.tsx");

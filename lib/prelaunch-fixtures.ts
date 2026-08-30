@@ -12,19 +12,19 @@ const ASSET_BASE = "https://staging.chakod.com";
 const now = "2026-08-26T10:00:00.000Z";
 
 export const PRELAUNCH_LISTINGS = ([
-  [9100001, "TEST_ مرسدس بنز E200", "Mercedes-Benz", "E200", "luxury", "تهران", "تهران", 2023, 12500000000, "luxury-car.webp", 9200001, "TEST_ نمایشگاه آریا"],
-  [9100002, "TEST_ بی‌ام‌و 530i", "BMW", "530i", "luxury", "البرز", "کرج", 2022, 10900000000, "luxury-car.webp", 9200001, "TEST_ نمایشگاه آریا"],
-  [9100003, "TEST_ لکسوس NX300", "Lexus", "NX300", "luxury", "اصفهان", "اصفهان", 2021, 8750000000, "luxury-car.webp", 9200002, "TEST_ نمایشگاه ساحل"],
-  [9100004, "TEST_ تویوتا لندکروزر", "Toyota", "Land Cruiser", "luxury", "فارس", "شیراز", 2020, 16800000000, "luxury-car.webp", 9200002, "TEST_ نمایشگاه ساحل"],
-  [9100005, "TEST_ تویوتا راو 4 منطقه آزاد", "Toyota", "RAV4", "freezone", "گیلان", "بندر انزلی", 2022, 5200000000, "freezone-car.webp", 9200003, "TEST_ خودرو آزاد کاسپین"],
-  [9100006, "TEST_ هیوندای سانتافه منطقه آزاد", "Hyundai", "Santa Fe", "freezone", "خوزستان", "آبادان", 2021, 4650000000, "freezone-car.webp", 9200003, "TEST_ خودرو آزاد کاسپین"],
-  [9100007, "TEST_ کیا اسپورتیج منطقه آزاد", "Kia", "Sportage", "freezone", "هرمزگان", "قشم", 2023, 6100000000, "freezone-car.webp", 9200004, "TEST_ نمایشگاه خلیج"],
-  [9100008, "TEST_ نیسان ایکس‌تریل منطقه آزاد", "Nissan", "X-Trail", "freezone", "آذربایجان شرقی", "جلفا", 2022, 5750000000, "freezone-car.webp", 9200004, "TEST_ نمایشگاه خلیج"],
-  [9100009, "TEST_ پژو 207 اتوماتیک", "Peugeot", "207", "economic", "تهران", "تهران", 2024, 1180000000, "economic-car.webp", 0, ""],
-  [9100010, "TEST_ دنا پلاس توربو", "Iran Khodro", "Dena Plus", "economic", "خراسان رضوی", "مشهد", 2023, 1260000000, "economic-car.webp", 0, ""],
-  [9100011, "TEST_ شاهین اتوماتیک", "Saipa", "Shahin", "regular", "قم", "قم", 2023, 980000000, "economic-car.webp", 0, ""],
-  [9100012, "TEST_ تارا V4", "Iran Khodro", "Tara V4", "regular", "مازندران", "ساری", 2024, 1390000000, "economic-car.webp", 0, ""],
-] as const).map(([id, title, brand, model, segment, province, city, year, price, image, dealerId, dealerName], index) => ({
+  [9100001, "TEST_ مرسدس بنز E200", "Mercedes-Benz", "E200", "luxury", "تهران", "تهران", 2023, 12500000000, "demo-vehicle-covers/mercedes-e200-01", "demo-vehicle-covers/mercedes-e200-02", 9200001, "TEST_ نمایشگاه آریا"],
+  [9100002, "TEST_ بی‌ام‌و 530i", "BMW", "530i", "luxury", "البرز", "کرج", 2022, 10900000000, "demo-vehicle-covers/bmw-530i-01", "demo-vehicle-covers/bmw-530i-02", 9200001, "TEST_ نمایشگاه آریا"],
+  [9100003, "TEST_ لکسوس NX300", "Lexus", "NX300", "luxury", "اصفهان", "اصفهان", 2021, 8750000000, "demo-vehicle-covers/lexus-nx300-01", "demo-vehicle-covers/lexus-nx300-02", 9200002, "TEST_ نمایشگاه ساحل"],
+  [9100004, "TEST_ تویوتا لندکروزر", "Toyota", "Land Cruiser", "luxury", "فارس", "شیراز", 2020, 16800000000, "demo-vehicle-covers/toyota-landcruiser-01", "demo-vehicle-covers/toyota-landcruiser-02", 9200002, "TEST_ نمایشگاه ساحل"],
+  [9100005, "TEST_ تویوتا راو 4 منطقه آزاد", "Toyota", "RAV4", "freezone", "گیلان", "بندر انزلی", 2022, 5200000000, "demo-vehicle-covers/toyota-rav4-01", "demo-vehicle-covers/toyota-rav4-02", 9200003, "TEST_ خودرو آزاد کاسپین"],
+  [9100006, "TEST_ هیوندای سانتافه منطقه آزاد", "Hyundai", "Santa Fe", "freezone", "خوزستان", "آبادان", 2021, 4650000000, "demo-vehicle-covers/hyundai-santafe-01", "demo-vehicle-covers/hyundai-santafe-02", 9200003, "TEST_ خودرو آزاد کاسپین"],
+  [9100007, "TEST_ کیا اسپورتیج منطقه آزاد", "Kia", "Sportage", "freezone", "هرمزگان", "قشم", 2023, 6100000000, "demo-vehicle-covers/kia-sportage-01", "demo-vehicle-covers/kia-sportage-02", 9200004, "TEST_ نمایشگاه خلیج"],
+  [9100008, "TEST_ نیسان ایکس‌تریل منطقه آزاد", "Nissan", "X-Trail", "freezone", "آذربایجان شرقی", "جلفا", 2022, 5750000000, "demo-vehicle-covers/nissan-xtrail-01", "demo-vehicle-covers/nissan-xtrail-02", 9200004, "TEST_ نمایشگاه خلیج"],
+  [9100009, "TEST_ پژو 207 اتوماتیک", "Peugeot", "207", "economic", "تهران", "تهران", 2024, 1180000000, "demo-vehicle-covers/peugeot-207-01", "demo-vehicle-covers/peugeot-207-02", 0, ""],
+  [9100010, "TEST_ دنا پلاس توربو", "Iran Khodro", "Dena Plus", "economic", "خراسان رضوی", "مشهد", 2023, 1260000000, "demo-vehicle-covers/dena-plus-01", "demo-vehicle-covers/dena-plus-02", 0, ""],
+  [9100011, "TEST_ شاهین اتوماتیک", "Saipa", "Shahin", "regular", "قم", "قم", 2023, 980000000, "demo-vehicle-covers/shahin-01", "demo-vehicle-covers/shahin-02", 0, ""],
+  [9100012, "TEST_ تارا V4", "Iran Khodro", "Tara V4", "regular", "مازندران", "ساری", 2024, 1390000000, "demo-vehicle-covers/tara-v4-01", "demo-vehicle-covers/tara-v4-02", 0, ""],
+] as const).map(([id, title, brand, model, segment, province, city, year, price, coverKey, detailKey, dealerId, dealerName], index) => ({
   id, title, brand, model, trim_name: "نسخه تست افتتاح", production_year: year,
   mileage_km: index % 3 === 0 ? 0 : (index + 1) * 4200, price_toman: price,
   province, city, neighborhood: "مرکز شهر", body_status: "clean", transmission: "automatic",
@@ -36,10 +36,10 @@ export const PRELAUNCH_LISTINGS = ([
   dealer_verified: Boolean(dealerId), dealer_logo_url: dealerId ? `${ASSET_BASE}/test-avatars/dealer.webp` : null,
   category_code: "car", category_name: "خودرو سواری", created_at: now, updated_at: now,
   status: "published", description: `${title}؛ آگهی دمو برای معرفی امکانات چاکود. اطلاعات این آگهی آزمایشی است.`,
-  market_segment: segment, cover_image: `${ASSET_BASE}/${image}`, views_count: 100 + index * 17,
+  market_segment: segment, cover_image: `${ASSET_BASE}/${coverKey}.jpg`, views_count: 100 + index * 17,
   images: [
-    { id: 9700001 + index * 2, image_url: `${ASSET_BASE}/${image}`, is_cover: true, sort_order: 0 },
-    { id: 9700002 + index * 2, image_url: `${ASSET_BASE}/${image}`, is_cover: false, sort_order: 1 },
+    { id: 9700001 + index * 2, image_url: `${ASSET_BASE}/${coverKey}.jpg`, is_cover: true, sort_order: 0 },
+    { id: 9700002 + index * 2, image_url: `${ASSET_BASE}/${detailKey}.jpg`, is_cover: false, sort_order: 1 },
   ],
 }));
 

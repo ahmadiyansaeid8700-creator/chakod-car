@@ -7,3 +7,15 @@
   content: none;
   border: 0;
 }
+
+.galleryTwo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.galleryTwo .item {
+  box-sizing: border-box;
+}
+
+.galleryTwo .item + .item {
+  border-inline-start: 1px solid #e8e4ec;
+}

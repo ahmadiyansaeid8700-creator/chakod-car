@@ -6,16 +6,44 @@ on:
       - diag/service-cover-assets
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  materialize:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify curated Pexels cover sources
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/staging-service-cover-identity
+          fetch-depth: 0
+
+      - name: Download verified service covers into the repo
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p public/demo-business-covers
+
+          names=(
+            detailing-01.jpg
+            detailing-02.jpg
+            car-wash-01.jpg
+            car-wash-02.jpg
+            ppf-01.jpg
+            tint-01.jpg
+            wrap-01.jpg
+            audio-01.jpg
+            parts-01.jpg
+            parts-02.jpg
+            parts-03.jpg
+            battery-01.jpg
+            tire-01.jpg
+            mechanic-01.jpg
+            mechanic-02.jpg
+            oil-change-01.jpg
+            electrical-01.jpg
+            electrical-02.jpg
+          )
           urls=(
             'https://images.pexels.com/photos/17623850/pexels-photo-17623850.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
             'https://images.pexels.com/photos/29504462/pexels-photo-29504462.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
@@ -38,16 +66,27 @@ jobs:
           )
 
           for i in "${!urls[@]}"; do
-            target="/tmp/service-cover-${i}.img"
+            target="public/demo-business-covers/${names[$i]}"
             curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
               --connect-timeout 10 --max-time 45 "${urls[$i]}" --output "$target"
             mime="$(file --brief --mime-type "$target")"
-            case "$mime" in
-              image/*) ;;
-              *) echo "Unexpected MIME for ${urls[$i]}: $mime" >&2; exit 1 ;;
-            esac
+            test "$mime" = "image/jpeg"
             test -s "$target"
-            echo "COVER_OK=$((i + 1)) MIME=$mime BYTES=$(wc -c < "$target")"
+            echo "MATERIALIZED=${names[$i]} BYTES=$(wc -c < "$target")"
           done
 
-          echo "ALL_SERVICE_COVERS_OK=${#urls[@]}"
+          test "$(find public/demo-business-covers -maxdepth 1 -type f -name '*.jpg' | wc -l)" = "18"
+
+      - name: Commit service cover assets to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add public/demo-business-covers
+          if git diff --cached --quiet; then
+            echo 'Service cover assets are already materialized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'assets: add service demo cover photos'
+          git push origin HEAD:fix/staging-service-cover-identity

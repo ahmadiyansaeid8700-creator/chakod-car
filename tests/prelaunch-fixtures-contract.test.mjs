@@ -224,7 +224,8 @@ test("compact featured showroom with exactly two listings uses a readable 16:10 
   const seamless = read("app/components/ShowroomCardSeamless.module.css");
 
   assert.match(card, /latestListings\.length === 2\s*&&\s*density === "compact"[\s\S]{0,160}galleryTwoCompact/);
-  assert.match(seamless, /\.galleryTwoCompact\s*\{[\s\S]{0,180}height:\s*auto/);
-  assert.match(seamless, /\.galleryTwoCompact\s+\.item\s*\{[\s\S]{0,180}height:\s*auto[\s\S]{0,180}aspect-ratio:\s*16\s*\/\s*10/);
+  assert.match(card, /height:\s*latestListings\.length === 2\s*&&\s*density === "compact"\s*\?\s*"auto"\s*:\s*undefined/);
+  assert.match(card, /compactTwoUp=\{latestListings\.length === 2 && density === "compact"\}/);
+  assert.match(card, /compactTwoUp\s*\?\s*\{\s*height:\s*"auto",\s*aspectRatio:\s*"16 \/ 10"\s*\}/);
   assert.match(seamless, /\.galleryTwo\s+\.item\s*\+\s*\.item\s*\{[\s\S]{0,120}border-inline-start:\s*1px/);
 });

@@ -1175,7 +1175,7 @@
 }
 
 .homeRailShell--dealers .homeRailTrack {
-  grid-auto-columns: clamp(270px, 25vw, 314px);
+  grid-auto-columns: clamp(292px, 28vw, 342px);
   padding-bottom: 7px;
 }
 
@@ -1550,6 +1550,33 @@
   gap: 15px;
   color: rgba(255, 255, 255, 0.42);
   font-size: 8px;
+}
+
+/* HOME_SHARED_RAIL_RESPONSIVE_V1 */
+@media (max-width: 900px) {
+  .homeRailShell--dealers .homeRailTrack {
+    grid-auto-columns: min(83vw, 318px);
+  }
+
+  .homeRailShell--businesses .homeRailTrack > *:not(.featuredBusinessNationwideDivider) {
+    flex-basis: min(83vw, 318px);
+  }
+}
+
+@media (max-width: 760px) {
+  .homeRailControls {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .homeRailShell--dealers .homeRailTrack {
+    grid-auto-columns: min(86vw, 300px);
+  }
+
+  .homeRailShell--businesses .homeRailTrack > *:not(.featuredBusinessNationwideDivider) {
+    flex-basis: min(86vw, 300px);
+  }
 }
 
 @media (max-width: 1100px) {

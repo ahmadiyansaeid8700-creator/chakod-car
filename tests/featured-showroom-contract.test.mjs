@@ -104,17 +104,17 @@ test("does not pad showroom cards with fake empty listing slots", async () => {
 
 test("labels showroom previews as the latest listings and gives each listing its own mini card", async () => {
   const card = await source("app/components/ShowroomCard.tsx");
-  const css = await source("app/components/ShowroomCard.module.css");
+  const css = await source("app/components/ShowroomCardLatest.module.css");
 
   assert.match(card, /آخرین آگهی‌های نمایشگاه/);
-  assert.match(card, /styles\.latestListingsLabel/);
-  assert.match(card, /styles\.latestListingMedia/);
-  assert.match(card, /styles\.latestListingTitle/);
-  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,320}gap:\s*8px;/);
-  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,360}border:\s*0;/);
-  assert.match(css, /\.latestGrid\s*\{[\s\S]{0,400}background:\s*transparent;/);
-  assert.match(css, /\.latestListing\s*\{[\s\S]{0,260}border:\s*1px solid #e8e4ec;/);
-  assert.match(css, /\.latestListing\s*\{[\s\S]{0,320}border-radius:\s*12px;/);
+  assert.match(card, /latestStyles\.latestListingsLabel/);
+  assert.match(card, /latestStyles\.latestListingMedia/);
+  assert.match(card, /latestStyles\.latestListingTitle/);
+  assert.match(css, /\.latestGrid\.latestGrid\s*\{[\s\S]{0,320}gap:\s*8px;/);
+  assert.match(css, /\.latestGrid\.latestGrid\s*\{[\s\S]{0,360}border:\s*0;/);
+  assert.match(css, /\.latestGrid\.latestGrid\s*\{[\s\S]{0,400}background:\s*transparent;/);
+  assert.match(css, /\.latestListing\.latestListing\s*\{[\s\S]{0,320}border:\s*1px solid #e8e4ec;/);
+  assert.match(css, /\.latestListing\.latestListing\s*\{[\s\S]{0,380}border-radius:\s*12px;/);
   assert.match(css, /\.latestListingMedia\s*\{[\s\S]{0,180}aspect-ratio:\s*16 \/ 10;/);
   assert.match(css, /\.latestListingTitle\s*\{[\s\S]{0,260}text-overflow:\s*ellipsis;/);
   assert.match(css, /\.latestListingTitle\s*\{[\s\S]{0,320}white-space:\s*nowrap;/);
@@ -125,6 +125,7 @@ test("separates exactly two showroom listing mini cards with visible space inste
   const seamless = await source("app/components/ShowroomCardSeamless.module.css");
 
   assert.match(card, /latestListings\.length === 2\s*\?\s*seamlessStyles\.galleryTwo/);
+  assert.match(card, /gap:\s*"8px"/);
   assert.match(seamless, /\.galleryTwo\s*\{[\s\S]{0,120}grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.doesNotMatch(seamless, /\.galleryTwo\s+\.item\s*\+\s*\.item\s*\{[\s\S]{0,120}border-inline-start/);
 });

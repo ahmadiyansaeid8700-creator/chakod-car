@@ -19,3 +19,12 @@
 .galleryTwo .item + .item {
   border-inline-start: 1px solid #e8e4ec;
 }
+
+.galleryTwoCompact {
+  height: auto;
+}
+
+.galleryTwoCompact .item {
+  height: auto;
+  aspect-ratio: 16 / 10;
+}

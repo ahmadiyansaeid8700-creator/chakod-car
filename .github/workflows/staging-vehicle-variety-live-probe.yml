@@ -1,0 +1,166 @@
+name: Staging vehicle variety live probe
+
+on:
+  push:
+    branches:
+      - diag/staging-vehicle-variety-live
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  live-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_STAGING_SHA: ec8e808eaca37a05c63d1c70772d5d38a710d670
+    steps:
+      - name: Wait for exact staging deploy
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/staging-deploy.yml/runs?branch=agent%2Flaunch-3-local-baseline&event=push&per_page=20"
+          for attempt in $(seq 1 120); do
+            payload="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_url")"
+            set +e
+            printf '%s' "$payload" | node -e '
+              const fs = require("fs");
+              const sha = process.argv[1];
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              const run = (payload.workflow_runs || []).find((item) => item.head_sha === sha);
+              if (!run || run.status !== "completed") process.exit(10);
+              if (run.conclusion !== "success") {
+                console.error(`Matching staging deploy ${run.id} finished with ${run.conclusion}`);
+                process.exit(20);
+              }
+              console.log(`MATCHING_STAGING_DEPLOY_OK=${run.id}`);
+            ' "$EXPECTED_STAGING_SHA"
+            status=$?
+            set -e
+            if [ "$status" = "0" ]; then break; fi
+            if [ "$status" = "20" ]; then exit 1; fi
+            if [ "$attempt" = "120" ]; then
+              echo "Timed out waiting for exact staging deploy ${EXPECTED_STAGING_SHA}"
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Verify 12 distinct listing covers and 24 live self-hosted images
+        shell: bash
+        run: |
+          set -euo pipefail
+          catalog="$(mktemp)"
+          curl --fail --silent --show-error --location --retry 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 45 \
+            'https://staging.chakod.com/api/catalog?limit=100' --output "$catalog"
+
+          python3 - "$catalog" <<'PY'
+          import json, re, sys
+          from pathlib import Path
+          text = Path(sys.argv[1]).read_text(encoding='utf-8')
+          for listing_id in range(9100001, 9100013):
+              assert str(listing_id) in text, f'missing listing {listing_id}'
+          covers = sorted(set(re.findall(r'https://staging\.chakod\.com/demo-vehicle-covers/[^"\\]+-01\.jpg', text)))
+          assert len(covers) == 12, f'expected 12 distinct demo covers, got {len(covers)}: {covers}'
+          print('UNIQUE_STAGING_VEHICLE_COVERS_OK=12')
+          PY
+
+          names=(
+            mercedes-e200-01 mercedes-e200-02
+            bmw-530i-01 bmw-530i-02
+            lexus-nx300-01 lexus-nx300-02
+            toyota-landcruiser-01 toyota-landcruiser-02
+            toyota-rav4-01 toyota-rav4-02
+            hyundai-santafe-01 hyundai-santafe-02
+            kia-sportage-01 kia-sportage-02
+            nissan-xtrail-01 nissan-xtrail-02
+            peugeot-207-01 peugeot-207-02
+            dena-plus-01 dena-plus-02
+            shahin-01 shahin-02
+            tara-v4-01 tara-v4-02
+          )
+          : > /tmp/hashes.txt
+          i=0
+          for name in "${names[@]}"; do
+            i=$((i + 1))
+            file="/tmp/vehicle-${i}.jpg"
+            url="https://staging.chakod.com/demo-vehicle-covers/${name}.jpg"
+            code="$(curl --location --silent --show-error --retry 4 --retry-all-errors \
+              --connect-timeout 10 --max-time 45 --output "$file" --write-out '%{http_code}' "$url")"
+            test "$code" = "200"
+            test -s "$file"
+            test "$(file --brief --mime-type "$file")" = "image/jpeg"
+            sha256sum "$file" | awk '{print $1}' >> /tmp/hashes.txt
+          done
+          test "$i" = "24"
+          test "$(sort -u /tmp/hashes.txt | wc -l)" = "24"
+          echo 'ALL_LIVE_VEHICLE_IMAGES_OK=24'
+          echo 'UNIQUE_LIVE_VEHICLE_IMAGE_HASHES_OK=24'
+
+      - name: Install Selenium
+        run: python3 -m pip install --disable-pip-version-check selenium
+
+      - name: Verify mobile two-preview gallery geometry and divider
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import shutil
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.chrome.service import Service
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=693,1536')
+          chrome = shutil.which('google-chrome') or shutil.which('chromium') or shutil.which('chromium-browser')
+          if chrome:
+              options.binary_location = chrome
+          driver_path = shutil.which('chromedriver')
+          driver = webdriver.Chrome(service=Service(driver_path) if driver_path else Service(), options=options)
+          try:
+              driver.get('https://staging.chakod.com/')
+              wait = WebDriverWait(driver, 45)
+              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '[aria-label^="خودروهای منتخب"]')) > 0)
+              target = None
+              for gallery in driver.find_elements(By.CSS_SELECTOR, '[aria-label^="خودروهای منتخب"]'):
+                  items = gallery.find_elements(By.XPATH, './a')
+                  if len(items) == 2:
+                      target = (gallery, items)
+                      break
+              assert target is not None, 'no exactly-two showroom preview gallery found on staging homepage'
+              gallery, items = target
+              driver.execute_script("arguments[0].scrollIntoView({block:'center'});", gallery)
+              time.sleep(2)
+              items = gallery.find_elements(By.XPATH, './a')
+              assert len(items) == 2
+              widths = [float(driver.execute_script('return arguments[0].getBoundingClientRect().width;', item)) for item in items]
+              gap = driver.execute_script('return getComputedStyle(arguments[0]).columnGap;', gallery)
+              divider = driver.execute_script('return getComputedStyle(arguments[0]).borderInlineStartWidth;', items[1])
+              images = [item.find_element(By.CSS_SELECTOR, 'img').get_attribute('src') for item in items]
+              assert abs(widths[0] - widths[1]) <= 1.1, widths
+              assert gap == '0px', gap
+              assert divider == '1px', divider
+              assert len(set(images)) == 2, images
+              assert all('/demo-vehicle-covers/' in src for src in images), images
+              print(f'TWO_PREVIEW_EQUAL_WIDTHS_OK={widths[0]:.2f},{widths[1]:.2f}')
+              print('TWO_PREVIEW_GAP_OK=0px')
+              print('TWO_PREVIEW_DIVIDER_OK=1px')
+              print('TWO_PREVIEW_DISTINCT_SRCS_OK=1')
+          finally:
+              driver.quit()
+          PY

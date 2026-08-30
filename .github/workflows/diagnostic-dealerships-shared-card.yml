@@ -1,0 +1,82 @@
+name: Diagnostic dealerships shared card
+on:
+  push:
+    branches:
+      - diagnostic/dealerships-shared-card-168
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install browser probe
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Compare live dealership cards with homepage
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+
+          async function collect(url) {
+            await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+            await page.waitForTimeout(3000);
+            return page.evaluate(() => [...document.querySelectorAll('[aria-label^="خودروهای منتخب"]')].map((gallery) => {
+              const children = [...gallery.children];
+              const rects = children.map((child) => child.getBoundingClientRect());
+              const second = children[1] ? getComputedStyle(children[1]) : null;
+              const style = getComputedStyle(gallery);
+              return {
+                label: gallery.getAttribute('aria-label') || '',
+                height: gallery.getBoundingClientRect().height,
+                widths: rects.map((rect) => rect.width),
+                childHeights: rects.map((rect) => rect.height),
+                gap: style.gap,
+                divider: second?.borderInlineStartWidth || '',
+                srcs: children.map((child) => child.querySelector('img')?.currentSrc || child.querySelector('img')?.src || '').filter(Boolean),
+                titles: children.map((child) => child.getAttribute('title') || child.getAttribute('aria-label') || ''),
+              };
+            }));
+          }
+
+          const home = await collect('https://staging.chakod.com/?dealership-shared-card-probe=168');
+          const directory = await collect('https://staging.chakod.com/dealerships?dealership-shared-card-probe=168');
+          console.log('HOME_GALLERIES=' + JSON.stringify(home));
+          console.log('DIRECTORY_GALLERIES=' + JSON.stringify(directory));
+
+          if (!home.length) throw new Error('no homepage showroom galleries');
+          if (!directory.length) throw new Error('no dealership-directory showroom galleries');
+
+          const directoryWithImages = directory.filter((item) => item.srcs.length > 0);
+          if (!directoryWithImages.length) throw new Error('directory showroom galleries still have no resolved images');
+          if (!directoryWithImages.every((item) => item.srcs.every((src) => src.includes('/demo-vehicle-covers/')))) {
+            throw new Error('directory selected listings are not using staging vehicle covers');
+          }
+
+          const homeByLabel = new Map(home.map((item) => [item.label, item]));
+          const shared = directoryWithImages.filter((item) => {
+            const homepage = homeByLabel.get(item.label);
+            return homepage && item.srcs.some((src) => homepage.srcs.includes(src));
+          });
+          if (!shared.length) throw new Error('directory cards do not share resolved listing imagery with homepage cards');
+
+          const twoUp = directoryWithImages.find((item) => item.widths.length === 2);
+          if (!twoUp) throw new Error('no two-listing directory gallery found');
+          if (Math.abs(twoUp.widths[0] - twoUp.widths[1]) > 1.5) throw new Error(`directory two-up widths differ: ${twoUp.widths.join('/')}`);
+          if (twoUp.height <= 80 || twoUp.childHeights.some((height) => height <= 80)) throw new Error(`directory two-up gallery too short: ${twoUp.height}/${twoUp.childHeights.join('/')}`);
+          if (twoUp.gap !== '0px') throw new Error(`directory two-up gap is ${twoUp.gap}`);
+          if (twoUp.divider !== '1px') throw new Error(`directory two-up divider is ${twoUp.divider}`);
+          if (twoUp.srcs.length !== 2 || twoUp.srcs[0] === twoUp.srcs[1]) throw new Error('directory two-up images are missing or repeated');
+
+          console.log('SHARED_CARD_OK=' + JSON.stringify({
+            sharedLabels: shared.map((item) => item.label),
+            twoUp,
+          }));
+          await browser.close();
+          NODE

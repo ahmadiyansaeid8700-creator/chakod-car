@@ -44,19 +44,7 @@ jobs:
             curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
               --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36' \
               --connect-timeout 10 --max-time 45 "https://unsplash.com/photos/${id}" --output "$page"
-            image_url="$(python3 - "$page" <<'PY'
-import html
-import re
-import sys
-text = open(sys.argv[1], encoding='utf-8').read()
-match = re.search(r'<meta[^>]+property=["\x27]og:image["\x27][^>]+content=["\x27]([^"\x27]+)', text, re.I)
-if not match:
-    match = re.search(r'<meta[^>]+content=["\x27]([^"\x27]+)["\x27][^>]+property=["\x27]og:image["\x27]', text, re.I)
-if not match:
-    raise SystemExit(2)
-print(html.unescape(match.group(1)))
-PY
-)"
+            image_url="$(python3 -c 'import html,re,sys; t=open(sys.argv[1],encoding="utf-8").read(); m=re.search(r"<meta[^>]+property=\"og:image\"[^>]+content=\"([^\"]+)",t,re.I) or re.search(r"<meta[^>]+content=\"([^\"]+)\"[^>]+property=\"og:image\"",t,re.I); print(html.unescape(m.group(1)) if m else "")' "$page")"
             case "$image_url" in
               https://images.unsplash.com/*) ;;
               *) echo "Unexpected image source for ${id}: ${image_url}" >&2; exit 1 ;;

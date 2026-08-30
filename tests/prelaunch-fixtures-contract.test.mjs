@@ -156,6 +156,26 @@ test("staging service businesses use distinct self-hosted category-specific cove
   }
 });
 
+test("staging vehicle listings use distinct self-hosted covers and a second different gallery image", () => {
+  const fixtures = read("lib/prelaunch-fixtures.ts");
+  const block = fixtures.match(/export const PRELAUNCH_LISTINGS = \(\[([\s\S]*?)\] as const\)\.map/)?.[1] || "";
+  const rows = [...block.matchAll(/\[(910\d{4}),[^\n]*?"(demo-vehicle-covers\/[^"]+)",\s*"(demo-vehicle-covers\/[^"]+)"/g)];
+  const covers = rows.map((match) => match[2]);
+  const details = rows.map((match) => match[3]);
+
+  assert.equal(rows.length, 12, "every staging vehicle listing needs explicit cover and detail art");
+  assert.equal(new Set(covers).size, 12, "vehicle demo covers must be unique per listing");
+  assert.equal(new Set([...covers, ...details]).size, 24, "every demo listing image should be visually distinct");
+  assert.doesNotMatch(block, /luxury-car\.webp|economic-car\.webp|freezone-car\.webp/);
+  assert.match(fixtures, /cover_image:\s*`\$\{ASSET_BASE\}\/\$\{coverKey\}\.jpg`/);
+  assert.match(fixtures, /image_url:\s*`\$\{ASSET_BASE\}\/\$\{detailKey\}\.jpg`/);
+
+  for (const key of [...covers, ...details]) {
+    const asset = new URL(`../public/${key}.jpg`, import.meta.url);
+    assert.ok(statSync(asset).size > 0, `${key}.jpg must be materialized in public assets`);
+  }
+});
+
 test("staging service directories use one API-independent fixture fallback", () => {
   const route = read("app/services/ServicesRoute.tsx");
   const fallback = read("app/services/ServicesFixtureFallback.tsx");

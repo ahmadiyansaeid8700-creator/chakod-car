@@ -218,7 +218,9 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
 
         {latestListings.length > 0 ? (
           <div
-            className={`${styles.latestGrid} ${seamlessStyles.gallery}`}
+            className={`${styles.latestGrid} ${seamlessStyles.gallery} ${
+      latestListings.length === 2 ? seamlessStyles.galleryTwo : ""
+    }`}
             aria-label={`خودروهای منتخب ${showroom.name}`}
             style={{
               gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,

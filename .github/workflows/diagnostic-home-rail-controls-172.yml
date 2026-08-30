@@ -1,0 +1,127 @@
+name: Diagnostic home rail controls 172
+
+on:
+  push:
+    branches:
+      - diagnostic/home-rail-controls-172
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install Chromium probe
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify live homepage rails
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({ headless: true });
+
+          async function loadHome(viewport) {
+            const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+            await page.goto(`https://staging.chakod.com/?rail-probe=172-${viewport.width}`, {
+              waitUntil: 'networkidle',
+              timeout: 90000,
+            });
+            await page.waitForTimeout(3000);
+            return page;
+          }
+
+          const desktop = await loadHome({ width: 1180, height: 900 });
+          const labels = await desktop.evaluate(() => ({
+            showroom: document.querySelector('#showrooms h2')?.textContent?.trim() || '',
+            luxury: document.querySelector('#luxury .masterSectionTitleRow > span')?.textContent?.trim() || '',
+            freezone: document.querySelector('#freezone .masterSectionTitleRow > span')?.textContent?.trim() || '',
+          }));
+          console.log('DESKTOP_LABELS=' + JSON.stringify(labels));
+          if (labels.showroom !== 'نمایشگاه منتخب') throw new Error(`bad showroom label: ${labels.showroom}`);
+          if (labels.luxury !== 'لوکس') throw new Error(`bad luxury label: ${labels.luxury}`);
+          if (labels.freezone !== 'منطقه آزاد') throw new Error(`bad freezone label: ${labels.freezone}`);
+
+          const railSelectors = [
+            '#showrooms .homeRailShell--dealers',
+            '#luxury .homeRailShell',
+            '#freezone .homeRailShell',
+            '.featuredBusinessSection:nth-of-type(1) .homeRailShell--businesses',
+            '.featuredBusinessSection:nth-of-type(2) .homeRailShell--businesses',
+            '.featuredBusinessSection:nth-of-type(3) .homeRailShell--businesses',
+          ];
+
+          const businessRails = await desktop.locator('.homeRailShell--businesses').count();
+          const dealerRails = await desktop.locator('#showrooms .homeRailShell--dealers').count();
+          const luxuryRails = await desktop.locator('#luxury .homeRailShell').count();
+          const freezoneRails = await desktop.locator('#freezone .homeRailShell').count();
+          console.log('DESKTOP_RAIL_COUNTS=' + JSON.stringify({ dealerRails, luxuryRails, freezoneRails, businessRails }));
+          if (dealerRails !== 1 || luxuryRails !== 1 || freezoneRails !== 1 || businessRails !== 3) {
+            throw new Error('expected 6 homepage horizontal rails');
+          }
+
+          const allRails = desktop.locator('.homeRailShell');
+          const railCount = await allRails.count();
+          const liveRows = [];
+          for (let i = 0; i < railCount; i += 1) {
+            const rail = allRails.nth(i);
+            const controls = rail.locator('.homeRailControls');
+            if (await controls.count() === 0) continue;
+            const buttons = controls.locator('button');
+            const track = rail.locator('.homeRailTrack');
+            const before = await track.evaluate((el) => ({
+              left: el.scrollLeft,
+              clientWidth: el.clientWidth,
+              scrollWidth: el.scrollWidth,
+            }));
+            const display = await controls.evaluate((el) => getComputedStyle(el).display);
+            const visible = await controls.isVisible();
+            let afterLeft = before.left;
+            if (before.scrollWidth > before.clientWidth + 2) {
+              await buttons.nth(1).click();
+              await desktop.waitForTimeout(700);
+              afterLeft = await track.evaluate((el) => el.scrollLeft);
+            }
+            liveRows.push({ display, visible, buttonCount: await buttons.count(), before, afterLeft });
+          }
+          console.log('DESKTOP_CONTROLS=' + JSON.stringify(liveRows));
+          if (liveRows.length !== 6) throw new Error(`expected 6 controlled rails, got ${liveRows.length}`);
+          if (!liveRows.every((row) => row.visible && row.display !== 'none' && row.buttonCount === 2)) {
+            throw new Error('desktop rail controls are not all visible with two buttons');
+          }
+          const overflowRows = liveRows.filter((row) => row.before.scrollWidth > row.before.clientWidth + 2);
+          if (!overflowRows.length) throw new Error('no desktop rails overflowed; cannot verify navigation');
+          if (!overflowRows.every((row) => Math.abs(row.afterLeft - row.before.left) > 1)) {
+            throw new Error('one or more desktop rail buttons did not scroll the track');
+          }
+          console.log('DESKTOP_SCROLL_CHANGED=' + overflowRows.length);
+          await desktop.close();
+
+          const mobile = await loadHome({ width: 390, height: 844 });
+          const mobileStats = await mobile.evaluate(() => {
+            const controls = [...document.querySelectorAll('.homeRailControls')];
+            const showroomTrack = document.querySelector('#showrooms .homeRailTrack');
+            const businessTrack = document.querySelector('.homeRailShell--businesses .homeRailTrack');
+            const showroomFirst = showroomTrack?.firstElementChild?.getBoundingClientRect();
+            const businessFirst = businessTrack?.firstElementChild?.getBoundingClientRect();
+            return {
+              controlCount: controls.length,
+              visibleControlCount: controls.filter((el) => getComputedStyle(el).display !== 'none').length,
+              showroomOverflow: Boolean(showroomTrack && showroomTrack.scrollWidth > showroomTrack.clientWidth),
+              businessOverflow: Boolean(businessTrack && businessTrack.scrollWidth > businessTrack.clientWidth),
+              showroomCardWidth: showroomFirst?.width || 0,
+              businessCardWidth: businessFirst?.width || 0,
+            };
+          });
+          console.log('MOBILE_STATS=' + JSON.stringify(mobileStats));
+          if (mobileStats.visibleControlCount !== 0) throw new Error('mobile rail controls should be hidden');
+          if (!mobileStats.showroomOverflow || !mobileStats.businessOverflow) throw new Error('mobile rails should remain horizontally swipeable');
+          if (mobileStats.showroomCardWidth < 250 || mobileStats.showroomCardWidth > 305) throw new Error(`bad mobile showroom width ${mobileStats.showroomCardWidth}`);
+          if (mobileStats.businessCardWidth < 250 || mobileStats.businessCardWidth > 305) throw new Error(`bad mobile business width ${mobileStats.businessCardWidth}`);
+          console.log('HOME_RAILS_OK=true');
+          await mobile.close();
+          await browser.close();
+          NODE

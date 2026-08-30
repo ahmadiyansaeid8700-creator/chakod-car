@@ -1,4 +1,4 @@
-name: Service cover asset probe
+name: Service cover live staging probe
 
 on:
   push:
@@ -6,87 +6,51 @@ on:
       - diag/service-cover-assets
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  materialize:
+  probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout feature branch
-        uses: actions/checkout@v4
-        with:
-          ref: fix/staging-service-cover-identity
-          fetch-depth: 0
-
-      - name: Download verified service covers into the repo
+      - name: Verify staging service API returns self-hosted distinct covers
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p public/demo-business-covers
+          api=/tmp/businesses.json
+          curl --location --fail --silent --show-error --retry 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 45 \
+            'https://staging.chakod.com/api/businesses?home=1&limit=50' \
+            --output "$api"
 
-          names=(
-            detailing-01.jpg
-            detailing-02.jpg
-            car-wash-01.jpg
-            car-wash-02.jpg
-            ppf-01.jpg
-            tint-01.jpg
-            wrap-01.jpg
-            audio-01.jpg
-            parts-01.jpg
-            parts-02.jpg
-            parts-03.jpg
-            battery-01.jpg
-            tire-01.jpg
-            mechanic-01.jpg
-            mechanic-02.jpg
-            oil-change-01.jpg
-            electrical-01.jpg
-            electrical-02.jpg
-          )
-          urls=(
-            'https://images.pexels.com/photos/17623850/pexels-photo-17623850.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/29504462/pexels-photo-29504462.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/14677029/pexels-photo-14677029.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/33093191/pexels-photo-33093191.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/36021355/pexels-photo-36021355.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/20036216/pexels-photo-20036216.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/10126661/pexels-photo-10126661.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/32667398/pexels-photo-32667398.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/19499386/pexels-photo-19499386.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/35503906/pexels-photo-35503906.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/11456554/pexels-photo-11456554.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/37177070/pexels-photo-37177070.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/6870316/pexels-photo-6870316.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/8478259/pexels-photo-8478259.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/7807035/pexels-photo-7807035.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/13065691/pexels-photo-13065691.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/4116193/pexels-photo-4116193.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-            'https://images.pexels.com/photos/4116172/pexels-photo-4116172.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
-          )
+          python3 - "$api" > /tmp/covers.txt <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1], encoding='utf-8'))
+          items = data.get('items') or []
+          services = [x for x in items if x.get('business_type') in {'car_service','parts_store','repair_shop'} and str(x.get('id','')).startswith('950')]
+          assert len(services) == 18, f'expected 18 staging demo service businesses, got {len(services)}'
+          covers = [x.get('cover_url') for x in services]
+          assert all(isinstance(x, str) and x.startswith('https://staging.chakod.com/demo-business-covers/') and x.endswith('.jpg') for x in covers), covers
+          assert len(set(covers)) == 18, f'expected 18 unique covers, got {len(set(covers))}'
+          print('\n'.join(covers))
+          PY
 
-          for i in "${!urls[@]}"; do
-            target="public/demo-business-covers/${names[$i]}"
-            curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
-              --connect-timeout 10 --max-time 45 "${urls[$i]}" --output "$target"
+          test "$(wc -l < /tmp/covers.txt)" = "18"
+          echo 'API_SERVICE_COVERS_OK=18'
+
+      - name: Verify every live staging cover resolves as an image
+        shell: bash
+        run: |
+          set -euo pipefail
+          i=0
+          while IFS= read -r url; do
+            i=$((i + 1))
+            target="/tmp/live-cover-${i}.jpg"
+            curl --location --fail --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 10 --max-time 45 "$url" --output "$target"
             mime="$(file --brief --mime-type "$target")"
             test "$mime" = "image/jpeg"
             test -s "$target"
-            echo "MATERIALIZED=${names[$i]} BYTES=$(wc -c < "$target")"
-          done
-
-          test "$(find public/demo-business-covers -maxdepth 1 -type f -name '*.jpg' | wc -l)" = "18"
-
-      - name: Commit service cover assets to feature branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add public/demo-business-covers
-          if git diff --cached --quiet; then
-            echo 'Service cover assets are already materialized.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'assets: add service demo cover photos'
-          git push origin HEAD:fix/staging-service-cover-identity
+            echo "LIVE_COVER_OK=${i} MIME=${mime} BYTES=$(wc -c < "$target") URL=${url}"
+          done < /tmp/covers.txt
+          test "$i" = "18"
+          echo 'ALL_LIVE_SERVICE_COVERS_OK=18'

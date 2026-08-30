@@ -4,7 +4,8 @@ import { useDeferredValue, useEffect, useState } from "react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
 import MobileBackButton from "../components/MobileBackButton";
-import ShowroomCard, { type ShowroomListingPreview } from "../components/ShowroomCard";
+import ShowroomCard from "../components/ShowroomCard";
+import type { ShowroomListingPreview } from "../components/ShowroomCard";
 import { PRELAUNCH_FIXTURES_ENABLED, PRELAUNCH_LISTINGS } from "../../lib/prelaunch-fixtures";
 import styles from "./page.module.css";
 

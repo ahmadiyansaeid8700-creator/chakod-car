@@ -9,7 +9,8 @@ async function source(path) {
 test("dealership directory feeds the shared showroom card resolved listing titles and images", async () => {
   const directory = await source("app/dealerships/DealerDirectoryClient.tsx");
 
-  assert.match(directory, /ShowroomCard,[\s\S]{0,120}ShowroomListingPreview/);
+  assert.match(directory, /import ShowroomCard from "\.\.\/components\/ShowroomCard"/);
+  assert.match(directory, /import type \{ ShowroomListingPreview \} from "\.\.\/components\/ShowroomCard"/);
   assert.match(directory, /listing-detail\.php\?id=/);
   assert.match(directory, /PRELAUNCH_FIXTURES_ENABLED/);
   assert.match(directory, /PRELAUNCH_LISTINGS/);

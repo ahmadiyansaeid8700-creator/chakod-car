@@ -12,52 +12,42 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve and verify direct image CDN URLs
+      - name: Verify curated Pexels cover sources
         shell: bash
         run: |
           set -euo pipefail
-          ids=(
-            HNCSCpWrVJA
-            eP8h7YVhFHk
-            xe-e69j6-Ds
-            ovGrEUgrkyE
-            UZUzvJEvKnI
-            iFQpqbLMOFU
-            nDlIe54btMg
-            8MXNZCgAah0
-            jlakazXU72w
-            pWGUMQSWBwI
-            Ng3xrviPrhk
-            8k_T1EwTySs
-            9mxviB2BBOE
-            i2kOA2p0DTo
-            yeMpSqF8Z-8
-            bEGTsOCnHro
-            gW34cv-Ojjs
-            DPNfzltNOeQ
+          urls=(
+            'https://images.pexels.com/photos/17623850/pexels-photo-17623850.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/29504462/pexels-photo-29504462.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/14677029/pexels-photo-14677029.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/33093191/pexels-photo-33093191.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/36021355/pexels-photo-36021355.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/20036216/pexels-photo-20036216.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/10126661/pexels-photo-10126661.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/32667398/pexels-photo-32667398.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/19499386/pexels-photo-19499386.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/35503906/pexels-photo-35503906.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/11456554/pexels-photo-11456554.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/37177070/pexels-photo-37177070.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/6870316/pexels-photo-6870316.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/8478259/pexels-photo-8478259.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/7807035/pexels-photo-7807035.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/13065691/pexels-photo-13065691.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/4116193/pexels-photo-4116193.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
+            'https://images.pexels.com/photos/4116172/pexels-photo-4116172.jpeg?auto=compress&cs=tinysrgb&w=1200&h=800&fit=crop'
           )
 
-          for i in "${!ids[@]}"; do
-            id="${ids[$i]}"
-            page="/tmp/service-cover-${i}.html"
+          for i in "${!urls[@]}"; do
             target="/tmp/service-cover-${i}.img"
             curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
-              --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36' \
-              --connect-timeout 10 --max-time 45 "https://unsplash.com/photos/${id}" --output "$page"
-            image_url="$(python3 -c 'import html,re,sys; t=open(sys.argv[1],encoding="utf-8").read(); m=re.search(r"<meta[^>]+property=\"og:image\"[^>]+content=\"([^\"]+)",t,re.I) or re.search(r"<meta[^>]+content=\"([^\"]+)\"[^>]+property=\"og:image\"",t,re.I); print(html.unescape(m.group(1)) if m else "")' "$page")"
-            case "$image_url" in
-              https://images.unsplash.com/*) ;;
-              *) echo "Unexpected image source for ${id}: ${image_url}" >&2; exit 1 ;;
-            esac
-            curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
-              --connect-timeout 10 --max-time 45 "$image_url" --output "$target"
+              --connect-timeout 10 --max-time 45 "${urls[$i]}" --output "$target"
             mime="$(file --brief --mime-type "$target")"
             case "$mime" in
               image/*) ;;
-              *) echo "Unexpected MIME for ${id}: $mime" >&2; exit 1 ;;
+              *) echo "Unexpected MIME for ${urls[$i]}: $mime" >&2; exit 1 ;;
             esac
-            echo "COVER_SOURCE ${id} ${image_url}"
+            test -s "$target"
             echo "COVER_OK=$((i + 1)) MIME=$mime BYTES=$(wc -c < "$target")"
           done
 
-          echo "ALL_SERVICE_COVERS_OK=${#ids[@]}"
+          echo "ALL_SERVICE_COVERS_OK=${#urls[@]}"

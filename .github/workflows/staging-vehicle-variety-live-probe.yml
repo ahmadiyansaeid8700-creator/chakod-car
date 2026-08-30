@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      EXPECTED_STAGING_SHA: ec8e808eaca37a05c63d1c70772d5d38a710d670
+      EXPECTED_STAGING_SHA: e9208ecb802311fe442154cbbf5a21ddca49d33e
     steps:
       - name: Wait for exact staging deploy
         shell: bash
@@ -64,7 +64,7 @@ jobs:
             'https://staging.chakod.com/api/catalog?limit=100' --output "$catalog"
 
           python3 - "$catalog" <<'PY'
-          import json, re, sys
+          import re, sys
           from pathlib import Path
           text = Path(sys.argv[1]).read_text(encoding='utf-8')
           for listing_id in range(9100001, 9100013):
@@ -109,7 +109,7 @@ jobs:
       - name: Install Selenium
         run: python3 -m pip install --disable-pip-version-check selenium
 
-      - name: Verify mobile two-preview gallery geometry and divider
+      - name: Verify desktop two-preview gallery ratio and divider
         shell: bash
         run: |
           set -euo pipefail
@@ -126,7 +126,7 @@ jobs:
           options.add_argument('--headless=new')
           options.add_argument('--no-sandbox')
           options.add_argument('--disable-dev-shm-usage')
-          options.add_argument('--window-size=693,1536')
+          options.add_argument('--window-size=1650,930')
           chrome = shutil.which('google-chrome') or shutil.which('chromium') or shutil.which('chromium-browser')
           if chrome:
               options.binary_location = chrome
@@ -148,16 +148,23 @@ jobs:
               time.sleep(2)
               items = gallery.find_elements(By.XPATH, './a')
               assert len(items) == 2
-              widths = [float(driver.execute_script('return arguments[0].getBoundingClientRect().width;', item)) for item in items]
+              rects = [driver.execute_script('const r=arguments[0].getBoundingClientRect(); return {width:r.width,height:r.height};', item) for item in items]
+              widths = [float(rect['width']) for rect in rects]
+              heights = [float(rect['height']) for rect in rects]
+              ratios = [width / height for width, height in zip(widths, heights)]
               gap = driver.execute_script('return getComputedStyle(arguments[0]).columnGap;', gallery)
               divider = driver.execute_script('return getComputedStyle(arguments[0]).borderInlineStartWidth;', items[1])
               images = [item.find_element(By.CSS_SELECTOR, 'img').get_attribute('src') for item in items]
               assert abs(widths[0] - widths[1]) <= 1.1, widths
+              assert min(heights) > 58, heights
+              assert all(1.55 <= ratio <= 1.65 for ratio in ratios), ratios
               assert gap == '0px', gap
               assert divider == '1px', divider
               assert len(set(images)) == 2, images
               assert all('/demo-vehicle-covers/' in src for src in images), images
               print(f'TWO_PREVIEW_EQUAL_WIDTHS_OK={widths[0]:.2f},{widths[1]:.2f}')
+              print(f'TWO_PREVIEW_HEIGHT_OK={heights[0]:.2f},{heights[1]:.2f}')
+              print(f'TWO_PREVIEW_RATIO_OK={ratios[0]:.3f},{ratios[1]:.3f}')
               print('TWO_PREVIEW_GAP_OK=0px')
               print('TWO_PREVIEW_DIVIDER_OK=1px')
               print('TWO_PREVIEW_DISTINCT_SRCS_OK=1')

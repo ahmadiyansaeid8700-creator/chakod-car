@@ -1,6 +1,6 @@
 .gallery.gallery {
-  gap: 0;
-  background: #f5f3f7;
+  gap: 8px;
+  background: transparent;
 }
 
 .item.item::after {
@@ -16,15 +16,11 @@
   box-sizing: border-box;
 }
 
-.galleryTwo .item + .item {
-  border-inline-start: 1px solid #e8e4ec;
-}
-
 .galleryTwoCompact {
   height: auto;
 }
 
 .galleryTwoCompact .item {
   height: auto;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: auto;
 }

@@ -1,0 +1,130 @@
+.latestListingsSection {
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.latestListingsLabel {
+  margin: 0 0 7px;
+  color: #6f6678;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: start;
+}
+
+.latestGrid.latestGrid {
+  min-width: 0;
+  height: auto;
+  margin-top: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  gap: 8px;
+  background: transparent;
+}
+
+.latestListing.latestListing {
+  position: relative;
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  aspect-ratio: auto;
+  overflow: hidden;
+  border: 1px solid #e8e4ec;
+  border-radius: 12px;
+  display: grid;
+  grid-template-rows: auto auto;
+  place-items: stretch;
+  color: #33293a;
+  background: #fff;
+  transition:
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease;
+}
+
+.latestListing.latestListing:hover {
+  transform: translateY(-1px);
+  border-color: rgba(109, 40, 217, 0.28);
+  box-shadow: 0 6px 16px rgba(46, 31, 58, 0.08);
+}
+
+.latestListingMedia {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #f5f3f7;
+}
+
+.latestListingMedia img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.latestListingTitle {
+  min-width: 0;
+  padding: 7px 8px 8px;
+  overflow: hidden;
+  color: #33293a;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compactSection {
+  margin-top: 9px;
+}
+
+.compactLabel {
+  margin-bottom: 6px;
+  font-size: 9px;
+}
+
+.compactTitle {
+  padding: 6px 7px 7px;
+  font-size: 8px;
+}
+
+@media (max-width: 700px) {
+  .latestListingsSection {
+    margin-top: 10px;
+  }
+
+  .latestListingsLabel {
+    margin-bottom: 6px;
+    font-size: 9px;
+  }
+
+  .latestGrid.latestGrid {
+    gap: 8px;
+  }
+
+  .latestListingTitle {
+    padding: 6px 7px 7px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .latestGrid.latestGrid {
+    gap: 8px;
+  }
+
+  .latestListingTitle {
+    padding-inline: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .latestListing.latestListing {
+    transition: none;
+  }
+}

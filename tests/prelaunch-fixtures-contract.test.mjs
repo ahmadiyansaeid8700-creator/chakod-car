@@ -128,6 +128,14 @@ test("staging services demo has enough inventory to fill every service filter", 
   ]) assert.ok(fixtures.includes(`"${category}"`), `${category} needs demo inventory`);
 });
 
+test("staging businesses API falls back to fixtures when the legacy upstream returns an HTTP error", () => {
+  const route = read("app/api/businesses/route.ts");
+  assert.match(
+    route,
+    /if\s*\(fixturesEnabled\s*&&\s*!upstream\.ok\)\s*\{[\s\S]{0,500}success:\s*true[\s\S]{0,500}items:\s*fixtureItems/,
+  );
+});
+
 test("staging service businesses use distinct self-hosted category-specific covers instead of vehicle listing art", () => {
   const fixtures = read("lib/prelaunch-fixtures.ts");
   const block = fixtures.match(/export const PRELAUNCH_BUSINESSES = \(\[([\s\S]*?)\] as const\)\.map/)?.[1] || "";

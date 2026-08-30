@@ -55,27 +55,6 @@ export const PRELAUNCH_STORIES = PRELAUNCH_LISTINGS.slice(0, 8).map((listing, in
   dealer_id: listing.dealer_id, starts_at: now, expires_at: null, is_active: true, demo_persistent: true,
 }));
 
-const PRELAUNCH_BUSINESS_COVER_URLS = {
-  "demo-business-covers/detailing-01": "https://unsplash.com/photos/HNCSCpWrVJA/download?force=true",
-  "demo-business-covers/car-wash-01": "https://unsplash.com/photos/eP8h7YVhFHk/download?force=true",
-  "demo-business-covers/parts-01": "https://unsplash.com/photos/xe-e69j6-Ds/download?force=true",
-  "demo-business-covers/battery-01": "https://unsplash.com/photos/ovGrEUgrkyE/download?force=true",
-  "demo-business-covers/mechanic-01": "https://unsplash.com/photos/UZUzvJEvKnI/download?force=true",
-  "demo-business-covers/electrical-01": "https://unsplash.com/photos/iFQpqbLMOFU/download?force=true",
-  "demo-business-covers/ppf-01": "https://unsplash.com/photos/nDlIe54btMg/download?force=true",
-  "demo-business-covers/tint-01": "https://unsplash.com/photos/8MXNZCgAah0/download?force=true",
-  "demo-business-covers/wrap-01": "https://unsplash.com/photos/jlakazXU72w/download?force=true",
-  "demo-business-covers/audio-01": "https://unsplash.com/photos/pWGUMQSWBwI/download?force=true",
-  "demo-business-covers/car-wash-02": "https://unsplash.com/photos/Ng3xrviPrhk/download?force=true",
-  "demo-business-covers/detailing-02": "https://unsplash.com/photos/8k_T1EwTySs/download?force=true",
-  "demo-business-covers/parts-02": "https://unsplash.com/photos/9mxviB2BBOE/download?force=true",
-  "demo-business-covers/parts-03": "https://unsplash.com/photos/i2kOA2p0DTo/download?force=true",
-  "demo-business-covers/tire-01": "https://unsplash.com/photos/yeMpSqF8Z-8/download?force=true",
-  "demo-business-covers/mechanic-02": "https://unsplash.com/photos/bEGTsOCnHro/download?force=true",
-  "demo-business-covers/oil-change-01": "https://unsplash.com/photos/gW34cv-Ojjs/download?force=true",
-  "demo-business-covers/electrical-02": "https://unsplash.com/photos/DPNfzltNOeQ/download?force=true",
-} as const;
-
 export const PRELAUNCH_BUSINESSES = ([
   [9500001, "car_service", "TEST_ دیتیلینگ سبز", "تهران", "تهران", "شهرک غرب", "سرامیک بدنه، صفرشویی و دیتیلینگ حرفه‌ای", ["دیتیلینگ", "سرامیک بدنه", "صفرشویی"], ["detailing", "ceramic_coating"], "demo-business-covers/detailing-01"],
   [9500002, "car_service", "TEST_ کارواش همراه سپید", "فارس", "شیراز", "معالی‌آباد", "کارواش، نظافت داخل کابین و خدمات سیار خودرو", ["کارواش", "خدمات سیار", "نظافت کابین"], ["car_wash"], "demo-business-covers/car-wash-01"],
@@ -101,7 +80,7 @@ export const PRELAUNCH_BUSINESSES = ([
   name, province, city, neighborhood, address: `${city}، ${neighborhood}`,
   description, category_labels: [...services], services: [...services], category_keys: [...categoryKeys],
   logo_url: `${ASSET_BASE}/test-avatars/${type === "car_service" ? "car-service" : type === "parts_store" ? "parts-store" : "repair-shop"}.webp`,
-  cover_url: PRELAUNCH_BUSINESS_COVER_URLS[coverKey],
+  cover_url: `${ASSET_BASE}/${coverKey}.jpg`,
   mobile_service: type === "car_service", price_range_text: "قیمت آزمایشی؛ استعلام در محل", is_verified: true,
   phone: null, whatsapp_phone: null, email: null, website_url: null, instagram_url: null,
   latitude: null, longitude: null, business_hours: [] as string[], gallery: [] as string[],

@@ -131,7 +131,7 @@ test("staging services demo has enough inventory to fill every service filter", 
 test("staging service businesses use distinct category-specific covers instead of vehicle listing art", () => {
   const fixtures = read("lib/prelaunch-fixtures.ts");
   const block = fixtures.match(/export const PRELAUNCH_BUSINESSES = \(\[([\s\S]*?)\] as const\)\.map/)?.[1] || "";
-  const serviceRows = [...block.matchAll(/\[(950\d{4}),\s*"(car_service|parts_store|repair_shop)"[^\n]*?"(demo-business-covers\/[^"]+\.webp)"\]/g)];
+  const serviceRows = [...block.matchAll(/\[(950\d{4}),\s*"(car_service|parts_store|repair_shop)"[^\n]*?"(demo-business-covers\/[^"]+)"\]/g)];
   const covers = serviceRows.map((match) => match[3]);
 
   assert.equal(serviceRows.length, 18, "every staging service business needs an explicit demo cover");

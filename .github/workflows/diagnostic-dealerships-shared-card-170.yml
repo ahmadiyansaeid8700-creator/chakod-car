@@ -1,0 +1,84 @@
+name: Diagnostic dealerships shared card 170
+on:
+  push:
+    branches:
+      - diagnostic/dealerships-shared-card-170
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install Chromium probe
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify live shared showroom cards
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+
+          const api = await page.request.get('https://staging.chakod.com/api/featured-showrooms?probe=170');
+          if (!api.ok()) throw new Error(`featured API HTTP ${api.status()}`);
+          const payload = await api.json();
+          const fixtures = Array.isArray(payload?.data) ? payload.data.filter((item) => [9200001,9200002,9200003,9200004].includes(Number(item.dealer_id))) : [];
+          console.log('FEATURED_FIXTURES=' + JSON.stringify(fixtures.map((item) => ({ dealer_id: item.dealer_id, listing_ids: item.listing_ids }))));
+          if (fixtures.length !== 4) throw new Error(`expected 4 fixture placements, got ${fixtures.length}`);
+          const expected = new Map([[9200001,[9100001,9100002]],[9200002,[9100003,9100004]],[9200003,[9100005,9100006]],[9200004,[9100007,9100008]]]);
+          for (const item of fixtures) {
+            const ids = (item.listing_ids || []).map(Number);
+            if (JSON.stringify(ids) !== JSON.stringify(expected.get(Number(item.dealer_id)))) throw new Error(`bad listing ids for ${item.dealer_id}: ${ids}`);
+          }
+
+          async function collect(url) {
+            await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+            await page.waitForTimeout(2500);
+            return page.evaluate(() => [...document.querySelectorAll('[aria-label^="خودروهای منتخب"]')].map((gallery) => {
+              const children = [...gallery.children];
+              const rects = children.map((child) => child.getBoundingClientRect());
+              const second = children[1] ? getComputedStyle(children[1]) : null;
+              const style = getComputedStyle(gallery);
+              return {
+                label: gallery.getAttribute('aria-label') || '',
+                height: gallery.getBoundingClientRect().height,
+                widths: rects.map((rect) => rect.width),
+                childHeights: rects.map((rect) => rect.height),
+                gap: style.gap,
+                divider: second?.borderInlineStartWidth || '',
+                srcs: children.map((child) => child.querySelector('img')?.currentSrc || child.querySelector('img')?.src || '').filter(Boolean),
+                titles: children.map((child) => child.getAttribute('title') || child.getAttribute('aria-label') || ''),
+              };
+            }));
+          }
+
+          const home = await collect('https://staging.chakod.com/?shared-card-probe=170');
+          const directory = await collect('https://staging.chakod.com/dealerships?shared-card-probe=170');
+          console.log('HOME_GALLERIES=' + JSON.stringify(home));
+          console.log('DIRECTORY_GALLERIES=' + JSON.stringify(directory));
+          if (!home.length) throw new Error('no homepage galleries');
+          if (directory.length < 4) throw new Error(`expected at least 4 directory galleries, got ${directory.length}`);
+          if (!directory.every((item) => item.srcs.length > 0 && item.srcs.every((src) => src.includes('/demo-vehicle-covers/')))) throw new Error('directory galleries missing fixture vehicle images');
+
+          const homeByLabel = new Map(home.map((item) => [item.label, item]));
+          const shared = directory.filter((item) => {
+            const h = homeByLabel.get(item.label);
+            return h && JSON.stringify(item.srcs) === JSON.stringify(h.srcs);
+          });
+          if (shared.length < 4) throw new Error(`only ${shared.length} directory galleries exactly share homepage imagery`);
+
+          const twoUp = directory.find((item) => item.widths.length === 2);
+          if (!twoUp) throw new Error('no two-up directory gallery');
+          if (Math.abs(twoUp.widths[0] - twoUp.widths[1]) > 1.5) throw new Error(`unequal widths ${twoUp.widths}`);
+          if (twoUp.height <= 80 || twoUp.childHeights.some((h) => h <= 80)) throw new Error(`gallery too short ${twoUp.height}/${twoUp.childHeights}`);
+          if (twoUp.gap !== '0px') throw new Error(`gap ${twoUp.gap}`);
+          if (twoUp.divider !== '1px') throw new Error(`divider ${twoUp.divider}`);
+          if (twoUp.srcs.length !== 2 || twoUp.srcs[0] === twoUp.srcs[1]) throw new Error('two-up images missing/repeated');
+          console.log('SHARED_CARD_OK=' + JSON.stringify({ sharedCount: shared.length, twoUp }));
+          await browser.close();
+          NODE

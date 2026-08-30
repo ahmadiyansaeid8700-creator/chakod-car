@@ -1,0 +1,66 @@
+name: Diagnostic compact gallery live
+
+on:
+  push:
+    branches:
+      - diagnostic/compact-gallery-live-166
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install browser probe
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify compact two-listing gallery on live staging
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+          await page.goto('https://staging.chakod.com/?compact-gallery-probe=166', { waitUntil: 'networkidle', timeout: 90000 });
+          await page.waitForTimeout(2500);
+          const result = await page.evaluate(() => {
+            const galleries = [...document.querySelectorAll('[aria-label^="خودروهای منتخب"]')];
+            const gallery = galleries.find((el) => el.children.length === 2);
+            if (!gallery) return { error: 'NO_TWO_ITEM_GALLERY', galleryCount: galleries.length };
+            const children = [...gallery.children];
+            const r0 = children[0].getBoundingClientRect();
+            const r1 = children[1].getBoundingClientRect();
+            const gr = gallery.getBoundingClientRect();
+            const csGallery = getComputedStyle(gallery);
+            const csSecond = getComputedStyle(children[1]);
+            const srcs = children.map((el) => el.querySelector('img')?.currentSrc || el.querySelector('img')?.src || '');
+            return {
+              galleryCount: galleries.length,
+              galleryHeight: gr.height,
+              galleryWidth: gr.width,
+              childWidths: [r0.width, r1.width],
+              childHeights: [r0.height, r1.height],
+              gap: csGallery.gap,
+              borderInlineStartWidth: csSecond.borderInlineStartWidth,
+              borderInlineStartStyle: csSecond.borderInlineStartStyle,
+              srcs,
+            };
+          });
+          console.log('COMPACT_TWO_UP=' + JSON.stringify(result));
+          if (result.error) throw new Error(result.error);
+          const [w0, w1] = result.childWidths;
+          const [h0, h1] = result.childHeights;
+          if (Math.abs(w0 - w1) > 1.5) throw new Error(`unequal widths ${w0}/${w1}`);
+          if (result.galleryHeight <= 80 || h0 <= 80 || h1 <= 80) throw new Error(`gallery still too short: ${result.galleryHeight}/${h0}/${h1}`);
+          if (result.gap !== '0px') throw new Error(`unexpected gap ${result.gap}`);
+          if (result.borderInlineStartWidth !== '1px') throw new Error(`divider width ${result.borderInlineStartWidth}`);
+          if (!result.srcs[0] || !result.srcs[1] || result.srcs[0] === result.srcs[1]) throw new Error('listing images are not distinct');
+          await page.screenshot({ path: 'compact-gallery-live.png', fullPage: true });
+          await browser.close();
+          NODE

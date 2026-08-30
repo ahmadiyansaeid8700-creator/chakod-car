@@ -412,7 +412,7 @@ test("keeps the mobile showroom heading concise and close to stories", () => {
   const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
   const css = read("app/components/HomeFeaturedShowrooms.module.css");
 
-  assert.match(showrooms, /<h2>نمایشگاه‌های منتخب<\/h2>/);
+  assert.match(showrooms, /<h2>نمایشگاه منتخب<\/h2>/);
   assert.doesNotMatch(showrooms, /نمایشگاه‌های منتخب چاکود/);
   assert.doesNotMatch(showrooms, /ویترین نمایشگاه‌ها/);
   assert.match(css, /@media \(max-width: 900px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 24px/);

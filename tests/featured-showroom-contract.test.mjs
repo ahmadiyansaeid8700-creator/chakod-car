@@ -115,6 +115,15 @@ test("renders showroom listing previews inside one unified clipped gallery frame
   assert.match(css, /\.latestListing img\s*\{[\s\S]{0,160}object-fit:\s*cover;/);
 });
 
+test("separates exactly two showroom listing previews with one internal divider", async () => {
+  const card = await source("app/components/ShowroomCard.tsx");
+  const seamless = await source("app/components/ShowroomCardSeamless.module.css");
+
+  assert.match(card, /latestListings\.length === 2\s*\?\s*seamlessStyles\.galleryTwo/);
+  assert.match(seamless, /\.galleryTwo\s*\{[\s\S]{0,120}grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(seamless, /\.galleryTwo\s+\.item\s*\+\s*\.item\s*\{[\s\S]{0,120}border-inline-start:\s*1px solid #e8e4ec/);
+});
+
 test("keeps the homepage showroom view-all action above overlapping rails", async () => {
   const homepage = await source("app/components/HomeFeaturedShowrooms.tsx");
   const css = await source("app/components/HomeFeaturedShowrooms.module.css");

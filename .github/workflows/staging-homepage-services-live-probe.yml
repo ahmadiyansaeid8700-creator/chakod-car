@@ -1,0 +1,95 @@
+name: Staging homepage services live probe
+
+on:
+  pull_request:
+    branches:
+      - agent/launch-3-local-baseline
+    paths:
+      - .github/workflows/staging-homepage-services-live-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  homepage-services-live-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Wait for deployed base SHA
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          api_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/staging-deploy.yml/runs?branch=agent%2Flaunch-3-local-baseline&event=push&per_page=20"
+
+          for attempt in $(seq 1 120); do
+            payload="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_url")"
+
+            set +e
+            printf '%s' "$payload" | node -e '
+              const fs = require("fs");
+              const sha = process.argv[1];
+              const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+              const run = (payload.workflow_runs || []).find((item) => item.head_sha === sha);
+              if (!run || run.status !== "completed") process.exit(10);
+              if (run.conclusion !== "success") process.exit(20);
+              console.log(`Staging deploy ${run.id} succeeded for ${sha}`);
+            ' "$BASE_SHA"
+            status=$?
+            set -e
+
+            if [ "$status" = "0" ]; then break; fi
+            if [ "$status" = "20" ]; then exit 1; fi
+            if [ "$attempt" = "120" ]; then
+              echo "Timed out waiting for deployed base SHA ${BASE_SHA}."
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Verify hydrated homepage service cards
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chrome=""
+          for candidate in google-chrome google-chrome-stable chromium chromium-browser; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              chrome="$(command -v "$candidate")"
+              break
+            fi
+          done
+
+          if [ -z "$chrome" ]; then
+            echo "No Chromium-compatible browser found on runner."
+            exit 1
+          fi
+
+          "$chrome" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --run-all-compositor-stages-before-draw \
+            --virtual-time-budget=15000 \
+            --dump-dom \
+            "https://staging.chakod.com/?homepage-services-probe=${GITHUB_RUN_ID}" \
+            > homepage-dom.html
+
+          grep -q 'featuredBusinessCard--car_service' homepage-dom.html
+          grep -q 'test-business-9500001' homepage-dom.html
+          grep -q 'featuredBusinessCard--parts_store' homepage-dom.html
+          grep -q 'test-business-9500003' homepage-dom.html
+          grep -q 'featuredBusinessCard--repair_shop' homepage-dom.html
+          grep -q 'test-business-9500005' homepage-dom.html
+
+          echo 'Hydrated staging homepage contains demo cards for services, parts stores, and repair shops.'

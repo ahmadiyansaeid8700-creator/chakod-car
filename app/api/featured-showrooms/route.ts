@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../db";
 import { accountActivities, commerceOrders, featuredShowroomPlacements } from "../../../db/schema";
 import { jsonResponse } from "../../../lib/chakod-auth-proxy";
+import { PRELAUNCH_LISTINGS, PRELAUNCH_SHOWROOMS } from "../../../lib/prelaunch-fixtures";
+import { prelaunchServerFixturesEnabled } from "../../../lib/prelaunch-server-fixtures";
 import { getRuntimeEnv } from "../../../lib/runtime-env";
 
 export const runtime = "nodejs";
@@ -266,6 +268,29 @@ export async function GET(request: NextRequest) {
       ];
     });
 
+    const fixturePlacements = prelaunchServerFixturesEnabled()
+      ? PRELAUNCH_SHOWROOMS
+          .filter((showroom) => !province || showroom.province === province)
+          .map((showroom, index) => ({
+            id: 2_000_000_000 + Number(showroom.id),
+            dealer_id: Number(showroom.id),
+            dealer_name: showroom.name,
+            province: showroom.province,
+            start_date: today,
+            end_date: "2099-12-31",
+            status: "active",
+            approved_at: nowIso,
+            desktop_banner_url: showroom.cover_url,
+            mobile_banner_url: showroom.cover_url,
+            listing_ids: PRELAUNCH_LISTINGS
+              .filter((listing) => Number(listing.dealer_id) === Number(showroom.id))
+              .map((listing) => Number(listing.id))
+              .slice(0, 3),
+            creative_status: "published",
+            fixture_order: index,
+          }))
+      : [];
+
     const merged = new Map<number, (typeof selected)[number] | (LegacyPlacement & {
       desktop_banner_url: string;
       mobile_banner_url: string;
@@ -273,8 +298,12 @@ export async function GET(request: NextRequest) {
       creative_status: string;
     })>();
 
-    selected.forEach((item) => {
+    fixturePlacements.forEach((item) => {
       if (!merged.has(item.dealer_id)) merged.set(item.dealer_id, item);
+    });
+
+    selected.forEach((item) => {
+      merged.set(item.dealer_id, item);
     });
 
     legacyRows.forEach((item) => {

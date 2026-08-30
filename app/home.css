@@ -1179,13 +1179,32 @@
   padding-bottom: 7px;
 }
 
-.homeRailShell--dealers .homeRailControls { top: -68px; left: 0; }
+.homeRailShell--dealers .homeRailControls { top: -68px; left: 108px; }
 
 .homeRailShell--dealers .homeRailControl {
   color: #1d4ed8;
   border-color: #cfe2ff;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
+}
+
+.homeRailShell--businesses .homeRailTrack {
+  display: flex;
+  gap: 12px;
+  padding: 2px 1px 10px;
+}
+
+.homeRailShell--businesses .homeRailTrack > *:not(.featuredBusinessNationwideDivider) {
+  flex: 0 0 clamp(292px, 28vw, 342px);
+}
+
+.homeRailShell--businesses .featuredBusinessNationwideDivider {
+  flex: 0 0 42px;
+}
+
+.homeRailShell--businesses .homeRailControls {
+  top: -46px;
+  left: 92px;
 }
 
 .masterDealerShowcaseCard {

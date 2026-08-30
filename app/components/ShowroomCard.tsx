@@ -6,6 +6,7 @@ import { useState } from "react";
 import DealerShareActions from "./DealerShareActions";
 import styles from "./ShowroomCard.module.css";
 import seamlessStyles from "./ShowroomCardSeamless.module.css";
+import latestStyles from "./ShowroomCardLatest.module.css";
 
 const API_BASE = "https://api.chakod.com";
 const SITE_BASE = "https://chakod.com";
@@ -90,10 +91,10 @@ function ArrowIcon() {
 
 function ListingThumbnail({
   listing,
-  compactTwoUp = false,
+  compact = false,
 }: {
   listing: ShowroomListingPreview;
-  compactTwoUp?: boolean;
+  compact?: boolean;
 }) {
   const imageUrl = getImageUrl(listing.image);
   const [failedUrl, setFailedUrl] = useState("");
@@ -101,25 +102,34 @@ function ListingThumbnail({
 
   return (
     <a
-      className={`${styles.latestListing} ${seamlessStyles.item}`}
+      className={`${styles.latestListing} ${seamlessStyles.item} ${latestStyles.latestListing}`}
       href={`/cars/${listing.id}`}
       aria-label={`مشاهده آگهی ${listing.title}`}
       title={listing.title}
-      style={compactTwoUp ? { height: "auto", aspectRatio: "16 / 10" } : undefined}
+      style={{ height: "auto", aspectRatio: "auto" }}
     >
-      {showImage ? (
-        <img
-          src={imageUrl}
-          alt={listing.title}
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailedUrl(imageUrl)}
-        />
-      ) : (
-        <span className={styles.listingPlaceholder} aria-hidden="true">
-          <CarIcon />
-        </span>
-      )}
+      <span className={latestStyles.latestListingMedia}>
+        {showImage ? (
+          <img
+            src={imageUrl}
+            alt={listing.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setFailedUrl(imageUrl)}
+          />
+        ) : (
+          <span className={styles.listingPlaceholder} aria-hidden="true">
+            <CarIcon />
+          </span>
+        )}
+      </span>
+      <span
+        className={`${latestStyles.latestListingTitle} ${
+          compact ? latestStyles.compactTitle : ""
+        }`}
+      >
+        {listing.title}
+      </span>
     </a>
   );
 }
@@ -140,6 +150,7 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
   const showLogo = Boolean(logoUrl) && failedLogoUrl !== logoUrl;
   const latestListings = (showroom.latestListings || []).slice(0, 3);
   const compactTwoUp = latestListings.length === 2 && density === "compact";
+  const compact = density === "compact";
   const location = [showroom.city, showroom.province]
     .filter(Boolean)
     .filter((item, index, values) => values.indexOf(item) === index)
@@ -147,7 +158,7 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
   const formattedCount = new Intl.NumberFormat("fa-IR").format(showroom.listingCount);
 
   return (
-    <article className={`${styles.card} ${density === "compact" ? styles.compact : ""}`}>
+    <article className={`${styles.card} ${compact ? styles.compact : ""}`}>
       <div className={styles.cover}>
         <a className={styles.coverLink} href={href} aria-label={`مشاهده نمایشگاه ${showroom.name}`}>
           {showCover ? (
@@ -226,22 +237,36 @@ export default function ShowroomCard({ showroom, density = "default" }: Showroom
 
         {latestListings.length > 0 ? (
           <div
-            className={`${styles.latestGrid} ${seamlessStyles.gallery} ${
-              latestListings.length === 2 ? seamlessStyles.galleryTwo : ""
-            } ${compactTwoUp ? seamlessStyles.galleryTwoCompact : ""}`}
-            aria-label={`خودروهای منتخب ${showroom.name}`}
-            style={{
-              gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,
-              height: compactTwoUp ? "auto" : undefined,
-            }}
+            className={`${latestStyles.latestListingsSection} ${
+              compact ? latestStyles.compactSection : ""
+            }`}
           >
-            {latestListings.map((listing) => (
-              <ListingThumbnail
-                key={listing.id}
-                listing={listing}
-                compactTwoUp={compactTwoUp}
-              />
-            ))}
+            <p
+              className={`${latestStyles.latestListingsLabel} ${
+                compact ? latestStyles.compactLabel : ""
+              }`}
+            >
+              آخرین آگهی‌های نمایشگاه
+            </p>
+            <div
+              className={`${styles.latestGrid} ${seamlessStyles.gallery} ${latestStyles.latestGrid} ${
+                latestListings.length === 2 ? seamlessStyles.galleryTwo : ""
+              } ${compactTwoUp ? seamlessStyles.galleryTwoCompact : ""}`}
+              aria-label={`خودروهای منتخب ${showroom.name}`}
+              style={{
+                gridTemplateColumns: `repeat(${latestListings.length}, minmax(0, 1fr))`,
+                height: compactTwoUp ? "auto" : undefined,
+                gap: "8px",
+              }}
+            >
+              {latestListings.map((listing) => (
+                <ListingThumbnail
+                  key={listing.id}
+                  listing={listing}
+                  compact={compact}
+                />
+              ))}
+            </div>
           </div>
         ) : null}
 

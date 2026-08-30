@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import HomeHorizontalRail from "./HomeHorizontalRail";
 import {
   DEFAULT_HOME_LOCATION,
   HOME_LOCATION_EVENT,
@@ -396,7 +397,11 @@ function FeaturedBusinessSection({
           <span>به‌محض ثبت مورد معتبر، این بخش به‌صورت خودکار تکمیل می‌شود.</span>
         </div>
       ) : (
-      <div className="featuredBusinessRail">
+      <HomeHorizontalRail
+        ariaLabel={config.kicker}
+        className="homeRailShell--businesses"
+        showControls={hasItems}
+      >
         {hasItems
           ? <>
             {sectionItems.map((business) => (
@@ -457,7 +462,7 @@ function FeaturedBusinessSection({
                 </span>
               </Link>
             ))}
-      </div>
+      </HomeHorizontalRail>
       )}
     </section>
   );

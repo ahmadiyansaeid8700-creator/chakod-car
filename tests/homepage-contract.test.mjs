@@ -412,9 +412,37 @@ test("keeps the mobile showroom heading concise and close to stories", () => {
   const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
   const css = read("app/components/HomeFeaturedShowrooms.module.css");
 
-  assert.match(showrooms, /<h2>نمایشگاه‌های منتخب<\/h2>/);
+  assert.match(showrooms, /<h2>نمایشگاه منتخب<\/h2>/);
   assert.doesNotMatch(showrooms, /نمایشگاه‌های منتخب چاکود/);
   assert.doesNotMatch(showrooms, /ویترین نمایشگاه‌ها/);
   assert.match(css, /@media \(max-width: 900px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 24px/);
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.dealerSection \{[^}]*padding-top: 18px/);
+});
+
+test("uses concise homepage rail labels and shared desktop controls", () => {
+  const showrooms = read("app/components/HomeFeaturedShowrooms.tsx");
+  const vehicles = read("app/components/HomePublicListingsClient.tsx");
+  const businesses = read("app/components/HomeFeaturedBusinesses.tsx");
+  const homeCss = read("app/home.css");
+
+  assert.match(showrooms, /<h2>نمایشگاه منتخب<\/h2>/);
+  assert.doesNotMatch(showrooms, /<h2>نمایشگاه‌های منتخب<\/h2>/);
+  assert.match(vehicles, /kicker="لوکس"/);
+  assert.match(vehicles, /kicker="منطقه آزاد"/);
+  assert.doesNotMatch(vehicles, /kicker="خودروهای لوکس"/);
+  assert.doesNotMatch(vehicles, /kicker="خودروهای منطقه آزاد"/);
+
+  assert.match(showrooms, /import HomeHorizontalRail from "\.\/HomeHorizontalRail"/);
+  assert.match(showrooms, /<HomeHorizontalRail[\s\S]*?className="homeRailShell--dealers"/);
+  assert.match(showrooms, /showControls=\{resolvedDealers\.items\.length > 0\}/);
+
+  assert.match(businesses, /import HomeHorizontalRail from "\.\/HomeHorizontalRail"/);
+  assert.match(businesses, /<HomeHorizontalRail[\s\S]*?className="homeRailShell--businesses"/);
+  assert.match(businesses, /showControls=\{hasItems\}/);
+
+  assert.match(vehicles, /showControls=\{hasListings \|\| hasNationwideFallback\}/);
+  assert.match(homeCss, /\.homeRailShell--dealers \.homeRailControls[\s\S]*?left: 108px/);
+  assert.match(homeCss, /\.homeRailShell--businesses \.homeRailTrack[\s\S]*?display: flex/);
+  assert.match(homeCss, /\.homeRailShell--businesses \.homeRailControls[\s\S]*?left: 92px/);
+  assert.match(homeCss, /@media \(max-width: 760px\)[\s\S]*?\.homeRailControls[\s\S]*?display: none/);
 });

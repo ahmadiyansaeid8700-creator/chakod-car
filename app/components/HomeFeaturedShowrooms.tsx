@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import styles from "./HomeFeaturedShowrooms.module.css";
+import HomeHorizontalRail from "./HomeHorizontalRail";
 import ShowroomCard, {
   type ShowroomCardData,
   type ShowroomListingPreview,
@@ -562,7 +563,7 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
     <section className={styles.dealerSection} id="showrooms">
       <div className={styles.sectionIntro}>
         <div>
-          <h2>نمایشگاه‌های منتخب</h2>
+          <h2>نمایشگاه منتخب</h2>
         </div>
 
         <div className={styles.sectionActions}>
@@ -587,11 +588,15 @@ export default function HomeFeaturedShowrooms({ query }: Props) {
           ))}
         </div>
       ) : resolvedDealers.items.length > 0 ? (
-        <div className={styles.dealerRail}>
+        <HomeHorizontalRail
+          ariaLabel="نمایشگاه منتخب"
+          className="homeRailShell--dealers"
+          showControls={resolvedDealers.items.length > 0}
+        >
           {resolvedDealers.items.slice(0, 8).map((dealer) => (
             <ShowroomCard density="compact" key={dealer.key} showroom={dealer} />
           ))}
-        </div>
+        </HomeHorizontalRail>
       ) : (
         <div className={styles.compactEmpty} role="status">
           <strong>{status === "error" ? "دریافت نمایشگاه‌ها انجام نشد" : "نمایشگاهی در این محدوده پیدا نشد"}</strong>

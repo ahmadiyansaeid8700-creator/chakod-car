@@ -272,7 +272,7 @@ function ShowcaseSection({
       <HomeHorizontalRail
         ariaLabel={title}
         className={`homeRailShell--${tone}`}
-        showControls={hasListings && listings.length + nationwideListings.length > 3}
+        showControls={hasListings || hasNationwideFallback}
       >
         {status === "loading"
           ? [0, 1, 2].map((index) => (
@@ -461,8 +461,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
         <>
           <ShowcaseSection
             id="luxury"
-            kicker="خودروهای لوکس"
-            title="خودروهای لوکس منتخب"
+            kicker="لوکس"
+            title="لوکس"
             description="خودروهای ممتاز بر اساس برند، قیمت و کیفیت آگهی در اولویت نمایش قرار می‌گیرند."
             listings={data.luxury}
             nationwideListings={data.luxuryNationwide}
@@ -475,8 +475,8 @@ export default function HomePublicListingsClient({ query }: { query: string }) {
 
           <ShowcaseSection
             id="freezone"
-            kicker="خودروهای منطقه آزاد"
-            title="خودروهای منطقه آزاد"
+            kicker="منطقه آزاد"
+            title="منطقه آزاد"
             description="ویترین اختصاصی خودروهای مناطق آزاد با امکان بررسی سریع آگهی‌ها."
             listings={data.freezone}
             nationwideListings={data.freezoneNationwide}

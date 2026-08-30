@@ -5,6 +5,8 @@ import { useDeferredValue, useEffect, useState } from "react";
 import MobileBottomNav from "../components/MobileBottomNav";
 import MobileBackButton from "../components/MobileBackButton";
 import ShowroomCard from "../components/ShowroomCard";
+import type { ShowroomListingPreview } from "../components/ShowroomCard";
+import { PRELAUNCH_FIXTURES_ENABLED, PRELAUNCH_LISTINGS } from "../../lib/prelaunch-fixtures";
 import styles from "./page.module.css";
 
 type PublicBusiness = {
@@ -39,6 +41,17 @@ type FeaturedResponse = {
   data?: FeaturedPlacement[];
 };
 
+type ListingDetail = {
+  id?: number | string;
+  title?: string;
+  cover_image?: string | null;
+};
+
+type ListingDetailResponse = {
+  success?: boolean;
+  data?: ListingDetail | null;
+};
+
 type SelectedShowroom = {
   dealerId: number;
   name: string;
@@ -49,6 +62,7 @@ type SelectedShowroom = {
   desktopBanner: string;
   mobileBanner: string;
   listingIds: number[];
+  latestListings: ShowroomListingPreview[];
   profileHref: string;
 };
 
@@ -73,6 +87,55 @@ function safeIds(value: unknown) {
         .filter((item) => Number.isSafeInteger(item) && item > 0),
     ),
   ).slice(0, 3);
+}
+
+function fallbackPreview(id: number): ShowroomListingPreview {
+  return { id, title: `خودرو ${id}`, image: null };
+}
+
+function fixturePreview(id: number): ShowroomListingPreview | null {
+  if (!PRELAUNCH_FIXTURES_ENABLED) return null;
+  const listing = PRELAUNCH_LISTINGS.find((item) => Number(item.id) === id);
+  if (!listing) return null;
+  return {
+    id: listing.id,
+    title: listing.title,
+    image: listing.cover_image || null,
+  };
+}
+
+async function fetchSelectedListingPreviews(ids: number[], signal: AbortSignal) {
+  const previews = await Promise.all(
+    ids.map(async (id): Promise<ShowroomListingPreview> => {
+      const fixture = fixturePreview(id);
+      if (fixture) return fixture;
+
+      try {
+        const response = await fetch(
+          `https://api.chakod.com/api/listing-detail.php?id=${encodeURIComponent(id)}`,
+          {
+            cache: "no-store",
+            headers: { Accept: "application/json" },
+            signal,
+          },
+        );
+        if (!response.ok) return fallbackPreview(id);
+        const payload = (await response.json().catch(() => null)) as ListingDetailResponse | null;
+        const listing = payload?.success && payload.data ? payload.data : null;
+        if (!listing) return fallbackPreview(id);
+        return {
+          id: listing.id || id,
+          title: listing.title?.trim() || `خودرو ${id}`,
+          image: listing.cover_image || null,
+        };
+      } catch (error: unknown) {
+        if ((error as Error).name === "AbortError") throw error;
+        return fallbackPreview(id);
+      }
+    }),
+  );
+
+  return new Map(previews.map((preview) => [Number(preview.id), preview]));
 }
 
 export default function DealerDirectoryClient() {
@@ -115,6 +178,8 @@ export default function DealerDirectoryClient() {
         const placements = featuredResponse.ok && featuredPayload?.success && Array.isArray(featuredPayload.data)
           ? featuredPayload.data
           : [];
+        const selectedListingIds = Array.from(new Set(placements.flatMap((placement) => safeIds(placement.listing_ids))));
+        const listingPreviewsById = await fetchSelectedListingPreviews(selectedListingIds, controller.signal);
 
         const byId = new Map<number, PublicBusiness>();
         const byName = new Map<string, PublicBusiness>();
@@ -144,6 +209,8 @@ export default function DealerDirectoryClient() {
           const searchable = normalizeText(`${name} ${province} ${city}`);
           if (queryKey && !searchable.includes(queryKey)) return;
 
+          const listingIds = safeIds(placement.listing_ids);
+          const latestListings = listingIds.map((id) => listingPreviewsById.get(id) || fallbackPreview(id));
           if (matched) usedBusinessIds.add(Number(matched.id));
           featuredItems.push({
             dealerId,
@@ -154,7 +221,8 @@ export default function DealerDirectoryClient() {
             fallbackCover: String(matched?.cover_url || ""),
             desktopBanner: String(placement.desktop_banner_url || ""),
             mobileBanner: String(placement.mobile_banner_url || ""),
-            listingIds: safeIds(placement.listing_ids),
+            listingIds,
+            latestListings,
             profileHref: matched?.slug
               ? `/businesses/${encodeURIComponent(matched.slug)}`
               : `/showrooms/${dealerId}`,
@@ -231,7 +299,7 @@ export default function DealerDirectoryClient() {
                   coverImageDesktop: showroom.desktopBanner,
                   coverImageMobile: showroom.mobileBanner,
                   featured: true,
-                  latestListings: showroom.listingIds.map((id) => ({ id, title: `خودرو ${id}` })),
+                  latestListings: showroom.latestListings,
                 }}
               />
             ))}

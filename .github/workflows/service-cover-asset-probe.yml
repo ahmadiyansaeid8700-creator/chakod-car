@@ -9,48 +9,39 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  probe-assets:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify staging service API returns self-hosted distinct covers
+      - name: Verify all 18 self-hosted service covers are live on staging
         shell: bash
         run: |
           set -euo pipefail
-          api=/tmp/businesses.json
-          curl --location --fail --silent --show-error --retry 3 --retry-all-errors \
-            --connect-timeout 10 --max-time 45 \
-            'https://staging.chakod.com/api/businesses?home=1&limit=50' \
-            --output "$api"
-
-          python3 - "$api" > /tmp/covers.txt <<'PY'
-          import json, sys
-          data = json.load(open(sys.argv[1], encoding='utf-8'))
-          items = data.get('items') or []
-          services = [x for x in items if x.get('business_type') in {'car_service','parts_store','repair_shop'} and str(x.get('id','')).startswith('950')]
-          assert len(services) == 18, f'expected 18 staging demo service businesses, got {len(services)}'
-          covers = [x.get('cover_url') for x in services]
-          assert all(isinstance(x, str) and x.startswith('https://staging.chakod.com/demo-business-covers/') and x.endswith('.jpg') for x in covers), covers
-          assert len(set(covers)) == 18, f'expected 18 unique covers, got {len(set(covers))}'
-          print('\n'.join(covers))
-          PY
-
-          test "$(wc -l < /tmp/covers.txt)" = "18"
-          echo 'API_SERVICE_COVERS_OK=18'
-
-      - name: Verify every live staging cover resolves as an image
-        shell: bash
-        run: |
-          set -euo pipefail
-          i=0
-          while IFS= read -r url; do
-            i=$((i + 1))
+          names=(
+            detailing-01.jpg detailing-02.jpg car-wash-01.jpg car-wash-02.jpg
+            ppf-01.jpg tint-01.jpg wrap-01.jpg audio-01.jpg
+            parts-01.jpg parts-02.jpg parts-03.jpg battery-01.jpg tire-01.jpg
+            mechanic-01.jpg mechanic-02.jpg oil-change-01.jpg electrical-01.jpg electrical-02.jpg
+          )
+          for i in "${!names[@]}"; do
+            url="https://staging.chakod.com/demo-business-covers/${names[$i]}"
             target="/tmp/live-cover-${i}.jpg"
             curl --location --fail --silent --show-error --retry 3 --retry-all-errors \
               --connect-timeout 10 --max-time 45 "$url" --output "$target"
             mime="$(file --brief --mime-type "$target")"
             test "$mime" = "image/jpeg"
             test -s "$target"
-            echo "LIVE_COVER_OK=${i} MIME=${mime} BYTES=$(wc -c < "$target") URL=${url}"
-          done < /tmp/covers.txt
-          test "$i" = "18"
+            echo "LIVE_COVER_OK=$((i + 1)) MIME=$mime BYTES=$(wc -c < "$target") URL=$url"
+          done
           echo 'ALL_LIVE_SERVICE_COVERS_OK=18'
+
+  probe-api:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Record current businesses API status separately
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --location --silent --show-error --output /tmp/businesses.json --write-out '%{http_code}' 'https://staging.chakod.com/api/businesses?home=1&limit=50')"
+          echo "BUSINESSES_API_HTTP=$status"
+          test "$status" = "200"

@@ -16,6 +16,7 @@ test("uses the approved homepage showroom card in compact directory mode", async
   const sharedCard = await source("app/components/ShowroomCard.tsx");
   const cardStyles = await source("app/components/ShowroomCard.module.css");
   const seamlessStyles = await source("app/components/ShowroomCardSeamless.module.css");
+  const latestStyles = await source("app/components/ShowroomCardLatest.module.css");
 
   assert.match(directory, /import ShowroomCard from "\.\.\/components\/ShowroomCard"/);
   assert.match(directory, /density="compact"/);
@@ -26,13 +27,17 @@ test("uses the approved homepage showroom card in compact directory mode", async
   assert.match(cardStyles, /@media \(max-width: 700px\)[\s\S]*?\.compact \.logo \{[\s\S]*?width: 52px;[\s\S]*?height: 52px/);
   assert.match(sharedCard, /gridTemplateColumns:\s*`repeat\(\$\{latestListings\.length\}, minmax\(0, 1fr\)\)`/);
   assert.match(sharedCard, /ShowroomCardSeamless\.module\.css/);
+  assert.match(sharedCard, /ShowroomCardLatest\.module\.css/);
+  assert.match(sharedCard, /آخرین آگهی‌های نمایشگاه/);
   assert.match(sharedCard, /seamlessStyles\.gallery/);
   assert.match(sharedCard, /seamlessStyles\.item/);
-  assert.match(seamlessStyles, /\.gallery\.gallery\s*\{[\s\S]*?gap:\s*0/);
+  assert.match(seamlessStyles, /\.gallery\.gallery\s*\{[\s\S]*?gap:\s*8px/);
   assert.match(seamlessStyles, /\.item\.item::after\s*\{[\s\S]*?content:\s*none/);
-  assert.match(cardStyles, /\.compact \.latestGrid \{[\s\S]*?height: 58px/);
-  assert.match(cardStyles, /\.compact \.latestListing \{[\s\S]*?width: 100%;[\s\S]*?height: 100%/);
-  assert.doesNotMatch(cardStyles, /\.compact \.latestGrid \{[\s\S]{0,180}?grid-template-columns: repeat\(3/);
+  assert.doesNotMatch(seamlessStyles, /border-inline-start/);
+  assert.match(latestStyles, /\.latestGrid\.latestGrid\s*\{[\s\S]*?gap:\s*8px/);
+  assert.match(latestStyles, /\.latestListing\.latestListing\s*\{[\s\S]*?border:\s*1px solid #e8e4ec/);
+  assert.match(latestStyles, /\.latestListingMedia\s*\{[\s\S]*?aspect-ratio:\s*16 \/ 10/);
+  assert.match(latestStyles, /\.latestListingTitle\s*\{[\s\S]*?white-space:\s*nowrap/);
   assert.doesNotMatch(directory, /selectedCard|ordinaryCard|ShowroomBanner|VehicleStrip/);
 });
 

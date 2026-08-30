@@ -12,41 +12,64 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify every curated cover resolves to an image
+      - name: Resolve and verify direct image CDN URLs
         shell: bash
         run: |
           set -euo pipefail
-          urls=(
-            'https://unsplash.com/photos/HNCSCpWrVJA/download?force=true'
-            'https://unsplash.com/photos/eP8h7YVhFHk/download?force=true'
-            'https://unsplash.com/photos/xe-e69j6-Ds/download?force=true'
-            'https://unsplash.com/photos/ovGrEUgrkyE/download?force=true'
-            'https://unsplash.com/photos/UZUzvJEvKnI/download?force=true'
-            'https://unsplash.com/photos/iFQpqbLMOFU/download?force=true'
-            'https://unsplash.com/photos/nDlIe54btMg/download?force=true'
-            'https://unsplash.com/photos/8MXNZCgAah0/download?force=true'
-            'https://unsplash.com/photos/jlakazXU72w/download?force=true'
-            'https://unsplash.com/photos/pWGUMQSWBwI/download?force=true'
-            'https://unsplash.com/photos/Ng3xrviPrhk/download?force=true'
-            'https://unsplash.com/photos/8k_T1EwTySs/download?force=true'
-            'https://unsplash.com/photos/9mxviB2BBOE/download?force=true'
-            'https://unsplash.com/photos/i2kOA2p0DTo/download?force=true'
-            'https://unsplash.com/photos/yeMpSqF8Z-8/download?force=true'
-            'https://unsplash.com/photos/bEGTsOCnHro/download?force=true'
-            'https://unsplash.com/photos/gW34cv-Ojjs/download?force=true'
-            'https://unsplash.com/photos/DPNfzltNOeQ/download?force=true'
+          ids=(
+            HNCSCpWrVJA
+            eP8h7YVhFHk
+            xe-e69j6-Ds
+            ovGrEUgrkyE
+            UZUzvJEvKnI
+            iFQpqbLMOFU
+            nDlIe54btMg
+            8MXNZCgAah0
+            jlakazXU72w
+            pWGUMQSWBwI
+            Ng3xrviPrhk
+            8k_T1EwTySs
+            9mxviB2BBOE
+            i2kOA2p0DTo
+            yeMpSqF8Z-8
+            bEGTsOCnHro
+            gW34cv-Ojjs
+            DPNfzltNOeQ
           )
 
-          for i in "${!urls[@]}"; do
+          for i in "${!ids[@]}"; do
+            id="${ids[$i]}"
+            page="/tmp/service-cover-${i}.html"
             target="/tmp/service-cover-${i}.img"
-            curl --location --fail --silent --show-error --retry 2 --retry-all-errors --connect-timeout 10 --max-time 45 "${urls[$i]}" --output "$target"
+            curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
+              --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36' \
+              --connect-timeout 10 --max-time 45 "https://unsplash.com/photos/${id}" --output "$page"
+            image_url="$(python3 - "$page" <<'PY'
+import html
+import re
+import sys
+text = open(sys.argv[1], encoding='utf-8').read()
+match = re.search(r'<meta[^>]+property=["\x27]og:image["\x27][^>]+content=["\x27]([^"\x27]+)', text, re.I)
+if not match:
+    match = re.search(r'<meta[^>]+content=["\x27]([^"\x27]+)["\x27][^>]+property=["\x27]og:image["\x27]', text, re.I)
+if not match:
+    raise SystemExit(2)
+print(html.unescape(match.group(1)))
+PY
+)"
+            case "$image_url" in
+              https://images.unsplash.com/*) ;;
+              *) echo "Unexpected image source for ${id}: ${image_url}" >&2; exit 1 ;;
+            esac
+            curl --location --fail --silent --show-error --retry 2 --retry-all-errors \
+              --connect-timeout 10 --max-time 45 "$image_url" --output "$target"
             mime="$(file --brief --mime-type "$target")"
             case "$mime" in
               image/*) ;;
-              *) echo "Unexpected MIME for ${urls[$i]}: $mime" >&2; exit 1 ;;
+              *) echo "Unexpected MIME for ${id}: $mime" >&2; exit 1 ;;
             esac
-            test -s "$target"
+            echo "COVER_SOURCE ${id} ${image_url}"
             echo "COVER_OK=$((i + 1)) MIME=$mime BYTES=$(wc -c < "$target")"
           done
 
-          echo "ALL_SERVICE_COVERS_OK=${#urls[@]}"
+          echo "ALL_SERVICE_COVERS_OK=${#ids[@]}"

@@ -1,4 +1,4 @@
-name: Businesses staging root-cause probe
+name: Businesses staging live verification
 
 on:
   push:
@@ -12,26 +12,75 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Compare fixture short-circuit, list route, and legacy upstream
+      - name: Verify list and service filters return staging fixtures
         shell: bash
         run: |
           set -euo pipefail
-          list_status="$(curl --location --silent --show-error --output /tmp/list.json --write-out '%{http_code}' 'https://staging.chakod.com/api/businesses?home=1&limit=50')"
-          slug_status="$(curl --location --silent --show-error --output /tmp/slug.json --write-out '%{http_code}' 'https://staging.chakod.com/api/businesses?slug=test-business-9500001')"
-          upstream_status="$(curl --location --silent --show-error --output /tmp/upstream.txt --write-out '%{http_code}' 'https://api.chakod.com/api/public-businesses.php?home=1&limit=50')"
 
-          echo "STAGING_LIST_HTTP=$list_status"
-          echo "STAGING_TEST_SLUG_HTTP=$slug_status"
-          echo "LEGACY_UPSTREAM_HTTP=$upstream_status"
-          echo '--- staging list body ---'
-          head -c 600 /tmp/list.json || true
-          echo
-          echo '--- staging test slug body ---'
-          head -c 600 /tmp/slug.json || true
-          echo
-          echo '--- upstream body ---'
-          head -c 600 /tmp/upstream.txt || true
-          echo
+          curl_json() {
+            local url="$1"
+            local out="$2"
+            local status
+            status="$(curl --location --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 10 --max-time 45 --output "$out" --write-out '%{http_code}' "$url")"
+            echo "$url HTTP=$status"
+            test "$status" = "200"
+          }
 
-          test "$slug_status" = "200"
-          test "$list_status" = "$upstream_status"
+          curl_json 'https://staging.chakod.com/api/businesses?home=1&limit=50' /tmp/all.json
+          curl_json 'https://staging.chakod.com/api/businesses?type=car_service&limit=50' /tmp/car_service.json
+          curl_json 'https://staging.chakod.com/api/businesses?type=parts_store&limit=50' /tmp/parts_store.json
+          curl_json 'https://staging.chakod.com/api/businesses?type=repair_shop&limit=50' /tmp/repair_shop.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              'car_service': 8,
+              'parts_store': 5,
+              'repair_shop': 5,
+          }
+          covers = []
+          for kind, count in expected.items():
+              payload = json.loads(Path(f'/tmp/{kind}.json').read_text(encoding='utf-8'))
+              assert payload.get('success') is True, (kind, payload)
+              assert payload.get('staging_demo') is True, (kind, payload)
+              items = payload.get('items') or []
+              assert len(items) == count, (kind, len(items), count)
+              assert all(item.get('business_type') == kind for item in items), kind
+              for item in items:
+                  cover = item.get('cover_url')
+                  assert isinstance(cover, str) and cover.startswith('https://staging.chakod.com/demo-business-covers/') and cover.endswith('.jpg'), (kind, cover)
+                  covers.append(cover)
+
+          assert len(covers) == 18, len(covers)
+          assert len(set(covers)) == 18, len(set(covers))
+
+          all_payload = json.loads(Path('/tmp/all.json').read_text(encoding='utf-8'))
+          assert all_payload.get('success') is True, all_payload
+          assert all_payload.get('staging_demo') is True, all_payload
+          print('BUSINESS_LIST_FALLBACK_OK=1')
+          print('SERVICE_FILTER_COUNTS_OK=8,5,5')
+          print('UNIQUE_SERVICE_COVERS_OK=18')
+          Path('/tmp/covers.txt').write_text('\n'.join(covers) + '\n', encoding='utf-8')
+          PY
+
+      - name: Verify every API-returned cover is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          i=0
+          while IFS= read -r url; do
+            i=$((i + 1))
+            target="/tmp/live-cover-${i}.jpg"
+            status="$(curl --location --silent --show-error --retry 3 --retry-all-errors \
+              --connect-timeout 10 --max-time 45 --output "$target" --write-out '%{http_code}' "$url")"
+            test "$status" = "200"
+            mime="$(file --brief --mime-type "$target")"
+            test "$mime" = "image/jpeg"
+            test -s "$target"
+            echo "LIVE_COVER_OK=$i HTTP=$status MIME=$mime BYTES=$(wc -c < "$target")"
+          done < /tmp/covers.txt
+          test "$i" = "18"
+          echo 'ALL_LIVE_SERVICE_COVERS_OK=18'

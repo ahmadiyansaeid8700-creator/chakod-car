@@ -219,14 +219,17 @@ test("post-deploy staging smoke verifies every presentation surface instead of H
   ]) assert.ok(workflow.includes(expected), `${expected} must be covered by staging smoke`);
 });
 
-test("compact featured showroom with exactly two listings overrides the fixed 58px compact height", () => {
+test("compact featured showroom with exactly two listings keeps the gallery and mini cards auto-height", () => {
   const card = read("app/components/ShowroomCard.tsx");
   const seamless = read("app/components/ShowroomCardSeamless.module.css");
+  const latest = read("app/components/ShowroomCardLatest.module.css");
 
   assert.match(card, /const compactTwoUp = latestListings\.length === 2 && density === "compact"/);
   assert.match(card, /compactTwoUp \? seamlessStyles\.galleryTwoCompact : ""/);
   assert.match(card, /height:\s*compactTwoUp \? "auto" : undefined/);
-  assert.match(card, /compactTwoUp=\{compactTwoUp\}/);
-  assert.match(card, /style=\{compactTwoUp \? \{ height: "auto", aspectRatio: "16 \/ 10" \} : undefined\}/);
-  assert.match(seamless, /\.galleryTwo\s+\.item\s*\+\s*\.item\s*\{[\s\S]{0,120}border-inline-start:\s*1px/);
+  assert.match(card, /style=\{\{ height: "auto", aspectRatio: "auto" \}\}/);
+  assert.match(seamless, /\.galleryTwoCompact\s*\{[\s\S]{0,80}height:\s*auto/);
+  assert.match(seamless, /\.galleryTwoCompact\s+\.item\s*\{[\s\S]{0,100}aspect-ratio:\s*auto/);
+  assert.match(latest, /\.latestListingMedia\s*\{[\s\S]{0,160}aspect-ratio:\s*16 \/ 10/);
+  assert.doesNotMatch(seamless, /border-inline-start/);
 });

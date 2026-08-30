@@ -537,8 +537,13 @@ export default function HomeFeaturedBusinesses() {
       })
       .catch((error: unknown) => {
         if ((error as Error).name !== "AbortError") {
-          setItems(PRELAUNCH_FIXTURES_ENABLED ? PRELAUNCH_BUSINESSES as unknown as PublicBusiness[] : []);
-          setStatus("error");
+          if (PRELAUNCH_FIXTURES_ENABLED) {
+            setItems(PRELAUNCH_BUSINESSES as unknown as PublicBusiness[]);
+            setStatus("ready");
+          } else {
+            setItems([]);
+            setStatus("error");
+          }
         }
       });
 

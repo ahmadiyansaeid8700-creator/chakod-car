@@ -156,6 +156,14 @@ export async function GET(request: NextRequest) {
       },
     );
     const text = await upstream.text();
+
+    if (fixturesEnabled && !upstream.ok) {
+      return NextResponse.json(
+        { success: true, items: fixtureItems, total: fixtureItems.length, staging_demo: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     let payload: Record<string, unknown> | null = null;
     try { payload = JSON.parse(text) as Record<string, unknown>; } catch { payload = null; }
     const nativeItems = await nativeBusinesses(request);

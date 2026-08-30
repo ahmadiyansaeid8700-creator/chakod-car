@@ -1,0 +1,81 @@
+name: Temporary materialize demo vehicle covers
+
+on:
+  push:
+    branches:
+      - fix/demo-vehicle-image-variety-and-showroom-divider
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/demo-vehicle-image-variety-and-showroom-divider
+          fetch-depth: 0
+
+      - name: Download and validate 24 self-hosted demo vehicle images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/demo-vehicle-covers
+
+          fetch() {
+            local id="$1"
+            local name="$2"
+            local out="public/demo-vehicle-covers/${name}.jpg"
+            curl --fail --location --silent --show-error --retry 4 --retry-all-errors \
+              --connect-timeout 15 --max-time 90 \
+              "https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1280&h=800&fit=crop" \
+              --output "$out"
+            test -s "$out"
+            mime="$(file --brief --mime-type "$out")"
+            test "$mime" = "image/jpeg"
+            echo "DEMO_VEHICLE_IMAGE_OK=$name BYTES=$(wc -c < "$out")"
+          }
+
+          fetch 36840202 mercedes-e200-01
+          fetch 36840198 mercedes-e200-02
+          fetch 12681047 bmw-530i-01
+          fetch 9827701 bmw-530i-02
+          fetch 16510644 lexus-nx300-01
+          fetch 16510639 lexus-nx300-02
+          fetch 26578524 toyota-landcruiser-01
+          fetch 11749425 toyota-landcruiser-02
+          fetch 37029589 toyota-rav4-01
+          fetch 15527578 toyota-rav4-02
+          fetch 17768039 hyundai-santafe-01
+          fetch 13759847 hyundai-santafe-02
+          fetch 17761661 kia-sportage-01
+          fetch 4120664 kia-sportage-02
+          fetch 12699570 nissan-xtrail-01
+          fetch 31686214 nissan-xtrail-02
+          fetch 12953650 peugeot-207-01
+          fetch 31727891 peugeot-207-02
+          fetch 7412620 dena-plus-01
+          fetch 36103865 dena-plus-02
+          fetch 8886300 shahin-01
+          fetch 36103867 shahin-02
+          fetch 9846075 tara-v4-01
+          fetch 5549340 tara-v4-02
+
+          test "$(find public/demo-vehicle-covers -type f -name '*.jpg' | wc -l)" -eq 24
+
+      - name: Commit materialized assets to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/demo-vehicle-covers
+          if git diff --cached --quiet; then
+            echo "No asset changes to commit"
+            exit 0
+          fi
+          git commit -m "assets: add diverse staging vehicle demo covers"
+          git push origin HEAD:fix/demo-vehicle-image-variety-and-showroom-divider

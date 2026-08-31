@@ -66,7 +66,7 @@ test("fulfills Story credits inside payment settlement and reconciles paid repla
       block.includes("update(commerceOrders)") &&
       block.includes("insert(paymentAttempts)") &&
       block.includes("insert(invoices)") &&
-      block.includes("creditEffectStatement"),
+      /\bcreditEffect\b/.test(block),
     ),
     "a paid non-wallet batch must include the idempotent credit effect statement",
   );

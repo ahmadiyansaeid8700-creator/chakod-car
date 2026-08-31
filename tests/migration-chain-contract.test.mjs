@@ -15,7 +15,7 @@ test("keeps numbered SQL migration deployment chain ordered and unique", async (
     .filter((name) => /^\d{4}_.+\.sql$/.test(name))
     .sort();
 
-  assert.equal(migrationFiles.at(-1), "0009_market_floor.sql");
+  assert.equal(migrationFiles.at(-1), "0010_credit_ledger.sql");
   assert.equal(new Set(migrationFiles).size, migrationFiles.length);
   assert.deepEqual(
     migrationFiles.map((name) => Number(name.slice(0, 4))),

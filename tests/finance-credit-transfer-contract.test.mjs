@@ -18,14 +18,18 @@ test("keeps story credit reads separate from the Toman wallet", async () => {
   assert.match(summary, /available_quantity/);
 });
 
-test("transfers credits atomically only between owned finance scopes", async () => {
+test("transfers credits atomically only between owned and verified finance scopes", async () => {
   const route = await read("app/api/finance/credits/transfer/route.ts");
+  const financeCore = await read("lib/finance-core.ts");
   const compact = route.replace(/\s+/g, "");
 
   assert.match(route, /rejectCrossSiteMutation\(request\)/);
   assert.match(route, /listOwnedFinanceAccounts\(request\)/);
-  assert.match(route, /accounts\.find\(\(account\) => account\.scope === sourceScope\)/);
-  assert.match(route, /accounts\.find\(\(account\) => account\.scope === destinationScope\)/);
+  assert.match(financeCore, /verificationStatus:\s*accountActivities\.verificationStatus/);
+  assert.match(financeCore, /verificationStatus:\s*"verified"/);
+  assert.match(route, /account\.kind === "personal" \|\| account\.verificationStatus === "verified"/);
+  assert.match(route, /transferableAccounts\.find\(\(account\) => account\.scope === sourceScope\)/);
+  assert.match(route, /transferableAccounts\.find\(\(account\) => account\.scope === destinationScope\)/);
   assert.match(route, /source\.scope === destination\.scope/);
   assert.match(route, /Number\.isSafeInteger\(quantity\)/);
   assert.match(route, /quantity <= 0/);

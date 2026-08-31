@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 
 async function read(path) {
@@ -37,4 +38,45 @@ test("keeps credit quantities out of the Toman wallet schema", async () => {
   assert.ok(walletStart >= 0 && walletEnd > walletStart, "wallet schema block must exist");
   assert.doesNotMatch(walletBlock, /credit|quantity/i);
   assert.match(walletBlock, /availableBalanceToman/);
+});
+
+test("keeps negative idempotent replays harmless after the original debit spent the balance", async () => {
+  const migration = await read("drizzle/0010_credit_ledger.sql");
+  const db = new DatabaseSync(":memory:");
+  db.exec(migration);
+
+  const insert = db.prepare(`
+    INSERT INTO credit_ledger (
+      owner_key,
+      asset_code,
+      quantity_delta,
+      transaction_type,
+      reference_type,
+      reference_id,
+      idempotency_key,
+      metadata_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, '{}')
+    ON CONFLICT(idempotency_key) DO NOTHING
+  `);
+  const balance = db.prepare(`
+    SELECT available_quantity AS quantity
+    FROM credit_balances
+    WHERE owner_key = ? AND asset_code = ?
+  `);
+
+  insert.run("owner:a", "story_credit", 5, "purchase", "order", "order-1", "purchase-1");
+  insert.run("owner:a", "story_credit", -5, "transfer_out", "transfer", "transfer-1", "transfer-1:out");
+  assert.equal(balance.get("owner:a", "story_credit").quantity, 0);
+
+  assert.doesNotThrow(() => {
+    insert.run("owner:a", "story_credit", -5, "transfer_out", "transfer", "transfer-1", "transfer-1:out");
+  });
+  assert.equal(balance.get("owner:a", "story_credit").quantity, 0);
+
+  assert.throws(
+    () => insert.run("owner:a", "story_credit", -1, "consume", "story", "story-2", "consume-2"),
+    /insufficient_credit/,
+  );
+
+  db.close();
 });

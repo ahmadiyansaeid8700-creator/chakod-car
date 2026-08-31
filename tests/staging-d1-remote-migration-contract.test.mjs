@@ -6,25 +6,27 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("staging deployment applies remote D1 migrations fail-closed before Worker build", async () => {
+test("staging deployment applies remote D1 migrations fail-closed before Worker upload", async () => {
   const workflow = await source(".github/workflows/staging-deploy.yml");
   const packageJson = JSON.parse(await source("package.json"));
 
   assert.equal(packageJson.scripts["d1:migrate:staging"], "node scripts/migrate-staging-d1.mjs");
-  assert.match(workflow, /Apply and verify remote staging D1 migrations/);
-  assert.match(workflow, /npm run d1:migrate:staging/);
+  assert.equal(packageJson.scripts["prebuild:cloudflare"], "npm run d1:migrate:staging");
+  assert.match(workflow, /npm run build:cloudflare/);
 
-  const migrateIndex = workflow.indexOf("npm run d1:migrate:staging");
   const buildIndex = workflow.indexOf("npm run build:cloudflare");
   const uploadIndex = workflow.indexOf("wrangler versions upload");
-  assert.ok(migrateIndex >= 0, "remote migration step must exist");
-  assert.ok(buildIndex > migrateIndex, "remote migration must finish before Worker build");
-  assert.ok(uploadIndex > migrateIndex, "remote migration must finish before Worker upload");
+  assert.ok(buildIndex >= 0, "staging Worker build step must exist");
+  assert.ok(uploadIndex > buildIndex, "Worker upload must remain after the build lifecycle migration gate");
 });
 
 test("remote staging D1 migration gate pins the database and rejects partial schema", async () => {
   const script = await source("scripts/migrate-staging-d1.mjs");
 
+  assert.match(script, /agent\/launch-3-local-baseline/);
+  assert.match(script, /GITHUB_ACTIONS/);
+  assert.match(script, /GITHUB_REF_NAME/);
+  assert.match(script, /CHAKOD_APPLY_STAGING_D1_MIGRATIONS/);
   assert.match(script, /chakod-staging/);
   assert.match(script, /c38ca246-c71b-4a64-98fb-d0c946da3cb9/);
   assert.match(script, /drizzle\/0010_credit_ledger\.sql/);

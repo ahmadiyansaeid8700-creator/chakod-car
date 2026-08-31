@@ -20,6 +20,7 @@ test("keeps story credit reads separate from the Toman wallet", async () => {
 
 test("transfers credits atomically only between owned finance scopes", async () => {
   const route = await read("app/api/finance/credits/transfer/route.ts");
+  const compact = route.replace(/\s+/g, "");
 
   assert.match(route, /rejectCrossSiteMutation\(request\)/);
   assert.match(route, /listOwnedFinanceAccounts\(request\)/);
@@ -32,8 +33,8 @@ test("transfers credits atomically only between owned finance scopes", async () 
   assert.match(route, /creditTransferValues\(/);
   assert.match(route, /const \[debit, credit\] = creditTransferValues/);
   assert.match(route, /await db\.batch\(\[/);
-  assert.match(route, /db\.insert\(creditLedger\)\.values\(debit\)/);
-  assert.match(route, /db\.insert\(creditLedger\)\.values\(credit\)/);
+  assert.match(compact, /db\.insert\(creditLedger\)\.values\(debit\)/);
+  assert.match(compact, /db\.insert\(creditLedger\)\.values\(credit\)/);
   assert.match(route, /isInsufficientCreditError\(error\)/);
   assert.match(route, /409/);
   assert.doesNotMatch(route, /availableBalanceToman|available_balance_toman|walletTransactions|wallets/);

@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../../db";
 import {
   commerceOrders,
+  creditLedger,
   featuredShowroomPlacements,
   invoices,
   paymentAttempts,
@@ -18,6 +19,7 @@ import {
   rejectCrossSiteMutation,
   requestIdentityHeaders,
 } from "../../../../lib/chakod-auth-proxy";
+import { paidCreditEffect } from "../../../../lib/commerce-product-effects";
 import {
   createPublicReference,
   ensureWallet,
@@ -34,6 +36,9 @@ export const dynamic = "force-dynamic";
 const ORDER_PATTERN = /^[a-z0-9_-]{6,100}$/i;
 const IDEMPOTENCY_PATTERN = /^[a-z0-9_-]{12,100}$/i;
 
+type AppDb = ReturnType<typeof getDb>;
+type CommerceOrder = typeof commerceOrders.$inferSelect;
+
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
@@ -43,6 +48,21 @@ function readGatewayReference(payload: Record<string, unknown>) {
     payload.reference_id || payload.ref_id || payload.transaction_id || payload.card_holder,
     128,
   );
+}
+
+function creditEffectStatement(db: AppDb, order: CommerceOrder) {
+  const effect = paidCreditEffect(order);
+  return effect
+    ? db
+        .insert(creditLedger)
+        .values(effect)
+        .onConflictDoNothing({ target: creditLedger.idempotencyKey })
+    : null;
+}
+
+async function reconcilePaidCreditEffect(db: AppDb, order: CommerceOrder) {
+  const statement = creditEffectStatement(db, order);
+  if (statement) await statement;
 }
 
 async function moveFeaturedShowroomToReview(orderId: number) {
@@ -119,6 +139,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (order.status === "paid") {
+      await reconcilePaidCreditEffect(db, order);
       await moveFeaturedShowroomToReview(order.id);
 
       const [existingInvoice] = await db
@@ -199,30 +220,59 @@ export async function POST(request: NextRequest) {
           }),
         ]);
       } else {
-        await db.batch([
-          db
-            .update(commerceOrders)
-            .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
-            .where(eq(commerceOrders.id, order.id)),
-          db.insert(paymentAttempts).values({
-            orderId: order.id,
-            gateway: "staging-demo",
-            authority,
-            gatewayTransactionId: authority,
-            idempotencyKey: order.idempotencyKey,
-            amountToman: order.finalAmountToman,
-            status: "paid",
-            responseJson,
-            paidAt,
-          }),
-          db.insert(invoices).values({
-            invoiceNo,
-            orderId: order.id,
-            ownerKey,
-            amountToman: order.finalAmountToman,
-            status: "paid",
-          }),
-        ]);
+        const creditEffect = creditEffectStatement(db, order);
+        if (creditEffect) {
+          await db.batch([
+            db
+              .update(commerceOrders)
+              .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+              .where(eq(commerceOrders.id, order.id)),
+            db.insert(paymentAttempts).values({
+              orderId: order.id,
+              gateway: "staging-demo",
+              authority,
+              gatewayTransactionId: authority,
+              idempotencyKey: order.idempotencyKey,
+              amountToman: order.finalAmountToman,
+              status: "paid",
+              responseJson,
+              paidAt,
+            }),
+            db.insert(invoices).values({
+              invoiceNo,
+              orderId: order.id,
+              ownerKey,
+              amountToman: order.finalAmountToman,
+              status: "paid",
+            }),
+            creditEffect,
+          ]);
+        } else {
+          await db.batch([
+            db
+              .update(commerceOrders)
+              .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+              .where(eq(commerceOrders.id, order.id)),
+            db.insert(paymentAttempts).values({
+              orderId: order.id,
+              gateway: "staging-demo",
+              authority,
+              gatewayTransactionId: authority,
+              idempotencyKey: order.idempotencyKey,
+              amountToman: order.finalAmountToman,
+              status: "paid",
+              responseJson,
+              paidAt,
+            }),
+            db.insert(invoices).values({
+              invoiceNo,
+              orderId: order.id,
+              ownerKey,
+              amountToman: order.finalAmountToman,
+              status: "paid",
+            }),
+          ]);
+        }
       }
 
       return jsonResponse({
@@ -329,39 +379,77 @@ export async function POST(request: NextRequest) {
         }),
       ]);
     } else {
-      await db.batch([
-        db
-          .update(commerceOrders)
-          .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
-          .where(eq(commerceOrders.id, order.id)),
-        db.insert(paymentAttempts).values({
-          orderId: order.id,
-          gateway,
-          authority,
-          gatewayTransactionId: gatewayReference,
-          idempotencyKey: order.idempotencyKey,
-          amountToman: order.finalAmountToman,
-          status: "paid",
-          responseJson,
-          paidAt,
-        }),
-        db.insert(invoices).values({
-          invoiceNo,
-          orderId: order.id,
-          ownerKey,
-          amountToman: order.finalAmountToman,
-          status: "paid",
-        }),
-        db
-          .update(featuredShowroomPlacements)
-          .set({ status: "pending_review", updatedAt: sql`CURRENT_TIMESTAMP` })
-          .where(
-            and(
-              eq(featuredShowroomPlacements.orderId, order.id),
-              eq(featuredShowroomPlacements.status, "pending_payment"),
+      const creditEffect = creditEffectStatement(db, order);
+      if (creditEffect) {
+        await db.batch([
+          db
+            .update(commerceOrders)
+            .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(eq(commerceOrders.id, order.id)),
+          db.insert(paymentAttempts).values({
+            orderId: order.id,
+            gateway,
+            authority,
+            gatewayTransactionId: gatewayReference,
+            idempotencyKey: order.idempotencyKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+            responseJson,
+            paidAt,
+          }),
+          db.insert(invoices).values({
+            invoiceNo,
+            orderId: order.id,
+            ownerKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+          }),
+          creditEffect,
+          db
+            .update(featuredShowroomPlacements)
+            .set({ status: "pending_review", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(
+              and(
+                eq(featuredShowroomPlacements.orderId, order.id),
+                eq(featuredShowroomPlacements.status, "pending_payment"),
+              ),
             ),
-          ),
-      ]);
+        ]);
+      } else {
+        await db.batch([
+          db
+            .update(commerceOrders)
+            .set({ status: "paid", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(eq(commerceOrders.id, order.id)),
+          db.insert(paymentAttempts).values({
+            orderId: order.id,
+            gateway,
+            authority,
+            gatewayTransactionId: gatewayReference,
+            idempotencyKey: order.idempotencyKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+            responseJson,
+            paidAt,
+          }),
+          db.insert(invoices).values({
+            invoiceNo,
+            orderId: order.id,
+            ownerKey,
+            amountToman: order.finalAmountToman,
+            status: "paid",
+          }),
+          db
+            .update(featuredShowroomPlacements)
+            .set({ status: "pending_review", updatedAt: sql`CURRENT_TIMESTAMP` })
+            .where(
+              and(
+                eq(featuredShowroomPlacements.orderId, order.id),
+                eq(featuredShowroomPlacements.status, "pending_payment"),
+              ),
+            ),
+        ]);
+      }
     }
 
     return jsonResponse({

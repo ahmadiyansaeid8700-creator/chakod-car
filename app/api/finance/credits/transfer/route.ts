@@ -31,6 +31,9 @@ export async function POST(request: NextRequest) {
   if (!accounts.length) {
     return jsonResponse({ success: false, message: "برای انتقال اعتبار وارد شوید." }, 401);
   }
+  const transferableAccounts = accounts.filter(
+    (account) => account.kind === "personal" || account.verificationStatus === "verified",
+  );
 
   let input: Record<string, unknown>;
   try {
@@ -58,14 +61,14 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, message: "شناسه امن انتقال معتبر نیست." }, 400);
   }
 
-  const source = accounts.find((account) => account.scope === sourceScope);
-  const destination = accounts.find((account) => account.scope === destinationScope);
+  const source = transferableAccounts.find((account) => account.scope === sourceScope);
+  const destination = transferableAccounts.find((account) => account.scope === destinationScope);
   if (!source || !destination) {
     return jsonResponse(
       {
         success: false,
-        code: "credit_scope_not_owned",
-        message: "مبدأ و مقصد باید از حساب‌های متعلق به خودتان باشند.",
+        code: "credit_scope_not_transferable",
+        message: "مبدأ و مقصد باید حساب‌های متعلق به خودتان و تأییدشده باشند.",
       },
       403,
     );

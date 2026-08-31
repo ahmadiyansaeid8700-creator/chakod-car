@@ -2,7 +2,7 @@ import type { commerceOrders } from "../db/schema";
 import {
   creditMutationValues,
   STORY_CREDIT_ASSET,
-} from "./credit-ledger";
+} from "./credit-ledger.ts";
 
 const STORY_PACKS = {
   story_pack_25: 25,

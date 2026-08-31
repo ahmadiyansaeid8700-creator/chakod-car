@@ -8,6 +8,7 @@ import {
   rejectCrossSiteMutation,
 } from "../../../../../lib/chakod-auth-proxy";
 import {
+  creditLedgerEffectMatches,
   creditTransferValues,
   isInsufficientCreditError,
   STORY_CREDIT_ASSET,
@@ -103,6 +104,52 @@ export async function POST(request: NextRequest) {
         .values(credit)
         .onConflictDoNothing({ target: creditLedger.idempotencyKey }),
     ]);
+
+    const [storedDebit] = await db
+      .select({
+        ownerKey: creditLedger.ownerKey,
+        assetCode: creditLedger.assetCode,
+        quantityDelta: creditLedger.quantityDelta,
+        transactionType: creditLedger.transactionType,
+        referenceType: creditLedger.referenceType,
+        referenceId: creditLedger.referenceId,
+        idempotencyKey: creditLedger.idempotencyKey,
+        counterpartyOwnerKey: creditLedger.counterpartyOwnerKey,
+        metadataJson: creditLedger.metadataJson,
+      })
+      .from(creditLedger)
+      .where(eq(creditLedger.idempotencyKey, debit.idempotencyKey))
+      .limit(1);
+
+    const [storedCredit] = await db
+      .select({
+        ownerKey: creditLedger.ownerKey,
+        assetCode: creditLedger.assetCode,
+        quantityDelta: creditLedger.quantityDelta,
+        transactionType: creditLedger.transactionType,
+        referenceType: creditLedger.referenceType,
+        referenceId: creditLedger.referenceId,
+        idempotencyKey: creditLedger.idempotencyKey,
+        counterpartyOwnerKey: creditLedger.counterpartyOwnerKey,
+        metadataJson: creditLedger.metadataJson,
+      })
+      .from(creditLedger)
+      .where(eq(creditLedger.idempotencyKey, credit.idempotencyKey))
+      .limit(1);
+
+    if (
+      !creditLedgerEffectMatches(storedDebit, debit)
+      || !creditLedgerEffectMatches(storedCredit, credit)
+    ) {
+      return jsonResponse(
+        {
+          success: false,
+          code: "idempotency_conflict",
+          message: "این شناسه انتقال قبلاً برای انتقال دیگری استفاده شده است.",
+        },
+        409,
+      );
+    }
 
     const [latestSource] = await db
       .select({ availableQuantity: creditBalances.availableQuantity })

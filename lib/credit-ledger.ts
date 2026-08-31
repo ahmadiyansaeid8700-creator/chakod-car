@@ -43,6 +43,20 @@ export type CreditLedgerInsert = {
   metadataJson: string;
 };
 
+type CreditLedgerEffectCandidate = Partial<Record<keyof CreditLedgerInsert, unknown>>;
+
+const CREDIT_LEDGER_EFFECT_FIELDS: Array<keyof CreditLedgerInsert> = [
+  "ownerKey",
+  "assetCode",
+  "quantityDelta",
+  "transactionType",
+  "referenceType",
+  "referenceId",
+  "idempotencyKey",
+  "counterpartyOwnerKey",
+  "metadataJson",
+];
+
 const ASSET_CODE_PATTERN = /^[a-z][a-z0-9_]{2,63}$/;
 const NEGATIVE_TYPES = new Set<CreditTransactionType>(["consume", "transfer_out"]);
 const TRANSACTION_TYPES = new Set<CreditTransactionType>([
@@ -127,6 +141,14 @@ export function creditTransferValues(input: CreditTransferInput): [CreditLedgerI
       counterpartyOwnerKey: sourceOwnerKey,
     }),
   ];
+}
+
+export function creditLedgerEffectMatches(
+  actual: CreditLedgerEffectCandidate | null | undefined,
+  expected: CreditLedgerInsert,
+): boolean {
+  if (!actual) return false;
+  return CREDIT_LEDGER_EFFECT_FIELDS.every((field) => actual[field] === expected[field]);
 }
 
 export function isInsufficientCreditError(error: unknown): boolean {

@@ -44,6 +44,16 @@ test("transfers credits atomically only between owned and verified finance scope
   assert.doesNotMatch(route, /availableBalanceToman|available_balance_toman|walletTransactions|wallets/);
 });
 
+test("rejects reuse of a transfer idempotency key for a different ledger effect", async () => {
+  const route = await read("app/api/finance/credits/transfer/route.ts");
+
+  assert.match(route, /creditLedgerEffectMatches/);
+  assert.match(route, /storedDebit/);
+  assert.match(route, /storedCredit/);
+  assert.match(route, /creditLedger\.idempotencyKey/);
+  assert.match(route, /idempotency_conflict/);
+});
+
 test("renders Story credits as units with their own transfer form", async () => {
   const client = await read("app/account/wallet/WalletClient.tsx");
 

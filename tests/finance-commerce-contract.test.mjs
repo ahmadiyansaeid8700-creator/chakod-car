@@ -104,7 +104,8 @@ test("documents purchased credits as non-expiring while preserving annual free q
   const revenue = await source("docs/revenue-model-fa.md");
 
   assert.match(revenue, /اعتبارهای خریداری‌شده[^\n]*تاریخ انقضا ندارند/);
-  assert.match(revenue, /سهمیه رایگان سالانه/);
-  assert.match(revenue, /۱ آگهی در سال/);
-  assert.doesNotMatch(revenue, /اعتبارهای خریداری‌شده[^\n]*(?:۳۶۵|365)[^\n]*روز/);
+  assert.match(revenue, /سهمیه رایگان سالانه[^\n]*بازنشانی/);
+  assert.match(revenue, /هر کاربر شخصی در هر سال ۲ اعتبار رایگان/);
+  assert.match(revenue, /هر نمایشگاه در هر سال ۳ اعتبار رایگان/);
+  assert.doesNotMatch(revenue, /اعتبار(?:های)? خریداری‌شده[^\n]*(?:۳۶۵|365)[^\n]*روز/);
 });

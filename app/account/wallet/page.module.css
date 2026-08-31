@@ -186,6 +186,80 @@
   font-size: 20px;
 }
 
+.creditCard {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid #dfd2f2;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 32px rgba(63, 31, 94, 0.07);
+}
+
+.creditHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.creditHead span {
+  display: block;
+  margin-bottom: 4px;
+  color: #7c3aed;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.creditHead h2 {
+  margin: 0;
+  color: #2a183e;
+  font-size: 19px;
+}
+
+.creditHead > strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #5b21b6;
+  font-size: clamp(28px, 6vw, 38px);
+  font-weight: 950;
+}
+
+.creditHead > strong small {
+  color: #7f6a93;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.creditCard p {
+  margin: 12px 0 0;
+  color: #766683;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.creditTransferButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0 16px;
+  border: 1px solid #d8c8ed;
+  border-radius: 14px;
+  background: #f7f2fc;
+  color: #6d28d9;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.creditTransferButton span {
+  font-size: 18px;
+}
+
 .transferPanel {
   margin-top: 14px;
   padding: 20px;
@@ -630,6 +704,20 @@
     font-size: 11px;
   }
 
+  .creditCard {
+    margin-top: 10px;
+    padding: 17px;
+    border-radius: 19px;
+  }
+
+  .creditHead > strong {
+    font-size: 28px;
+  }
+
+  .creditTransferButton {
+    width: 100%;
+  }
+
   .transferPanel {
     margin-top: 10px;
     padding: 16px 14px;
@@ -681,6 +769,11 @@
 @media (max-width: 420px) {
   .balanceActions {
     grid-template-columns: 1fr;
+  }
+
+  .creditHead {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

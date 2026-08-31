@@ -85,10 +85,27 @@ test("rejects anonymous Commerce locally and returns protected account pages to 
   assert.doesNotMatch(checkout, /if \(!token\)[\s\S]*?window\.location\.assign\(`\/login/);
 });
 
-test("does not restore the retired story reservation card in account services", async () => {
+test("offers Story credit packs without restoring one-off Story sales", async () => {
   const center = await source("app/account/services/CommerceCenter.tsx");
 
+  for (const key of ["story_pack_25", "story_pack_50", "story_pack_100"]) {
+    assert.match(center, new RegExp(key));
+  }
+  assert.match(center, /اعتبار استوری/);
+  assert.match(center, /بدون تاریخ انقضا/);
+  assert.match(center, /قیمت واحد/);
+  assert.match(center, /اولویت|رتبه‌بندی/);
   assert.doesNotMatch(center, /رزرو استوری/);
   assert.doesNotMatch(center, /استوری استانی ۲۴ ساعته/);
   assert.doesNotMatch(center, /listing_story_(?:large|regular)/);
+});
+
+test("documents purchased credits as non-expiring while preserving annual free quotas", async () => {
+  const revenue = await source("docs/revenue-model-fa.md");
+
+  assert.match(revenue, /اعتبارهای خریداری‌شده[^\n]*تاریخ انقضا ندارند/);
+  assert.match(revenue, /سهمیه رایگان سالانه[^\n]*بازنشانی/);
+  assert.match(revenue, /هر کاربر شخصی در هر سال ۲ اعتبار رایگان/);
+  assert.match(revenue, /هر نمایشگاه در هر سال ۳ اعتبار رایگان/);
+  assert.doesNotMatch(revenue, /اعتبار(?:های)? خریداری‌شده[^\n]*(?:۳۶۵|365)[^\n]*روز/);
 });

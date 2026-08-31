@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const bannerReservations = sqliteTable("banner_reservations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -45,6 +45,48 @@ export const walletTransactions = sqliteTable("wallet_transactions", {
   description: text("description").notNull().default(""),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const creditBalances = sqliteTable(
+  "credit_balances",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    ownerKey: text("owner_key").notNull(),
+    assetCode: text("asset_code").notNull(),
+    availableQuantity: integer("available_quantity").notNull().default(0),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    ownerAssetUnique: uniqueIndex("credit_balances_owner_asset_unique").on(
+      table.ownerKey,
+      table.assetCode,
+    ),
+  }),
+);
+
+export const creditLedger = sqliteTable(
+  "credit_ledger",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    ownerKey: text("owner_key").notNull(),
+    assetCode: text("asset_code").notNull(),
+    quantityDelta: integer("quantity_delta").notNull(),
+    transactionType: text("transaction_type").notNull(),
+    referenceType: text("reference_type").notNull().default(""),
+    referenceId: text("reference_id").notNull().default(""),
+    idempotencyKey: text("idempotency_key").notNull().unique(),
+    counterpartyOwnerKey: text("counterparty_owner_key"),
+    metadataJson: text("metadata_json").notNull().default("{}"),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    ownerAssetIdx: index("credit_ledger_owner_asset_idx").on(
+      table.ownerKey,
+      table.assetCode,
+      table.id,
+    ),
+  }),
+);
 
 export const commerceOrders = sqliteTable("commerce_orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),

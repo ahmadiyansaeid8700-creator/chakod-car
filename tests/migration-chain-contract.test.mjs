@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
 async function read(path) {
@@ -10,20 +10,37 @@ async function readJson(path) {
   return JSON.parse(await read(path));
 }
 
-test("keeps Drizzle migration journal ordered and unique", async () => {
+test("keeps numbered SQL migration deployment chain ordered and unique", async () => {
+  const migrationFiles = (await readdir(new URL("../drizzle/", import.meta.url)))
+    .filter((name) => /^\d{4}_.+\.sql$/.test(name))
+    .sort();
+
+  assert.equal(migrationFiles.at(-1), "0010_credit_ledger.sql");
+  assert.equal(new Set(migrationFiles).size, migrationFiles.length);
+  assert.deepEqual(
+    migrationFiles.map((name) => Number(name.slice(0, 4))),
+    migrationFiles.map((_, index) => index),
+  );
+
+  const verifier = await read("scripts/verify-d1-migrations.mjs");
+  for (const migrationFile of migrationFiles) {
+    assert.ok(
+      verifier.includes(`drizzle/${migrationFile}`),
+      `D1 verifier must apply ${migrationFile}`,
+    );
+  }
+});
+
+test("keeps Drizzle migration journal metadata ordered and unique", async () => {
+  // _journal.json tracks the Drizzle-generated snapshot history only.
+  // The deployment chain is the numbered SQL files above, applied by verify-d1-migrations.mjs.
   const journal = await readJson("drizzle/meta/_journal.json");
   const tags = journal.entries.map((entry) => entry.tag);
   const indexes = journal.entries.map((entry) => entry.idx);
 
-  assert.deepEqual(tags, [
-    "0000_curvy_wildside",
-    "0001_launch_finance_support",
-    "0002_content_articles",
-    "0003_business_verifications",
-    "0004_account_activities",
-  ]);
-  assert.deepEqual(indexes, [0, 1, 2, 3, 4]);
+  assert.deepEqual(indexes, indexes.map((_, index) => index));
   assert.equal(new Set(tags).size, tags.length);
+  assert.ok(tags.every((tag) => /^\d{4}_.+/.test(tag)));
 });
 
 test("keeps finance and support tables in migration 0001", async () => {

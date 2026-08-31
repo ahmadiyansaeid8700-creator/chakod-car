@@ -15,6 +15,7 @@ export type FinanceAccount = {
   type: string;
   name: string;
   ownerKey: string;
+  verificationStatus: string;
 };
 
 function bytesToHex(bytes: Uint8Array) {
@@ -69,6 +70,7 @@ export async function listOwnedFinanceAccounts(request: NextRequest): Promise<Fi
     type: "personal",
     name: "حساب شخصی",
     ownerKey: await ownerKeyForScope(token, "personal"),
+    verificationStatus: "verified",
   };
 
   const identity = await readServerIdentity("/api/me.php");
@@ -82,6 +84,7 @@ export async function listOwnedFinanceAccounts(request: NextRequest): Promise<Fi
         activityType: accountActivities.activityType,
         name: accountActivities.name,
         status: accountActivities.status,
+        verificationStatus: accountActivities.verificationStatus,
       })
       .from(accountActivities)
       .where(eq(accountActivities.ownerUserId, userId))
@@ -99,6 +102,7 @@ export async function listOwnedFinanceAccounts(request: NextRequest): Promise<Fi
             type: row.activityType,
             name: row.name || "کسب‌وکار",
             ownerKey: await ownerKeyForScope(token, scope),
+            verificationStatus: row.verificationStatus,
           };
         }),
     );

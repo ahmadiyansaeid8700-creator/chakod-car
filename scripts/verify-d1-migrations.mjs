@@ -26,6 +26,7 @@ const migrations = [
   "drizzle/0007_instagram_story_queue.sql",
   "drizzle/0008_listing_attributions.sql",
   "drizzle/0009_market_floor.sql",
+  "drizzle/0010_credit_ledger.sql",
 ];
 
 const expectedTables = [
@@ -46,6 +47,13 @@ const expectedTables = [
   "account_activity_members",
   "instagram_story_queue",
   "listing_attributions",
+  "credit_balances",
+  "credit_ledger",
+];
+
+const expectedTriggers = [
+  "credit_ledger_prevent_negative",
+  "credit_ledger_apply_balance",
 ];
 
 function run(args) {
@@ -105,7 +113,7 @@ try {
     ]);
   }
 
-  const output = run([
+  const tableOutput = run([
     "d1",
     "execute",
     databaseName,
@@ -118,12 +126,32 @@ try {
     "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;",
   ]);
 
-  const missing = expectedTables.filter((table) => !output.includes(table));
-  if (missing.length) {
-    throw new Error(`D1 migration verification is missing tables: ${missing.join(", ")}`);
+  const missingTables = expectedTables.filter((table) => !tableOutput.includes(table));
+  if (missingTables.length) {
+    throw new Error(`D1 migration verification is missing tables: ${missingTables.join(", ")}`);
   }
 
-  console.log(`D1 migrations verified successfully (${migrations.length} files, ${expectedTables.length} required tables).`);
+  const triggerOutput = run([
+    "d1",
+    "execute",
+    databaseName,
+    "--local",
+    "--config",
+    configPath,
+    "--persist-to",
+    persistPath,
+    "--command",
+    "SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name;",
+  ]);
+
+  const missingTriggers = expectedTriggers.filter((trigger) => !triggerOutput.includes(trigger));
+  if (missingTriggers.length) {
+    throw new Error(`D1 migration verification is missing triggers: ${missingTriggers.join(", ")}`);
+  }
+
+  console.log(
+    `D1 migrations verified successfully (${migrations.length} files, ${expectedTables.length} required tables, ${expectedTriggers.length} required triggers).`,
+  );
 } finally {
   rmSync(tempRoot, { recursive: true, force: true });
 }

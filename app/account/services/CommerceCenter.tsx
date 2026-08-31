@@ -76,12 +76,19 @@ type CommerceResponse = {
   payment_gateway_ready?: boolean;
 };
 
+type ServiceTab = "listing" | "story" | "profile" | "orders";
+
+const STORY_PACK_KEYS = ["story_pack_25", "story_pack_50", "story_pack_100"] as const;
+
 const serviceDescriptions: Record<string, string> = {
   listing_personal_publish: "انتشار آگهی شخصی برای ۳۰ روز",
   listing_personal_renew: "تمدید همان آگهی بدون ثبت دوباره",
   listing_dealer_publish: "انتشار آگهی خودرو با تعرفه نمایشگاهی",
   listing_dealer_renew: "تمدید آگهی نمایشگاه برای ۳۰ روز دیگر",
   listing_bump: "بازگرداندن آگهی فعال به ابتدای نتایج",
+  story_pack_25: "۲۵ اعتبار استوری بدون تاریخ انقضا",
+  story_pack_50: "۵۰ اعتبار استوری بدون تاریخ انقضا با قیمت واحد کمتر",
+  story_pack_100: "۱۰۰ اعتبار استوری بدون تاریخ انقضا با کمترین قیمت واحد",
   professional_profile_6m: "نمایش عمومی صفحه حرفه‌ای مجموعه برای ۶ ماه",
   professional_profile_12m: "نمایش عمومی صفحه حرفه‌ای مجموعه برای ۱۲ ماه",
 };
@@ -96,6 +103,10 @@ const statusLabels: Record<string, string> = {
 
 function formatToman(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("fa-IR").format(value);
 }
 
 function formatDate(value?: string | null) {
@@ -126,6 +137,11 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
+function storyCreditQuantity(service: Service) {
+  const quantity = Number(service.settings?.credit_quantity || 0);
+  return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 0;
+}
+
 export default function CommerceCenter() {
   const [data, setData] = useState<CommerceResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +149,7 @@ export default function CommerceCenter() {
   const [listingId, setListingId] = useState<number>(0);
   const [dealerId, setDealerId] = useState<number>(0);
   const [discountCode, setDiscountCode] = useState("");
-  const [activeTab, setActiveTab] = useState<"listing" | "profile" | "orders">("listing");
+  const [activeTab, setActiveTab] = useState<ServiceTab>("listing");
 
   async function load() {
     setLoading(true);
@@ -168,7 +184,12 @@ export default function CommerceCenter() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedTab = params.get("tab");
-    if (requestedTab === "profile" || requestedTab === "orders" || requestedTab === "listing") {
+    if (
+      requestedTab === "profile" ||
+      requestedTab === "orders" ||
+      requestedTab === "listing" ||
+      requestedTab === "story"
+    ) {
       setActiveTab(requestedTab);
     }
 
@@ -199,6 +220,16 @@ export default function CommerceCenter() {
     const allowed = isActive ? [renewKey, "listing_bump"] : [publishKey, renewKey];
     return services.filter((item) => allowed.includes(item.service_key));
   }, [data?.services, selectedListing]);
+
+  const storyServices = useMemo(
+    () =>
+      (data?.services || []).filter(
+        (item) =>
+          item.is_active &&
+          STORY_PACK_KEYS.includes(item.service_key as (typeof STORY_PACK_KEYS)[number]),
+      ),
+    [data?.services],
+  );
 
   const profileServices = useMemo(
     () =>
@@ -276,6 +307,7 @@ export default function CommerceCenter() {
 
         <nav className={styles.tabs} aria-label="بخش‌های خدمات">
           <button className={activeTab === "listing" ? styles.activeTab : ""} onClick={() => setActiveTab("listing")}>خدمات آگهی</button>
+          <button className={activeTab === "story" ? styles.activeTab : ""} onClick={() => setActiveTab("story")}>اعتبار استوری</button>
           <button className={activeTab === "profile" ? styles.activeTab : ""} onClick={() => setActiveTab("profile")}>اشتراک حرفه‌ای</button>
           <button className={activeTab === "orders" ? styles.activeTab : ""} onClick={() => setActiveTab("orders")}>سفارش‌ها</button>
         </nav>
@@ -338,9 +370,52 @@ export default function CommerceCenter() {
                     </button>
                   </article>
                 ))}
-
               </div>
             </div>
+          </section>
+        )}
+
+        {activeTab === "story" && (
+          <section className={styles.profileLayout}>
+            <div className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div><span>دارایی غیرنقدی</span><h2>پکیج‌های اعتبار استوری</h2></div>
+                <Link href="/account/wallet">مشاهده موجودی</Link>
+              </div>
+              <p>
+                اعتبارهای خریداری‌شده بدون تاریخ انقضا هستند. پکیج بزرگ‌تر فقط قیمت واحد را کاهش می‌دهد و هیچ اولویت یا رتبه‌بندی بهتری برای نمایش استوری ایجاد نمی‌کند.
+              </p>
+            </div>
+
+            <div className={styles.planGrid}>
+              {storyServices.map((service) => {
+                const quantity = storyCreditQuantity(service);
+                const unitPrice = quantity > 0 ? Math.round(service.amount_toman / quantity) : 0;
+                return (
+                  <article className={styles.planCard} key={service.service_key}>
+                    <span>{formatNumber(quantity)} اعتبار استوری</span>
+                    <h3>{service.title}</h3>
+                    <strong>{formatToman(service.amount_toman)}</strong>
+                    <ul>
+                      <li>قیمت واحد: {formatToman(unitPrice)} برای هر اعتبار</li>
+                      <li>بدون تاریخ انقضا تا زمان مصرف</li>
+                      <li>هر انتشار موفق استوری یک اعتبار مصرف می‌کند</li>
+                      <li>بدون خرید اولویت یا رتبه‌بندی بهتر</li>
+                    </ul>
+                    <button onClick={() => continueToCheckout(service.service_key)}>
+                      خرید پکیج و ادامه پرداخت
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+
+            {!storyServices.length ? (
+              <div className={styles.emptyState}>
+                <strong>پکیج اعتبار استوری فعلاً فعال نیست</strong>
+                <span>پس از فعال‌شدن محصول در Commerce، پکیج‌های ۲۵، ۵۰ و ۱۰۰ اعتبار اینجا نمایش داده می‌شوند.</span>
+              </div>
+            ) : null}
           </section>
         )}
 

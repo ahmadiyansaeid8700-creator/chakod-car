@@ -24,10 +24,27 @@ type WalletTransaction = {
   createdAt: string;
 };
 
+type CreditBalance = {
+  asset_code: string;
+  available_quantity: number;
+};
+
+type CreditTransaction = {
+  id: number;
+  asset_code: string;
+  quantity_delta: number;
+  transaction_type: string;
+  reference_type: string;
+  reference_id: string;
+  created_at: string;
+};
+
 type FinanceSummaryResponse = {
   success?: boolean;
   message?: string;
   wallet?: WalletSummary;
+  credit_balances?: CreditBalance[];
+  credit_transactions?: CreditTransaction[];
   transactions?: WalletTransaction[];
 };
 
@@ -52,6 +69,12 @@ type TransferResponse = {
   available_balance_toman?: number;
 };
 
+type CreditTransferResponse = {
+  success?: boolean;
+  message?: string;
+  available_quantity?: number;
+};
+
 const statusTitles: Record<string, string> = {
   active: "فعال",
   disabled: "غیرفعال",
@@ -60,8 +83,21 @@ const statusTitles: Record<string, string> = {
   failed: "ناموفق",
 };
 
+const creditTransactionTitles: Record<string, string> = {
+  purchase: "خرید اعتبار استوری",
+  consume: "مصرف برای انتشار استوری",
+  transfer_out: "انتقال اعتبار به حساب دیگر",
+  transfer_in: "دریافت اعتبار از حساب دیگر",
+  refund: "بازگشت اعتبار",
+  admin_adjustment: "اصلاح اعتبار توسط مدیریت",
+};
+
 function formatToman(value: number) {
   return `${new Intl.NumberFormat("fa-IR").format(Number(value || 0))} تومان`;
+}
+
+function formatQuantity(value: number) {
+  return new Intl.NumberFormat("fa-IR").format(Number(value || 0));
 }
 
 function formatDate(value?: string) {
@@ -103,6 +139,12 @@ export default function WalletClient() {
   const [transferNotice, setTransferNotice] = useState("");
   const [destinationScope, setDestinationScope] = useState("");
   const [amount, setAmount] = useState("");
+  const [creditTransferOpen, setCreditTransferOpen] = useState(false);
+  const [creditTransferWorking, setCreditTransferWorking] = useState(false);
+  const [creditTransferError, setCreditTransferError] = useState("");
+  const [creditTransferNotice, setCreditTransferNotice] = useState("");
+  const [creditDestinationScope, setCreditDestinationScope] = useState("");
+  const [creditQuantity, setCreditQuantity] = useState("");
 
   async function loadWallet() {
     setLoading(true);
@@ -142,6 +184,11 @@ export default function WalletClient() {
       setTransferInfo(result);
       const targets = result.targets || [];
       setDestinationScope((current) => (
+        targets.some((target) => target.scope === current)
+          ? current
+          : targets[0]?.scope || ""
+      ));
+      setCreditDestinationScope((current) => (
         targets.some((target) => target.scope === current)
           ? current
           : targets[0]?.scope || ""
@@ -215,8 +262,68 @@ export default function WalletClient() {
     }
   }
 
+  const storyCreditBalance = Number(
+    summary?.credit_balances?.find((item) => item.asset_code === "story_credit")?.available_quantity || 0,
+  );
+
+  async function submitCreditTransfer() {
+    const source = transferInfo?.source;
+    const target = (transferInfo?.targets || []).find((item) => item.scope === creditDestinationScope);
+    const quantity = Number(normalizeDigits(creditQuantity));
+
+    setCreditTransferError("");
+    setCreditTransferNotice("");
+
+    if (!source || !target) {
+      setCreditTransferError("حساب مقصد را انتخاب کنید.");
+      return;
+    }
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+      setCreditTransferError("تعداد اعتبار را صحیح وارد کنید.");
+      return;
+    }
+    if (quantity > storyCreditBalance) {
+      setCreditTransferError("تعداد اعتبار از موجودی اعتبار استوری بیشتر است.");
+      return;
+    }
+
+    setCreditTransferWorking(true);
+    try {
+      const response = await fetch("/api/finance/credits/transfer", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({
+          source_scope: source.scope,
+          destination_scope: target.scope,
+          asset_code: "story_credit",
+          quantity: quantity,
+          idempotency_key: `credit_transfer_${crypto.randomUUID().replace(/-/g, "")}`,
+        }),
+      });
+      const result = await readJson<CreditTransferResponse>(response);
+      if (!response.ok || !result?.success) {
+        setCreditTransferError(result?.message || "انتقال اعتبار انجام نشد.");
+        return;
+      }
+
+      setCreditTransferNotice(result.message || "انتقال اعتبار انجام شد.");
+      setCreditQuantity("");
+      await Promise.all([loadWallet(), loadTransferInfo()]);
+    } catch {
+      setCreditTransferError("ارتباط با سرویس انتقال اعتبار برقرار نشد.");
+    } finally {
+      setCreditTransferWorking(false);
+    }
+  }
+
   const wallet = summary?.wallet;
   const transactions = summary?.transactions || [];
+  const creditTransactions = summary?.credit_transactions || [];
   const transferTargets = transferInfo?.targets || [];
   const canTransfer = Boolean(transferInfo?.source && transferTargets.length);
 
@@ -285,6 +392,138 @@ export default function WalletClient() {
                 ) : null}
               </div>
             </section>
+
+            <section className={styles.creditCard} aria-label="اعتبار استوری">
+              <div className={styles.creditHead}>
+                <div>
+                  <span>دارایی غیرنقدی</span>
+                  <h2>اعتبار استوری</h2>
+                </div>
+                <strong>
+                  {formatQuantity(storyCreditBalance)}
+                  <small>اعتبار</small>
+                </strong>
+              </div>
+              <p>اعتبارهای خریداری‌شده تاریخ انقضا ندارند و مستقل از موجودی تومانی نگهداری می‌شوند.</p>
+              {canTransfer ? (
+                <button
+                  type="button"
+                  className={styles.creditTransferButton}
+                  onClick={() => {
+                    setCreditTransferOpen((value) => !value);
+                    setCreditTransferError("");
+                    setCreditTransferNotice("");
+                  }}
+                >
+                  <span aria-hidden="true">⇄</span>
+                  انتقال اعتبار
+                </button>
+              ) : null}
+            </section>
+
+            {creditTransferOpen ? (
+              <section className={styles.transferPanel} aria-label="انتقال اعتبار استوری بین حساب‌های من">
+                <div className={styles.transferHead}>
+                  <div>
+                    <span>اعتبار استوری</span>
+                    <h2>انتقال اعتبار بین حساب‌های من</h2>
+                  </div>
+                  <button type="button" onClick={() => setCreditTransferOpen(false)} aria-label="بستن">×</button>
+                </div>
+
+                {transferLoading ? (
+                  <div className={styles.transferState}>در حال بررسی حساب‌های مجاز…</div>
+                ) : !canTransfer ? (
+                  <div className={styles.transferState}>حساب دیگری با مالکیت تأییدشده پیدا نشد.</div>
+                ) : (
+                  <>
+                    <div className={styles.transferRoute}>
+                      <div>
+                        <small>مبدأ</small>
+                        <strong>{transferInfo?.source?.name}</strong>
+                        <em>موجودی فعلی: {formatQuantity(storyCreditBalance)} اعتبار</em>
+                      </div>
+                      <span aria-hidden="true">←</span>
+                      <label>
+                        <small>مقصد</small>
+                        <select
+                          value={creditDestinationScope}
+                          onChange={(event) => setCreditDestinationScope(event.target.value)}
+                        >
+                          {transferTargets.map((target) => (
+                            <option key={target.scope} value={target.scope}>{target.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <label className={styles.amountField}>
+                      <span>تعداد اعتبار</span>
+                      <div>
+                        <input
+                          value={creditQuantity}
+                          onChange={(event) => setCreditQuantity(event.target.value)}
+                          inputMode="numeric"
+                          autoComplete="off"
+                          placeholder="مثلاً ۵"
+                        />
+                        <b>اعتبار</b>
+                      </div>
+                    </label>
+
+                    <div className={styles.transferRules}>
+                      <span>فقط اعتبار استوری منتقل می‌شود؛ موجودی تومانی تغییر نمی‌کند.</span>
+                      <span>مقصد فقط حساب شخصی یا فعالیت تأییدشده متعلق به همین کاربر است.</span>
+                      <span>انتقال اعتبار تاریخ انقضا ایجاد نمی‌کند.</span>
+                    </div>
+
+                    {creditTransferError ? <div className={styles.transferError}>{creditTransferError}</div> : null}
+                    {creditTransferNotice ? <div className={styles.transferNotice}>{creditTransferNotice}</div> : null}
+
+                    <button
+                      type="button"
+                      className={styles.confirmTransfer}
+                      onClick={() => void submitCreditTransfer()}
+                      disabled={creditTransferWorking}
+                    >
+                      {creditTransferWorking ? "در حال انتقال…" : "تأیید انتقال اعتبار"}
+                    </button>
+                  </>
+                )}
+              </section>
+            ) : null}
+
+            {creditTransactions.length ? (
+              <section className={styles.transactionsSection} aria-label="گردش اعتبار استوری">
+                <div className={styles.sectionHead}>
+                  <div>
+                    <span>گردش اعتبار</span>
+                    <h2>تراکنش‌های اعتبار استوری</h2>
+                  </div>
+                  <small>{formatQuantity(creditTransactions.length)} مورد</small>
+                </div>
+                <div className={styles.transactionList}>
+                  {creditTransactions.slice(0, 12).map((item) => {
+                    const incoming = item.quantity_delta > 0;
+                    return (
+                      <article className={styles.transaction} key={`credit-${item.id}`}>
+                        <span className={styles.transactionIcon} data-direction={incoming ? "credit" : "debit"}>
+                          {incoming ? "+" : "−"}
+                        </span>
+                        <div className={styles.transactionCopy}>
+                          <strong>{creditTransactionTitles[item.transaction_type] || "تراکنش اعتبار استوری"}</strong>
+                          <small>{formatDate(item.created_at)}</small>
+                        </div>
+                        <div className={styles.transactionAmount} data-direction={incoming ? "credit" : "debit"}>
+                          <strong>{incoming ? "+" : "−"}{formatQuantity(Math.abs(item.quantity_delta))} اعتبار</strong>
+                          <small>story_credit</small>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
             {transferOpen ? (
               <section className={styles.transferPanel} aria-label="انتقال بین کیف پول‌های من">
@@ -358,8 +597,8 @@ export default function WalletClient() {
             <section className={styles.transactionsSection}>
               <div className={styles.sectionHead}>
                 <div>
-                  <span>گردش کیف پول</span>
-                  <h2>تراکنش‌ها</h2>
+                  <span>گردش کیف پول تومانی</span>
+                  <h2>تراکنش‌های تومانی</h2>
                 </div>
                 <small>{new Intl.NumberFormat("fa-IR").format(transactions.length)} مورد</small>
               </div>
@@ -388,8 +627,8 @@ export default function WalletClient() {
               ) : (
                 <div className={styles.empty}>
                   <span aria-hidden="true">◌</span>
-                  <strong>هنوز تراکنشی ثبت نشده</strong>
-                  <p>بعد از اولین افزایش موجودی، انتقال یا خرید با کیف پول، تراکنش‌ها اینجا نمایش داده می‌شوند.</p>
+                  <strong>هنوز تراکنش تومانی ثبت نشده</strong>
+                  <p>بعد از اولین افزایش موجودی، انتقال یا خرید با کیف پول، تراکنش‌های تومانی اینجا نمایش داده می‌شوند.</p>
                 </div>
               )}
             </section>

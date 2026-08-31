@@ -99,3 +99,12 @@ test("offers Story credit packs without restoring one-off Story sales", async ()
   assert.doesNotMatch(center, /استوری استانی ۲۴ ساعته/);
   assert.doesNotMatch(center, /listing_story_(?:large|regular)/);
 });
+
+test("documents purchased credits as non-expiring while preserving annual free quotas", async () => {
+  const revenue = await source("docs/revenue-model-fa.md");
+
+  assert.match(revenue, /اعتبارهای خریداری‌شده[^\n]*تاریخ انقضا ندارند/);
+  assert.match(revenue, /سهمیه رایگان سالانه/);
+  assert.match(revenue, /۱ آگهی در سال/);
+  assert.doesNotMatch(revenue, /اعتبارهای خریداری‌شده[^\n]*(?:۳۶۵|365)[^\n]*روز/);
+});

@@ -29,6 +29,11 @@ CREATE INDEX `credit_ledger_owner_asset_idx`
 CREATE TRIGGER `credit_ledger_prevent_negative`
 BEFORE INSERT ON `credit_ledger`
 WHEN NEW.quantity_delta < 0
+  AND NOT EXISTS (
+    SELECT 1
+    FROM credit_ledger
+    WHERE idempotency_key = NEW.idempotency_key
+  )
 BEGIN
   SELECT CASE
     WHEN COALESCE((

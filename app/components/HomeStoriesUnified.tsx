@@ -10,6 +10,11 @@ import {
   loadHomeLocation,
   type HomeLocationSelection,
 } from "./home-location";
+import {
+  orderStoriesNewestFirst,
+  storyArrowIntent,
+  storySwipeIntent,
+} from "./home-stories-order";
 import styles from "./HomeStoriesUnified.module.css";
 
 const API_BASE = "https://api.chakod.com";
@@ -154,7 +159,7 @@ function ownerLabel(item: StoryItem) {
 
 function groupStories(items: StoryItem[]) {
   const groups = new Map<string, StoryGroup>();
-  items.forEach((item) => {
+  orderStoriesNewestFirst(items).forEach((item) => {
     const key = ownerKey(item);
     const current = groups.get(key);
     if (current) {
@@ -437,8 +442,9 @@ export default function HomeStoriesUnified() {
 
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
-      if (event.key === "ArrowLeft") next();
-      if (event.key === "ArrowRight") previous();
+      const intent = storyArrowIntent(event.key);
+      if (intent === "next") next();
+      if (intent === "previous") previous();
     };
 
     window.addEventListener("keydown", key);
@@ -469,14 +475,15 @@ export default function HomeStoriesUnified() {
     const start = touchStartX.current;
     const end = event.changedTouches[0]?.clientX;
     touchStartX.current = null;
-    if (start === null || end === undefined || Math.abs(end - start) < 48) return;
-    if (end - start > 0) previous();
-    else next();
+    if (start === null || end === undefined) return;
+    const intent = storySwipeIntent(start, end);
+    if (intent === "next") next();
+    if (intent === "previous") previous();
   }
 
   return (
     <section className={styles.root} dir="rtl" aria-label="استوری‌های چاکود">
-      <div className={styles.scroller}>
+      <div className={styles.scroller} dir="ltr">
         <a className={styles.item} href="/account/stories" aria-label="انتخاب آگهی برای استوری شما">
           <span className={`${styles.ring} ${styles.ownRing}`}>
             <span className={`${styles.avatar} ${styles.ownAvatar}`}>

@@ -14,21 +14,20 @@ export type StagingDemoService = {
   settings: Record<string, unknown>;
 };
 
-const STAGING_DEMO_SERVICES: StagingDemoService[] = [
+const BASE_STAGING_DEMO_SERVICES = [
   ["listing_personal_publish", "انتشار آگهی شخصی آزمایشی", "personal", 120_000, 30, "day"],
   ["listing_personal_renew", "تمدید آگهی شخصی آزمایشی", "personal", 90_000, 30, "day"],
   ["listing_dealer_publish", "انتشار آگهی نمایشگاهی آزمایشی", "dealer", 180_000, 30, "day"],
   ["listing_dealer_renew", "تمدید آگهی نمایشگاهی آزمایشی", "dealer", 140_000, 30, "day"],
   ["listing_bump", "بالابر آگهی آزمایشی", "all", 65_000, 1, "use"],
   ["listing_featured", "آگهی ویژه آزمایشی", "all", 120_000, 7, "day"],
-  ["listing_story", "استوری آگهی آزمایشی", "all", 85_000, 24, "hour"],
   ["professional_profile_6m", "پروفایل حرفه‌ای شش‌ماهه آزمایشی", "business", 2_400_000, 6, "month"],
   ["professional_profile_12m", "پروفایل حرفه‌ای یک‌ساله آزمایشی", "business", 4_200_000, 12, "month"],
   ["business_placement", "جایگاه کسب‌وکار آزمایشی", "business", 900_000, 30, "day"],
   ["dealership_placement", "جایگاه نمایشگاه منتخب آزمایشی", "dealer", 1_500_000, 30, "day"],
   ["home_banner_regular", "جایگاه منتخب استانی آزمایشی", "dealer", 250_000, 1, "day"],
   ["home_banner_large", "جایگاه منتخب استان بزرگ آزمایشی", "dealer", 400_000, 1, "day"],
-].map(([serviceKey, title, audience, amount, durationValue, durationUnit]) => ({
+].map(([serviceKey, title, audience, amount, durationValue, durationUnit]): StagingDemoService => ({
   service_key: String(serviceKey),
   title: String(title),
   audience: String(audience),
@@ -39,6 +38,59 @@ const STAGING_DEMO_SERVICES: StagingDemoService[] = [
   settings: { staging_demo: true },
 }));
 
+const STORY_PACK_SERVICES: StagingDemoService[] = [
+  {
+    service_key: "story_pack_25",
+    title: "پکیج ۲۵ استوری",
+    audience: "all",
+    amount_toman: 250_000,
+    duration_value: 0,
+    duration_unit: "none",
+    is_active: true,
+    settings: {
+      staging_demo: true,
+      asset_code: "story_credit",
+      credit_quantity: 25,
+      no_expiry: true,
+    },
+  },
+  {
+    service_key: "story_pack_50",
+    title: "پکیج ۵۰ استوری",
+    audience: "all",
+    amount_toman: 450_000,
+    duration_value: 0,
+    duration_unit: "none",
+    is_active: true,
+    settings: {
+      staging_demo: true,
+      asset_code: "story_credit",
+      credit_quantity: 50,
+      no_expiry: true,
+    },
+  },
+  {
+    service_key: "story_pack_100",
+    title: "پکیج ۱۰۰ استوری",
+    audience: "all",
+    amount_toman: 800_000,
+    duration_value: 0,
+    duration_unit: "none",
+    is_active: true,
+    settings: {
+      staging_demo: true,
+      asset_code: "story_credit",
+      credit_quantity: 100,
+      no_expiry: true,
+    },
+  },
+];
+
+const STAGING_DEMO_SERVICES: StagingDemoService[] = [
+  ...BASE_STAGING_DEMO_SERVICES,
+  ...STORY_PACK_SERVICES,
+];
+
 const STAGING_DEMO_PROVINCES = [
   { province: "تهران", is_large: true },
   { province: "البرز", is_large: true },
@@ -47,9 +99,6 @@ const STAGING_DEMO_PROVINCES = [
   { province: "گیلان", is_large: false },
 ].map((item) => ({
   ...item,
-  story_price_toman: item.is_large ? 110_000 : 80_000,
-  story_duration_hours: 24,
-  story_is_active: true,
   banner_price_toman: item.is_large ? 400_000 : 250_000,
   banner_day_capacity: 6,
   banner_is_active: true,

@@ -44,8 +44,11 @@ function isAuthorizedRemoteMigrationRun() {
   const githubStagingDeploy =
     process.env.GITHUB_ACTIONS === "true"
     && process.env.GITHUB_REF_NAME === STAGING_BRANCH;
+  const workersBuildsStagingDeploy =
+    process.env.WORKERS_CI === "1"
+    && process.env.WORKERS_CI_BRANCH === STAGING_BRANCH;
   const explicitOperatorOverride = process.env.CHAKOD_APPLY_STAGING_D1_MIGRATIONS === "1";
-  return githubStagingDeploy || explicitOperatorOverride;
+  return githubStagingDeploy || workersBuildsStagingDeploy || explicitOperatorOverride;
 }
 
 function run(args) {
@@ -255,7 +258,7 @@ function assertQuickCheck() {
 
 if (!isAuthorizedRemoteMigrationRun()) {
   console.log(
-    "Remote staging D1 migration skipped outside the authorized staging GitHub deployment. "
+    "Remote staging D1 migration skipped outside the authorized staging deployment branch. "
       + "Set CHAKOD_APPLY_STAGING_D1_MIGRATIONS=1 only for an intentional operator run.",
   );
   process.exit(0);

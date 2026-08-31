@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   STORY_CREDIT_ASSET,
+  creditLedgerEffectMatches,
   creditMutationValues,
   creditTransferValues,
   isInsufficientCreditError,
@@ -96,6 +97,26 @@ test("creates reciprocal atomic transfer rows from one idempotency base", () => 
   assert.equal(incoming.idempotencyKey, "credit_transfer_abc:in");
   assert.equal(outgoing.counterpartyOwnerKey, "personal:42");
   assert.equal(incoming.counterpartyOwnerKey, "activity:12");
+});
+
+test("binds an idempotency key to the original ledger effect", () => {
+  const [expected] = creditTransferValues({
+    sourceOwnerKey: "activity:12",
+    destinationOwnerKey: "personal:42",
+    assetCode: STORY_CREDIT_ASSET,
+    quantity: 5,
+    idempotencyKey: "credit_transfer_abc",
+    referenceType: "credit_transfer",
+    referenceId: "abc",
+  });
+
+  assert.equal(creditLedgerEffectMatches({ ...expected }, expected), true);
+  assert.equal(creditLedgerEffectMatches({ ...expected, quantityDelta: -6 }, expected), false);
+  assert.equal(
+    creditLedgerEffectMatches({ ...expected, counterpartyOwnerKey: "activity:99" }, expected),
+    false,
+  );
+  assert.equal(creditLedgerEffectMatches(undefined, expected), false);
 });
 
 test("recognizes the D1 insufficient-credit trigger error only", () => {

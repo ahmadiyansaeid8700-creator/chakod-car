@@ -4,12 +4,15 @@ import { NextRequest } from "next/server";
 import { getDb } from "../../../../db";
 import {
   commerceOrders,
+  creditBalances,
+  creditLedger,
   featuredShowroomPlacements,
   invoices,
   walletTransactions,
 } from "../../../../db/schema";
 import { jsonResponse } from "../../../../lib/chakod-auth-proxy";
 import { isWalletSettlementConfigured } from "../../../../lib/commerce-wallet-settlement";
+import { STORY_CREDIT_ASSET } from "../../../../lib/credit-ledger";
 import { ensureWallet, getFinanceOwnerKey } from "../../../../lib/finance-core";
 
 export const runtime = "nodejs";
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
     const db = getDb();
     const wallet = await ensureWallet(ownerKey);
 
-    const [transactions, orders, invoiceRows] = await Promise.all([
+    const [transactions, orders, invoiceRows, creditBalanceRows, creditTransactions] = await Promise.all([
       db
         .select()
         .from(walletTransactions)
@@ -43,6 +46,38 @@ export async function GET(request: NextRequest) {
         .from(invoices)
         .where(eq(invoices.ownerKey, ownerKey))
         .orderBy(desc(invoices.id))
+        .limit(30),
+      db
+        .select({
+          assetCode: creditBalances.assetCode,
+          availableQuantity: creditBalances.availableQuantity,
+        })
+        .from(creditBalances)
+        .where(
+          and(
+            eq(creditBalances.ownerKey, ownerKey),
+            eq(creditBalances.assetCode, STORY_CREDIT_ASSET),
+          ),
+        ),
+      db
+        .select({
+          id: creditLedger.id,
+          assetCode: creditLedger.assetCode,
+          quantityDelta: creditLedger.quantityDelta,
+          transactionType: creditLedger.transactionType,
+          referenceType: creditLedger.referenceType,
+          referenceId: creditLedger.referenceId,
+          counterpartyOwnerKey: creditLedger.counterpartyOwnerKey,
+          createdAt: creditLedger.createdAt,
+        })
+        .from(creditLedger)
+        .where(
+          and(
+            eq(creditLedger.ownerKey, ownerKey),
+            eq(creditLedger.assetCode, STORY_CREDIT_ASSET),
+          ),
+        )
+        .orderBy(desc(creditLedger.id))
         .limit(30),
     ]);
 
@@ -66,6 +101,10 @@ export async function GET(request: NextRequest) {
         );
     }
 
+    const storyCreditBalance = creditBalanceRows.find(
+      (item) => item.assetCode === STORY_CREDIT_ASSET,
+    );
+
     return jsonResponse({
       success: true,
       wallet_payment_ready: isWalletSettlementConfigured(),
@@ -74,6 +113,22 @@ export async function GET(request: NextRequest) {
         blocked_balance_toman: wallet.blockedBalanceToman,
         status: wallet.status,
       },
+      credit_balances: [
+        {
+          asset_code: STORY_CREDIT_ASSET,
+          available_quantity: storyCreditBalance?.availableQuantity || 0,
+        },
+      ],
+      credit_transactions: creditTransactions.map((item) => ({
+        id: item.id,
+        asset_code: item.assetCode,
+        quantity_delta: item.quantityDelta,
+        transaction_type: item.transactionType,
+        reference_type: item.referenceType,
+        reference_id: item.referenceId,
+        counterparty_owner_key: item.counterpartyOwnerKey,
+        created_at: item.createdAt,
+      })),
       transactions: transactions.map((item) => ({
         id: item.id,
         direction: item.direction,

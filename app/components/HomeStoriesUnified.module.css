@@ -6,6 +6,7 @@
 
 .scroller {
   display: flex;
+  direction: ltr;
   align-items: flex-start;
   gap: 11px;
   overflow-x: auto;
@@ -472,13 +473,13 @@
 }
 
 .prev {
-  right: 0;
-  border-radius: 14px 0 0 14px;
+  left: 0;
+  border-radius: 0 14px 14px 0;
 }
 
 .next {
-  left: 0;
-  border-radius: 0 14px 14px 0;
+  right: 0;
+  border-radius: 14px 0 0 14px;
 }
 
 @keyframes skeletonMove {

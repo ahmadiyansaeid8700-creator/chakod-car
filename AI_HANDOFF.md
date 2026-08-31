@@ -398,6 +398,18 @@ Exact next action:
 اگر تغییر هنوز منتشر نشده، صریحاً «فقط محلی»، «در PR» یا «ادغام‌شده ولی منتشرنشده» ثبت شود؛ این حالت‌ها نباید با «روی سایت فعال است» اشتباه شوند.
 
 ```text
+Date: 2026-08-31
+Requested change: چیدمان استوری‌های صفحه اصلی مانند اینستاگرام؛ شروع از چپ و حرکت به راست برای استوری بعدی
+Affected routes/files: صفحه اصلی، app/components/HomeStoriesUnified.tsx، app/components/HomeStoriesUnified.module.css، app/components/home-stories-order.ts، tests/home-stories-order.test.mjs و package.json
+Tests actually run: تست جدید ابتدا 3/3 شکست مورد انتظار داشت و پس از پیاده‌سازی 3/3 موفق شد؛ check:launch شامل TypeScript و 163/163 قرارداد موفق؛ Build cPanel/Vinext موفق
+PR and merge commit: شاخه fix/instagram-story-direction؛ هنوز PR ساخته و ادغام نشده است
+Deployment result: فقط محلی؛ منتشر نشده
+Online verification: انجام نشده
+Open issue: Smoke کامل baseline در محیط Codex هنگام درخواست دسترسی شبکه متوقف شد؛ قراردادها، TypeScript و Build baseline پیش از آن موفق بودند
+Exact next action: اجرای بررسی‌های نهایی، ساخت PR به agent/launch-3-local-baseline و انتظار برای اجازه مالک پیش از هر merge
+```
+
+```text
 Date: 2026-08-26
 Requested change: پرکردن امن بخش‌های تست افتتاح شامل استوری، آگهی خودرو، نمایشگاه، کسب‌وکار و کف بازار با تصویر کم‌حجم
 Affected routes/files: صفحه اصلی، /api/market-floor/public، lib/prelaunch-fixtures.ts، .env.example و تست قرارداد fixture

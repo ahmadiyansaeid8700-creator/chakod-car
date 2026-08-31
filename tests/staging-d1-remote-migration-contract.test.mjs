@@ -26,6 +26,8 @@ test("remote staging D1 migration gate pins the database and rejects partial sch
   assert.match(script, /agent\/launch-3-local-baseline/);
   assert.match(script, /GITHUB_ACTIONS/);
   assert.match(script, /GITHUB_REF_NAME/);
+  assert.match(script, /WORKERS_CI/);
+  assert.match(script, /WORKERS_CI_BRANCH/);
   assert.match(script, /CHAKOD_APPLY_STAGING_D1_MIGRATIONS/);
   assert.match(script, /chakod-staging/);
   assert.match(script, /c38ca246-c71b-4a64-98fb-d0c946da3cb9/);

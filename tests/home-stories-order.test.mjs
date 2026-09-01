@@ -33,3 +33,66 @@ test("uses the right arrow for the next story", () => {
   assert.equal(storyOrder.storyArrowIntent("ArrowLeft"), "previous");
   assert.equal(storyOrder.storyArrowIntent("Escape"), null);
 });
+
+test("shares the exact story through its public URL when available", () => {
+  assert.equal(typeof storyOrder?.storySharePath, "function");
+  assert.equal(
+    storyOrder.storySharePath({ story_id: 1_000_000_042, share_url: "/stories/1000000042?ref=double-story" }),
+    "/stories/1000000042?ref=double-story",
+  );
+});
+
+test("falls back to a homepage deep link for legacy stories", () => {
+  assert.equal(typeof storyOrder?.storySharePath, "function");
+  assert.equal(storyOrder.storySharePath({ story_id: 317 }), "/?story=317");
+});
+
+test("finds the shared story inside its owner group", () => {
+  assert.equal(typeof storyOrder?.findStoryPosition, "function");
+  assert.deepEqual(
+    storyOrder.findStoryPosition([
+      { items: [{ story_id: 11 }, { story_id: 12 }] },
+      { items: [{ story_id: 21 }] },
+    ], 12),
+    { groupIndex: 0, itemIndex: 1 },
+  );
+  assert.equal(storyOrder.findStoryPosition([{ items: [{ story_id: 11 }] }], 99), null);
+});
+
+test("requests a legacy shared story independently from homepage location filters", () => {
+  assert.equal(typeof storyOrder?.legacyStoryRequest, "function");
+  assert.equal(storyOrder.legacyStoryRequest(317), "scope=all&limit=1&story_id=317");
+});
+
+test("keeps newest-first order when opening a requested story", () => {
+  assert.equal(typeof storyOrder?.orderStoriesForViewer, "function");
+  const ordered = storyOrder.orderStoriesForViewer([
+    { story_id: 11, starts_at: "2026-09-01T12:00:00Z" },
+    { story_id: 12, starts_at: "2026-09-01T11:00:00Z" },
+    { story_id: 317, starts_at: "2026-08-01T10:00:00Z" },
+  ], 317);
+  assert.deepEqual(ordered.map((story) => story.story_id), [11, 12, 317]);
+});
+
+test("retains a requested story and owner beyond normal viewer caps without reordering", () => {
+  assert.equal(typeof storyOrder?.selectStoriesForOwner, "function");
+  assert.equal(typeof storyOrder?.selectStoryGroups, "function");
+  const ownerStories = Array.from({ length: 12 }, (_, index) => ({ story_id: index + 1 }));
+  assert.deepEqual(
+    storyOrder.selectStoriesForOwner(ownerStories, 12, 10).map((story) => story.story_id),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12],
+  );
+  const groups = Array.from({ length: 14 }, (_, index) => ({
+    key: `owner-${index + 1}`,
+    items: [{ story_id: index + 1 }],
+  }));
+  assert.deepEqual(
+    storyOrder.selectStoryGroups(groups, 14, 12).map((group) => group.key),
+    [...groups.slice(0, 12).map((group) => group.key), "owner-14"],
+  );
+});
+
+test("generates a QR with a four-module quiet zone", () => {
+  assert.equal(typeof storyOrder?.storyQrOptions, "function");
+  assert.deepEqual(storyOrder.storyQrOptions(), { width: 160, margin: 4 });
+});

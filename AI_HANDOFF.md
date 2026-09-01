@@ -11,7 +11,7 @@ Root cause: رسانه viewer با object-fit: cover بریده می‌شد؛ ک
 Implementation: رسانه با contain و فضای امن بالا/پایین کامل نمایش داده می‌شود؛ کنترل‌های جهت دیداری حذف و swipe/keyboard/auto-play حفظ شدند؛ QR و Web Share با fallback کپی لینک اضافه شد؛ استوری‌های جدید share_url اختصاصی و استوری‌های legacy deep-link همان viewer را استفاده می‌کنند.
 Affected files: app/components/HomeStoriesUnified.tsx، app/components/HomeStoriesUnified.module.css، app/components/home-stories-order.ts، tests/home-stories-order.test.mjs، AI_HANDOFF.md
 Verification: چرخه قرمز/سبز ثبت شد؛ 10/10 تست استوری موفق؛ TypeScript موفق؛ 170/170 قرارداد لانچ موفق؛ Build cPanel/Vinext موفق؛ ایرادهای بازبینی بازیابی legacy، قابلیت اسکن QR و حفظ newest-first اصلاح و با تأیید کامل تازه بررسی شدند
-PR: در انتظار ایجاد
+PR: #178
 Merge commit: ندارد
 Deployment state: ادغام و انتشار نشده
 Online verification: پس از ادغام و رفع مجوز D1 در workflow استیجینگ لازم است

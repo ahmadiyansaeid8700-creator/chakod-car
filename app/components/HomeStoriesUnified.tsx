@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
+import QRCode from "qrcode";
 
 import {
   DEFAULT_HOME_LOCATION,
@@ -11,8 +12,14 @@ import {
   type HomeLocationSelection,
 } from "./home-location";
 import {
-  orderStoriesNewestFirst,
+  findStoryPosition,
+  legacyStoryRequest,
+  orderStoriesForViewer,
+  selectStoryGroups,
+  selectStoriesForOwner,
   storyArrowIntent,
+  storyQrOptions,
+  storySharePath,
   storySwipeIntent,
 } from "./home-stories-order";
 import styles from "./HomeStoriesUnified.module.css";
@@ -58,6 +65,7 @@ type StoryItem = {
   seller_display_name?: string;
   cover_image?: { image_id: number; image_url: string } | null;
   public_url: string;
+  share_url?: string | null;
   media_type?: "image" | "video";
   media_url?: string | null;
   thumbnail_url?: string | null;
@@ -157,18 +165,22 @@ function ownerLabel(item: StoryItem) {
   return "فروشنده شخصی";
 }
 
-function groupStories(items: StoryItem[]) {
+function groupStories(items: StoryItem[], requestedStoryId?: number | null) {
   const groups = new Map<string, StoryGroup>();
-  orderStoriesNewestFirst(items).forEach((item) => {
+  orderStoriesForViewer(items, requestedStoryId).forEach((item) => {
     const key = ownerKey(item);
     const current = groups.get(key);
     if (current) {
-      if (current.items.length < MAX_STORIES_PER_OWNER) current.items.push(item);
+      current.items.push(item);
       return;
     }
     groups.set(key, { key, label: ownerLabel(item), items: [item] });
   });
-  return Array.from(groups.values()).slice(0, MAX_OWNER_BUBBLES);
+  const limitedGroups = Array.from(groups.values()).map((group) => ({
+    ...group,
+    items: selectStoriesForOwner(group.items, requestedStoryId, MAX_STORIES_PER_OWNER),
+  }));
+  return selectStoryGroups(limitedGroups, requestedStoryId, MAX_OWNER_BUBBLES);
 }
 
 async function readStories(response: Response) {
@@ -231,9 +243,13 @@ export default function HomeStoriesUnified() {
   const [itemIndex, setItemIndex] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [dealerLogo, setDealerLogo] = useState("");
+  const [requestedStoryId, setRequestedStoryId] = useState<number | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const touchStartX = useRef<number | null>(null);
+  const pendingSharedStoryId = useRef<number | null>(null);
 
-  const groups = useMemo(() => groupStories(stories), [stories]);
+  const groups = useMemo(() => groupStories(stories, requestedStoryId), [requestedStoryId, stories]);
   const activeGroup = groupIndex === null ? null : groups[groupIndex] || null;
   const activeStory = activeGroup && itemIndex !== null ? activeGroup.items[itemIndex] || null : null;
   const expiryLabel = useMemo(
@@ -247,21 +263,17 @@ export default function HomeStoriesUnified() {
       : "",
     [activeStory, storyYear],
   );
-  const canPrevious = Boolean(
-    activeGroup
-      && itemIndex !== null
-      && (itemIndex > 0 || (groupIndex !== null && groupIndex > 0)),
-  );
-  const canNext = Boolean(
-    activeGroup
-      && itemIndex !== null
-      && (
-        itemIndex < activeGroup.items.length - 1
-        || (groupIndex !== null && groupIndex < groups.length - 1)
-      ),
-  );
+  const sharePath = activeStory ? storySharePath(activeStory) : "";
+  const absoluteShareUrl = typeof window === "undefined" || !sharePath
+    ? ""
+    : new URL(sharePath, window.location.origin).toString();
 
   useEffect(() => {
+    const requestedStoryId = Number(new URLSearchParams(window.location.search).get("story") || 0);
+    pendingSharedStoryId.current = Number.isSafeInteger(requestedStoryId) && requestedStoryId > 0
+      ? requestedStoryId
+      : null;
+    setRequestedStoryId(pendingSharedStoryId.current);
     setLocation(loadHomeLocation());
     const change = (event: Event) => {
       const custom = event as CustomEvent<HomeLocationSelection>;
@@ -288,8 +300,10 @@ export default function HomeStoriesUnified() {
               return params;
             });
 
-        const batches = await Promise.all(
-          queries.map(async (params) => {
+        const requestedLegacyQuery = requestedStoryId && requestedStoryId < LOCAL_STORY_ID_BASE
+          ? legacyStoryRequest(requestedStoryId)
+          : "";
+        const requests = queries.map(async (params) => {
             const [remote, local] = await Promise.all([
               fetch(`${API_BASE}/api/home-stories.php?${params.toString()}`, {
                 method: "GET",
@@ -301,8 +315,16 @@ export default function HomeStoriesUnified() {
               }).then(readStories).catch(() => [] as StoryItem[]),
             ]);
             return [...local, ...remote];
-          }),
-        );
+          });
+        if (requestedLegacyQuery) {
+          requests.push(
+            fetch(`${API_BASE}/api/home-stories.php?${requestedLegacyQuery}`, {
+              method: "GET",
+              cache: "no-store",
+            }).then(readStories).catch(() => [] as StoryItem[]),
+          );
+        }
+        const batches = await Promise.all(requests);
 
         if (!ignore) {
           const merged = new Map<number, StoryItem>();
@@ -318,7 +340,7 @@ export default function HomeStoriesUnified() {
 
     void load();
     return () => { ignore = true; };
-  }, [location]);
+  }, [location, requestedStoryId]);
 
   useEffect(() => {
     let ignore = false;
@@ -350,6 +372,25 @@ export default function HomeStoriesUnified() {
     return () => { ignore = true; };
   }, [activeStory?.dealer_id, activeStory?.listing_owner_type, activeStory?.story_id]);
 
+  useEffect(() => {
+    let active = true;
+    setQrDataUrl("");
+    setShareState("idle");
+    if (!absoluteShareUrl) return () => { active = false; };
+
+    const qrOptions = storyQrOptions();
+    void QRCode.toDataURL(absoluteShareUrl, {
+      width: qrOptions.width,
+      margin: qrOptions.margin,
+      errorCorrectionLevel: "M",
+      color: { dark: "#28143f", light: "#ffffff" },
+    }).then((value) => {
+      if (active) setQrDataUrl(value);
+    });
+
+    return () => { active = false; };
+  }, [absoluteShareUrl]);
+
   const track = useCallback((item: StoryItem) => {
     if (item.story_id >= LOCAL_STORY_ID_BASE) return;
     try {
@@ -371,6 +412,21 @@ export default function HomeStoriesUnified() {
       // آمار نباید نمایش استوری را مختل کند.
     }
   }, []);
+
+  useEffect(() => {
+    const requestedStoryId = pendingSharedStoryId.current;
+    if (!requestedStoryId || loading || groups.length === 0) return;
+
+    const position = findStoryPosition(groups, requestedStoryId);
+    pendingSharedStoryId.current = null;
+    if (!position) return;
+
+    const requestedStory = groups[position.groupIndex].items[position.itemIndex];
+    setNowMs(Date.now());
+    setGroupIndex(position.groupIndex);
+    setItemIndex(position.itemIndex);
+    track(requestedStory);
+  }, [groups, loading, track]);
 
   const close = useCallback(() => {
     setGroupIndex(null);
@@ -479,6 +535,30 @@ export default function HomeStoriesUnified() {
     const intent = storySwipeIntent(start, end);
     if (intent === "next") next();
     if (intent === "previous") previous();
+  }
+
+  async function shareStory() {
+    if (!activeStory || !absoluteShareUrl) return;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: `${activeStory.title} در چاکود`,
+          text: "این استوری را در چاکود ببینید.",
+          url: absoluteShareUrl,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(absoluteShareUrl);
+      setShareState("copied");
+      window.setTimeout(() => setShareState("idle"), 1600);
+    } catch {
+      window.prompt("لینک استوری را کپی کنید:", absoluteShareUrl);
+    }
   }
 
   return (
@@ -596,32 +676,28 @@ export default function HomeStoriesUnified() {
                 <h3>{activeStory.title}</h3>
                 <strong className={styles.storyPrice}>{formatPrice(activeStory.price_toman)}</strong>
                 {vehicleMeta ? <p>{vehicleMeta}</p> : null}
-                <a href={listingHref(activeStory)}>مشاهده آگهی</a>
+                <div className={styles.storyActions}>
+                  <span className={styles.storyQr} aria-label="کد QR همین استوری">
+                    {qrDataUrl ? <img src={qrDataUrl} alt="" /> : <i />}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.shareButton}
+                    onClick={() => void shareStory()}
+                    aria-label={`اشتراک‌گذاری استوری ${activeStory.title}`}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="18" cy="5" r="2.6" />
+                      <circle cx="6" cy="12" r="2.6" />
+                      <circle cx="18" cy="19" r="2.6" />
+                      <path d="m8.4 10.7 7.2-4.2M8.4 13.3l7.2 4.2" />
+                    </svg>
+                    <span>{shareState === "copied" ? "کپی شد" : "اشتراک"}</span>
+                  </button>
+                  <a href={listingHref(activeStory)}>مشاهده آگهی</a>
+                </div>
               </div>
             </div>
-
-            {canPrevious || canNext ? (
-              <>
-                <button
-                  type="button"
-                  className={`${styles.nav} ${styles.prev}`}
-                  onClick={previous}
-                  disabled={!canPrevious}
-                  aria-label="استوری قبلی"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.nav} ${styles.next}`}
-                  onClick={next}
-                  disabled={!canNext}
-                  aria-label="استوری بعدی"
-                >
-                  ›
-                </button>
-              </>
-            ) : null}
           </article>
         </div>
       ) : null}

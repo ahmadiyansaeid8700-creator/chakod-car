@@ -373,7 +373,9 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  box-sizing: border-box;
+  padding: 82px 12px 250px;
+  object-fit: contain;
 }
 
 .fallback {
@@ -439,7 +441,60 @@
   font-weight: 800;
 }
 
-.details a {
+.storyActions {
+  display: grid;
+  grid-template-columns: 72px 84px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.storyQr {
+  width: 72px;
+  height: 72px;
+  padding: 4px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+
+.storyQr img,
+.storyQr i {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 6px;
+}
+
+.storyQr i {
+  background: linear-gradient(135deg, #eee6f5, #fff);
+}
+
+.shareButton {
+  min-height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  font: inherit;
+  font-size: 8px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.shareButton svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.storyActions a {
   min-height: 49px;
   display: grid;
   place-items: center;
@@ -451,35 +506,6 @@
   font-size: 12px;
   font-weight: 950;
   text-decoration: none;
-}
-
-.nav {
-  position: absolute;
-  top: 50%;
-  z-index: 8;
-  width: 38px;
-  height: 55px;
-  transform: translateY(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  color: #fff;
-  background: rgba(10, 7, 14, 0.32);
-  font-size: 28px;
-  cursor: pointer;
-}
-
-.nav:disabled {
-  opacity: 0.2;
-  cursor: default;
-}
-
-.prev {
-  left: 0;
-  border-radius: 0 14px 14px 0;
-}
-
-.next {
-  right: 0;
-  border-radius: 14px 0 0 14px;
 }
 
 @keyframes skeletonMove {
@@ -586,7 +612,7 @@
     font-size: clamp(15px, 4.5vw, 20px);
   }
 
-  .details a {
+  .storyActions a {
     min-height: 46px;
     font-size: 11px;
   }

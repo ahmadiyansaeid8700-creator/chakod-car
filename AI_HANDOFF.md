@@ -2,6 +2,22 @@
 
 آخرین به‌روزرسانی: 2026-08-21
 
+## آخرین تغییر آماده PR
+
+```text
+Date: 2026-09-01
+Requested change: نمایش کامل رسانه داخل viewer استوری، حذف دکمه‌های چپ/راست و افزودن QR کوچک و اشتراک‌گذاری فعال پایین هر استوری
+Root cause: رسانه viewer با object-fit: cover بریده می‌شد؛ کنترل‌های جهت روی تصویر باقی مانده بودند؛ viewer هیچ مسیر اشتراک مستقیم نداشت و مسیر عمومی اختصاصی فقط استوری‌های جدید D1 را پشتیبانی می‌کرد.
+Implementation: رسانه با contain و فضای امن بالا/پایین کامل نمایش داده می‌شود؛ کنترل‌های جهت دیداری حذف و swipe/keyboard/auto-play حفظ شدند؛ QR و Web Share با fallback کپی لینک اضافه شد؛ استوری‌های جدید share_url اختصاصی و استوری‌های legacy deep-link همان viewer را استفاده می‌کنند.
+Affected files: app/components/HomeStoriesUnified.tsx، app/components/HomeStoriesUnified.module.css، app/components/home-stories-order.ts، tests/home-stories-order.test.mjs، AI_HANDOFF.md
+Verification: چرخه قرمز/سبز ثبت شد؛ 10/10 تست استوری موفق؛ TypeScript موفق؛ 170/170 قرارداد لانچ موفق؛ Build cPanel/Vinext موفق؛ ایرادهای بازبینی بازیابی legacy، قابلیت اسکن QR و حفظ newest-first اصلاح و با تأیید کامل تازه بررسی شدند
+PR: #178
+Merge commit: ندارد
+Deployment state: ادغام و انتشار نشده
+Online verification: پس از ادغام و رفع مجوز D1 در workflow استیجینگ لازم است
+Exact next action: بازبینی PR، دریافت اجازه مالک برای merge، سپس بررسی viewer در عرض‌های 320/390/430 و تست Share/QR روی staging
+```
+
 این فایل نقطه شروع اجباری هر گفت‌وگوی جدید است. پروژه نباید از صفر بازسازی شود. ابتدا وضعیت واقعی مخزن و استیجینگ بررسی شود، سپس فقط ادامه همین پروژه انجام شود.
 
 ## آخرین تغییر منتشرشده

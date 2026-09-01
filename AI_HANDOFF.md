@@ -521,3 +521,15 @@ Online verification: Asset جدید CommerceCenter-C8xfyUG9.js هیچ‌یک ا�
 Open issue: ممیزی responsive مرکز خدمات و تب سفارش‌ها با هر دو حساب آزمایشی باید ادامه یابد؛ هیچ تراکنش یا داده واقعی مجاز نیست
 Exact next action: ادامه ممیزی responsive مرکز خدمات و تب سفارش‌ها با هر دو حساب آزمایشی و رفع نخستین شکاف مستقل، بدون اتصال دامنه اصلی یا ورود داده واقعی
 ```
+
+```text
+Date: 2026-09-01
+Requested change: بازطراحی مدرن و مینیمال انتخاب آگهی برای استوری، با بازگشت آیکونی و نمایش فقط آگهی‌های واجد شرایط
+Affected routes/files: /account/stories، StoryListingSelectorClient، page.module.css، story-listing-eligibility و تست‌های قرارداد استوری/ناوبری موبایل
+Tests actually run: تست قرمز اولیه ثبت شد؛ تست متمرکز 5/5 موفق؛ check:launch شامل TypeScript، 170/170 قرارداد موجود و 4/4 قرارداد جدید موفق؛ git diff --check موفق
+PR and merge commit: شاخه redesign/story-listing-selector؛ PR و ادغام هنوز انجام نشده است
+Deployment result: منتشر نشده
+Online verification: انجام نشده؛ در انتظار PR، CI و گیت استیجینگ
+Open issue: توکن GitHub Actions موجود همچنان برای D1 مجوز ندارد و Deploy قبلی با Authentication error 10000 متوقف شده بود
+Exact next action: Push شاخه، ساخت PR به agent/launch-3-local-baseline، بررسی CI و فقط پس از تأیید مالک ادغام و اجرای گیت استیجینگ
+```

@@ -47,3 +47,5 @@ test("keeps the mobile action area compact and removes QR", async () => {
   assert.match(mobile, /\.details h3\s*\{[\s\S]*-webkit-line-clamp:\s*2\s*;/);
   assert.match(mobile, /\.details\s*\{[\s\S]*bottom:\s*max\([^;]*safe-area-inset-bottom/);
 });
+
+// This file intentionally lands before production changes so CI records a real RED state.

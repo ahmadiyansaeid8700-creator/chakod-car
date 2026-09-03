@@ -267,6 +267,7 @@ export default function HomeStoriesUnified() {
   const absoluteShareUrl = typeof window === "undefined" || !sharePath
     ? ""
     : new URL(sharePath, window.location.origin).toString();
+  const mediaBackdrop = activeStory ? storyImage(activeStory) || storyMedia(activeStory) : "";
 
   useEffect(() => {
     const requestedStoryId = Number(new URLSearchParams(window.location.search).get("story") || 0);
@@ -655,6 +656,14 @@ export default function HomeStoriesUnified() {
             </div>
 
             <div className={styles.media}>
+              {mediaBackdrop ? (
+                <div
+                  className={styles.mediaBackdrop}
+                  aria-hidden="true"
+                  style={{ backgroundImage: `url(${JSON.stringify(mediaBackdrop)})` }}
+                />
+              ) : null}
+
               {activeStory.media_type === "video" && storyMedia(activeStory) ? (
                 <video
                   key={activeStory.story_id}
@@ -698,6 +707,20 @@ export default function HomeStoriesUnified() {
                 </div>
               </div>
             </div>
+
+            <button
+              type="button"
+              className={styles.tapPrevious}
+              onClick={previous}
+              aria-label="استوری قبلی"
+              disabled={groupIndex === 0 && itemIndex === 0}
+            />
+            <button
+              type="button"
+              className={styles.tapNext}
+              onClick={next}
+              aria-label="استوری بعدی"
+            />
           </article>
         </div>
       ) : null}

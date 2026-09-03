@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 let storyOrder;
@@ -6,6 +7,10 @@ try {
   storyOrder = await import("../app/components/home-stories-order.ts");
 } catch {
   storyOrder = null;
+}
+
+async function readSource(path) {
+  return readFile(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
 test("orders the Instagram-style story rail newest-first from the left", () => {
@@ -95,4 +100,17 @@ test("retains a requested story and owner beyond normal viewer caps without reor
 test("generates a QR with a four-module quiet zone", () => {
   assert.equal(typeof storyOrder?.storyQrOptions, "function");
   assert.deepEqual(storyOrder.storyQrOptions(), { width: 160, margin: 4 });
+});
+
+test("mobile story viewer is fullscreen with physical tap zones and no QR", async () => {
+  const source = await readSource("app/components/HomeStoriesUnified.tsx");
+  const css = await readSource("app/components/HomeStoriesUnified.module.css");
+  const mobile = css.slice(css.indexOf("@media (max-width: 640px)"));
+
+  assert.match(source, /className=\{styles\.tapPrevious\}[\s\S]*onClick=\{previous\}/);
+  assert.match(source, /className=\{styles\.tapNext\}[\s\S]*onClick=\{next\}/);
+  assert.match(source, /className=\{styles\.mediaBackdrop\}/);
+  assert.match(mobile, /\.viewerCard\s*\{[\s\S]*height:\s*100dvh\s*;/);
+  assert.match(mobile, /\.viewerCard\s*\{[\s\S]*border-radius:\s*0\s*;/);
+  assert.match(mobile, /\.storyQr\s*\{\s*display:\s*none\s*;/);
 });

@@ -368,17 +368,33 @@
   background: #1d1525;
 }
 
+.mediaBackdrop {
+  position: absolute;
+  inset: -28px;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  filter: blur(24px) saturate(0.9) brightness(0.52);
+  transform: scale(1.08);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
 .media > img,
 .media > video {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   display: block;
   box-sizing: border-box;
-  padding: 82px 12px 250px;
+  padding: 76px 10px 190px;
   object-fit: contain;
 }
 
 .fallback {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   display: grid;
@@ -392,9 +408,10 @@
 .shade {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background:
-    linear-gradient(180deg, rgba(9, 5, 13, 0.68), transparent 30%),
-    linear-gradient(0deg, rgba(9, 5, 13, 0.96), rgba(9, 5, 13, 0.62) 24%, transparent 55%);
+    linear-gradient(180deg, rgba(9, 5, 13, 0.7), transparent 30%),
+    linear-gradient(0deg, rgba(9, 5, 13, 0.96), rgba(9, 5, 13, 0.56) 27%, transparent 58%);
   pointer-events: none;
 }
 
@@ -508,6 +525,33 @@
   text-decoration: none;
 }
 
+.tapPrevious,
+.tapNext {
+  position: absolute;
+  top: 76px;
+  bottom: 132px;
+  z-index: 4;
+  width: 50%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tapPrevious {
+  left: 0;
+}
+
+.tapNext {
+  right: 0;
+}
+
+.tapPrevious:disabled {
+  cursor: default;
+}
+
 @keyframes skeletonMove {
   to {
     background-position: -200% 0;
@@ -551,17 +595,29 @@
   }
 
   .viewer {
-    padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
+    padding: 0;
+    background: #08060a;
   }
 
   .viewerCard {
-    width: min(92vw, 390px, 52vh);
-    width: min(92vw, 390px, 52dvh);
-    border-radius: 23px;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .progress {
+    top: max(10px, env(safe-area-inset-top, 0px));
+    right: 8px;
+    left: 8px;
   }
 
   .top {
-    top: 25px;
+    top: calc(max(10px, env(safe-area-inset-top, 0px)) + 14px);
     right: 12px;
     left: 12px;
   }
@@ -571,75 +627,126 @@
   }
 
   .identity > span {
-    width: 42px;
-    height: 42px;
-    border-radius: 13px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
 
   .identity strong {
-    max-width: 118px;
+    max-width: 150px;
     font-size: 11px;
   }
 
   .identity small {
-    max-width: 125px;
+    max-width: 155px;
     font-size: 7.5px;
   }
 
   .expiryBadge {
-    min-height: 26px;
+    min-height: 25px;
+    max-width: 92px;
     padding-inline: 7px;
+    overflow: hidden;
     font-size: 7px;
+    text-overflow: ellipsis;
   }
 
   .close {
-    width: 32px;
-    height: 32px;
+    width: 31px;
+    height: 31px;
     font-size: 20px;
   }
 
+  .mediaBackdrop {
+    inset: -34px;
+    filter: blur(28px) saturate(0.85) brightness(0.48);
+  }
+
+  .media > img,
+  .media > video {
+    padding:
+      calc(max(10px, env(safe-area-inset-top, 0px)) + 66px)
+      0
+      142px;
+    object-fit: contain;
+  }
+
   .details {
-    right: 15px;
-    bottom: 16px;
-    left: 15px;
+    right: 14px;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    left: 14px;
   }
 
   .details h3 {
-    font-size: clamp(23px, 6.8vw, 30px);
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: clamp(19px, 5.8vw, 25px);
+    line-height: 1.38;
   }
 
   .storyPrice {
-    font-size: clamp(15px, 4.5vw, 20px);
+    margin-top: 7px;
+    padding: 6px 9px;
+    border-radius: 11px;
+    font-size: clamp(14px, 4vw, 18px);
+  }
+
+  .details p {
+    margin: 6px 1px 10px;
+    font-size: 9px;
+  }
+
+  .storyActions {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 8px;
+  }
+
+  .storyQr {
+    display: none;
+  }
+
+  .shareButton {
+    grid-column: 2;
+    min-height: 48px;
+    border-radius: 14px;
   }
 
   .storyActions a {
-    min-height: 46px;
+    grid-column: 1;
+    min-height: 48px;
+    border-radius: 14px;
     font-size: 11px;
+  }
+
+  .tapPrevious,
+  .tapNext {
+    top: calc(max(10px, env(safe-area-inset-top, 0px)) + 62px);
+    bottom: 142px;
   }
 }
 
 @media (max-width: 370px) {
-  .viewerCard {
-    width: min(94vw, 350px, 51vh);
-    width: min(94vw, 350px, 51dvh);
-  }
-
-  .expiryBadge {
-    max-width: 78px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .identity strong {
-    max-width: 82px;
+    max-width: 105px;
   }
 
   .identity small {
-    max-width: 90px;
+    max-width: 110px;
+  }
+
+  .expiryBadge {
+    max-width: 72px;
   }
 
   .details h3 {
-    font-size: 22px;
+    font-size: 20px;
+  }
+
+  .media > img,
+  .media > video {
+    padding-bottom: 136px;
   }
 }
 

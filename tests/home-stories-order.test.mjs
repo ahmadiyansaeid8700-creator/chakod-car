@@ -114,3 +114,5 @@ test("mobile story viewer is fullscreen with physical tap zones and no QR", asyn
   assert.match(mobile, /\.viewerCard\s*\{[\s\S]*border-radius:\s*0\s*;/);
   assert.match(mobile, /\.storyQr\s*\{\s*display:\s*none\s*;/);
 });
+
+// RED proof trigger: production viewer intentionally remains unchanged in this commit.
